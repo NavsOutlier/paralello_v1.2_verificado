@@ -6,6 +6,7 @@ import { Dashboard } from './components/Dashboard';
 import { Kanban } from './components/Kanban';
 import { SuperAdminDashboard } from './components/superadmin/SuperAdminDashboard';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { LoginView } from './views/LoginView';
 
 // Simple placeholder for Manager view
@@ -48,7 +49,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <AppContent />
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </AuthProvider>
   );
 };

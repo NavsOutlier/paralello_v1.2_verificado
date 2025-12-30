@@ -6,11 +6,13 @@ import { Button } from '../ui';
 import { MetricsCard } from './MetricsCard';
 import { OrganizationTable } from './OrganizationTable';
 import { OrganizationModal } from './OrganizationModal';
+import { useToast } from '../../contexts/ToastContext';
 
 export const SuperAdminDashboard: React.FC = () => {
     const [organizations, setOrganizations] = useState<Organization[]>(MOCK_ORGANIZATIONS);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
+    const { showToast } = useToast();
 
     // Calculate Metrics
     const totalOrgs = organizations.length;
@@ -38,25 +40,39 @@ export const SuperAdminDashboard: React.FC = () => {
     };
 
     const handleToggleStatus = (org: Organization) => {
+        const newStatus = org.status === 'active' ? 'inactive' : 'active';
+
         setOrganizations(prev =>
             prev.map(o =>
                 o.id === org.id
-                    ? { ...o, status: o.status === 'active' ? 'inactive' : 'active' }
+                    ? { ...o, status: newStatus }
                     : o
             )
+        );
+
+        showToast(
+            `${org.name} foi ${newStatus === 'active' ? 'ativada' : 'desativada'} com sucesso`,
+            'success'
         );
     };
 
     const handleChangePlan = (org: Organization) => {
         const currentPlanIndex = PLANS.findIndex(p => p.id === org.plan);
         const nextPlan = PLANS[(currentPlanIndex + 1) % PLANS.length];
+        const currentPlanName = PLANS.find(p => p.id === org.plan)?.name;
 
-        setOrganizations(prev =>
-            prev.map(o =>
+        setOrganizations(prev => {
+            const updated = prev.map(o =>
                 o.id === org.id
                     ? { ...o, plan: nextPlan.id }
                     : o
-            )
+            );
+            return updated;
+        });
+
+        showToast(
+            `Plano de ${org.name} alterado de ${currentPlanName} para ${nextPlan.name}`,
+            'success'
         );
     };
 
@@ -70,6 +86,7 @@ export const SuperAdminDashboard: React.FC = () => {
                         : o
                 )
             );
+            showToast(`${data.name} foi atualizada com sucesso`, 'success');
         } else {
             // Create new
             const newOrg: Organization = {
@@ -87,6 +104,7 @@ export const SuperAdminDashboard: React.FC = () => {
                 }
             };
             setOrganizations(prev => [...prev, newOrg]);
+            showToast(`${data.name} foi criada com sucesso`, 'success');
         }
         setModalOpen(false);
     };

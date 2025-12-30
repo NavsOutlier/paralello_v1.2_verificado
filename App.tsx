@@ -5,18 +5,10 @@ import { Workspace } from './views/Workspace';
 import { Dashboard } from './components/Dashboard';
 import { Kanban } from './components/Kanban';
 import { SuperAdminDashboard } from './components/superadmin/SuperAdminDashboard';
+import { ManagerDashboard } from './components/manager/ManagerDashboard';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { LoginView } from './views/LoginView';
-
-// Simple placeholder for Manager view
-const ManagerView = () => (
-  <div className="p-8">
-    <h1 className="text-2xl font-bold mb-4">Gerenciamento</h1>
-    <p className="text-slate-500">Tela de cadastro de clientes e membros da equipe (mockup).</p>
-  </div>
-);
-
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.WORKSPACE);
@@ -39,7 +31,7 @@ const AppContent: React.FC = () => {
         {currentView === ViewState.DASHBOARD && <Dashboard />}
         {currentView === ViewState.WORKSPACE && <Workspace />}
         {currentView === ViewState.KANBAN && <Kanban />}
-        {currentView === ViewState.MANAGER && <ManagerView />}
+        {currentView === ViewState.MANAGER && <ManagerDashboard />}
         {currentView === ViewState.SUPERADMIN && <SuperAdminDashboard />}
       </main>
     </div>

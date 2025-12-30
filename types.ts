@@ -90,3 +90,39 @@ export interface Organization {
     tasks: number;
   };
 }
+
+// Manager Types
+export interface Client {
+  id: string;
+  organizationId: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  whatsapp?: string;
+  avatarUrl?: string;
+  status: 'active' | 'inactive';
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TeamMember {
+  id: string;
+  organizationId: string;
+  profileId: string;
+  profile?: {
+    name: string;
+    email: string;
+    avatarUrl?: string;
+  };
+  role: 'manager' | 'member' | 'viewer';
+  permissions: {
+    canManageClients: boolean;
+    canManageTasks: boolean;
+    canManageTeam: boolean;
+  };
+  status: 'active' | 'inactive' | 'pending';
+  invitedBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}

@@ -4,6 +4,7 @@ import { Sidebar } from './components/Sidebar';
 import { Workspace } from './views/Workspace';
 import { Dashboard } from './components/Dashboard';
 import { Kanban } from './components/Kanban';
+import { SuperAdminDashboard } from './components/superadmin/SuperAdminDashboard';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginView } from './views/LoginView';
 
@@ -38,6 +39,7 @@ const AppContent: React.FC = () => {
         {currentView === ViewState.WORKSPACE && <Workspace />}
         {currentView === ViewState.KANBAN && <Kanban />}
         {currentView === ViewState.MANAGER && <ManagerView />}
+        {currentView === ViewState.SUPERADMIN && <SuperAdminDashboard />}
       </main>
     </div>
   );

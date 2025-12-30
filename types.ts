@@ -2,7 +2,8 @@ export enum ViewState {
   DASHBOARD = 'dashboard',
   WORKSPACE = 'workspace',
   KANBAN = 'kanban',
-  MANAGER = 'manager'
+  MANAGER = 'manager',
+  SUPERADMIN = 'superadmin'
 }
 
 export interface User {
@@ -54,4 +55,38 @@ export interface Task {
 export interface DiscussionDraft {
   sourceMessage: Message;
   mode: 'new' | 'attach';
+}
+
+// Super Admin Types
+export enum PlanType {
+  BASIC = 'basic',
+  PRO = 'pro',
+  ENTERPRISE = 'enterprise'
+}
+
+export interface Plan {
+  id: PlanType;
+  name: string;
+  price: number;
+  maxUsers: number;
+  maxClients: number;
+  features: string[];
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  plan: PlanType;
+  status: 'active' | 'inactive';
+  createdAt: Date;
+  owner: {
+    name: string;
+    email: string;
+  };
+  stats: {
+    users: number;
+    clients: number;
+    tasks: number;
+  };
 }

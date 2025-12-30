@@ -1,0 +1,183 @@
+import React, { useState } from 'react';
+import { Building2, DollarSign, Users, TrendingUp, Plus } from 'lucide-react';
+import { MOCK_ORGANIZATIONS, PLANS } from '../../constants-superadmin';
+import { Organization, PlanType } from '../../types';
+import { Button } from '../ui';
+import { MetricsCard } from './MetricsCard';
+import { OrganizationTable } from './OrganizationTable';
+import { OrganizationModal } from './OrganizationModal';
+
+export const SuperAdminDashboard: React.FC = () => {
+    const [organizations, setOrganizations] = useState<Organization[]>(MOCK_ORGANIZATIONS);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
+
+    // Calculate Metrics
+    const totalOrgs = organizations.length;
+    const activeOrgs = organizations.filter(o => o.status === 'active').length;
+    const mrr = organizations
+        .filter(o => o.status === 'active')
+        .reduce((sum, org) => {
+            const plan = PLANS.find(p => p.id === org.plan);
+            return sum + (plan?.price || 0);
+        }, 0);
+
+    const getPlanCount = (planType: PlanType) => {
+        return organizations.filter(o => o.plan === planType).length;
+    };
+
+    // Handlers
+    const handleAddNew = () => {
+        setEditingOrg(null);
+        setModalOpen(true);
+    };
+
+    const handleEdit = (org: Organization) => {
+        setEditingOrg(org);
+        setModalOpen(true);
+    };
+
+    const handleToggleStatus = (org: Organization) => {
+        setOrganizations(prev =>
+            prev.map(o =>
+                o.id === org.id
+                    ? { ...o, status: o.status === 'active' ? 'inactive' : 'active' }
+                    : o
+            )
+        );
+    };
+
+    const handleChangePlan = (org: Organization) => {
+        const currentPlanIndex = PLANS.findIndex(p => p.id === org.plan);
+        const nextPlan = PLANS[(currentPlanIndex + 1) % PLANS.length];
+
+        setOrganizations(prev =>
+            prev.map(o =>
+                o.id === org.id
+                    ? { ...o, plan: nextPlan.id }
+                    : o
+            )
+        );
+    };
+
+    const handleSave = (data: Partial<Organization>) => {
+        if (editingOrg) {
+            // Edit existing
+            setOrganizations(prev =>
+                prev.map(o =>
+                    o.id === editingOrg.id
+                        ? { ...o, ...data }
+                        : o
+                )
+            );
+        } else {
+            // Create new
+            const newOrg: Organization = {
+                id: `org-${Date.now()}`,
+                name: data.name!,
+                slug: data.slug!,
+                plan: data.plan!,
+                status: 'active',
+                createdAt: new Date(),
+                owner: data.owner!,
+                stats: {
+                    users: 0,
+                    clients: 0,
+                    tasks: 0
+                }
+            };
+            setOrganizations(prev => [...prev, newOrg]);
+        }
+        setModalOpen(false);
+    };
+
+    return (
+        <div className="flex-1 p-8 bg-slate-50 overflow-y-auto h-full">
+            <div className="flex justify-between items-center mb-8">
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-800">Super Admin</h1>
+                    <p className="text-slate-500 mt-1">Gerenciamento de organizações e planos</p>
+                </div>
+                <Button
+                    icon={<Plus className="w-4 h-4" />}
+                    onClick={handleAddNew}
+                >
+                    Nova Organização
+                </Button>
+            </div>
+
+            {/* Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <MetricsCard
+                    title="Total de Organizações"
+                    value={totalOrgs}
+                    icon={Building2}
+                    color="bg-blue-500"
+                />
+                <MetricsCard
+                    title="Organizações Ativas"
+                    value={activeOrgs}
+                    icon={TrendingUp}
+                    color="bg-green-500"
+                    subtitle={`${((activeOrgs / totalOrgs) * 100).toFixed(0)}% do total`}
+                />
+                <MetricsCard
+                    title="MRR Total"
+                    value={`$${mrr.toLocaleString()}`}
+                    icon={DollarSign}
+                    color="bg-indigo-500"
+                    subtitle="Monthly Recurring Revenue"
+                />
+                <MetricsCard
+                    title="Total de Usuários"
+                    value={organizations.reduce((sum, o) => sum + o.stats.users, 0)}
+                    icon={Users}
+                    color="bg-purple-500"
+                />
+            </div>
+
+            {/* Plan Distribution */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-semibold text-slate-600">BASIC</h3>
+                        <span className="text-2xl font-bold text-slate-800">{getPlanCount(PlanType.BASIC)}</span>
+                    </div>
+                    <div className="text-sm text-slate-500">$49/mês • {PLANS[0].maxUsers} usuários</div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-indigo-100 border-2">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-semibold text-indigo-600">PRO</h3>
+                        <span className="text-2xl font-bold text-indigo-600">{getPlanCount(PlanType.PRO)}</span>
+                    </div>
+                    <div className="text-sm text-slate-500">$149/mês • {PLANS[1].maxUsers} usuários</div>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-purple-100 border-2">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-semibold text-purple-600">ENTERPRISE</h3>
+                        <span className="text-2xl font-bold text-purple-600">{getPlanCount(PlanType.ENTERPRISE)}</span>
+                    </div>
+                    <div className="text-sm text-slate-500">$499/mês • Ilimitado</div>
+                </div>
+            </div>
+
+            {/* Organizations Table */}
+            <OrganizationTable
+                organizations={organizations}
+                onEdit={handleEdit}
+                onToggleStatus={handleToggleStatus}
+                onChangePlan={handleChangePlan}
+            />
+
+            {/* Modal */}
+            <OrganizationModal
+                organization={editingOrg}
+                isOpen={modalOpen}
+                onClose={() => setModalOpen(false)}
+                onSave={handleSave}
+            />
+        </div>
+    );
+};

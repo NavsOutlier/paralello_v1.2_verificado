@@ -15,15 +15,58 @@ export const TEAM: User[] = [
 
 // Single "Table" of messages
 export const INITIAL_MESSAGES: Message[] = [
-  // Client C1 Chat History (Channel ID = c1)
-  { id: 'm1', channelId: 'c1', senderId: 'c1', text: 'Olá, bom dia! Tudo bem?', timestamp: new Date(Date.now() - 10000000), isInternal: false },
-  { id: 'm2', channelId: 'c1', senderId: 'me', text: 'Bom dia! Tudo certo por aqui. Como posso ajudar?', timestamp: new Date(Date.now() - 9000000), isInternal: false },
-  { id: 'm3', channelId: 'c1', senderId: 'c1', text: 'Estava olhando a campanha nova, acho que a cor do botão está errada.', timestamp: new Date(Date.now() - 8000000), isInternal: false },
-  { id: 'm4', channelId: 'c1', senderId: 't1', text: 'Eu verifiquei aqui, seguimos o brandbook v2.', timestamp: new Date(Date.now() - 7000000), isInternal: true }, // Internal note inside client chat
-  { id: 'm5', channelId: 'c1', senderId: 'c1', text: 'Ah, entendi. Mas vamos testar o laranja?', timestamp: new Date(Date.now() - 600000), isInternal: false },
+  // Client C1 Chat History (Context: WhatsApp Feed, Client: c1)
+  {
+    id: 'm1',
+    contextType: 'WHATSAPP_FEED',
+    clientId: 'c1',
+    senderType: 'CLIENT',
+    senderId: 'c1',
+    text: 'Olá, bom dia! Tudo bem?',
+    timestamp: new Date(Date.now() - 10000000)
+  },
+  {
+    id: 'm2',
+    contextType: 'WHATSAPP_FEED',
+    clientId: 'c1',
+    senderType: 'MEMBER',
+    senderId: 'me',
+    text: 'Bom dia! Tudo certo por aqui. Como posso ajudar?',
+    timestamp: new Date(Date.now() - 9000000)
+  },
+  {
+    id: 'm3',
+    contextType: 'WHATSAPP_FEED',
+    clientId: 'c1',
+    senderType: 'CLIENT',
+    senderId: 'c1',
+    text: 'Estava olhando a campanha nova, acho que a cor do botão está errada.',
+    timestamp: new Date(Date.now() - 8000000)
+  },
+  {
+    id: 'm5',
+    contextType: 'WHATSAPP_FEED',
+    clientId: 'c1',
+    senderType: 'CLIENT',
+    senderId: 'c1',
+    text: 'Ah, entendi. Mas vamos testar o laranja?',
+    timestamp: new Date(Date.now() - 600000)
+  },
 
-  // Task 1 Internal Chat History (Channel ID = task1)
-  { id: 'tm1', channelId: 'task1', senderId: 'me', text: 'Criado a partir da solicitação do cliente sobre o botão.', timestamp: new Date(), isInternal: true, linkedMessageId: 'm3' }
+  // Task 1 Internal Chat History (Context: Task Internal, Task: task1)
+  {
+    id: 'tm1',
+    contextType: 'TASK_INTERNAL',
+    taskId: 'task1',
+    senderType: 'MEMBER',
+    senderId: 'me',
+    text: 'Criado a partir da solicitação do cliente sobre o botão.',
+    timestamp: new Date(),
+    linkedMessageId: 'm3'
+  },
+  // Note: Message 'm4' from previous mock was an internal note in client chat. 
+  // In new schema, internal notes on clients might be TASK_INTERNAL or separate context. 
+  // For now, assuming task discussion covers internal context.
 ];
 
 export const INITIAL_TASKS: Task[] = [

@@ -16,16 +16,24 @@ export interface User {
 }
 
 // Unified Message Type (The "Single Table" approach)
+// Unified Message Type (The "Single Table" approach)
 export interface Message {
   id: string;
-  channelId: string; // Can be a ClientID (WhatsApp), TaskID (Internal), or DM ID
-  senderId: string;
+
+  // Polymorphic Foreign Keys (Only one should be set)
+  contextType: 'WHATSAPP_FEED' | 'TASK_INTERNAL' | 'DIRECT_MESSAGE';
+  taskId?: string;        // Used if contextType === 'TASK_INTERNAL'
+  clientId?: string;      // Used if contextType === 'WHATSAPP_FEED'
+  dmChannelId?: string;   // Used if contextType === 'DIRECT_MESSAGE'
+
+  senderType: 'CLIENT' | 'MEMBER';
+  senderId: string; // Points to Profile ID (merged user/client)
+
   text: string;
   timestamp: Date;
-  isInternal: boolean; // Visual flag (yellow bubble)
-  
+
   // Metadata for linking contexts
-  linkedMessageId?: string; // Points to another message ID (e.g. quoting a client msg inside a task)
+  linkedMessageId?: string; // Points to another message ID
 }
 
 export interface Task {
@@ -34,7 +42,7 @@ export interface Task {
   status: 'todo' | 'in-progress' | 'review' | 'done';
   priority: 'low' | 'medium' | 'high';
   assigneeId?: string;
-  clientId: string; 
+  clientId: string;
   // removed 'relatedMessages' array. We now query messages where channelId === taskId
   createdAt: Date;
 }

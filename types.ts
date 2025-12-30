@@ -20,6 +20,9 @@ export interface User {
 export interface Message {
   id: string;
 
+  // Channel-based routing (used for filtering messages by context)
+  channelId?: string;     // Can be clientId, taskId, or dmChannelId depending on context
+
   // Polymorphic Foreign Keys (Only one should be set)
   contextType: 'WHATSAPP_FEED' | 'TASK_INTERNAL' | 'DIRECT_MESSAGE';
   taskId?: string;        // Used if contextType === 'TASK_INTERNAL'
@@ -32,7 +35,8 @@ export interface Message {
   text: string;
   timestamp: Date;
 
-  // Metadata for linking contexts
+  // Metadata
+  isInternal?: boolean;   // Whether this is an internal team message
   linkedMessageId?: string; // Points to another message ID
 }
 

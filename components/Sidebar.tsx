@@ -2,6 +2,7 @@ import React from 'react';
 import { LayoutDashboard, MessageSquare, KanbanSquare, Users, LogOut } from 'lucide-react';
 import { ViewState } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { Avatar } from './ui';
 
 interface SidebarProps {
   currentView: ViewState;
@@ -15,8 +16,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
     <button
       onClick={() => onViewChange(view)}
       className={`flex flex-col items-center justify-center w-full py-4 space-y-1 transition-colors ${currentView === view
-          ? 'text-indigo-600 bg-indigo-50 border-r-4 border-indigo-600'
-          : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+        ? 'text-indigo-600 bg-indigo-50 border-r-4 border-indigo-600'
+        : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
         }`}
       title={label}
     >
@@ -47,10 +48,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
           <LogOut className="w-6 h-6" />
         </button>
 
-        <img
+        <Avatar
           src={`https://ui-avatars.com/api/?name=${user?.email || 'User'}&background=6366f1&color=fff`}
-          className="w-10 h-10 rounded-full cursor-pointer hover:ring-2 hover:ring-indigo-300 transition-all"
-          alt="Profile"
+          name={user?.email || 'User'}
+          size="md"
+          className="cursor-pointer hover:ring-2 hover:ring-indigo-300 transition-all"
         />
       </div>
     </nav>

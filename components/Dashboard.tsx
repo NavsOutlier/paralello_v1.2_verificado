@@ -38,6 +38,25 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     if (organizationId) {
       fetchDashboardStats();
+
+      // Realtime subscriptions for stats
+      const channel = supabase
+        .channel(`dashboard-${organizationId}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'clients', filter: `organization_id=eq.${organizationId}` },
+          () => fetchDashboardStats()
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'tasks', filter: `organization_id=eq.${organizationId}` },
+          () => fetchDashboardStats()
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [organizationId]);
 

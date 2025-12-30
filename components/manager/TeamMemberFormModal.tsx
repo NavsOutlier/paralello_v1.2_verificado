@@ -41,6 +41,10 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
         try {
             await onSave({
                 role: formData.role as 'manager' | 'member' | 'viewer',
+                profile: {
+                    email: formData.email,
+                    name: '' // Placeholder
+                } as any,
                 permissions: {
                     canManageClients: formData.canManageClients,
                     canManageTasks: formData.canManageTasks,

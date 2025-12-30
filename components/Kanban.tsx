@@ -26,6 +26,27 @@ export const Kanban: React.FC = () => {
   useEffect(() => {
     if (organizationId) {
       fetchTasks();
+
+      // Realtime subscription
+      const channel = supabase
+        .channel(`kanban-${organizationId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'tasks',
+            filter: `organization_id=eq.${organizationId}`
+          },
+          () => {
+            fetchTasks();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [organizationId]);
 

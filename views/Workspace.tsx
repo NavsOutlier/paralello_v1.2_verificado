@@ -76,7 +76,87 @@ export const Workspace: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+
+    if (!organizationId) return;
+
+    // Realtime Subscriptions
+    const channel = supabase
+      .channel(`workspace-${organizationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newMsg = payload.new as any;
+            setAllMessages(prev => {
+              if (prev.some(m => m.id === newMsg.id)) return prev;
+              return [...prev, {
+                ...newMsg,
+                channelId: newMsg.channel_id || newMsg.client_id || newMsg.task_id,
+                timestamp: new Date(newMsg.created_at)
+              }];
+            });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newTask = payload.new as any;
+            setAllTasks(prev => {
+              if (prev.some(t => t.id === newTask.id)) return prev;
+              return [...prev, { ...newTask, createdAt: new Date(newTask.created_at) }];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedTask = payload.new as any;
+            setAllTasks(prev => prev.map(t => t.id === updatedTask.id ? { ...updatedTask, createdAt: new Date(updatedTask.created_at) } : t));
+          } else if (payload.eventType === 'DELETE') {
+            setAllTasks(prev => prev.filter(t => t.id === payload.old.id));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'clients',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          fetchData(); // Simplest way for clients/team as they involve profile joins
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'team_members',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchData, organizationId]);
 
   const handleSendMessage = async (text: string) => {
     if (!selectedEntityId || !text.trim() || !organizationId || !currentUser) return;

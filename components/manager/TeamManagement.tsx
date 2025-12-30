@@ -91,8 +91,42 @@ export const TeamManagement: React.FC = () => {
 
                 if (error) throw error;
                 showToast('Membro atualizado com sucesso');
+            } else {
+                // Create new member (Invite)
+                if (!memberData.profile?.email) throw new Error('Email é obrigatório');
+
+                // 1. Check if profile exists
+                const { data: profileData, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('email', memberData.profile.email.toLowerCase())
+                    .single();
+
+                if (profileError || !profileData) {
+                    throw new Error('Usuário não encontrado. O membro precisa se cadastrar no sistema primeiro.');
+                }
+
+                // 2. Insert into team_members
+                const { error: insertError } = await supabase
+                    .from('team_members')
+                    .insert({
+                        organization_id: organizationId,
+                        profile_id: profileData.id,
+                        role: memberData.role || 'member',
+                        status: 'active', // For now auto-activate
+                        permissions: {
+                            can_manage_clients: memberData.permissions?.canManageClients ?? true,
+                            can_manage_tasks: memberData.permissions?.canManageTasks ?? true,
+                            can_manage_team: memberData.permissions?.canManageTeam ?? false
+                        }
+                    });
+
+                if (insertError) {
+                    if (insertError.code === '23505') throw new Error('Este usuário já é membro desta equipe.');
+                    throw insertError;
+                }
+                showToast('Membro adicionado com sucesso');
             }
-            // Note: Creating new members would require invitation flow with email
 
             await fetchTeamMembers();
             setIsFormOpen(false);

@@ -39,12 +39,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .from('profiles')
                 .select('is_super_admin')
                 .eq('id', userId)
-                .single();
+                .maybeSingle();
 
-            if (profileError && profileError.code !== 'PGRST116') throw profileError;
-            setIsSuperAdmin(profileData?.is_super_admin ?? false);
+            if (profileError) {
+                console.error('Error fetching profile:', profileError);
+            }
+
+            const isSuper = profileData?.is_super_admin ?? false;
+            setIsSuperAdmin(isSuper);
 
             // Check if user is a member/manager in any organization
+            // Note: Super admins might not be team members anywhere
             const { data: teamData, error: teamError } = await supabase
                 .from('team_members')
                 .select('role, organization_id')
@@ -52,7 +57,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .eq('status', 'active')
                 .maybeSingle();
 
-            if (!teamError && teamData) {
+            if (teamError) {
+                // If it's a real 500 error, we'll see it here, but maybeSingle handles 0 rows fine.
+                console.error('Error fetching team membership:', teamError);
+            }
+
+            if (teamData) {
                 setIsManager(teamData.role === 'manager');
                 setOrganizationId(teamData.organization_id);
             } else {

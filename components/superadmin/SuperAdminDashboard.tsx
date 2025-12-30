@@ -1,18 +1,48 @@
-import React, { useState } from 'react';
-import { Building2, DollarSign, Users, TrendingUp, Plus } from 'lucide-react';
-import { MOCK_ORGANIZATIONS, PLANS } from '../../constants-superadmin';
+import React, { useState, useEffect } from 'react';
+import { Building2, DollarSign, Users, TrendingUp, Plus, RefreshCw } from 'lucide-react';
+import { PLANS } from '../../constants-superadmin';
 import { Organization, PlanType } from '../../types';
 import { Button } from '../ui';
 import { MetricsCard } from './MetricsCard';
 import { OrganizationTable } from './OrganizationTable';
 import { OrganizationModal } from './OrganizationModal';
 import { useToast } from '../../contexts/ToastContext';
+import {
+    fetchOrganizations,
+    createOrganization,
+    updateOrganization,
+    toggleOrganizationStatus,
+    changeOrganizationPlan
+} from '../../lib/supabase-admin';
 
 export const SuperAdminDashboard: React.FC = () => {
-    const [organizations, setOrganizations] = useState<Organization[]>(MOCK_ORGANIZATIONS);
+    const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const { showToast } = useToast();
+
+    // Load organizations on mount
+    useEffect(() => {
+        loadOrganizations();
+    }, []);
+
+    const loadOrganizations = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const data = await fetchOrganizations();
+            setOrganizations(data);
+        } catch (err) {
+            const errorMsg = 'Erro ao carregar organizações';
+            setError(errorMsg);
+            showToast(errorMsg, 'error');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Calculate Metrics
     const totalOrgs = organizations.length;
@@ -39,75 +69,83 @@ export const SuperAdminDashboard: React.FC = () => {
         setModalOpen(true);
     };
 
-    const handleToggleStatus = (org: Organization) => {
-        const newStatus = org.status === 'active' ? 'inactive' : 'active';
-
-        setOrganizations(prev =>
-            prev.map(o =>
-                o.id === org.id
-                    ? { ...o, status: newStatus }
-                    : o
-            )
-        );
-
-        showToast(
-            `${org.name} foi ${newStatus === 'active' ? 'ativada' : 'desativada'} com sucesso`,
-            'success'
-        );
-    };
-
-    const handleChangePlan = (org: Organization) => {
-        const currentPlanIndex = PLANS.findIndex(p => p.id === org.plan);
-        const nextPlan = PLANS[(currentPlanIndex + 1) % PLANS.length];
-        const currentPlanName = PLANS.find(p => p.id === org.plan)?.name;
-
-        setOrganizations(prev => {
-            const updated = prev.map(o =>
-                o.id === org.id
-                    ? { ...o, plan: nextPlan.id }
-                    : o
+    const handleToggleStatus = async (org: Organization) => {
+        try {
+            const newStatus = org.status === 'active' ? 'inactive' : 'active';
+            await toggleOrganizationStatus(org.id, newStatus);
+            showToast(
+                `${org.name} foi ${newStatus === 'active' ? 'ativada' : 'desativada'} com sucesso`,
+                'success'
             );
-            return updated;
-        });
-
-        showToast(
-            `Plano de ${org.name} alterado de ${currentPlanName} para ${nextPlan.name}`,
-            'success'
-        );
-    };
-
-    const handleSave = (data: Partial<Organization>) => {
-        if (editingOrg) {
-            // Edit existing
-            setOrganizations(prev =>
-                prev.map(o =>
-                    o.id === editingOrg.id
-                        ? { ...o, ...data }
-                        : o
-                )
-            );
-            showToast(`${data.name} foi atualizada com sucesso`, 'success');
-        } else {
-            // Create new
-            const newOrg: Organization = {
-                id: `org-${Date.now()}`,
-                name: data.name!,
-                slug: data.slug!,
-                plan: data.plan!,
-                status: 'active',
-                createdAt: new Date(),
-                owner: data.owner!,
-                stats: {
-                    users: 0,
-                    clients: 0,
-                    tasks: 0
-                }
-            };
-            setOrganizations(prev => [...prev, newOrg]);
-            showToast(`${data.name} foi criada com sucesso`, 'success');
+            await loadOrganizations(); // Reload to get fresh data
+        } catch (err) {
+            showToast('Erro ao alterar status', 'error');
+            console.error(err);
         }
-        setModalOpen(false);
     };
+
+    const handleChangePlan = async (org: Organization) => {
+        try {
+            const currentPlanIndex = PLANS.findIndex(p => p.id === org.plan);
+            const nextPlan = PLANS[(currentPlanIndex + 1) % PLANS.length];
+            const currentPlanName = PLANS.find(p => p.id === org.plan)?.name;
+
+            await changeOrganizationPlan(org.id, nextPlan.id);
+            showToast(
+                `Plano de ${org.name} alterado de ${currentPlanName} para ${nextPlan.name}`,
+                'success'
+            );
+            await loadOrganizations(); // Reload to get fresh data
+        } catch (err) {
+            showToast('Erro ao alterar plano', 'error');
+            console.error(err);
+        }
+    };
+
+    const handleSave = async (data: Partial<Organization>) => {
+        try {
+            if (editingOrg) {
+                // Edit existing
+                await updateOrganization(editingOrg.id, data);
+                showToast(`${data.name} foi atualizada com sucesso`, 'success');
+            } else {
+                // Create new
+                await createOrganization(data);
+                showToast(`${data.name} foi criada com sucesso`, 'success');
+            }
+            await loadOrganizations(); // Reload to get fresh data
+            setModalOpen(false);
+        } catch (err) {
+            showToast('Erro ao salvar organização', 'error');
+            console.error(err);
+        }
+    };
+
+    // Loading state
+    if (loading) {
+        return (
+            <div className="flex-1 flex items-center justify-center bg-slate-50 h-full">
+                <div className="text-center">
+                    <RefreshCw className="w-12 h-12 text-indigo-500 animate-spin mx-auto mb-4" />
+                    <p className="text-slate-500">Carregando organizações...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div className="flex-1 flex items-center justify-center bg-slate-50 h-full">
+                <div className="text-center">
+                    <p className="text-red-500 mb-4">{error}</p>
+                    <Button onClick={loadOrganizations} icon={<RefreshCw className="w-4 h-4" />}>
+                        Tentar Novamente
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex-1 p-8 bg-slate-50 overflow-y-auto h-full">
@@ -116,12 +154,20 @@ export const SuperAdminDashboard: React.FC = () => {
                     <h1 className="text-3xl font-bold text-slate-800">Super Admin</h1>
                     <p className="text-slate-500 mt-1">Gerenciamento de organizações e planos</p>
                 </div>
-                <Button
-                    icon={<Plus className="w-4 h-4" />}
-                    onClick={handleAddNew}
-                >
-                    Nova Organização
-                </Button>
+                <div className="flex gap-3">
+                    <Button
+                        variant="secondary"
+                        icon={<RefreshCw className="w-4 h-4" />}
+                        onClick={loadOrganizations}
+                        title="Recarregar"
+                    />
+                    <Button
+                        icon={<Plus className="w-4 h-4" />}
+                        onClick={handleAddNew}
+                    >
+                        Nova Organização
+                    </Button>
+                </div>
             </div>
 
             {/* Metrics */}

@@ -1,111 +1,224 @@
-import React, { useState } from 'react';
-import { CLIENTS, TEAM, INITIAL_MESSAGES, INITIAL_TASKS } from '../constants';
-import { Message, Task, DiscussionDraft } from '../types';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+import { Message, Task, DiscussionDraft, User as UIUser } from '../types';
 import { EntityList } from '../components/EntityList';
 import { ChatArea, TaskManager } from '../components/workspace';
+import { Loader2 } from 'lucide-react';
 
 export const Workspace: React.FC = () => {
-  const [selectedEntityId, setSelectedEntityId] = useState<string>('c1');
-  const [allMessages, setAllMessages] = useState<Message[]>(INITIAL_MESSAGES);
-  const [allTasks, setAllTasks] = useState<Task[]>(INITIAL_TASKS);
+  const { organizationId, user: currentUser } = useAuth();
+  const [clients, setClients] = useState<UIUser[]>([]);
+  const [team, setTeam] = useState<UIUser[]>([]);
+  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
+  const [allMessages, setAllMessages] = useState<Message[]>([]);
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Interaction State
   const [discussionDraft, setDiscussionDraft] = useState<DiscussionDraft | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
 
-  const selectedEntity = CLIENTS.find(c => c.id === selectedEntityId) || TEAM.find(t => t.id === selectedEntityId) || null;
-
   // Derived state based on the "Channel ID" pattern
+  const selectedEntity = [...clients, ...team].find(e => e.id === selectedEntityId) || null;
   const currentChatMessages = allMessages.filter(m => m.channelId === selectedEntityId);
   const currentEntityTasks = allTasks.filter(t => t.clientId === selectedEntityId);
 
-  const handleSendMessage = (text: string) => {
-    if (!selectedEntityId || !text.trim()) return;
+  const fetchData = useCallback(async () => {
+    if (!organizationId) return;
+    try {
+      setLoading(true);
+      const [clientsRes, teamRes, messagesRes, tasksRes] = await Promise.all([
+        supabase.from('clients').select('*').eq('organization_id', organizationId).is('deleted_at', null),
+        supabase.from('team_members').select('*, profile:profiles(*)').eq('organization_id', organizationId).is('deleted_at', null),
+        supabase.from('messages').select('*').eq('organization_id', organizationId).order('created_at', { ascending: true }),
+        supabase.from('tasks').select('*').eq('organization_id', organizationId)
+      ]);
 
-    const newMsg: Message = {
-      id: `m${Date.now()}`,
-      channelId: selectedEntityId, // Linked to the Client Channel
-      contextType: 'WHATSAPP_FEED',
-      senderId: 'current-user-id',
-      senderType: 'MEMBER',
+      const mappedClients: UIUser[] = (clientsRes.data || []).map(c => ({
+        id: c.id,
+        name: c.name,
+        avatar: c.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=random`,
+        role: 'client',
+        status: 'online', // Mocked status as it's not in DB yet
+        lastMessage: '' // Populate if needed
+      }));
+
+      const mappedTeam: UIUser[] = (teamRes.data || []).map(tm => ({
+        id: tm.profile_id,
+        name: tm.profile?.name || 'Membro',
+        avatar: tm.profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(tm.profile?.name || 'M')}&background=random`,
+        role: 'team',
+        status: 'online'
+      }));
+
+      setClients(mappedClients);
+      setTeam(mappedTeam);
+      setAllMessages((messagesRes.data || []).map(m => ({
+        ...m,
+        channelId: m.channel_id || m.client_id || m.task_id || m.dm_channel_id,
+        timestamp: new Date(m.created_at)
+      })));
+      setAllTasks((tasksRes.data || []).map(t => ({
+        ...t,
+        createdAt: new Date(t.created_at)
+      })));
+
+      if (mappedClients.length > 0 && !selectedEntityId) {
+        setSelectedEntityId(mappedClients[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching workspace data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [organizationId, selectedEntityId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleSendMessage = async (text: string) => {
+    if (!selectedEntityId || !text.trim() || !organizationId || !currentUser) return;
+
+    const newMsgPayload = {
+      organization_id: organizationId,
+      channel_id: selectedEntityId,
+      client_id: selectedEntityId, // Assuming for now selectedEntityId in Chat is client
+      context_type: 'WHATSAPP_FEED',
+      sender_id: currentUser.id,
+      sender_type: 'MEMBER',
       text,
-      timestamp: new Date(),
-      isInternal: false
+      is_internal: false
     };
 
-    setAllMessages(prev => [...prev, newMsg]);
+    try {
+      const { data, error } = await supabase.from('messages').insert(newMsgPayload).select().single();
+      if (error) throw error;
+      if (data) {
+        setAllMessages(prev => [...prev, {
+          ...data,
+          channelId: data.channel_id || data.client_id,
+          timestamp: new Date(data.created_at)
+        }]);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
   };
 
-  const handleCreateTask = (title: string, priority: 'low' | 'medium' | 'high') => {
-    if (!selectedEntityId || !discussionDraft) return;
+  const handleCreateTask = async (title: string, priority: 'low' | 'medium' | 'high') => {
+    if (!selectedEntityId || !discussionDraft || !organizationId) return;
 
-    const newTaskId = `t${Date.now()}`;
-    const newTask: Task = {
-      id: newTaskId,
-      title,
-      status: 'todo',
-      priority,
-      clientId: selectedEntityId,
-      createdAt: new Date(),
-    };
+    try {
+      // 1. Create Task
+      const { data: taskData, error: taskError } = await supabase.from('tasks').insert({
+        organization_id: organizationId,
+        title,
+        status: 'todo',
+        priority,
+        client_id: selectedEntityId
+      }).select().single();
 
-    // Create the first message in the Task Channel (which links back to the original message)
-    const newContextMsg: Message = {
-      id: `tm${Date.now()}`,
-      channelId: newTaskId, // Linked to the Task Channel
-      contextType: 'TASK_INTERNAL',
-      senderId: 'current-user-id',
-      senderType: 'MEMBER',
-      text: `Tarefa criada a partir da mensagem: "${discussionDraft.sourceMessage.text.substring(0, 30)}..."`,
-      timestamp: new Date(),
-      isInternal: true,
-      linkedMessageId: discussionDraft.sourceMessage.id
-    };
+      if (taskError) throw taskError;
 
-    setAllTasks(prev => [...prev, newTask]);
-    setAllMessages(prev => [...prev, newContextMsg]);
-    setDiscussionDraft(null);
+      // 2. Create Context Message
+      const { data: msgData, error: msgError } = await supabase.from('messages').insert({
+        organization_id: organizationId,
+        task_id: taskData.id,
+        channel_id: taskData.id,
+        context_type: 'TASK_INTERNAL',
+        sender_id: currentUser?.id,
+        sender_type: 'MEMBER',
+        text: `Tarefa criada a partir da mensagem: "${discussionDraft.sourceMessage.text.substring(0, 30)}..."`,
+        is_internal: true,
+        linked_message_id: discussionDraft.sourceMessage.id
+      }).select().single();
+
+      if (msgError) throw msgError;
+
+      setAllTasks(prev => [...prev, { ...taskData, createdAt: new Date(taskData.created_at) }]);
+      setAllMessages(prev => [...prev, {
+        ...msgData,
+        channelId: msgData.task_id,
+        timestamp: new Date(msgData.created_at)
+      }]);
+      setDiscussionDraft(null);
+    } catch (error) {
+      console.error('Error creating task:', error);
+    }
   };
 
-  const handleAttachTask = (taskId: string) => {
-    if (!discussionDraft) return;
+  const handleAttachTask = async (taskId: string) => {
+    if (!discussionDraft || !organizationId || !currentUser) return;
 
-    const newContextMsg: Message = {
-      id: `tm${Date.now()}`,
-      channelId: taskId, // Linked to the Task Channel
-      contextType: 'TASK_INTERNAL',
-      senderId: 'current-user-id',
-      senderType: 'MEMBER',
-      text: `Mensagem adicionada à discussão: "${discussionDraft.sourceMessage.text}"`,
-      timestamp: new Date(),
-      isInternal: true,
-      linkedMessageId: discussionDraft.sourceMessage.id
-    };
+    try {
+      const { data, error } = await supabase.from('messages').insert({
+        organization_id: organizationId,
+        task_id: taskId,
+        channel_id: taskId,
+        context_type: 'TASK_INTERNAL',
+        sender_id: currentUser.id,
+        sender_type: 'MEMBER',
+        text: `Mensagem adicionada à discussão: "${discussionDraft.sourceMessage.text}"`,
+        is_internal: true,
+        linked_message_id: discussionDraft.sourceMessage.id
+      }).select().single();
 
-    setAllMessages(prev => [...prev, newContextMsg]);
-    setDiscussionDraft(null);
+      if (error) throw error;
+
+      setAllMessages(prev => [...prev, {
+        ...data,
+        channelId: data.task_id,
+        timestamp: new Date(data.created_at)
+      }]);
+      setDiscussionDraft(null);
+    } catch (error) {
+      console.error('Error attaching message to task:', error);
+    }
   };
 
-  const handleAddTaskComment = (taskId: string, text: string) => {
-    const newMsg: Message = {
-      id: `tm${Date.now()}`,
-      channelId: taskId, // Linked to the Task Channel
-      contextType: 'TASK_INTERNAL',
-      senderId: 'current-user-id',
-      senderType: 'MEMBER',
-      text,
-      timestamp: new Date(),
-      isInternal: true
-    };
-    setAllMessages(prev => [...prev, newMsg]);
+  const handleAddTaskComment = async (taskId: string, text: string) => {
+    if (!organizationId || !currentUser) return;
+
+    try {
+      const { data, error } = await supabase.from('messages').insert({
+        organization_id: organizationId,
+        task_id: taskId,
+        channel_id: taskId,
+        context_type: 'TASK_INTERNAL',
+        sender_id: currentUser.id,
+        sender_type: 'MEMBER',
+        text,
+        is_internal: true
+      }).select().single();
+
+      if (error) throw error;
+
+      setAllMessages(prev => [...prev, {
+        ...data,
+        channelId: data.task_id,
+        timestamp: new Date(data.created_at)
+      }]);
+    } catch (error) {
+      console.error('Error adding task comment:', error);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-slate-50">
+        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full w-full">
       <div className="w-[280px] flex-shrink-0">
         <EntityList
-          clients={CLIENTS}
-          team={TEAM}
+          clients={clients}
+          team={team}
           selectedId={selectedEntityId}
           onSelect={setSelectedEntityId}
         />
@@ -115,6 +228,7 @@ export const Workspace: React.FC = () => {
         <ChatArea
           entity={selectedEntity}
           messages={currentChatMessages}
+          teamMembers={team}
           onSendMessage={handleSendMessage}
           onInitiateDiscussion={(msg) => setDiscussionDraft({ sourceMessage: msg, mode: 'new' })}
           highlightedMessageId={highlightedMessageId}
@@ -125,7 +239,8 @@ export const Workspace: React.FC = () => {
         {selectedEntityId ? (
           <TaskManager
             tasks={currentEntityTasks}
-            allMessages={allMessages} // Pass all messages so task detail can filter by its own ID
+            allMessages={allMessages}
+            teamMembers={team}
             discussionDraft={discussionDraft}
             onCancelDraft={() => setDiscussionDraft(null)}
             onCreateTaskFromDraft={handleCreateTask}

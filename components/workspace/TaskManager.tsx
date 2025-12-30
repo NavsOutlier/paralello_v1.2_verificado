@@ -14,6 +14,7 @@ interface TaskManagerProps {
     onAttachTaskFromDraft: (taskId: string) => void;
     onNavigateToMessage: (id: string) => void;
     onAddTaskComment: (taskId: string, text: string) => void;
+    teamMembers: any[]; // Using any for simplicity in prop pass, though should be UIUser[]
 }
 
 export const TaskManager: React.FC<TaskManagerProps> = (props) => {
@@ -36,6 +37,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
         return <TaskDetail
             task={selectedTask}
             messages={taskMessages}
+            teamMembers={props.teamMembers}
             onBack={() => setSelectedTask(null)}
             onNavigateToMessage={props.onNavigateToMessage}
             onAddComment={(text) => props.onAddTaskComment(selectedTask.id, text)}

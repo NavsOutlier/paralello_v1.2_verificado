@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CornerDownRight } from 'lucide-react';
-import { Task, Message } from '../../types';
+import { Task, Message, User as UIUser } from '../../types';
 import { MessageBubble } from '../MessageBubble';
 import { Badge, Button } from '../ui';
-import { CURRENT_USER_ID, TEAM } from '../../constants';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface TaskDetailProps {
     task: Task;
@@ -11,6 +11,7 @@ interface TaskDetailProps {
     onBack: () => void;
     onNavigateToMessage: (msgId: string) => void;
     onAddComment: (text: string) => void;
+    teamMembers: UIUser[];
 }
 
 export const TaskDetail: React.FC<TaskDetailProps> = ({
@@ -18,8 +19,10 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
     messages,
     onBack,
     onNavigateToMessage,
-    onAddComment
+    onAddComment,
+    teamMembers
 }) => {
+    const { user: currentUser } = useAuth();
     const [comment, setComment] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -61,8 +64,8 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
                         <MessageBubble
                             key={msg.id}
                             msg={msg}
-                            isMe={msg.senderId === CURRENT_USER_ID}
-                            senderName={TEAM.find(t => t.id === msg.senderId)?.name || 'Membro'}
+                            isMe={msg.senderId === currentUser?.id}
+                            senderName={teamMembers.find(t => t.id === msg.senderId)?.name || 'Membro'}
                             onNavigateToLinked={onNavigateToMessage}
                         />
                     ))}

@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip, MoreVertical } from 'lucide-react';
-import { User, Message } from '../../types';
+import { User, Message, User as UIUser } from '../../types';
 import { MessageBubble } from '../MessageBubble';
-import { CURRENT_USER_ID } from '../../constants';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ChatAreaProps {
     entity: User | null;
@@ -10,6 +10,7 @@ interface ChatAreaProps {
     onSendMessage: (text: string) => void;
     onInitiateDiscussion: (msg: Message) => void;
     highlightedMessageId: string | null;
+    teamMembers: UIUser[];
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({
@@ -17,8 +18,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     messages,
     onSendMessage,
     onInitiateDiscussion,
-    highlightedMessageId
+    highlightedMessageId,
+    teamMembers // Adding this as well to resolve member names in chat
 }) => {
+    const { user: currentUser } = useAuth();
     const [text, setText] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -67,8 +70,12 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     <MessageBubble
                         key={msg.id}
                         msg={msg}
-                        isMe={msg.senderId === CURRENT_USER_ID}
-                        senderName={msg.senderId === entity.id ? entity.name : 'Team Member'}
+                        isMe={msg.senderId === currentUser?.id}
+                        senderName={
+                            msg.senderId === entity.id
+                                ? entity.name
+                                : teamMembers.find(t => t.id === msg.senderId)?.name || 'Membro'
+                        }
                         onInitiateDiscussion={onInitiateDiscussion}
                         messageRef={(el) => messageRefs.current[msg.id] = el}
                     />

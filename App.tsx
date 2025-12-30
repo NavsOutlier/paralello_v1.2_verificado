@@ -4,6 +4,8 @@ import { Sidebar } from './components/Sidebar';
 import { Workspace } from './views/Workspace';
 import { Dashboard } from './components/Dashboard';
 import { Kanban } from './components/Kanban';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LoginView } from './views/LoginView';
 
 // Simple placeholder for Manager view
 const ManagerView = () => (
@@ -13,8 +15,17 @@ const ManagerView = () => (
   </div>
 );
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { user, loading } = useAuth();
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.WORKSPACE);
+
+  if (loading) {
+    return <div className="h-screen flex items-center justify-center bg-slate-100 text-slate-400">Carregando...</div>;
+  }
+
+  if (!user) {
+    return <LoginView />;
+  }
 
   return (
     <div className="flex h-screen w-screen bg-slate-100 font-sans">
@@ -29,6 +40,14 @@ const App: React.FC = () => {
         {currentView === ViewState.MANAGER && <ManagerView />}
       </main>
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 

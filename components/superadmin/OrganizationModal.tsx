@@ -7,7 +7,7 @@ interface OrganizationModalProps {
     organization?: Organization | null;
     isOpen: boolean;
     onClose: () => void;
-    onSave: (data: Partial<Organization>) => void;
+    onSave: (data: Partial<Organization>) => Promise<void>;
 }
 
 export const OrganizationModal: React.FC<OrganizationModalProps> = ({
@@ -21,6 +21,7 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
     const [plan, setPlan] = useState<PlanType>(PlanType.BASIC);
     const [ownerName, setOwnerName] = useState('');
     const [ownerEmail, setOwnerEmail] = useState('');
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (organization) {
@@ -54,24 +55,32 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setLoading(true);
 
-        const data: Partial<Organization> = {
-            name,
-            slug,
-            plan,
-            owner: {
-                name: ownerName,
-                email: ownerEmail
+        try {
+            const data: Partial<Organization> = {
+                name,
+                slug,
+                plan,
+                owner: {
+                    name: ownerName,
+                    email: ownerEmail
+                }
+            };
+
+            if (organization) {
+                data.id = organization.id;
             }
-        };
 
-        if (organization) {
-            data.id = organization.id;
+            await onSave(data);
+            onClose();
+        } catch (error) {
+            console.error('Error in OrganizationModal handleSubmit:', error);
+        } finally {
+            setLoading(false);
         }
-
-        onSave(data);
     };
 
     if (!isOpen) return null;
@@ -190,8 +199,9 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                             type="submit"
                             variant="primary"
                             className="flex-1"
+                            disabled={loading}
                         >
-                            {organization ? 'Salvar' : 'Criar'}
+                            {loading ? (organization ? 'Salvando...' : 'Criando...') : (organization ? 'Salvar' : 'Criar')}
                         </Button>
                     </div>
                 </form>

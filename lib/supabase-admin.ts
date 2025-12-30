@@ -41,46 +41,39 @@ export async function fetchOrganizations(): Promise<Organization[]> {
 }
 
 /**
- * Create a new organization
+ * Create a new organization (Atomic Onboarding)
  */
 export async function createOrganization(data: Partial<Organization>): Promise<Organization> {
-    const { data: newOrg, error } = await supabase
-        .from('organizations')
-        .insert({
-            name: data.name,
-            slug: data.slug,
-            plan: data.plan,
-            owner_name: data.owner?.name,
+    const { data: response, error } = await supabase.functions.invoke('create-org-with-owner', {
+        body: {
+            organization: {
+                name: data.name,
+                slug: data.slug
+            },
             owner_email: data.owner?.email,
-            status: 'active',
-            stats_users: 0,
-            stats_clients: 0,
-            stats_tasks: 0
-        })
-        .select()
-        .single();
+            owner_name: data.owner?.name,
+            plan: data.plan
+        }
+    });
 
-    if (error) {
-        console.error('Error creating organization:', error);
-        throw new Error('Failed to create organization');
+    if (error || response.error) {
+        console.error('Error creating organization via Edge Function:', error || response.error);
+        throw new Error(error?.message || response.error || 'Failed to create organization');
     }
 
+    // Return a basic representation, the dashboard will reload
     return {
-        id: newOrg.id,
-        name: newOrg.name,
-        slug: newOrg.slug,
-        plan: newOrg.plan as PlanType,
-        status: newOrg.status as 'active' | 'inactive',
-        createdAt: new Date(newOrg.created_at),
+        id: response.organizationId,
+        name: data.name || '',
+        slug: data.slug || '',
+        plan: data.plan as PlanType,
+        status: 'active',
+        createdAt: new Date(),
         owner: {
-            name: newOrg.owner_name,
-            email: newOrg.owner_email
+            name: data.owner?.name || '',
+            email: data.owner?.email || ''
         },
-        stats: {
-            users: newOrg.stats_users || 0,
-            clients: newOrg.stats_clients || 0,
-            tasks: newOrg.stats_tasks || 0
-        }
+        stats: { users: 0, clients: 0, tasks: 0 }
     };
 }
 

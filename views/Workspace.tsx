@@ -54,11 +54,22 @@ export const Workspace: React.FC = () => {
 
       setClients(mappedClients);
       setTeam(mappedTeam);
-      setAllMessages((messagesRes.data || []).map(m => ({
-        ...m,
-        channelId: m.channel_id || m.client_id || m.task_id || m.dm_channel_id,
-        timestamp: new Date(m.created_at)
-      })));
+      setAllMessages((messagesRes.data || []).filter(m => {
+        if (m.context_type === 'DIRECT_MESSAGE') {
+          return m.sender_id === currentUser?.id || m.dm_channel_id === currentUser?.id;
+        }
+        return true;
+      }).map(m => {
+        const mapped = {
+          ...m,
+          channelId: m.channel_id || m.client_id || m.task_id || m.dm_channel_id,
+          timestamp: new Date(m.created_at)
+        };
+        if (m.context_type === 'DIRECT_MESSAGE') {
+          mapped.channelId = m.sender_id === currentUser?.id ? m.dm_channel_id : m.sender_id;
+        }
+        return mapped;
+      }));
       setAllTasks((tasksRes.data || []).map(t => ({
         ...t,
         createdAt: new Date(t.created_at)
@@ -93,14 +104,35 @@ export const Workspace: React.FC = () => {
         (payload) => {
           if (payload.eventType === 'INSERT') {
             const newMsg = payload.new as any;
+
+            // Privacy check for DMs
+            if (newMsg.context_type === 'DIRECT_MESSAGE' &&
+              newMsg.sender_id !== currentUser?.id &&
+              newMsg.dm_channel_id !== currentUser?.id) {
+              return;
+            }
+
             setAllMessages(prev => {
               if (prev.some(m => m.id === newMsg.id)) return prev;
-              return [...prev, {
+              const mapped = {
                 ...newMsg,
                 channelId: newMsg.channel_id || newMsg.client_id || newMsg.task_id,
                 timestamp: new Date(newMsg.created_at)
-              }];
+              };
+              if (newMsg.context_type === 'DIRECT_MESSAGE') {
+                mapped.channelId = newMsg.sender_id === currentUser?.id ? newMsg.dm_channel_id : newMsg.sender_id;
+              }
+              return [...prev, mapped];
             });
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedMsg = payload.new as any;
+            setAllMessages(prev => prev.map(m => m.id === updatedMsg.id ? {
+              ...updatedMsg,
+              channelId: updatedMsg.channel_id || updatedMsg.client_id || updatedMsg.task_id || (updatedMsg.context_type === 'DIRECT_MESSAGE' ? (updatedMsg.sender_id === currentUser?.id ? updatedMsg.dm_channel_id : updatedMsg.sender_id) : undefined),
+              timestamp: new Date(updatedMsg.created_at)
+            } : m));
+          } else if (payload.eventType === 'DELETE') {
+            setAllMessages(prev => prev.filter(m => m.id === payload.old.id));
           }
         }
       )
@@ -159,28 +191,38 @@ export const Workspace: React.FC = () => {
   }, [fetchData, organizationId]);
 
   const handleSendMessage = async (text: string) => {
-    if (!selectedEntityId || !text.trim() || !organizationId || !currentUser) return;
+    if (!selectedEntity || !text.trim() || !organizationId || !currentUser) return;
 
-    const newMsgPayload = {
+    const isClient = selectedEntity.role === 'client';
+
+    const newMsgPayload: any = {
       organization_id: organizationId,
-      channel_id: selectedEntityId,
-      client_id: selectedEntityId, // Assuming for now selectedEntityId in Chat is client
-      context_type: 'WHATSAPP_FEED',
+      text,
       sender_id: currentUser.id,
       sender_type: 'MEMBER',
-      text,
       is_internal: false
     };
+
+    if (isClient) {
+      newMsgPayload.context_type = 'WHATSAPP_FEED';
+      newMsgPayload.client_id = selectedEntity.id;
+    } else {
+      newMsgPayload.context_type = 'DIRECT_MESSAGE';
+      newMsgPayload.dm_channel_id = selectedEntity.id; // Alvo
+    }
 
     try {
       const { data, error } = await supabase.from('messages').insert(newMsgPayload).select().single();
       if (error) throw error;
       if (data) {
-        setAllMessages(prev => [...prev, {
-          ...data,
-          channelId: data.channel_id || data.client_id,
-          timestamp: new Date(data.created_at)
-        }]);
+        setAllMessages(prev => {
+          if (prev.some(m => m.id === data.id)) return prev;
+          return [...prev, {
+            ...data,
+            channelId: data.channel_id || data.client_id || data.dm_channel_id,
+            timestamp: new Date(data.created_at)
+          }];
+        });
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -206,7 +248,6 @@ export const Workspace: React.FC = () => {
       const { data: msgData, error: msgError } = await supabase.from('messages').insert({
         organization_id: organizationId,
         task_id: taskData.id,
-        channel_id: taskData.id,
         context_type: 'TASK_INTERNAL',
         sender_id: currentUser?.id,
         sender_type: 'MEMBER',
@@ -258,7 +299,7 @@ export const Workspace: React.FC = () => {
     }
   };
 
-  const handleAddTaskComment = async (taskId: string, text: string) => {
+  const handleAddTaskComment = async (taskId: string, text: string): Promise<void> => {
     if (!organizationId || !currentUser) return;
 
     try {

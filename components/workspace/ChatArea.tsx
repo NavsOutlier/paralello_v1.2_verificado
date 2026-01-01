@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, MoreVertical } from 'lucide-react';
+import { Send, Paperclip, MoreVertical, Loader2 } from 'lucide-react';
 import { User, Message, User as UIUser } from '../../types';
 import { MessageBubble } from '../MessageBubble';
 import { useAuth } from '../../contexts/AuthContext';
@@ -7,7 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 interface ChatAreaProps {
     entity: User | null;
     messages: Message[];
-    onSendMessage: (text: string) => void;
+    onSendMessage: (text: string) => Promise<void>;
     onInitiateDiscussion: (msg: Message) => void;
     highlightedMessageId: string | null;
     teamMembers: UIUser[];
@@ -24,10 +24,24 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     const { user: currentUser, isSuperAdmin, permissions } = useAuth();
     const canManageTasks = isSuperAdmin || permissions?.can_manage_tasks;
     const [text, setText] = useState('');
+    const [isSending, setIsSending] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
     const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+
+    const handleSend = async () => {
+        if (!text.trim() || isSending) return;
+        try {
+            setIsSending(true);
+            await onSendMessage(text);
+            setText('');
+        } catch (error) {
+            console.error('Failed to send message:', error);
+        } finally {
+            setIsSending(false);
+        }
+    };
 
     useEffect(scrollToBottom, [messages]);
 
@@ -87,20 +101,24 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             {/* Input */}
             <div className="p-4 bg-white border-t border-slate-200">
                 <div className="flex items-center space-x-4">
-                    <button className="text-slate-400 hover:text-slate-600"><Paperclip className="w-5 h-5" /></button>
+                    <button className="text-slate-400 hover:text-slate-600 disabled:opacity-50" disabled={isSending}>
+                        <Paperclip className="w-5 h-5" />
+                    </button>
                     <input
                         type="text"
-                        className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                        placeholder="Digite uma mensagem..."
+                        className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 disabled:opacity-75"
+                        placeholder={isSending ? "Enviando..." : "Digite uma mensagem..."}
                         value={text}
                         onChange={e => setText(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') { onSendMessage(text); setText(''); } }}
+                        onKeyDown={e => { if (e.key === 'Enter') { handleSend(); } }}
+                        disabled={isSending}
                     />
                     <button
-                        onClick={() => { onSendMessage(text); setText(''); }}
-                        className="bg-indigo-600 text-white p-2.5 rounded-full hover:bg-indigo-700 transition-colors"
+                        onClick={handleSend}
+                        disabled={!text.trim() || isSending}
+                        className="bg-indigo-600 text-white p-2.5 rounded-full hover:bg-indigo-700 transition-colors disabled:bg-indigo-400"
                     >
-                        <Send className="w-4 h-4" />
+                        {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </button>
                 </div>
             </div>

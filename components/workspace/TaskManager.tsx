@@ -33,17 +33,18 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
         />;
     }
 
-    if (selectedTask) {
-        // Filter messages for this task specifically
-        const taskMessages = props.allMessages.filter(m => m.channelId === selectedTask.id);
+    // Reactivity: Use task from props if available so real-time updates reflect in detail view
+    const currentTask = selectedTask ? props.tasks.find(t => t.id === selectedTask.id) || selectedTask : null;
 
+    if (currentTask) {
         return <TaskDetail
-            task={selectedTask}
-            messages={taskMessages}
-            teamMembers={props.teamMembers}
+            task={currentTask}
+            messages={props.allMessages.filter(m => m.taskId === currentTask.id)}
             onBack={() => setSelectedTask(null)}
             onNavigateToMessage={props.onNavigateToMessage}
-            onAddComment={(text) => props.onAddTaskComment(selectedTask.id, text)}
+            onAddComment={(text) => props.onAddTaskComment(currentTask.id, text)}
+            onUpdateTask={props.onUpdateTask}
+            teamMembers={props.teamMembers}
         />;
     }
 

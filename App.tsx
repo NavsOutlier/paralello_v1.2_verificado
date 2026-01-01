@@ -11,8 +11,18 @@ import { ToastProvider } from './contexts/ToastContext';
 import { LoginView } from './views/LoginView';
 import { UpdatePasswordView } from './views/UpdatePasswordView';
 const AppContent: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, isSuperAdmin, isManager } = useAuth();
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.WORKSPACE);
+
+  // Protection: Ensure user can only see views they have access to
+  React.useEffect(() => {
+    if (currentView === ViewState.MANAGER && !isManager && !isSuperAdmin) {
+      setCurrentView(ViewState.WORKSPACE);
+    }
+    if (currentView === ViewState.SUPERADMIN && !isSuperAdmin) {
+      setCurrentView(ViewState.WORKSPACE);
+    }
+  }, [currentView, isManager, isSuperAdmin]);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   // Detect invitation or recovery link

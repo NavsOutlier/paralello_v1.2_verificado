@@ -10,7 +10,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) => {
-  const { signOut, user, isSuperAdmin } = useAuth();
+  const { signOut, user, isSuperAdmin, isManager } = useAuth();
 
   const NavItem = ({ view, icon: Icon, label }: { view: ViewState, icon: any, label: string }) => (
     <button
@@ -36,7 +36,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
         <NavItem view={ViewState.DASHBOARD} icon={LayoutDashboard} label="Dash" />
         <NavItem view={ViewState.WORKSPACE} icon={MessageSquare} label="Workspace" />
         <NavItem view={ViewState.KANBAN} icon={KanbanSquare} label="Tarefas" />
-        <NavItem view={ViewState.MANAGER} icon={Users} label="Manager" />
+
+        {/* Manager/Team Management - Visible only to managers or super admins */}
+        {(isManager || isSuperAdmin) && (
+          <NavItem view={ViewState.MANAGER} icon={Users} label="Manager" />
+        )}
 
         {/* Super Admin - Visible only to super admins */}
         {isSuperAdmin && (

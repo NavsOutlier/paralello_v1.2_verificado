@@ -34,7 +34,7 @@ export const TeamManagement: React.FC = () => {
                 .from('team_members')
                 .select(`
           *,
-          profile:profiles(name, email, avatar_url)
+          profile:profiles!team_members_profile_id_fkey(name, email, avatar)
         `)
                 .eq('organization_id', organizationId)
                 .is('deleted_at', null)
@@ -50,7 +50,7 @@ export const TeamManagement: React.FC = () => {
                     profile: m.profile ? {
                         name: m.profile.name,
                         email: m.profile.email,
-                        avatarUrl: m.profile.avatar_url
+                        avatarUrl: m.profile.avatar
                     } : undefined,
                     role: m.role,
                     permissions: {
@@ -58,6 +58,7 @@ export const TeamManagement: React.FC = () => {
                         canManageTasks: m.permissions?.can_manage_tasks ?? true,
                         canManageTeam: m.permissions?.can_manage_team ?? false
                     },
+                    jobTitle: m.job_title,
                     status: m.status,
                     invitedBy: m.invited_by,
                     createdAt: new Date(m.created_at),
@@ -98,6 +99,8 @@ export const TeamManagement: React.FC = () => {
                 const { data: response, error: inviteError } = await supabase.functions.invoke('invite-team-member', {
                     body: {
                         email: memberData.profile.email,
+                        name: memberData.profile.name,
+                        job_title: memberData.jobTitle,
                         role: memberData.role || 'member',
                         organization_id: organizationId,
                         invited_by: (await supabase.auth.getUser()).data.user?.id,
@@ -151,10 +154,12 @@ export const TeamManagement: React.FC = () => {
         }
     };
 
-    const filteredMembers = members.filter((member) =>
-        member.profile?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.profile?.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredMembers = members.filter((member) => {
+        const name = member.profile?.name?.toLowerCase() || '';
+        const email = member.profile?.email?.toLowerCase() || '';
+        const search = searchTerm.toLowerCase();
+        return name.includes(search) || email.includes(search);
+    });
 
     const getRoleIcon = (role: string) => {
         switch (role) {
@@ -256,7 +261,17 @@ export const TeamManagement: React.FC = () => {
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="text-sm text-slate-600">{member.profile?.email}</p>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <p className="text-sm text-slate-600">{member.profile?.email}</p>
+                                                {member.jobTitle && (
+                                                    <>
+                                                        <span className="text-slate-300">•</span>
+                                                        <span className="text-sm font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                                                            {member.jobTitle}
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </div>
                                             <div className="flex gap-3 mt-2 text-xs text-slate-500">
                                                 {member.permissions.canManageClients && (
                                                     <span>✓ Gerenciar clientes</span>

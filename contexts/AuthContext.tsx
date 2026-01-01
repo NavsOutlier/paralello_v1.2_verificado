@@ -34,10 +34,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const checkRoles = async (userId: string) => {
         try {
-            // Check super admin status
+            // 1. Get profile data (robust source for org id)
             const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
-                .select('is_super_admin')
+                .select('is_super_admin, organization_id, role')
                 .eq('id', userId)
                 .maybeSingle();
 
@@ -48,8 +48,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const isSuper = profileData?.is_super_admin ?? false;
             setIsSuperAdmin(isSuper);
 
-            // Check if user is a member/manager in any organization
-            // Note: Super admins might not be team members anywhere
+            // Set organization context from profile if available
+            if (profileData?.organization_id) {
+                setOrganizationId(profileData.organization_id);
+            }
+
+            // 2. Check team membership details
             const { data: teamData, error: teamError } = await supabase
                 .from('team_members')
                 .select('role, organization_id')
@@ -58,16 +62,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .maybeSingle();
 
             if (teamError) {
-                // If it's a real 500 error, we'll see it here, but maybeSingle handles 0 rows fine.
                 console.error('Error fetching team membership:', teamError);
             }
 
             if (teamData) {
                 setIsManager(teamData.role === 'manager');
-                setOrganizationId(teamData.organization_id);
+                if (teamData.organization_id) {
+                    setOrganizationId(teamData.organization_id);
+                }
             } else {
                 setIsManager(false);
-                setOrganizationId(null);
             }
         } catch (err) {
             console.error('Error checking user roles:', err);

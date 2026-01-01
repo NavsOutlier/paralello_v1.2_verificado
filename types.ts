@@ -122,6 +122,7 @@ export interface TeamMember {
     canManageTasks: boolean;
     canManageTeam: boolean;
   };
+  jobTitle?: string;
   status: 'active' | 'inactive' | 'pending';
   invitedBy?: string;
   createdAt: Date;

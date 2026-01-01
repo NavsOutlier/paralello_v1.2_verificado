@@ -30,7 +30,7 @@ export const Workspace: React.FC = () => {
       setLoading(true);
       const [clientsRes, teamRes, messagesRes, tasksRes] = await Promise.all([
         supabase.from('clients').select('*').eq('organization_id', organizationId).is('deleted_at', null),
-        supabase.from('team_members').select('*, profile:profiles(*)').eq('organization_id', organizationId).is('deleted_at', null),
+        supabase.from('team_members').select('*, profile:profiles!team_members_profile_id_fkey(*)').eq('organization_id', organizationId).is('deleted_at', null),
         supabase.from('messages').select('*').eq('organization_id', organizationId).order('created_at', { ascending: true }),
         supabase.from('tasks').select('*').eq('organization_id', organizationId)
       ]);
@@ -47,7 +47,7 @@ export const Workspace: React.FC = () => {
       const mappedTeam: UIUser[] = (teamRes.data || []).map(tm => ({
         id: tm.profile_id,
         name: tm.profile?.name || 'Membro',
-        avatar: tm.profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(tm.profile?.name || 'M')}&background=random`,
+        avatar: tm.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tm.profile?.name || 'M')}&background=random`,
         role: 'team',
         status: 'online'
       }));

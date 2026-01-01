@@ -44,13 +44,15 @@ export const Workspace: React.FC = () => {
         lastMessage: '' // Populate if needed
       }));
 
-      const mappedTeam: UIUser[] = (teamRes.data || []).map(tm => ({
-        id: tm.profile_id,
-        name: tm.profile?.name || 'Membro',
-        avatar: tm.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tm.profile?.name || 'M')}&background=random`,
-        role: 'team',
-        status: 'online'
-      }));
+      const mappedTeam: UIUser[] = (teamRes.data || [])
+        .filter(tm => tm.profile_id !== currentUser?.id) // Remove current user from team list
+        .map(tm => ({
+          id: tm.profile_id,
+          name: tm.profile?.name || 'Membro',
+          avatar: tm.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tm.profile?.name || 'M')}&background=random`,
+          role: 'team',
+          status: 'online'
+        }));
 
       setClients(mappedClients);
       setTeam(mappedTeam);

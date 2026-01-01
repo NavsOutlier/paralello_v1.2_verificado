@@ -3,7 +3,8 @@ export enum ViewState {
   WORKSPACE = 'workspace',
   KANBAN = 'kanban',
   MANAGER = 'manager',
-  SUPERADMIN = 'superadmin'
+  SUPERADMIN = 'superadmin',
+  UPDATE_PASSWORD = 'update_password'
 }
 
 export interface User {

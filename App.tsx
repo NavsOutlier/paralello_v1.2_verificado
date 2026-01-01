@@ -9,9 +9,19 @@ import { ManagerDashboard } from './components/manager/ManagerDashboard';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { LoginView } from './views/LoginView';
+import { UpdatePasswordView } from './views/UpdatePasswordView';
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.WORKSPACE);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+  // Detect invitation or recovery link
+  React.useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && (hash.includes('type=invite') || hash.includes('type=recovery') || hash.includes('access_token='))) {
+      setIsUpdatingPassword(true);
+    }
+  }, []);
 
   if (loading) {
     return <div className="h-screen flex items-center justify-center bg-slate-100 text-slate-400">Carregando...</div>;
@@ -33,6 +43,14 @@ const AppContent: React.FC = () => {
         {currentView === ViewState.KANBAN && <Kanban />}
         {currentView === ViewState.MANAGER && <ManagerDashboard />}
         {currentView === ViewState.SUPERADMIN && <SuperAdminDashboard />}
+        {isUpdatingPassword && (
+          <div className="absolute inset-0 z-[100] bg-white">
+            <UpdatePasswordView onSuccess={() => {
+              setIsUpdatingPassword(false);
+              window.location.hash = ''; // Clear hash
+            }} />
+          </div>
+        )}
       </main>
     </div>
   );

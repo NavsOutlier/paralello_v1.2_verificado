@@ -64,6 +64,7 @@ export const Workspace: React.FC = () => {
       }).map(m => {
         const mapped = {
           ...m,
+          senderId: m.sender_id,
           channelId: m.channel_id || m.client_id || m.task_id || m.dm_channel_id,
           timestamp: new Date(m.created_at)
         };
@@ -120,6 +121,7 @@ export const Workspace: React.FC = () => {
               if (prev.some(m => m.id === newMsg.id)) return prev;
               const mapped = {
                 ...newMsg,
+                senderId: newMsg.sender_id,
                 channelId: newMsg.channel_id || newMsg.client_id || newMsg.task_id,
                 timestamp: new Date(newMsg.created_at)
               };
@@ -132,6 +134,7 @@ export const Workspace: React.FC = () => {
             const updatedMsg = payload.new as any;
             setAllMessages(prev => prev.map(m => m.id === updatedMsg.id ? {
               ...updatedMsg,
+              senderId: updatedMsg.sender_id,
               channelId: updatedMsg.channel_id || updatedMsg.client_id || updatedMsg.task_id || (updatedMsg.context_type === 'DIRECT_MESSAGE' ? (updatedMsg.sender_id === currentUser?.id ? updatedMsg.dm_channel_id : updatedMsg.sender_id) : undefined),
               timestamp: new Date(updatedMsg.created_at)
             } : m));
@@ -228,6 +231,7 @@ export const Workspace: React.FC = () => {
           if (prev.some(m => m.id === data.id)) return prev;
           return [...prev, {
             ...data,
+            senderId: data.sender_id,
             channelId: data.channel_id || data.client_id || data.dm_channel_id,
             timestamp: new Date(data.created_at)
           }];

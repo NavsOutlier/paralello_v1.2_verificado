@@ -64,6 +64,8 @@ export const Kanban: React.FC = () => {
 
       setTasks((tasksRes.data || []).map(t => ({
         ...t,
+        clientId: t.client_id,
+        assigneeId: t.assignee_id,
         clientName: clientMap.get(t.client_id) || 'Cliente Desconhecido'
       })));
     } catch (error) {

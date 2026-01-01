@@ -58,16 +58,52 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
 
             <div className="flex-1 overflow-y-auto p-4">
                 <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm mb-6">
-                    <div className="flex items-start justify-between mb-2">
-                        <h2 className="text-lg font-bold text-slate-800">{task.title}</h2>
-                        <Badge
-                            variant={task.status === 'done' ? 'success' : task.status === 'todo' ? 'default' : 'warning'}
-                            size="sm"
-                        >
-                            {task.status.toUpperCase()}
-                        </Badge>
+                    <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                            <h2 className="text-lg font-bold text-slate-800 mb-1">{task.title}</h2>
+                            <span className="text-xs text-slate-400">ID: {task.id}</span>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                            <select
+                                value={task.status}
+                                onChange={(e) => onUpdateTask(task.id, { status: e.target.value as any })}
+                                className="text-xs font-bold border rounded px-2 py-1 bg-white focus:ring-1 focus:ring-indigo-500"
+                            >
+                                <option value="todo">A FAZER</option>
+                                <option value="in-progress">EM PROGRESSO</option>
+                                <option value="review">REVISÃO</option>
+                                <option value="done">CONCLUÍDO</option>
+                            </select>
+                            <Badge
+                                variant={task.status === 'done' ? 'success' : task.status === 'todo' ? 'default' : 'warning'}
+                                size="sm"
+                            >
+                                {task.status.toUpperCase()}
+                            </Badge>
+                        </div>
                     </div>
-                    <span className="text-xs text-slate-400">ID: {task.id}</span>
+
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                        <div>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Responsável</span>
+                            <select
+                                value={task.assigneeId || ''}
+                                onChange={(e) => onUpdateTask(task.id, { assigneeId: e.target.value || undefined })}
+                                className="w-full text-xs border rounded px-2 py-1.5 bg-white focus:ring-1 focus:ring-indigo-500"
+                            >
+                                <option value="">Sem responsável</option>
+                                {teamMembers.map(m => (
+                                    <option key={m.id} value={m.id}>{m.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Prioridade</span>
+                            <Badge variant={task.priority === 'high' ? 'danger' : task.priority === 'medium' ? 'warning' : 'default'} size="sm">
+                                {task.priority.toUpperCase()}
+                            </Badge>
+                        </div>
+                    </div>
                 </div>
 
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Chat da Tarefa</h3>

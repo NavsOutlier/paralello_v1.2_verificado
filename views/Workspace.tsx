@@ -72,6 +72,8 @@ export const Workspace: React.FC = () => {
       }));
       setAllTasks((tasksRes.data || []).map(t => ({
         ...t,
+        clientId: t.client_id,
+        assigneeId: t.assignee_id,
         createdAt: new Date(t.created_at)
       })));
 
@@ -153,7 +155,12 @@ export const Workspace: React.FC = () => {
             });
           } else if (payload.eventType === 'UPDATE') {
             const updatedTask = payload.new as any;
-            setAllTasks(prev => prev.map(t => t.id === updatedTask.id ? { ...updatedTask, createdAt: new Date(updatedTask.created_at) } : t));
+            setAllTasks(prev => prev.map(t => t.id === updatedTask.id ? {
+              ...updatedTask,
+              clientId: updatedTask.client_id,
+              assigneeId: updatedTask.assignee_id,
+              createdAt: new Date(updatedTask.created_at)
+            } : t));
           } else if (payload.eventType === 'DELETE') {
             setAllTasks(prev => prev.filter(t => t.id === payload.old.id));
           }
@@ -229,6 +236,29 @@ export const Workspace: React.FC = () => {
     }
   };
 
+  const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
+    if (!organizationId) return;
+
+    try {
+      const payload: any = {};
+      if (updates.status) payload.status = updates.status;
+      if (updates.priority) payload.priority = updates.priority;
+      if (updates.title) payload.title = updates.title;
+      if (updates.assigneeId !== undefined) payload.assignee_id = updates.assigneeId;
+
+      const { error } = await supabase
+        .from('tasks')
+        .update(payload)
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      // Updates will be reflected via Realtime
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
+  };
+
   const handleCreateTask = async (title: string, priority: 'low' | 'medium' | 'high') => {
     if (!selectedEntityId || !discussionDraft || !organizationId) return;
 
@@ -277,7 +307,6 @@ export const Workspace: React.FC = () => {
       const { data, error } = await supabase.from('messages').insert({
         organization_id: organizationId,
         task_id: taskId,
-        channel_id: taskId,
         context_type: 'TASK_INTERNAL',
         sender_id: currentUser.id,
         sender_type: 'MEMBER',
@@ -306,7 +335,6 @@ export const Workspace: React.FC = () => {
       const { data, error } = await supabase.from('messages').insert({
         organization_id: organizationId,
         task_id: taskId,
-        channel_id: taskId,
         context_type: 'TASK_INTERNAL',
         sender_id: currentUser.id,
         sender_type: 'MEMBER',
@@ -368,6 +396,7 @@ export const Workspace: React.FC = () => {
             onAttachTaskFromDraft={handleAttachTask}
             onNavigateToMessage={(id) => setHighlightedMessageId(id)}
             onAddTaskComment={handleAddTaskComment}
+            onUpdateTask={handleUpdateTask}
           />
         ) : (
           <div className="p-10 text-center text-slate-400">Selecione um cliente para ver tarefas.</div>

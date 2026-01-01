@@ -21,7 +21,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     highlightedMessageId,
     teamMembers // Adding this as well to resolve member names in chat
 }) => {
-    const { user: currentUser } = useAuth();
+    const { user: currentUser, isSuperAdmin, permissions } = useAuth();
+    const canManageTasks = isSuperAdmin || permissions?.can_manage_tasks;
     const [text, setText] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -76,7 +77,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                                 ? entity.name
                                 : teamMembers.find(t => t.id === msg.senderId)?.name || 'Membro'
                         }
-                        onInitiateDiscussion={onInitiateDiscussion}
+                        onInitiateDiscussion={canManageTasks ? onInitiateDiscussion : undefined}
                         messageRef={(el) => messageRefs.current[msg.id] = el}
                     />
                 ))}

@@ -8,7 +8,8 @@ import { useToast } from '../../contexts/ToastContext';
 import { Users, Plus, Search, Edit2, Trash2, Phone, Mail, Loader2 } from 'lucide-react';
 
 export const ClientManagement: React.FC = () => {
-    const { organizationId } = useAuth();
+    const { organizationId, isSuperAdmin, permissions } = useAuth();
+    const canManage = isSuperAdmin || permissions?.can_manage_clients;
     const { showToast } = useToast();
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
@@ -145,16 +146,18 @@ export const ClientManagement: React.FC = () => {
                             <p className="text-sm text-slate-500">{clients.length} cliente(s) cadastrado(s)</p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => {
-                            setSelectedClient(undefined);
-                            setIsFormOpen(true);
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Novo Cliente
-                    </button>
+                    {canManage && (
+                        <button
+                            onClick={() => {
+                                setSelectedClient(undefined);
+                                setIsFormOpen(true);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Novo Cliente
+                        </button>
+                    )}
                 </div>
 
                 {/* Search */}
@@ -202,23 +205,25 @@ export const ClientManagement: React.FC = () => {
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="flex gap-1">
-                                        <button
-                                            onClick={() => {
-                                                setSelectedClient(client);
-                                                setIsFormOpen(true);
-                                            }}
-                                            className="p-1.5 text-slate-600 hover:bg-slate-100 rounded transition-colors"
-                                        >
-                                            <Edit2 className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => setDeleteDialog({ isOpen: true, client })}
-                                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
+                                    {canManage && (
+                                        <div className="flex gap-1">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedClient(client);
+                                                    setIsFormOpen(true);
+                                                }}
+                                                className="p-1.5 text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                                            >
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => setDeleteDialog({ isOpen: true, client })}
+                                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-2 text-sm">

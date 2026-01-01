@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, CheckCircle2 } from 'lucide-react';
 import { Task, Message, DiscussionDraft } from '../../types';
+import { useAuth } from '../../contexts/AuthContext';
 import { TaskCard } from './TaskCard';
 import { TaskDetail } from './TaskDetail';
 import { TaskCreation } from './TaskCreation';
@@ -18,6 +19,8 @@ interface TaskManagerProps {
 }
 
 export const TaskManager: React.FC<TaskManagerProps> = (props) => {
+    const { isSuperAdmin, permissions } = useAuth();
+    const canManage = isSuperAdmin || permissions?.can_manage_tasks;
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
     if (props.discussionDraft) {
@@ -48,9 +51,11 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
         <div className="flex flex-col h-full bg-slate-50 border-l border-slate-200">
             <div className="h-16 flex items-center justify-between px-4 bg-white border-b border-slate-200">
                 <h3 className="font-bold text-slate-800">Tarefas</h3>
-                <button className="text-indigo-600 hover:bg-indigo-50 p-2 rounded-full">
-                    <Plus className="w-5 h-5" />
-                </button>
+                {canManage && (
+                    <button className="text-indigo-600 hover:bg-indigo-50 p-2 rounded-full">
+                        <Plus className="w-5 h-5" />
+                    </button>
+                )}
             </div>
             <div className="flex-1 overflow-y-auto p-4">
                 {props.tasks.length === 0 ? (

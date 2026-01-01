@@ -8,7 +8,8 @@ import { useToast } from '../../contexts/ToastContext';
 import { UserPlus, Search, Edit2, Trash2, Shield, User, Eye, Loader2 } from 'lucide-react';
 
 export const TeamManagement: React.FC = () => {
-    const { organizationId } = useAuth();
+    const { organizationId, isSuperAdmin, permissions } = useAuth();
+    const canManage = isSuperAdmin || permissions?.can_manage_team;
     const { showToast } = useToast();
     const [members, setMembers] = useState<TeamMember[]>([]);
     const [loading, setLoading] = useState(true);
@@ -201,16 +202,18 @@ export const TeamManagement: React.FC = () => {
                             <p className="text-sm text-slate-500">{members.length} membro(s) na equipe</p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => {
-                            setSelectedMember(undefined);
-                            setIsFormOpen(true);
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                    >
-                        <UserPlus className="w-4 h-4" />
-                        Convidar Membro
-                    </button>
+                    {canManage && (
+                        <button
+                            onClick={() => {
+                                setSelectedMember(undefined);
+                                setIsFormOpen(true);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                        >
+                            <UserPlus className="w-4 h-4" />
+                            Convidar Membro
+                        </button>
+                    )}
                 </div>
 
                 {/* Search */}
@@ -285,23 +288,25 @@ export const TeamManagement: React.FC = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex gap-1">
-                                        <button
-                                            onClick={() => {
-                                                setSelectedMember(member);
-                                                setIsFormOpen(true);
-                                            }}
-                                            className="p-2 text-slate-600 hover:bg-slate-100 rounded transition-colors"
-                                        >
-                                            <Edit2 className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => setDeleteDialog({ isOpen: true, member })}
-                                            className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
+                                    {canManage && (
+                                        <div className="flex gap-1">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedMember(member);
+                                                    setIsFormOpen(true);
+                                                }}
+                                                className="p-2 text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                                            >
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => setDeleteDialog({ isOpen: true, member })}
+                                                className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}

@@ -19,7 +19,8 @@ const priorityVariantMap = {
 };
 
 export const Kanban: React.FC = () => {
-  const { organizationId } = useAuth();
+  const { organizationId, isSuperAdmin, permissions } = useAuth();
+  const canManage = isSuperAdmin || permissions?.can_manage_tasks;
   const [tasks, setTasks] = useState<(Task & { clientName?: string })[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -76,9 +77,11 @@ export const Kanban: React.FC = () => {
     <div className="flex-1 p-6 bg-slate-50 overflow-x-auto h-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-slate-800">Quadro de Tarefas</h1>
-        <Button icon={<Plus className="w-4 h-4" />}>
-          Nova Tarefa
-        </Button>
+        {canManage && (
+          <Button icon={<Plus className="w-4 h-4" />}>
+            Nova Tarefa
+          </Button>
+        )}
       </div>
 
       <div className="flex-1 flex gap-6 min-w-[1000px]">

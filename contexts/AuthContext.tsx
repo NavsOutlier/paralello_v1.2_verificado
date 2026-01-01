@@ -8,6 +8,11 @@ interface AuthContextType {
     isSuperAdmin: boolean;
     isManager: boolean;
     organizationId: string | null;
+    permissions: {
+        can_manage_clients: boolean;
+        can_manage_tasks: boolean;
+        can_manage_team: boolean;
+    } | null;
     loading: boolean;
     signOut: () => Promise<void>;
 }
@@ -18,6 +23,7 @@ const AuthContext = createContext<AuthContextType>({
     isSuperAdmin: false,
     isManager: false,
     organizationId: null,
+    permissions: null,
     loading: true,
     signOut: async () => { },
 });
@@ -30,6 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [isSuperAdmin, setIsSuperAdmin] = useState(false);
     const [isManager, setIsManager] = useState(false);
     const [organizationId, setOrganizationId] = useState<string | null>(null);
+    const [permissions, setPermissions] = useState<AuthContextType['permissions']>(null);
     const [loading, setLoading] = useState(true);
 
     const checkRoles = async (userId: string) => {
@@ -56,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // 2. Check team membership details
             const { data: teamData, error: teamError } = await supabase
                 .from('team_members')
-                .select('role, organization_id')
+                .select('role, organization_id, permissions')
                 .eq('profile_id', userId)
                 .eq('status', 'active')
                 .maybeSingle();
@@ -70,8 +77,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (teamData.organization_id) {
                     setOrganizationId(teamData.organization_id);
                 }
+                setPermissions(teamData.permissions);
             } else {
                 setIsManager(false);
+                setPermissions(null);
             }
         } catch (err) {
             console.error('Error checking user roles:', err);
@@ -104,6 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setIsSuperAdmin(false);
                 setIsManager(false);
                 setOrganizationId(null);
+                setPermissions(null);
             }
             setLoading(false);
         });
@@ -121,6 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isSuperAdmin,
         isManager,
         organizationId,
+        permissions,
         loading,
         signOut,
     };

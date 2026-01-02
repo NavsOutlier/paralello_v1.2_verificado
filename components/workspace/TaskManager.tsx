@@ -30,6 +30,8 @@ interface TaskManagerProps {
     checklistTemplates: ChecklistTemplate[];
     onCreateChecklistTemplate: (name: string, items: ChecklistItem[]) => void;
     onDeleteChecklistTemplate: (templateId: string) => void;
+    selectedTask?: Task | null;
+    onSelectTask?: (task: Task | null) => void;
 }
 
 type StatusFilter = 'all' | 'todo' | 'in-progress' | 'review' | 'done' | 'archived';
@@ -37,7 +39,16 @@ type StatusFilter = 'all' | 'todo' | 'in-progress' | 'review' | 'done' | 'archiv
 export const TaskManager: React.FC<TaskManagerProps> = (props) => {
     const { isSuperAdmin, permissions } = useAuth();
     const canManage = isSuperAdmin || permissions?.can_manage_tasks;
-    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    const [internalSelectedTask, setInternalSelectedTask] = useState<Task | null>(null);
+
+    const selectedTask = props.selectedTask !== undefined ? props.selectedTask : internalSelectedTask;
+    const handleSelectTask = (t: Task | null) => {
+        if (props.onSelectTask) {
+            props.onSelectTask(t);
+        } else {
+            setInternalSelectedTask(t);
+        }
+    };
 
     // Filter State
     const [searchQuery, setSearchQuery] = useState('');
@@ -52,7 +63,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
         props.onAttachTaskFromDraft(taskId, comment);
         const task = props.tasks.find(t => t.id === taskId);
         if (task) {
-            setSelectedTask(task);
+            handleSelectTask(task);
         }
     };
 
@@ -75,7 +86,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
         return <TaskDetail
             task={currentTask}
             messages={props.allMessages.filter(m => m.taskId === currentTask.id)}
-            onBack={() => setSelectedTask(null)}
+            onBack={() => handleSelectTask(null)}
             onNavigateToMessage={props.onNavigateToMessage}
             onAddComment={(text) => props.onAddTaskComment(currentTask.id, text)}
             onUpdateTask={props.onUpdateTask}
@@ -320,7 +331,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                                     messageCount={count}
                                     assignee={assignee}
                                     notificationCount={index === 0 ? 0 : 0}
-                                    onClick={() => setSelectedTask(t)}
+                                    onClick={() => handleSelectTask(t)}
                                 />
                             );
                         })}

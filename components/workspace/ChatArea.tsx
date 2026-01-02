@@ -11,6 +11,8 @@ interface ChatAreaProps {
     onInitiateDiscussion: (msg: Message) => void;
     highlightedMessageId: string | null;
     teamMembers: UIUser[];
+    onNavigateToTask: (taskId: string) => void;
+    linkedTaskMap?: Record<string, string>;
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({
@@ -19,7 +21,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     onSendMessage,
     onInitiateDiscussion,
     highlightedMessageId,
-    teamMembers // Adding this as well to resolve member names in chat
+    teamMembers,
+    onNavigateToTask,
+    linkedTaskMap = {}
 }) => {
     const { user: currentUser, isSuperAdmin, permissions } = useAuth();
     const canManageTasks = isSuperAdmin || permissions?.can_manage_tasks;
@@ -100,6 +104,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                         onInitiateDiscussion={canManageTasks ? onInitiateDiscussion : undefined}
                         messageRef={(el) => messageRefs.current[msg.id] = el}
                         colorScheme="green"
+                        onNavigateToLinked={onNavigateToTask}
+                        linkedTaskId={linkedTaskMap[msg.id]}
                     />
                 ))}
                 <div ref={messagesEndRef} />

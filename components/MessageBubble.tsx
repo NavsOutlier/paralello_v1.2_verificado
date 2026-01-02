@@ -1,18 +1,17 @@
 import React from 'react';
-import { MessageSquarePlus, Link as LinkIcon } from 'lucide-react';
+import { MessageSquarePlus, Link as LinkIcon, Check } from 'lucide-react';
 import { Message } from '../types';
 
 interface MessageBubbleProps {
   msg: Message;
   isMe: boolean;
-  senderName?: string;
+  senderName: string;
   senderJobTitle?: string;
-  onInitiateDiscussion?: (msg: Message) => void;
-  onNavigateToLinked?: (id: string) => void;
+  onInitiateDiscussion?: (message: Message) => void;
   messageRef?: (el: HTMLDivElement | null) => void;
   colorScheme?: 'green' | 'indigo'; // 'green' for client chat, 'indigo' for task chat
-  linkedMessage?: Message;
-  linkedMessageSenderName?: string;
+  onNavigateToLinked?: (id: string) => void;
+  linkedTaskId?: string;
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -21,34 +20,75 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   senderName,
   senderJobTitle,
   onInitiateDiscussion,
-  onNavigateToLinked,
   messageRef,
   colorScheme = 'indigo', // Default to indigo
-  linkedMessage,
-  linkedMessageSenderName
+  onNavigateToLinked,
+  linkedTaskId
 }) => {
   // Color configurations
   const colors = {
-    green: {
-      myBubble: 'bg-[#dcf8c6] text-slate-800', // WhatsApp green
-      myTime: 'text-slate-500',
-      senderName: 'text-emerald-700',
-      linkedBg: 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800'
-    },
     indigo: {
       myBubble: 'bg-indigo-600 text-white',
-      myTime: 'text-indigo-200',
-      senderName: 'text-indigo-600',
-      linkedBg: 'bg-indigo-700 hover:bg-indigo-800 text-indigo-100'
+      senderName: 'text-indigo-900',
+      myTime: 'text-indigo-100',
+    },
+    green: {
+      myBubble: 'bg-emerald-600 text-white',
+      senderName: 'text-emerald-900',
+      myTime: 'text-emerald-100',
     }
   };
 
   const scheme = colors[colorScheme];
 
+  // Mock lookup for linked message (visual only)
+  const linkedMessage = msg.linkedMessageId ? { text: "Mensagem original..." } : null;
+
+  // If this message created a task, we render a special card design
+  if (linkedTaskId) {
+    return (
+      <div
+        ref={messageRef}
+        className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} transition-all duration-300 mb-2`}
+      >
+        <div
+          onClick={() => onNavigateToLinked?.(linkedTaskId)}
+          className={`
+            relative max-w-[85%] rounded-r-lg rounded-bl-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow bg-white
+            border-l-[4px] border-cyan-500
+          `}
+        >
+          {/* Header */}
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-5 h-5 bg-cyan-50 rounded-full flex items-center justify-center shrink-0">
+              <Check className="w-3 h-3 text-cyan-500 font-bold" strokeWidth={3} />
+            </div>
+            <span className="text-[10px] font-bold text-cyan-600 tracking-wider uppercase">TAREFA CRIADA</span>
+          </div>
+
+          {/* Linked Message Context (if any) */}
+          {linkedMessage && msg.linkedMessageId && (
+            <div className="mb-2 border-l-[3px] border-slate-200 pl-2 py-0.5">
+              <div className="text-[10px] text-slate-500 italic">Mensagem Vinculada</div>
+            </div>
+          )}
+
+          {/* Main Content */}
+          <p className="whitespace-pre-line leading-relaxed text-slate-700 text-sm">{msg.text.replace('Tarefa Criada: ', '')}</p>
+
+          {/* Timestamp */}
+          <div className="text-[10px] mt-1 text-right text-slate-400">
+            {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={messageRef}
-      className={`group flex ${isMe ? 'justify-end' : 'justify-start'} transition-all duration-300`}
+      className={`group flex flex-col ${isMe ? 'items-end' : 'items-start'} transition-all duration-300 mb-2`}
     >
       <div
         onClick={() => msg.linkedMessageId && onNavigateToLinked?.(msg.linkedMessageId)}
@@ -62,18 +102,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           } ${msg.linkedMessageId ? 'cursor-pointer hover:opacity-90 active:scale-[0.98] transition-transform' : ''}`}>
 
         {/* Linked Message Quote (Reply Block) */}
-        {linkedMessage && (
+        {linkedMessage && msg.linkedMessageId && (
           <div className={`mb-2 border-l-[3px] pl-2 py-0.5 rounded-r ${isMe && colorScheme === 'indigo'
-              ? 'border-indigo-300 bg-indigo-500/20'
-              : 'border-blue-500 bg-blue-50/50'
+            ? 'border-indigo-300 bg-indigo-500/20'
+            : 'border-blue-500 bg-blue-50/50'
             }`}>
             <div className={`text-[11px] font-bold mb-0.5 ${isMe && colorScheme === 'indigo' ? 'text-indigo-200' : 'text-blue-600'
               }`}>
-              {linkedMessageSenderName || 'Usuário'}
-            </div>
-            <div className={`text-[11px] line-clamp-2 italic ${isMe && colorScheme === 'indigo' ? 'text-indigo-100/90' : 'text-slate-500'
-              }`}>
-              {linkedMessage.text}
+              Mensagem Vinculada
             </div>
           </div>
         )}
@@ -87,18 +123,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           </div>
         )}
 
-        <p className="whitespace-pre-line">{msg.text}</p>
+        <p className="whitespace-pre-line leading-relaxed">{msg.text}</p>
 
         <div className={`text-[10px] mt-1 text-right ${isMe && !msg.isInternal ? scheme.myTime : 'text-slate-400'}`}>
           {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
 
-        {/* Hover Action: Create Discussion (Only shown in main chat context) */}
-        {onInitiateDiscussion && (
+        {/* Hover Action: Create Discussion (Only shown in main chat context AND if not already a task) */}
+        {onInitiateDiscussion && !linkedTaskId && !msg.isInternal && (
           <button
-            onClick={() => onInitiateDiscussion(msg)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onInitiateDiscussion(msg);
+            }}
             className="absolute -top-3 -right-3 hidden group-hover:flex items-center justify-center bg-white shadow-md border border-slate-100 rounded-full p-1.5 text-slate-500 hover:text-indigo-600 transition-colors tooltip z-10"
-            title="Criar Discussão Interna / Task"
+            title="Criar Task desta mensagem"
           >
             <MessageSquarePlus className="w-4 h-4" />
           </button>

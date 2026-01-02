@@ -30,6 +30,7 @@ export const Workspace: React.FC = () => {
 
   // UI State
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [discussionDraft, setDiscussionDraft] = useState<DiscussionDraft | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(380);
@@ -79,6 +80,18 @@ export const Workspace: React.FC = () => {
   const selectedEntity = [...clients, ...team].find(e => e.id === selectedEntityId) || null;
   const currentChatMessages = allMessages.filter(m => m.channelId === selectedEntityId);
   const currentEntityTasks = allTasks.filter(t => t.clientId === selectedEntityId);
+  const selectedTask = allTasks.find(t => t.id === selectedTaskId) || null;
+
+  // Map of Message ID -> Task ID for messages that have been turned into tasks
+  const linkedTaskMap = React.useMemo(() => {
+    const map: Record<string, string> = {};
+    allMessages.forEach(m => {
+      if (m.linkedMessageId && m.taskId && m.isInternal) {
+        map[m.linkedMessageId] = m.taskId;
+      }
+    });
+    return map;
+  }, [allMessages]);
 
   const handleCreateTaskFromDraft = async (data: {
     title: string;
@@ -148,6 +161,44 @@ export const Workspace: React.FC = () => {
         isInternal: msgData.is_internal,
         linkedMessageId: msgData.linked_message_id
       });
+
+      // 4. Notify in Client Chat (WhatsApp Feed)
+      if (taskData) {
+        // We use createMessage directly or createContextMessage with Client context
+        const notifData = await createContextMessage({
+          organization_id: organizationId,
+          // For WHATSAPP_FEED context, channel_id usually equals client_id (selectedEntityId)
+          // But here createContextMessage helper might expect task_id if context is TASK_INTERNAL.
+          // Let's rely on the backend to handle 'WHATSAPP_FEED' correctly if we pass client_id as channel_id?
+          // The current createContextMessage definition in useWorkspaceData mainly sets up for tasks.
+          // Let's check useWorkspaceData definition.
+          // Actually, let's use sendMessage directly if possible, or createContextMessage with appropriate overrides.
+          // Since useWorkspaceData's createContextMessage is typed for tasks, let's assume we can use it or sendMessage.
+          // sendMessage enforces WHATSAPP_FEED? No, sendMessage takes text and client.
+          // We need custom fields (is_internal, task_id).
+          client_id: selectedEntityId, // Explicitly set client_id for WHATSAPP_FEED
+          context_type: 'WHATSAPP_FEED',
+          sender_id: currentUser?.id,
+          sender_type: 'MEMBER',
+          text: `Tarefa Criada: ${taskData.title}`,
+          is_internal: true,
+          task_id: taskData.id // Link to the task
+        });
+
+        // Update local state for the notification
+        manualUpdateState('messages', {
+          id: notifData.id,
+          channelId: selectedEntityId, // Main chat
+          taskId: taskData.id, // Linked task
+          contextType: 'WHATSAPP_FEED',
+          senderType: 'MEMBER',
+          senderId: currentUser.id,
+          text: notifData.text,
+          timestamp: new Date(notifData.created_at),
+          isInternal: true,
+          linkedMessageId: null
+        });
+      }
 
       setDiscussionDraft(null);
     } catch (error) {
@@ -234,6 +285,8 @@ export const Workspace: React.FC = () => {
           onSendMessage={(text) => selectedEntity && sendMessage(text, selectedEntity)}
           onInitiateDiscussion={(msg) => setDiscussionDraft({ sourceMessage: msg, mode: 'new' })}
           highlightedMessageId={highlightedMessageId}
+          onNavigateToTask={(taskId) => setSelectedTaskId(taskId)}
+          linkedTaskMap={linkedTaskMap}
         />
       </div>
 
@@ -263,6 +316,8 @@ export const Workspace: React.FC = () => {
             checklistTemplates={checklistTemplates}
             onCreateChecklistTemplate={createChecklistTemplate}
             onDeleteChecklistTemplate={deleteChecklistTemplate}
+            selectedTask={selectedTask}
+            onSelectTask={(t) => setSelectedTaskId(t ? t.id : null)}
           />
         ) : (
           <div className="p-10 text-center text-slate-400">Selecione um cliente para ver tarefas.</div>

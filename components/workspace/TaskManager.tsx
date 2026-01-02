@@ -208,10 +208,18 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                                     <div className="py-1">
                                         <button onClick={() => { setStatusFilter('all'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${statusFilter === 'all' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>Todos</button>
                                         <div className="h-px bg-slate-100 my-1" />
-                                        <button onClick={() => { setStatusFilter('todo'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${statusFilter === 'todo' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>Pendente</button>
-                                        <button onClick={() => { setStatusFilter('in-progress'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${statusFilter === 'in-progress' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>Em Progresso</button>
-                                        <button onClick={() => { setStatusFilter('review'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${statusFilter === 'review' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>Revisão</button>
-                                        <button onClick={() => { setStatusFilter('done'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${statusFilter === 'done' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>Concluído</button>
+                                        <button onClick={() => { setStatusFilter('todo'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 ${statusFilter === 'todo' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>
+                                            <div className="w-2 h-2 rounded-full bg-amber-400" /> Pendente
+                                        </button>
+                                        <button onClick={() => { setStatusFilter('in-progress'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 ${statusFilter === 'in-progress' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>
+                                            <div className="w-2 h-2 rounded-full bg-blue-400" /> Em Progresso
+                                        </button>
+                                        <button onClick={() => { setStatusFilter('review'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 ${statusFilter === 'review' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>
+                                            <div className="w-2 h-2 rounded-full bg-indigo-400" /> Revisão
+                                        </button>
+                                        <button onClick={() => { setStatusFilter('done'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 ${statusFilter === 'done' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>
+                                            <div className="w-2 h-2 rounded-full bg-emerald-400" /> Concluído
+                                        </button>
                                         <div className="h-px bg-slate-100 my-1" />
                                         <button onClick={() => { setStatusFilter('archived'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 ${statusFilter === 'archived' ? 'font-bold text-rose-600' : 'text-slate-600'}`}>
                                             <Archive className="w-3 h-3" /> Arquivadas
@@ -359,19 +367,17 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                     </div>
                 ) : (
                     <div className="space-y-2">
-                        {filteredTasks.map((t, index) => {
-                            const count = props.allMessages.filter(m => m.channelId === t.id).length;
-                            const currentAssigneeIds = t.assigneeIds || (t.assigneeId ? [t.assigneeId] : []);
-                            const assignees = props.teamMembers.filter(m => currentAssigneeIds.includes(m.id));
+                        {filteredTasks.map((task, index) => {
+                            const currentAssigneeIds = task.assigneeIds || (task.assigneeId ? [task.assigneeId] : []);
 
                             return (
                                 <TaskCard
-                                    key={t.id}
-                                    task={t}
-                                    messageCount={count}
-                                    assignees={assignees}
-                                    notificationCount={index === 0 ? 0 : 0}
-                                    onClick={() => handleSelectTask(t)}
+                                    key={task.id}
+                                    task={task}
+                                    messageCount={props.allMessages.filter(m => m.taskId === task.id && m.contextType === 'TASK_INTERNAL').length}
+                                    onClick={() => handleSelectTask(task)}
+                                    assignees={props.teamMembers.filter(m => currentAssigneeIds.includes(m.id))}
+                                    onUpdateTask={props.onUpdateTask}
                                 />
                             );
                         })}

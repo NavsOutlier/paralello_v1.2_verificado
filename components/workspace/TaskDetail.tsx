@@ -25,10 +25,10 @@ const getTagColor = (tag: string) => {
 };
 
 const statusConfig = {
-    'done': { label: 'APROVADO', color: 'bg-emerald-500', text: 'text-emerald-600', bg: 'bg-emerald-50' },
-    'in-progress': { label: 'EM PROGRESSO', color: 'bg-blue-500', text: 'text-blue-600', bg: 'bg-blue-50' },
-    'todo': { label: 'PENDENTE', color: 'bg-amber-500', text: 'text-amber-600', bg: 'bg-amber-50' },
-    'review': { label: 'REVISÃO', color: 'bg-indigo-500', text: 'text-indigo-600', bg: 'bg-indigo-50' },
+    'done': { label: 'APROVADO', color: 'bg-emerald-400', text: 'text-emerald-600', bg: 'bg-emerald-50/50' },
+    'in-progress': { label: 'EM PROGRESSO', color: 'bg-blue-400', text: 'text-blue-600', bg: 'bg-blue-50/50' },
+    'todo': { label: 'PENDENTE', color: 'bg-amber-400', text: 'text-amber-600', bg: 'bg-amber-50/50' },
+    'review': { label: 'REVISÃO', color: 'bg-indigo-400', text: 'text-indigo-600', bg: 'bg-indigo-50/50' },
 };
 
 interface TaskDetailProps {
@@ -195,11 +195,28 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
 
     if (isArchived) {
         return (
-            <div className="flex flex-col h-full bg-white opacity-75">
-                <div className="h-[46px] flex items-center justify-between px-3 border-b border-slate-100">
-                    <button onClick={onBack}><ArrowLeft className="w-5 h-5 text-slate-500" /></button>
-                    <span className="text-slate-500 font-bold text-sm">Tarefa Arquivada</span>
-                    <button onClick={() => onUpdateTask(task.id, { archivedAt: null as any })} className="text-indigo-600 text-xs font-bold">Desarquivar</button>
+            <div className={`flex flex-col h-full ${config.bg} transition-colors duration-300`}>
+                <div className={`h-[52px] flex items-center justify-between px-4 border-b ${config.color.replace('bg-', 'border-').replace('500', '100')} bg-white/50 backdrop-blur-sm`}>
+                    <button
+                        onClick={onBack}
+                        className="p-1.5 hover:bg-white rounded-lg transition-colors text-slate-500 hover:text-indigo-600"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                        <span className={`px-2.5 py-1 rounded-md text-[10px] font-black tracking-wider uppercase ${config.bg.replace('50', '100')} ${config.text}`}>
+                            {config.label}
+                        </span>
+                        <div className="h-4 w-px bg-slate-200 mx-1" />
+                        <button
+                            onClick={handleArchive}
+                            className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors"
+                            title="Arquivar Tarefa"
+                        >
+                            <Archive className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
                 <div className="flex-1 flex items-center justify-center p-8 text-center text-slate-400 text-sm">
                     Esta tarefa foi arquivada. Restaure-a para visualizar.
@@ -354,52 +371,56 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
                             <MessageSquare className="w-3 h-3 text-slate-500" />
                             <span className="text-[10px] font-bold text-slate-600">{messages.length}</span>
                         </div>
-                        <div className="h-4 w-[1px] bg-slate-100 mr-1" />
-                        <div className="relative">
-                            <div
-                                onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-                                className={`flex items-center gap-2 px-2.5 py-1 ${config.bg} rounded-xl border border-black/[0.03] cursor-pointer`}
-                            >
-                                <span className={`text-[9px] font-black tracking-tight ${config.text}`}>{config.label}</span>
-                                <ChevronDown className={`w-3 h-3 ${config.text} opacity-50`} />
-                            </div>
-
-                            {isStatusDropdownOpen && (
-                                <>
-                                    <div className="fixed inset-0 z-20" onClick={() => setIsStatusDropdownOpen(false)} />
-                                    <div className="absolute top-full right-0 mt-2 w-32 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-30 animate-in fade-in zoom-in-95 duration-100">
-                                        {Object.entries(statusConfig).map(([key, conf]) => (
-                                            <button
-                                                key={key}
-                                                onClick={() => {
-                                                    onUpdateTask(task.id, { status: key as any });
-                                                    setIsStatusDropdownOpen(false);
-                                                }}
-                                                className={`w-full text-left px-3 py-2 text-[10px] font-bold hover:bg-slate-50 flex items-center gap-2 ${task.status === key ? 'bg-slate-50' : ''}`}
-                                            >
-                                                <div className={`w-2 h-2 rounded-full ${conf.color}`} />
-                                                {conf.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </>
-                            )}
-                        </div>
                     </div>
                 </div>
 
                 {/* Single Context Session */}
                 <div className="px-4 pb-2 pt-1">
-                    <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm space-y-3 transition-all hover:shadow-md group/card">
+                    <div className={`p-3 rounded-xl border shadow-sm space-y-3 transition-all hover:shadow-md group/card ${config.bg} ${config.color.replace('bg-', 'border-').replace('400', '100')}`}>
                         <div className="space-y-2">
-                            {/* Editable Title */}
-                            <input
-                                type="text"
-                                className="w-full text-[16px] font-black text-slate-800 leading-tight bg-transparent border-none focus:ring-0 p-0 placeholder-slate-300"
-                                value={task.title}
-                                onChange={(e) => onUpdateTask(task.id, { title: e.target.value })}
-                                placeholder="Título da tarefa..."
-                            />
+                            {/* Title & Status Row */}
+                            <div className="flex items-start justify-between gap-3">
+                                <input
+                                    type="text"
+                                    className="flex-1 text-[16px] font-black text-slate-800 leading-tight bg-transparent border-none focus:ring-0 p-0 placeholder-slate-300"
+                                    value={task.title}
+                                    onChange={(e) => onUpdateTask(task.id, { title: e.target.value })}
+                                    placeholder="Título da tarefa..."
+                                />
+
+                                {/* Status Selector */}
+                                <div className="relative flex-shrink-0">
+                                    <button
+                                        onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                                        className={`h-7 px-2.5 rounded-md border flex items-center gap-1.5 shadow-sm cursor-pointer hover:bg-white/50 transition-colors ${config.bg.replace('50/50', '100')} ${config.color.replace('bg-', 'border-').replace('400', '200')}`}
+                                    >
+                                        <div className={`w-2 h-2 rounded-full ${config.color}`} />
+                                        <span className={`text-[10px] font-black tracking-wider uppercase ${config.text}`}>{config.label}</span>
+                                        <ChevronDown className={`w-3 h-3 ${config.text} opacity-50`} />
+                                    </button>
+
+                                    {isStatusDropdownOpen && (
+                                        <>
+                                            <div className="fixed inset-0 z-20" onClick={() => setIsStatusDropdownOpen(false)} />
+                                            <div className="absolute top-full right-0 mt-1 w-32 bg-white rounded-lg shadow-xl border border-slate-100 py-1 z-30 animate-in fade-in zoom-in-95 duration-75">
+                                                {Object.entries(statusConfig).map(([key, conf]) => (
+                                                    <button
+                                                        key={key}
+                                                        onClick={() => {
+                                                            onUpdateTask(task.id, { status: key as any });
+                                                            setIsStatusDropdownOpen(false);
+                                                        }}
+                                                        className={`w-full text-left px-3 py-2 text-[10px] font-bold hover:bg-slate-50 flex items-center gap-2 transition-colors ${task.status === key ? 'text-indigo-600 bg-indigo-50/50' : 'text-slate-600'}`}
+                                                    >
+                                                        <div className={`w-1.5 h-1.5 rounded-full ${conf.color}`} />
+                                                        {conf.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
 
                             {/* Tags Row */}
                             <div className="flex flex-wrap gap-1.5 items-center">

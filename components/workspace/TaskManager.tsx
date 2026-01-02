@@ -57,6 +57,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
             onUpdateTask={props.onUpdateTask}
             teamMembers={props.teamMembers}
             allTasks={props.tasks}
+            allContextMessages={props.allMessages}
         />;
     }
 

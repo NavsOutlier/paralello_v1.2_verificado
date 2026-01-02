@@ -38,6 +38,7 @@ interface TaskDetailProps {
     onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
     teamMembers: UIUser[];
     allTasks?: Task[];
+    allContextMessages?: Message[];
 }
 
 export const TaskDetail: React.FC<TaskDetailProps> = ({
@@ -48,7 +49,8 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
     onAddComment,
     onUpdateTask,
     teamMembers,
-    allTasks = []
+    allTasks = [],
+    allContextMessages = []
 }) => {
     const { user: currentUser } = useAuth();
     const [comment, setComment] = useState('');
@@ -204,6 +206,22 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
                         )}
                         {messages.map((msg) => {
                             const sender = teamMembers.find(t => t.id === msg.senderId);
+
+                            const linkedMsg = msg.linkedMessageId && allContextMessages
+                                ? allContextMessages.find(m => m.id === msg.linkedMessageId)
+                                : undefined;
+
+                            let linkedSenderName = 'Usuário';
+                            if (linkedMsg) {
+                                if (linkedMsg.senderId === currentUser?.id) {
+                                    linkedSenderName = 'Você';
+                                } else {
+                                    const s = teamMembers.find(t => t.id === linkedMsg.senderId);
+                                    if (s) linkedSenderName = s.name;
+                                    else if (linkedMsg.senderType === 'CLIENT') linkedSenderName = 'Cliente';
+                                }
+                            }
+
                             return (
                                 <MessageBubble
                                     key={msg.id}
@@ -211,6 +229,10 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
                                     isMe={msg.senderId === currentUser?.id}
                                     senderName={sender?.name || 'Membro'}
                                     senderJobTitle={sender?.jobTitle}
+                                    colorScheme="indigo"
+                                    onNavigateToLinked={onNavigateToMessage}
+                                    linkedMessage={linkedMsg}
+                                    linkedMessageSenderName={linkedSenderName}
                                 />
                             );
                         })}
@@ -246,4 +268,3 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
         </div>
     );
 };
-

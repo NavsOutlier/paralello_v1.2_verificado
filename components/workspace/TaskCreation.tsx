@@ -16,8 +16,8 @@ interface TaskCreationProps {
         deadline?: string;
         tags?: string[];
         description?: string;
-    }) => void;
-    onAttach: (taskId: string) => void;
+    }, comment?: string) => void;
+    onAttach: (taskId: string, comment?: string) => void;
 }
 
 const TAG_COLORS = [
@@ -51,6 +51,7 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
     const [tagInput, setTagInput] = useState('');
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
+    const [comment, setComment] = useState('');
 
     // Extract all unique tags from existing tasks for suggestions
     const availableTags = (Array.from(new Set(existingTasks.flatMap(t => t.tags || []))) as string[]).filter(t => !selectedTags.includes(t));
@@ -81,7 +82,7 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
             status,
             deadline: deadline || undefined,
             tags: selectedTags.length > 0 ? selectedTags : undefined
-        });
+        }, comment.trim() || undefined);
     };
 
     return (
@@ -326,7 +327,7 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
                         {existingTasks.map(task => (
                             <div
                                 key={task.id}
-                                onClick={() => onAttach(task.id)}
+                                onClick={() => onAttach(task.id, comment.trim() || undefined)}
                                 className="p-4 bg-white border-2 border-slate-200 rounded-xl cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all group"
                             >
                                 <h5 className="text-sm font-bold text-slate-800 group-hover:text-indigo-600 mb-1">
@@ -353,6 +354,21 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
                                 </div>
                             </div>
                         ))}
+                    </div>
+                )}
+
+                {/* Comment / Atualização Field - Always shown when not manual */}
+                {draft.sourceMessage.id !== 'manual' && (
+                    <div className="space-y-2">
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                            Comentário / Atualização
+                        </label>
+                        <textarea
+                            value={comment}
+                            onChange={e => setComment(e.target.value)}
+                            placeholder="Escreva seu comentário aqui..."
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none min-h-[100px]"
+                        />
                     </div>
                 )}
             </div>

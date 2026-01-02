@@ -383,16 +383,16 @@ export const Workspace: React.FC = () => {
     }
   };
 
-  const handleCreateTask = async (data: {
+  const handleCreateTaskFromDraft = async (data: {
     title: string;
+    status: 'todo' | 'in-progress' | 'review' | 'done';
     priority: 'low' | 'medium' | 'high';
     assigneeId?: string;
-    status: 'todo' | 'in-progress' | 'review' | 'done';
     deadline?: string;
     tags?: string[];
     description?: string;
-  }) => {
-    if (!selectedEntityId || !discussionDraft || !organizationId) return;
+  }, comment?: string) => {
+    if (!organizationId || !discussionDraft || !selectedEntityId || !currentUser) return;
 
     try {
       // 1. Create Task
@@ -418,13 +418,16 @@ export const Workspace: React.FC = () => {
       if (taskError) throw taskError;
 
       // 2. Create Context Message
+      const messageText = comment?.trim() || "Discussão iniciada a partir desta mensagem";
+
+      // 3. Create Context Message
       const { data: msgData, error: msgError } = await supabase.from('messages').insert({
         organization_id: organizationId,
         task_id: taskData.id,
         context_type: 'TASK_INTERNAL',
         sender_id: currentUser?.id,
         sender_type: 'MEMBER',
-        text: `Tarefa criada a partir da mensagem: "${discussionDraft.sourceMessage.text.substring(0, 30)}..."`,
+        text: messageText,
         is_internal: true,
         linked_message_id: discussionDraft.sourceMessage.id
       }).select().single();
@@ -440,39 +443,61 @@ export const Workspace: React.FC = () => {
           createdAt: new Date(taskData.created_at)
         }];
       });
-      setAllMessages(prev => [...prev, {
-        ...msgData,
-        channelId: msgData.task_id,
-        timestamp: new Date(msgData.created_at)
-      }]);
+      setAllMessages(prev => {
+        if (prev.some(m => m.id === msgData.id)) return prev;
+        return [...prev, {
+          id: msgData.id,
+          channelId: msgData.task_id,
+          taskId: msgData.task_id,
+          contextType: msgData.context_type,
+          senderType: msgData.sender_type,
+          senderId: msgData.sender_id,
+          text: msgData.text,
+          timestamp: new Date(msgData.created_at),
+          isInternal: msgData.is_internal,
+          linkedMessageId: msgData.linked_message_id
+        }];
+      });
       setDiscussionDraft(null);
     } catch (error) {
       console.error('Error creating task:', error);
     }
   };
 
-  const handleAttachTask = async (taskId: string) => {
+  const handleAttachTaskFromDraft = async (taskId: string, comment?: string) => {
     if (!discussionDraft || !organizationId || !currentUser) return;
 
     try {
+      const messageText = comment?.trim() || "Mensagem vinculada à discussão";
+
       const { data, error } = await supabase.from('messages').insert({
         organization_id: organizationId,
         task_id: taskId,
         context_type: 'TASK_INTERNAL',
         sender_id: currentUser.id,
         sender_type: 'MEMBER',
-        text: `Mensagem adicionada à discussão: "${discussionDraft.sourceMessage.text}"`,
+        text: messageText,
         is_internal: true,
         linked_message_id: discussionDraft.sourceMessage.id
       }).select().single();
 
       if (error) throw error;
 
-      setAllMessages(prev => [...prev, {
-        ...data,
-        channelId: data.task_id,
-        timestamp: new Date(data.created_at)
-      }]);
+      setAllMessages(prev => {
+        if (prev.some(m => m.id === data.id)) return prev;
+        return [...prev, {
+          id: data.id,
+          channelId: data.task_id,
+          taskId: data.task_id,
+          contextType: data.context_type,
+          senderType: data.sender_type,
+          senderId: data.sender_id,
+          text: data.text,
+          timestamp: new Date(data.created_at),
+          isInternal: data.is_internal,
+          linkedMessageId: data.linked_message_id
+        }];
+      });
       setDiscussionDraft(null);
     } catch (error) {
       console.error('Error attaching message to task:', error);
@@ -577,8 +602,8 @@ export const Workspace: React.FC = () => {
             teamMembers={allTeamMembers}
             discussionDraft={discussionDraft}
             onCancelDraft={() => setDiscussionDraft(null)}
-            onCreateTaskFromDraft={handleCreateTask}
-            onAttachTaskFromDraft={handleAttachTask}
+            onCreateTaskFromDraft={handleCreateTaskFromDraft}
+            onAttachTaskFromDraft={handleAttachTaskFromDraft}
             onNavigateToMessage={(id) => setHighlightedMessageId(id)}
             onAddTaskComment={handleAddTaskComment}
             onUpdateTask={handleUpdateTask}

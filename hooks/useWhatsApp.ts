@@ -147,6 +147,25 @@ export const useWhatsApp = (instanceId?: string) => {
         return { data, error };
     };
 
+    const createGroup = async (clientName: string, clientId: string) => {
+        if (!organizationId) return { error: new Error('No organization') };
+        const { data: { session } } = await supabase.auth.getSession();
+
+        const { data, error } = await supabase.functions.invoke('whatsapp-proxy-v2', {
+            body: {
+                action: 'create_group',
+                name: clientName,
+                client_id: clientId,
+                organization_id: organizationId
+            },
+            headers: {
+                Authorization: `Bearer ${session?.access_token}`
+            }
+        });
+
+        return { data, error };
+    };
+
     const deleteInstance = async (instId: string) => {
         const { error } = await supabase
             .from('instances')
@@ -160,6 +179,7 @@ export const useWhatsApp = (instanceId?: string) => {
         messages,
         loading,
         createInstance,
+        createGroup,
         sendMessage,
         deleteInstance,
         refreshInstances: fetchInstances,

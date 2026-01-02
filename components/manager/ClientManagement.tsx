@@ -6,12 +6,14 @@ import { ClientAssignmentModal } from './ClientAssignmentModal';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useWhatsApp } from '../../hooks/useWhatsApp';
 import { Users, Plus, Search, Edit2, Trash2, Phone, Mail, Loader2, UserCog } from 'lucide-react';
 
 export const ClientManagement: React.FC = () => {
     const { organizationId, isSuperAdmin, permissions } = useAuth();
     const canManage = isSuperAdmin || permissions?.can_manage_clients;
     const { showToast } = useToast();
+    const { createGroup } = useWhatsApp();
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
@@ -112,9 +114,20 @@ export const ClientManagement: React.FC = () => {
                 if (error) throw error;
             } else {
                 // Create new client
-                const { error } = await supabase.from('clients').insert(payload);
+                const { data: newClient, error } = await supabase.from('clients').insert(payload).select().single();
 
                 if (error) throw error;
+
+                // Handle automatic group creation
+                if ((clientData as any).autoCreateGroup && newClient) {
+                    showToast('Solicitando criação do grupo WhatsApp...');
+                    // We don't await this to not block the UI, the Realtime will update the ID later
+                    createGroup(newClient.name, newClient.id).then(({ error: groupError }) => {
+                        if (groupError) {
+                            showToast('Erro ao solicitar criação do grupo', 'error');
+                        }
+                    });
+                }
             }
 
             await fetchClients();

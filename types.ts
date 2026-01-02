@@ -128,6 +128,29 @@ export interface Client {
   updatedAt: Date;
 }
 
+export interface WhatsAppInstance {
+  id: string;
+  organizationId: string;
+  name: string;
+  status: 'connected' | 'disconnected' | 'connecting' | 'error' | 'waiting_scan';
+  qrCode?: string;
+  instanceApiId?: string;
+  instanceApiToken?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface WhatsAppMessage {
+  id: string;
+  instanceId: string;
+  remoteJid: string;
+  direction: 'inbound' | 'outbound';
+  content: string;
+  status: string;
+  uazapiId?: string;
+  createdAt: Date;
+}
+
 export interface TeamMember {
   id: string;
   organizationId: string;

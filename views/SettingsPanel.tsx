@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Building2, Tag, Settings as SettingsIcon, CheckSquare, Users, Bell, Shield } from 'lucide-react';
+import { ArrowLeft, Building2, Tag, Settings as SettingsIcon, CheckSquare, Users, Bell, Shield, MessageSquare } from 'lucide-react';
 import { OrganizationInfo } from '../components/settings/OrganizationInfo';
 import { TagManagement } from '../components/settings/TagManagement';
 import { WorkflowSettings } from '../components/settings/WorkflowSettings';
@@ -7,8 +7,9 @@ import { TemplateSettings } from '../components/settings/TemplateSettings';
 import { SpecialtySettings } from '../components/settings/SpecialtySettings';
 import { NotificationSettings } from '../components/settings/NotificationSettings';
 import { SecuritySettings } from '../components/settings/SecuritySettings';
+import { WhatsAppManager } from '../components/whatsapp/WhatsAppManager';
 
-type SettingsTab = 'info' | 'tags' | 'workflow' | 'templates' | 'specialties' | 'notifications' | 'security';
+type SettingsTab = 'info' | 'tags' | 'workflow' | 'templates' | 'specialties' | 'notifications' | 'security' | 'whatsapp';
 
 interface SettingsPanelProps {
     onBack: () => void;
@@ -20,6 +21,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, organizati
 
     const tabs = [
         { id: 'info' as SettingsTab, label: 'Informações Gerais', icon: Building2 },
+        { id: 'whatsapp' as SettingsTab, label: 'WhatsApp', icon: MessageSquare },
         { id: 'tags' as SettingsTab, label: 'Tags', icon: Tag },
         { id: 'workflow' as SettingsTab, label: 'Workflow', icon: SettingsIcon },
         { id: 'templates' as SettingsTab, label: 'Templates', icon: CheckSquare },
@@ -72,6 +74,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, organizati
                 {/* Content Area */}
                 <div className="flex-1 overflow-y-auto p-6">
                     {activeTab === 'info' && <OrganizationInfo organizationId={organizationId} />}
+                    {activeTab === 'whatsapp' && <WhatsAppManager organizationId={organizationId} />}
                     {activeTab === 'tags' && <TagManagement organizationId={organizationId} />}
                     {activeTab === 'workflow' && <WorkflowSettings organizationId={organizationId} />}
                     {activeTab === 'templates' && <TemplateSettings organizationId={organizationId} />}

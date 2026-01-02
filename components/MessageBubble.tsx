@@ -55,17 +55,27 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         <div
           onClick={() => onNavigateToLinked?.(linkedTaskId)}
           className={`
-            relative max-w-[85%] rounded-r-lg rounded-bl-lg p-2 shadow-sm cursor-pointer hover:shadow-md transition-shadow bg-white
-            border-l-[4px] border-cyan-500
+            relative max-w-[85%] rounded-r-lg rounded-bl-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow bg-white
+            border-l-[4px] border-emerald-600
           `}
         >
           {/* Header */}
-          <div className="flex items-center gap-2 mb-1.5">
-            <div className="w-4 h-4 bg-cyan-50 rounded-full flex items-center justify-center shrink-0">
-              <Check className="w-2.5 h-2.5 text-cyan-500 font-bold" strokeWidth={3} />
+          <div className="mb-1.5">
+            <div className="inline-flex items-center gap-2 bg-slate-100 px-2 py-1 rounded-md">
+              <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center shrink-0">
+                <Check className="w-2.5 h-2.5 text-emerald-600 font-bold" strokeWidth={3} />
+              </div>
+              <span className="text-[9px] font-bold text-emerald-700 tracking-wider uppercase">TAREFA CRIADA</span>
             </div>
-            <span className="text-[9px] font-bold text-cyan-600 tracking-wider uppercase">TAREFA CRIADA</span>
           </div>
+
+          {/* Sender Name */}
+          {!isMe && (
+            <div className="text-[10px] font-bold mb-1 text-slate-600 flex items-center gap-1">
+              <span>{senderName}</span>
+              {senderJobTitle && <span className="opacity-60 font-normal">({senderJobTitle})</span>}
+            </div>
+          )}
 
           {/* Linked Message Context (if any) */}
           {linkedMessage && msg.linkedMessageId && (
@@ -105,8 +115,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         {/* Linked Message Quote (Reply Block) */}
         {linkedMessage && msg.linkedMessageId && (
           <div className={`mb-1 pl-3 pr-2 py-2 border-l-[3px] rounded-bl-md ${isMe && colorScheme === 'indigo'
-              ? 'border-indigo-400 bg-indigo-50/50' // Distinct but light for internal
-              : 'border-cyan-500 bg-slate-50' // Standard
+            ? 'border-indigo-400 bg-indigo-50/50' // Distinct but light for internal
+            : 'border-cyan-500 bg-slate-50' // Standard
             }`}>
             <div className={`text-[10px] font-bold mb-1 ${isMe && colorScheme === 'indigo' ? 'text-indigo-600' : 'text-cyan-600'
               }`}>

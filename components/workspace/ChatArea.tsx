@@ -31,6 +31,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     const [isSending, setIsSending] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
+    const inputRef = useRef<HTMLInputElement>(null); // Ref for input
 
     const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
@@ -46,6 +47,16 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             setIsSending(false);
         }
     };
+
+    // Auto-focus input after sending
+    useEffect(() => {
+        if (!isSending) {
+            // Small timeout to ensure the DOM has updated the disabled state
+            setTimeout(() => {
+                inputRef.current?.focus();
+            }, 10);
+        }
+    }, [isSending]);
 
     useEffect(scrollToBottom, [messages]);
 
@@ -129,13 +140,14 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                         <Paperclip className="w-5 h-5" />
                     </button>
                     <input
+                        ref={inputRef}
                         type="text"
                         className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 disabled:opacity-75"
                         placeholder={isSending ? "Enviando..." : "Digite uma mensagem..."}
                         value={text}
                         onChange={e => setText(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') { handleSend(); } }}
-                        disabled={isSending}
+                        disabled={isSending} // Keep disabled while sending to prevent double submission
                     />
                     <button
                         onClick={handleSend}

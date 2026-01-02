@@ -8,7 +8,7 @@ import {
 import { Task, Message, User as UIUser, ChecklistItem, ChecklistTemplate } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { MessageBubble } from '../MessageBubble';
-import { MentionInput } from './MentionInput';
+import { MentionInput, MentionInputRef } from './MentionInput';
 
 const TAG_COLORS = [
     { bg: 'bg-indigo-50', text: 'text-indigo-700', dot: 'bg-indigo-400' },
@@ -75,6 +75,17 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
     // Removed local mention state (handled by MentionInput)
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const dateInputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<MentionInputRef>(null);
+
+    // Auto-focus input after sending comment
+    useEffect(() => {
+        if (!isAddingComment) {
+            setTimeout(() => {
+                inputRef.current?.focus();
+            }, 10);
+        }
+    }, [isAddingComment]);
+
     // Checklist state
     const [newItemText, setNewItemText] = useState('');
 
@@ -619,6 +630,7 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
                     </button>
                     <div className="flex-1 relative">
                         <MentionInput
+                            ref={inputRef}
                             value={comment}
                             onChange={setComment}
                             teamMembers={teamMembers}

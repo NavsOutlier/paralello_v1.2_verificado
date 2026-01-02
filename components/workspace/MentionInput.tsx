@@ -14,7 +14,11 @@ interface MentionInputProps {
     autoFocus?: boolean;
 }
 
-export const MentionInput: React.FC<MentionInputProps> = ({
+export interface MentionInputRef {
+    focus: () => void;
+}
+
+export const MentionInput = React.forwardRef<MentionInputRef, MentionInputProps>(({
     value,
     onChange,
     teamMembers,
@@ -24,11 +28,18 @@ export const MentionInput: React.FC<MentionInputProps> = ({
     className = "",
     multiline = false,
     autoFocus = false
-}) => {
+}, ref) => {
     const { user } = useAuth();
     const [mentionQuery, setMentionQuery] = useState<string | null>(null);
     const [mentionIndex, setMentionIndex] = useState(0);
     const containerRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+
+    React.useImperativeHandle(ref, () => ({
+        focus: () => {
+            inputRef.current?.focus();
+        }
+    }));
 
     const filteredMembers = useMemo(() => {
         if (mentionQuery === null) return [];
@@ -118,6 +129,7 @@ export const MentionInput: React.FC<MentionInputProps> = ({
 
             {multiline ? (
                 <textarea
+                    ref={inputRef as React.RefObject<HTMLTextAreaElement>}
                     value={value}
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
@@ -128,6 +140,7 @@ export const MentionInput: React.FC<MentionInputProps> = ({
                 />
             ) : (
                 <input
+                    ref={inputRef as React.RefObject<HTMLInputElement>}
                     type="text"
                     value={value}
                     onChange={handleInputChange}
@@ -140,4 +153,4 @@ export const MentionInput: React.FC<MentionInputProps> = ({
             )}
         </div>
     );
-};
+});

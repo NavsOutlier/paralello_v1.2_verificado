@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Message, Task, User as UIUser, ChecklistTemplate, ChecklistItem, DiscussionDraft } from '../types';
+import { Message, Task, User as UIUser, ChecklistTemplate, ChecklistItem, DiscussionDraft, WhatsAppInstance } from '../types';
 
 export const useWorkspaceData = () => {
     const { organizationId, user: currentUser } = useAuth();
@@ -11,19 +11,21 @@ export const useWorkspaceData = () => {
     const [allMessages, setAllMessages] = useState<Message[]>([]);
     const [allTasks, setAllTasks] = useState<Task[]>([]);
     const [checklistTemplates, setChecklistTemplates] = useState<ChecklistTemplate[]>([]);
+    const [whatsappInstances, setWhatsappInstances] = useState<WhatsAppInstance[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchData = useCallback(async () => {
         if (!organizationId) return;
         try {
             setLoading(true);
-            const [clientsRes, teamRes, messagesRes, tasksRes, assignmentsRes, templatesRes] = await Promise.all([
+            const [clientsRes, teamRes, messagesRes, tasksRes, assignmentsRes, templatesRes, instancesRes] = await Promise.all([
                 supabase.from('clients').select('*').eq('organization_id', organizationId).is('deleted_at', null),
                 supabase.from('team_members').select('*, profile:profiles!team_members_profile_id_fkey(*)').eq('organization_id', organizationId).is('deleted_at', null),
                 supabase.from('messages').select('*').eq('organization_id', organizationId).order('created_at', { ascending: true }),
                 supabase.from('tasks').select('*').eq('organization_id', organizationId),
                 supabase.from('client_assignments').select('client_id, team_member_id').eq('organization_id', organizationId),
-                supabase.from('checklist_templates').select('*')
+                supabase.from('checklist_templates').select('*'),
+                supabase.from('instances').select('*').eq('organization_id', organizationId)
             ]);
 
             // Get current user's team_member record
@@ -46,6 +48,7 @@ export const useWorkspaceData = () => {
                 avatar: c.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=random`,
                 role: 'client',
                 status: 'online',
+                whatsappGroupId: c.whatsapp_group_id,
                 lastMessage: ''
             }));
 
@@ -89,6 +92,17 @@ export const useWorkspaceData = () => {
                 items: t.items,
                 organizationId: t.organization_id,
                 createdAt: t.created_at
+            })));
+            setWhatsappInstances((instancesRes.data || []).map(inst => ({
+                id: inst.id,
+                organizationId: inst.organization_id,
+                name: inst.name,
+                status: inst.status,
+                qrCode: inst.qr_code,
+                instanceApiId: inst.instance_api_id,
+                instanceApiToken: inst.instance_api_token,
+                createdAt: new Date(inst.created_at),
+                updatedAt: new Date(inst.updated_at)
             })));
 
             setAllMessages((messagesRes.data || []).filter(m => {
@@ -263,15 +277,40 @@ export const useWorkspaceData = () => {
         if (isClient) {
             newMsgPayload.context_type = 'WHATSAPP_FEED';
             newMsgPayload.client_id = selectedEntity.id;
+            newMsgPayload.direction = 'outbound'; // Members sending to clients are always outbound
         } else {
             newMsgPayload.context_type = 'DIRECT_MESSAGE';
             newMsgPayload.dm_channel_id = selectedEntity.id;
         }
 
         try {
-            const { data, error } = await supabase.from('messages').insert(newMsgPayload).select().single();
-            if (error) throw error;
-            // Optimistic update handled by Subscription or here if needed (subscription is usually fast enough)
+            // 1. Save to Supabase for internal history
+            const { data: savedMsg, error: saveError } = await supabase.from('messages').insert(newMsgPayload).select().single();
+            if (saveError) throw saveError;
+
+            // 2. If it's a client message, relay to WhatsApp via Proxy
+            if (isClient && selectedEntity.whatsappGroupId) {
+                const connectedInstance = whatsappInstances.find(inst => inst.status === 'connected');
+
+                if (connectedInstance) {
+                    const { data: { session } } = await supabase.auth.getSession();
+
+                    // We don't await this to avoid blocking the UI, but we log errors
+                    supabase.functions.invoke('whatsapp-proxy-v2', {
+                        body: {
+                            action: 'send_message',
+                            instance_id: connectedInstance.id,
+                            to: selectedEntity.whatsappGroupId,
+                            text: text.trim()
+                        },
+                        headers: {
+                            Authorization: `Bearer ${session?.access_token}`
+                        }
+                    }).then(({ error }) => {
+                        if (error) console.error('Error relaying to WhatsApp:', error);
+                    });
+                }
+            }
         } catch (error) {
             console.error('Error sending message:', error);
         }
@@ -423,6 +462,7 @@ export const useWorkspaceData = () => {
         allMessages,
         allTasks,
         checklistTemplates,
+        whatsappInstances,
         loading,
         sendMessage,
         updateTask,

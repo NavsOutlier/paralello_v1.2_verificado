@@ -17,6 +17,7 @@ export interface User {
   unreadCount?: number;
   lastMessage?: string;
   assignedClientIds?: string[]; // IDs of clients this team member is assigned to
+  whatsappGroupId?: string;
 }
 
 // Unified Message Type (The "Single Table" approach)
@@ -128,6 +129,7 @@ export interface Client {
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
+  whatsappGroupId?: string;
 }
 
 export interface WhatsAppInstance {

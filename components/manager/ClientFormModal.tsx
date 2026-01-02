@@ -19,6 +19,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
         email: '',
         phone: '',
         whatsapp: '',
+        whatsappGroupId: '',
         notes: '',
         status: 'active'
     });
@@ -31,6 +32,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
                 email: client?.email || '',
                 phone: client?.phone || '',
                 whatsapp: client?.whatsapp || '',
+                whatsappGroupId: client?.whatsappGroupId || '',
                 notes: client?.notes || '',
                 status: client?.status || 'active'
             });
@@ -137,10 +139,26 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
 
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">
+                            ID do Grupo WhatsApp (@g.us)
+                        </label>
+                        <input
+                            type="text"
+                            value={formData.whatsappGroupId}
+                            onChange={(e) => setFormData({ ...formData, whatsappGroupId: e.target.value })}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            placeholder="1234567890@g.us"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-1">
+                            Deixe vazio para mapeamento automático na primeira mensagem recebida.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
                             Observações
                         </label>
                         <textarea
-                            rows={4}
+                            rows={3}
                             value={formData.notes}
                             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"

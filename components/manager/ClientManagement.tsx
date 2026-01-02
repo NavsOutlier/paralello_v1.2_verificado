@@ -75,6 +75,7 @@ export const ClientManagement: React.FC = () => {
                     avatarUrl: c.avatar_url,
                     status: c.status,
                     notes: c.notes,
+                    whatsappGroupId: c.whatsapp_group_id,
                     createdAt: new Date(c.created_at),
                     updatedAt: new Date(c.updated_at)
                 }))
@@ -96,6 +97,7 @@ export const ClientManagement: React.FC = () => {
                 email: clientData.email || null,
                 phone: clientData.phone || null,
                 whatsapp: clientData.whatsapp || null,
+                whatsapp_group_id: clientData.whatsappGroupId || null,
                 notes: clientData.notes || null,
                 status: clientData.status || 'active'
             };
@@ -268,6 +270,11 @@ export const ClientManagement: React.FC = () => {
                                         <div className="flex items-center gap-2 text-slate-600">
                                             <Phone className="w-4 h-4" />
                                             <span>{client.phone}</span>
+                                        </div>
+                                    )}
+                                    {client.whatsappGroupId && (
+                                        <div className="flex items-center gap-2 text-emerald-600 font-mono text-[10px] bg-emerald-50 px-2 py-1 rounded">
+                                            <span>ID: {client.whatsappGroupId}</span>
                                         </div>
                                     )}
                                     {client.notes && (

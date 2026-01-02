@@ -185,7 +185,12 @@ export const Workspace: React.FC = () => {
             const newTask = payload.new as any;
             setAllTasks(prev => {
               if (prev.some(t => t.id === newTask.id)) return prev;
-              return [...prev, { ...newTask, createdAt: new Date(newTask.created_at) }];
+              return [...prev, {
+                ...newTask,
+                clientId: newTask.client_id,
+                assigneeId: newTask.assignee_id,
+                createdAt: new Date(newTask.created_at)
+              }];
             });
           } else if (payload.eventType === 'UPDATE') {
             const updatedTask = payload.new as any;
@@ -292,6 +297,9 @@ export const Workspace: React.FC = () => {
       if (updates.priority) payload.priority = updates.priority;
       if (updates.title) payload.title = updates.title;
       if (updates.assigneeId !== undefined) payload.assignee_id = updates.assigneeId;
+      if (updates.tags) payload.tags = updates.tags;
+      if (updates.description !== undefined) payload.description = updates.description;
+      if (updates.deadline !== undefined) payload.deadline = updates.deadline;
 
       const { error } = await supabase
         .from('tasks')
@@ -354,7 +362,15 @@ export const Workspace: React.FC = () => {
 
       if (msgError) throw msgError;
 
-      setAllTasks(prev => [...prev, { ...taskData, createdAt: new Date(taskData.created_at) }]);
+      setAllTasks(prev => {
+        if (prev.some(t => t.id === taskData.id)) return prev;
+        return [...prev, {
+          ...taskData,
+          clientId: taskData.client_id,
+          assigneeId: taskData.assignee_id,
+          createdAt: new Date(taskData.created_at)
+        }];
+      });
       setAllMessages(prev => [...prev, {
         ...msgData,
         channelId: msgData.task_id,

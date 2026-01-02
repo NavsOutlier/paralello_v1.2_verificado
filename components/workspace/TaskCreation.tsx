@@ -20,6 +20,20 @@ interface TaskCreationProps {
     onAttach: (taskId: string) => void;
 }
 
+const TAG_COLORS = [
+    { bg: 'bg-indigo-50', text: 'text-indigo-700', dot: 'bg-indigo-400' },
+    { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-400' },
+    { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400' },
+    { bg: 'bg-rose-50', text: 'text-rose-700', dot: 'bg-rose-400' },
+    { bg: 'bg-sky-50', text: 'text-sky-700', dot: 'bg-sky-400' },
+    { bg: 'bg-violet-50', text: 'text-violet-700', dot: 'bg-violet-400' },
+];
+
+const getTagColor = (tag: string) => {
+    const hash = tag.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
+    return TAG_COLORS[hash % TAG_COLORS.length];
+};
+
 export const TaskCreation: React.FC<TaskCreationProps> = ({
     draft,
     existingTasks,
@@ -34,8 +48,29 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
     const [status, setStatus] = useState<'todo' | 'in-progress' | 'review' | 'done'>('todo');
     const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
     const [deadline, setDeadline] = useState('');
-    const [tags, setTags] = useState('');
+    const [tagInput, setTagInput] = useState('');
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
     const [description, setDescription] = useState('');
+
+    // Extract all unique tags from existing tasks for suggestions
+    const availableTags = (Array.from(new Set(existingTasks.flatMap(t => t.tags || []))) as string[]).filter(t => !selectedTags.includes(t));
+
+    const toggleTag = (tag: string) => {
+        if (selectedTags.includes(tag)) {
+            setSelectedTags(prev => prev.filter(t => t !== tag));
+        } else {
+            setSelectedTags(prev => [...prev, tag]);
+        }
+    };
+
+    const handleAddTag = () => {
+        const newTag = tagInput.trim();
+        if (newTag && !selectedTags.includes(newTag)) {
+            setSelectedTags(prev => [...prev, newTag]);
+            setTagInput('');
+        }
+    };
 
     const handleCreate = () => {
         if (!title.trim()) return;
@@ -46,7 +81,7 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
             assigneeId: assigneeId || undefined,
             status,
             deadline: deadline || undefined,
-            tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
+            tags: selectedTags.length > 0 ? selectedTags : undefined,
             description: description || undefined
         });
     };
@@ -184,18 +219,100 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
                         </div>
 
                         {/* Etiquetas */}
-                        <div>
+                        <div className="relative">
                             <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wide mb-2">
                                 Etiquetas
                             </label>
-                            <input
-                                type="text"
-                                value={tags}
-                                onChange={(e) => setTags(e.target.value)}
-                                placeholder="Adicionar tag (digite)..."
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                            />
-                            <p className="text-[10px] text-slate-400 mt-1">Separe múltiplas tags com vírgula</p>
+
+                            {/* Selected Tags Display */}
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                {selectedTags.map(tag => {
+                                    const color = getTagColor(tag);
+                                    return (
+                                        <span
+                                            key={tag}
+                                            onClick={() => toggleTag(tag)}
+                                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 ${color.bg} ${color.text} text-[11px] font-bold rounded-lg cursor-pointer hover:brightness-95 transition-all shadow-sm border border-black/5`}
+                                        >
+                                            <div className={`w-1.5 h-1.5 rounded-full ${color.dot}`} />
+                                            {tag.toUpperCase()}
+                                            <X className="w-3 h-3 opacity-40 hover:opacity-100 transition-opacity" />
+                                        </span>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <div className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all ${isTagDropdownOpen ? 'border-green-500 ring-2 ring-green-100 shadow-sm' : 'border-slate-300'}`}>
+                                        <span className="text-slate-400 font-bold">#</span>
+                                        <input
+                                            type="text"
+                                            value={tagInput}
+                                            onFocus={() => setIsTagDropdownOpen(true)}
+                                            onChange={(e) => setTagInput(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleAddTag();
+                                                } else if (e.key === 'Escape') {
+                                                    setIsTagDropdownOpen(false);
+                                                }
+                                            }}
+                                            placeholder="Nova tag..."
+                                            className="flex-1 bg-transparent border-none outline-none text-sm placeholder:text-slate-400 font-medium"
+                                        />
+                                        <button
+                                            onClick={handleAddTag}
+                                            className="p-1 hover:bg-slate-100 rounded-lg transition-colors text-slate-400"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                        </button>
+                                    </div>
+
+                                    {/* Dropdown */}
+                                    {isTagDropdownOpen && (
+                                        <>
+                                            <div
+                                                className="fixed inset-0 z-10"
+                                                onClick={() => setIsTagDropdownOpen(false)}
+                                            />
+                                            <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                                                <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">EXISTENTES</span>
+                                                    <span className="text-[9px] font-bold text-slate-300 bg-white px-1.5 py-0.5 rounded border border-slate-100">ESC para sair</span>
+                                                </div>
+                                                <div className="max-h-48 overflow-y-auto p-1.5 space-y-0.5">
+                                                    {availableTags
+                                                        .filter(t => t.toLowerCase().includes(tagInput.toLowerCase()))
+                                                        .map(tag => {
+                                                            const color = getTagColor(tag);
+                                                            return (
+                                                                <button
+                                                                    key={tag}
+                                                                    onClick={() => {
+                                                                        toggleTag(tag);
+                                                                        setIsTagDropdownOpen(false);
+                                                                        setTagInput('');
+                                                                    }}
+                                                                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-lg transition-all text-sm text-slate-700 font-bold group"
+                                                                >
+                                                                    <div className={`w-2 h-2 rounded-full ${color.dot} opacity-40 group-hover:opacity-100 transition-opacity`} />
+                                                                    {tag}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    {availableTags.filter(t => t.toLowerCase().includes(tagInput.toLowerCase())).length === 0 && (
+                                                        <div className="p-4 text-center">
+                                                            <p className="text-xs text-slate-400 italic">Pressione ENTER para criar "{tagInput || '...'}"</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         {/* Descrição */}
@@ -229,13 +346,24 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
                                 <h5 className="text-sm font-bold text-slate-800 group-hover:text-indigo-600 mb-1">
                                     {task.title}
                                 </h5>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-full">
-                                        {task.status}
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-full font-bold">
+                                        {task.status.toUpperCase()}
                                     </span>
-                                    <span className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full">
-                                        {task.priority}
+                                    <span className={`text-xs px-2 py-1 ${task.priority === 'high' ? 'bg-rose-100 text-rose-700' : task.priority === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'} rounded-full font-bold`}>
+                                        {task.priority.toUpperCase()}
                                     </span>
+                                    {(task.tags || []).map(tag => {
+                                        const color = getTagColor(tag);
+                                        return (
+                                            <span
+                                                key={tag}
+                                                className={`text-[10px] px-2 py-0.5 ${color.bg} ${color.text} rounded-full font-bold border border-black/5`}
+                                            >
+                                                #{tag.toUpperCase()}
+                                            </span>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         ))}

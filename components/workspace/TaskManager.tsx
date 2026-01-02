@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, CheckCircle2 } from 'lucide-react';
-import { Task, Message, DiscussionDraft } from '../../types';
+import { Task, Message, DiscussionDraft, User as UIUser } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { TaskCard } from './TaskCard';
 import { TaskDetail } from './TaskDetail';
@@ -11,11 +11,20 @@ interface TaskManagerProps {
     allMessages: Message[];
     discussionDraft: DiscussionDraft | null;
     onCancelDraft: () => void;
-    onCreateTaskFromDraft: (title: string, priority: 'low' | 'medium' | 'high') => void;
+    onCreateTaskFromDraft: (data: {
+        title: string;
+        priority: 'low' | 'medium' | 'high';
+        assigneeId?: string;
+        status: 'todo' | 'in-progress' | 'review' | 'done';
+        deadline?: string;
+        tags?: string[];
+        description?: string;
+    }) => void;
     onAttachTaskFromDraft: (taskId: string) => void;
     onNavigateToMessage: (id: string) => void;
     onAddTaskComment: (taskId: string, text: string) => void;
-    teamMembers: any[]; // Using any for simplicity in prop pass, though should be UIUser[]
+    onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
+    teamMembers: UIUser[];
 }
 
 export const TaskManager: React.FC<TaskManagerProps> = (props) => {
@@ -46,6 +55,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
             onAddComment={(text) => props.onAddTaskComment(currentTask.id, text)}
             onUpdateTask={props.onUpdateTask}
             teamMembers={props.teamMembers}
+            allTasks={props.tasks}
         />;
     }
 

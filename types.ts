@@ -50,7 +50,9 @@ export interface Task {
   priority: 'low' | 'medium' | 'high';
   assigneeId?: string;
   clientId: string;
-  // removed 'relatedMessages' array. We now query messages where channelId === taskId
+  tags?: string[];
+  description?: string;
+  deadline?: string;
   createdAt: Date;
 }
 

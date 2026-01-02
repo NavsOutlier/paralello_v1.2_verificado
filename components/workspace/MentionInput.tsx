@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { User as UIUser } from '../../types';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface MentionInputProps {
     value: string;
@@ -24,6 +25,7 @@ export const MentionInput: React.FC<MentionInputProps> = ({
     multiline = false,
     autoFocus = false
 }) => {
+    const { user } = useAuth();
     const [mentionQuery, setMentionQuery] = useState<string | null>(null);
     const [mentionIndex, setMentionIndex] = useState(0);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -31,9 +33,10 @@ export const MentionInput: React.FC<MentionInputProps> = ({
     const filteredMembers = useMemo(() => {
         if (mentionQuery === null) return [];
         return teamMembers
+            .filter(m => m.id !== user?.id) // Filter out current user
             .filter(m => m.name.toLowerCase().includes(mentionQuery.toLowerCase()))
             .slice(0, 5);
-    }, [mentionQuery, teamMembers]);
+    }, [mentionQuery, teamMembers, user]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const val = e.target.value;

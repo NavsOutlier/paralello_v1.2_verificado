@@ -15,12 +15,13 @@ interface TaskManagerProps {
         title: string;
         priority: 'low' | 'medium' | 'high';
         assigneeId?: string;
+        assigneeIds?: string[];
         status: 'todo' | 'in-progress' | 'review' | 'done';
         deadline?: string;
         tags?: string[];
         description?: string;
     }) => void;
-    onAttachTaskFromDraft: (taskId: string) => void;
+    onAttachTaskFromDraft: (taskId: string, comment?: string) => void;
     onNavigateToMessage: (id: string) => void;
     onAddTaskComment: (taskId: string, text: string) => void;
     onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
@@ -47,6 +48,14 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
     // Dropdown visibility state
     const [openFilter, setOpenFilter] = useState<'status' | 'assignee' | 'tag' | null>(null);
 
+    const handleAttachTask = (taskId: string, comment?: string) => {
+        props.onAttachTaskFromDraft(taskId, comment);
+        const task = props.tasks.find(t => t.id === taskId);
+        if (task) {
+            setSelectedTask(task);
+        }
+    };
+
     if (props.discussionDraft) {
         return <TaskCreation
             draft={props.discussionDraft}
@@ -54,7 +63,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
             teamMembers={props.teamMembers}
             onCancel={props.onCancelDraft}
             onCreate={props.onCreateTaskFromDraft}
-            onAttach={props.onAttachTaskFromDraft}
+            onAttach={handleAttachTask}
             checklistTemplates={props.checklistTemplates}
         />;
     }

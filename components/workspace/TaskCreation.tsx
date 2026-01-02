@@ -42,7 +42,7 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
     onCreate,
     onAttach
 }) => {
-    const [mode, setMode] = useState<'select' | 'create' | 'attach'>('select');
+    const [mode, setMode] = useState<'select' | 'create' | 'attach'>(draft.sourceMessage.id === 'manual' ? 'create' : 'select');
     const [title, setTitle] = useState('');
     const [assigneeId, setAssigneeId] = useState<string>('');
     const [status, setStatus] = useState<'todo' | 'in-progress' | 'review' | 'done'>('todo');
@@ -51,7 +51,6 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
     const [tagInput, setTagInput] = useState('');
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
-    const [description, setDescription] = useState('');
 
     // Extract all unique tags from existing tasks for suggestions
     const availableTags = (Array.from(new Set(existingTasks.flatMap(t => t.tags || []))) as string[]).filter(t => !selectedTags.includes(t));
@@ -81,8 +80,7 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
             assigneeId: assigneeId || undefined,
             status,
             deadline: deadline || undefined,
-            tags: selectedTags.length > 0 ? selectedTags : undefined,
-            description: description || undefined
+            tags: selectedTags.length > 0 ? selectedTags : undefined
         });
     };
 
@@ -105,35 +103,39 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {/* Mensagem Original */}
-                <div className="p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
-                    <span className="text-xs font-bold text-blue-700 uppercase block mb-1">VOCÊ</span>
-                    <p className="text-sm text-slate-700 italic">"{draft.sourceMessage.text}"</p>
-                </div>
+                {/* Original Message - only if not manual */}
+                {draft.sourceMessage.id !== 'manual' && (
+                    <div className="p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
+                        <span className="text-xs font-bold text-blue-700 uppercase block mb-1">DRAFT DE MENSAGEM</span>
+                        <p className="text-sm text-slate-700 italic">"{draft.sourceMessage.text || draft.sourceMessage.content}"</p>
+                    </div>
+                )}
 
-                {/* Mode Selection */}
-                <div className="grid grid-cols-2 gap-3">
-                    <button
-                        onClick={() => setMode('create')}
-                        className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all ${mode === 'create'
-                            ? 'border-slate-800 bg-slate-800 text-white shadow-lg'
-                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                            }`}
-                    >
-                        <Plus className="w-4 h-4" />
-                        <span className="text-sm font-semibold">Criar Nova Task</span>
-                    </button>
-                    <button
-                        onClick={() => setMode('attach')}
-                        className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all ${mode === 'attach'
-                            ? 'border-slate-800 bg-slate-800 text-white shadow-lg'
-                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                            }`}
-                    >
-                        <Link2 className="w-4 h-4" />
-                        <span className="text-sm font-semibold">Vincular a Existente</span>
-                    </button>
-                </div>
+                {/* Mode Selection - only if not manual */}
+                {draft.sourceMessage.id !== 'manual' && (
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            onClick={() => setMode('create')}
+                            className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all ${mode === 'create'
+                                ? 'border-slate-800 bg-slate-800 text-white shadow-lg'
+                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                                }`}
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span className="text-sm font-semibold">Criar Nova Task</span>
+                        </button>
+                        <button
+                            onClick={() => setMode('attach')}
+                            className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all ${mode === 'attach'
+                                ? 'border-slate-800 bg-slate-800 text-white shadow-lg'
+                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                                }`}
+                        >
+                            <Link2 className="w-4 h-4" />
+                            <span className="text-sm font-semibold">Vincular a Existente</span>
+                        </button>
+                    </div>
+                )}
 
                 {/* Create Mode */}
                 {mode === 'create' && (
@@ -202,7 +204,7 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
                             </div>
                         </div>
 
-                        {/* Prioridade (hidden in priority select style) */}
+                        {/* Prioridade */}
                         <div>
                             <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wide mb-2">
                                 Prioridade
@@ -224,7 +226,6 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
                                 Etiquetas
                             </label>
 
-                            {/* Selected Tags Display */}
                             <div className="flex flex-wrap gap-2 mb-2">
                                 {selectedTags.map(tag => {
                                     const color = getTagColor(tag);
@@ -270,7 +271,6 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
                                         </button>
                                     </div>
 
-                                    {/* Dropdown */}
                                     {isTagDropdownOpen && (
                                         <>
                                             <div
@@ -314,20 +314,6 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
                                 </div>
                             </div>
                         </div>
-
-                        {/* Descrição */}
-                        <div>
-                            <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wide mb-2">
-                                Descrição / Detalhes
-                            </label>
-                            <textarea
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder="Adicione detalhes sobre a tarefa..."
-                                rows={3}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                            />
-                        </div>
                     </div>
                 )}
 
@@ -367,11 +353,6 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
                                 </div>
                             </div>
                         ))}
-                        {existingTasks.length === 0 && (
-                            <div className="text-center py-12">
-                                <p className="text-sm text-slate-400">Nenhuma tarefa encontrada para este cliente.</p>
-                            </div>
-                        )}
                     </div>
                 )}
             </div>

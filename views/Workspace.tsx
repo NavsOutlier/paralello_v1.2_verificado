@@ -19,6 +19,40 @@ export const Workspace: React.FC = () => {
   // Interaction State
   const [discussionDraft, setDiscussionDraft] = useState<DiscussionDraft | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [rightSidebarWidth, setRightSidebarWidth] = useState(380);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const startResizing = (e: React.MouseEvent) => {
+    setIsResizing(true);
+    e.preventDefault();
+  };
+
+  const stopResizing = () => {
+    setIsResizing(false);
+  };
+
+  const resize = useCallback((e: MouseEvent) => {
+    if (isResizing) {
+      const newWidth = window.innerWidth - e.clientX;
+      if (newWidth > 380 && newWidth < 600) {
+        setRightSidebarWidth(newWidth);
+      }
+    }
+  }, [isResizing]);
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', resize);
+      window.addEventListener('mouseup', stopResizing);
+    } else {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    }
+    return () => {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    };
+  }, [isResizing, resize]);
 
   // Derived state based on the "Channel ID" pattern
   const selectedEntity = [...clients, ...team].find(e => e.id === selectedEntityId) || null;
@@ -436,6 +470,22 @@ export const Workspace: React.FC = () => {
     }
   };
 
+  const handleManualCreateTask = () => {
+    if (!selectedEntityId || !organizationId || !currentUser) return;
+    setDiscussionDraft({
+      sourceMessage: {
+        id: 'manual',
+        content: '',
+        senderId: currentUser.id,
+        timestamp: new Date(),
+        channelId: selectedEntityId,
+        organization_id: organizationId,
+        context_type: 'TASK_DISCUSSION'
+      } as any,
+      mode: 'new'
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-slate-50">
@@ -446,7 +496,7 @@ export const Workspace: React.FC = () => {
 
   return (
     <div className="flex h-full w-full">
-      <div className="w-[280px] flex-shrink-0">
+      <div className="w-[260px] flex-shrink-0">
         <EntityList
           clients={clients}
           team={team}
@@ -455,7 +505,7 @@ export const Workspace: React.FC = () => {
         />
       </div>
 
-      <div className="flex-1 border-r border-slate-200 min-w-[350px]">
+      <div className="flex-1 min-w-[350px]">
         <ChatArea
           entity={selectedEntity}
           messages={currentChatMessages}
@@ -466,7 +516,16 @@ export const Workspace: React.FC = () => {
         />
       </div>
 
-      <div className="w-[350px] flex-shrink-0 bg-slate-50">
+      {/* Resizer Handle */}
+      <div
+        onMouseDown={startResizing}
+        className={`w-1.5 h-full cursor-col-resize hover:bg-indigo-400/30 transition-colors flex-shrink-0 z-10 -ml-0.5 border-l border-r border-slate-200 ${isResizing ? 'bg-indigo-400/50' : ''}`}
+      />
+
+      <div
+        style={{ width: `${rightSidebarWidth}px` }}
+        className="flex-shrink-0 bg-slate-50"
+      >
         {selectedEntityId ? (
           <TaskManager
             tasks={currentEntityTasks}
@@ -479,6 +538,7 @@ export const Workspace: React.FC = () => {
             onNavigateToMessage={(id) => setHighlightedMessageId(id)}
             onAddTaskComment={handleAddTaskComment}
             onUpdateTask={handleUpdateTask}
+            onManualCreate={handleManualCreateTask}
           />
         ) : (
           <div className="p-10 text-center text-slate-400">Selecione um cliente para ver tarefas.</div>

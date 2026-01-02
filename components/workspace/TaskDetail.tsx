@@ -484,76 +484,69 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
                             </div>
 
                             {/* Editable Assignees - Multi-select */}
-                            <div className="relative">
-                                <button
-                                    onClick={() => setIsAssigneeDropdownOpen(!isAssigneeDropdownOpen)}
-                                    className="bg-slate-50 h-7 px-2.5 rounded-md border border-slate-100 flex items-center gap-2 hover:bg-slate-100 transition-colors cursor-pointer"
-                                >
-                                    <div className="flex -space-x-1.5 shrink-0">
-                                        {assignees.length > 0 ? (
-                                            assignees.slice(0, 3).map(a => (
-                                                <div key={a.id} className="w-4 h-4 rounded-full overflow-hidden border-2 border-white bg-slate-200">
-                                                    {a.avatar ? (
-                                                        <img src={a.avatar} className="w-full h-full object-cover" alt="" />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-[5px] text-slate-500 font-bold">
-                                                            {a.name.slice(0, 1)}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))
+                            <div className="flex items-end -space-x-2">
+                                {assignees.map(a => (
+                                    <div key={a.id} className="w-8 h-8 rounded-full overflow-hidden border-2 border-white bg-slate-200 shadow-sm relative z-0">
+                                        {a.avatar ? (
+                                            <img src={a.avatar} className="w-full h-full object-cover" alt="" />
                                         ) : (
-                                            <div className="w-4 h-4 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[7px] text-slate-300 font-bold">?</div>
-                                        )}
-                                        {assignees.length > 3 && (
-                                            <div className="w-4 h-4 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[5px] text-slate-500 font-bold">
-                                                +{assignees.length - 3}
+                                            <div className="w-full h-full flex items-center justify-center text-[9px] text-slate-500 font-bold">
+                                                {a.name.slice(0, 1)}
                                             </div>
                                         )}
                                     </div>
-                                    <ChevronDown className="w-3 h-3 text-slate-400" />
-                                </button>
+                                ))}
 
-                                {isAssigneeDropdownOpen && (
-                                    <>
-                                        <div className="fixed inset-0 z-10" onClick={() => setIsAssigneeDropdownOpen(false)} />
-                                        <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-slate-200 shadow-xl rounded-xl overflow-hidden z-20 animate-in fade-in zoom-in-95 duration-100">
-                                            <div className="max-h-48 overflow-y-auto py-1">
-                                                {teamMembers.map(member => {
-                                                    const isSelected = currentAssigneeIds.includes(member.id);
-                                                    return (
-                                                        <button
-                                                            key={member.id}
-                                                            onClick={() => {
-                                                                const newIds = isSelected
-                                                                    ? currentAssigneeIds.filter(id => id !== member.id)
-                                                                    : [...currentAssigneeIds, member.id];
-                                                                onUpdateTask(task.id, { assigneeIds: newIds, assigneeId: newIds[0] });
-                                                            }}
-                                                            className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-slate-50 transition-colors ${isSelected ? 'bg-indigo-50/50' : ''}`}
-                                                        >
-                                                            <div className={`w-3.5 h-3.5 rounded flex items-center justify-center border ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300 bg-white'}`}>
-                                                                {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
-                                                            </div>
-                                                            <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-100 flex-shrink-0">
-                                                                {member.avatar ? (
-                                                                    <img src={member.avatar} className="w-full h-full object-cover" alt="" />
-                                                                ) : (
-                                                                    <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-slate-400">
-                                                                        {member.name.slice(0, 1)}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <span className={`truncate ${isSelected ? 'text-indigo-700 font-bold' : 'text-slate-600'}`}>
-                                                                {member.name}
-                                                            </span>
-                                                        </button>
-                                                    );
-                                                })}
+                                <div className="relative z-10 -ml-2 mb-[1px]">
+                                    <button
+                                        onClick={() => setIsAssigneeDropdownOpen(!isAssigneeDropdownOpen)}
+                                        className="w-5 h-5 bg-white hover:bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center shadow-sm transition-all text-slate-400 hover:text-indigo-500"
+                                        title="Gerenciar Responsáveis"
+                                    >
+                                        <Plus className="w-3 h-3" />
+                                    </button>
+
+                                    {isAssigneeDropdownOpen && (
+                                        <>
+                                            <div className="fixed inset-0 z-10" onClick={() => setIsAssigneeDropdownOpen(false)} />
+                                            <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-slate-200 shadow-xl rounded-xl overflow-hidden z-20 animate-in fade-in zoom-in-95 duration-100">
+                                                <div className="max-h-48 overflow-y-auto py-1">
+                                                    {teamMembers.map(member => {
+                                                        const isSelected = currentAssigneeIds.includes(member.id);
+                                                        return (
+                                                            <button
+                                                                key={member.id}
+                                                                onClick={() => {
+                                                                    const newIds = isSelected
+                                                                        ? currentAssigneeIds.filter(id => id !== member.id)
+                                                                        : [...currentAssigneeIds, member.id];
+                                                                    onUpdateTask(task.id, { assigneeIds: newIds, assigneeId: newIds[0] });
+                                                                }}
+                                                                className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-slate-50 transition-colors ${isSelected ? 'bg-indigo-50/50' : ''}`}
+                                                            >
+                                                                <div className={`w-3.5 h-3.5 rounded flex items-center justify-center border ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300 bg-white'}`}>
+                                                                    {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
+                                                                </div>
+                                                                <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-100 flex-shrink-0">
+                                                                    {member.avatar ? (
+                                                                        <img src={member.avatar} className="w-full h-full object-cover" alt="" />
+                                                                    ) : (
+                                                                        <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-slate-400">
+                                                                            {member.name.slice(0, 1)}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <span className={`truncate ${isSelected ? 'text-indigo-700 font-bold' : 'text-slate-600'}`}>
+                                                                    {member.name}
+                                                                </span>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
-                                        </div>
-                                    </>
-                                )}
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

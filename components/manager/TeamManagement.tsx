@@ -368,6 +368,7 @@ export const TeamManagement: React.FC = () => {
                     setSelectedMember(undefined);
                 }}
                 onSave={handleSaveMember}
+                availableSpecialties={Array.from(new Set(members.map(m => m.jobTitle).filter(Boolean))) as string[]}
             />
 
             <ConfirmDialog

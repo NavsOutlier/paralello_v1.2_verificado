@@ -39,6 +39,26 @@ export const ClientAssignmentModal: React.FC<ClientAssignmentModalProps> = ({
         if (isOpen && organizationId) {
             fetchAssignments();
             fetchTeamMembers();
+
+            const channel = supabase
+                .channel(`client_assignments_${clientId}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'client_assignments',
+                        filter: `client_id=eq.${clientId}`
+                    },
+                    () => {
+                        fetchAssignments();
+                    }
+                )
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(channel);
+            };
         }
     }, [isOpen, organizationId, clientId]);
 

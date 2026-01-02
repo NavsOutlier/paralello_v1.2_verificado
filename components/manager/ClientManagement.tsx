@@ -28,6 +28,26 @@ export const ClientManagement: React.FC = () => {
     useEffect(() => {
         if (organizationId) {
             fetchClients();
+
+            const channel = supabase
+                .channel('client_management_realtime')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'clients',
+                        filter: `organization_id=eq.${organizationId}`
+                    },
+                    () => {
+                        fetchClients();
+                    }
+                )
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(channel);
+            };
         }
     }, [organizationId]);
 

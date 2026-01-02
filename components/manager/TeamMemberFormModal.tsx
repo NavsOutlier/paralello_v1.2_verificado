@@ -6,13 +6,15 @@ interface TeamMemberFormModalProps {
     member?: TeamMember;
     onClose: () => void;
     onSave: (member: Partial<TeamMember>) => Promise<void>;
+    availableSpecialties?: string[];
 }
 
 export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
     isOpen,
     member,
     onClose,
-    onSave
+    onSave,
+    availableSpecialties = []
 }) => {
     const [formData, setFormData] = useState({
         email: '',
@@ -24,6 +26,7 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
         canManageTeam: false
     });
     const [loading, setLoading] = useState(false);
+    const [isCreatingSpecialty, setIsCreatingSpecialty] = useState(false);
 
     React.useEffect(() => {
         if (isOpen) {
@@ -108,15 +111,53 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
 
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">
-                            Cargo / Função
+                            Especialidade
                         </label>
-                        <input
-                            type="text"
-                            value={formData.jobTitle}
-                            onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Ex: Gestor de Tráfego, Designer, Copy..."
-                        />
+                        {!isCreatingSpecialty && availableSpecialties.length > 0 ? (
+                            <div className="flex gap-2">
+                                <select
+                                    value={formData.jobTitle}
+                                    onChange={(e) => {
+                                        if (e.target.value === 'new') {
+                                            setIsCreatingSpecialty(true);
+                                            setFormData({ ...formData, jobTitle: '' });
+                                        } else {
+                                            setFormData({ ...formData, jobTitle: e.target.value });
+                                        }
+                                    }}
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                                >
+                                    <option value="">Selecione uma especialidade...</option>
+                                    {availableSpecialties.map(specialty => (
+                                        <option key={specialty} value={specialty}>{specialty}</option>
+                                    ))}
+                                    <option value="new" className="text-purple-600 font-semibold">+ Criar nova...</option>
+                                </select>
+                            </div>
+                        ) : (
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={formData.jobTitle}
+                                    onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
+                                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    placeholder="Ex: Gestor de Tráfego"
+                                    autoFocus
+                                />
+                                {availableSpecialties.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setIsCreatingSpecialty(false);
+                                            setFormData({ ...formData, jobTitle: '' });
+                                        }}
+                                        className="px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg border border-slate-200"
+                                    >
+                                        Cancelar
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div>

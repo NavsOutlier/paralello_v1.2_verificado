@@ -94,6 +94,15 @@ export const Workspace: React.FC = () => {
         lastMessage: '' // Populate if needed
       }));
 
+
+      // Create efficient lookup map for team member assignments
+      const assignmentsMap = new Map<string, string[]>();
+      (assignmentsRes.data || []).forEach((a: any) => {
+        const list = assignmentsMap.get(a.team_member_id) || [];
+        list.push(a.client_id);
+        assignmentsMap.set(a.team_member_id, list);
+      });
+
       const mappedTeam: UIUser[] = (teamRes.data || [])
         .filter(tm => tm.profile_id !== currentUser?.id) // Remove current user from team list
         .map(tm => ({
@@ -102,7 +111,8 @@ export const Workspace: React.FC = () => {
           avatar: tm.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tm.profile?.name || 'M')}&background=random`,
           role: 'team',
           status: 'online',
-          jobTitle: tm.job_title
+          jobTitle: tm.job_title,
+          assignedClientIds: assignmentsMap.get(tm.id) || []
         }));
 
       // All team members including current user (for task assignment)
@@ -113,7 +123,8 @@ export const Workspace: React.FC = () => {
           avatar: tm.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tm.profile?.name || 'M')}&background=random`,
           role: 'team',
           status: 'online',
-          jobTitle: tm.job_title
+          jobTitle: tm.job_title,
+          assignedClientIds: assignmentsMap.get(tm.id) || []
         }));
 
       setClients(mappedClients);
@@ -151,6 +162,9 @@ export const Workspace: React.FC = () => {
         ...t,
         clientId: t.client_id,
         assigneeId: t.assignee_id,
+        assigneeIds: t.assignee_ids || (t.assignee_id ? [t.assignee_id] : []),
+        checklist: t.checklist || [],
+        archivedAt: t.archived_at ? new Date(t.archived_at) : undefined,
         createdAt: new Date(t.created_at)
       })));
 
@@ -258,6 +272,9 @@ export const Workspace: React.FC = () => {
                 ...newTask,
                 clientId: newTask.client_id,
                 assigneeId: newTask.assignee_id,
+                assigneeIds: newTask.assignee_ids || (newTask.assignee_id ? [newTask.assignee_id] : []),
+                checklist: newTask.checklist || [],
+                archivedAt: newTask.archived_at ? new Date(newTask.archived_at) : undefined,
                 createdAt: new Date(newTask.created_at)
               }];
             });
@@ -267,6 +284,9 @@ export const Workspace: React.FC = () => {
               ...updatedTask,
               clientId: updatedTask.client_id,
               assigneeId: updatedTask.assignee_id,
+              assigneeIds: updatedTask.assignee_ids || (updatedTask.assignee_id ? [updatedTask.assignee_id] : []),
+              checklist: updatedTask.checklist || [],
+              archivedAt: updatedTask.archived_at ? new Date(updatedTask.archived_at) : undefined,
               createdAt: new Date(updatedTask.created_at)
             } : t));
           } else if (payload.eventType === 'DELETE') {
@@ -366,6 +386,9 @@ export const Workspace: React.FC = () => {
       if (updates.priority) payload.priority = updates.priority;
       if (updates.title) payload.title = updates.title;
       if (updates.assigneeId !== undefined) payload.assignee_id = updates.assigneeId;
+      if (updates.assigneeIds !== undefined) payload.assignee_ids = updates.assigneeIds;
+      if (updates.checklist !== undefined) payload.checklist = updates.checklist;
+      if (updates.archivedAt !== undefined) payload.archived_at = updates.archivedAt;
       if (updates.tags) payload.tags = updates.tags;
       if (updates.description !== undefined) payload.description = updates.description;
       if (updates.deadline !== undefined) payload.deadline = updates.deadline;

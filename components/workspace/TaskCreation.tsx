@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Plus, Link2 } from 'lucide-react';
 import { Task, DiscussionDraft, User as UIUser } from '../../types';
 import { Button } from '../ui';
+import { MentionInput } from './MentionInput';
 
 interface TaskCreationProps {
     draft: DiscussionDraft;
@@ -363,11 +364,13 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
                         <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                             Comentário / Atualização
                         </label>
-                        <textarea
+                        <MentionInput
                             value={comment}
-                            onChange={e => setComment(e.target.value)}
-                            placeholder="Escreva seu comentário aqui..."
+                            onChange={setComment}
+                            teamMembers={teamMembers}
+                            placeholder="Escreva seu comentário aqui... (use @ para mencionar)"
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none min-h-[100px]"
+                            multiline
                         />
                     </div>
                 )}

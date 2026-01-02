@@ -16,6 +16,7 @@ export interface User {
   jobTitle?: string;
   unreadCount?: number;
   lastMessage?: string;
+  assignedClientIds?: string[]; // IDs of clients this team member is assigned to
 }
 
 // Unified Message Type (The "Single Table" approach)
@@ -48,12 +49,21 @@ export interface Task {
   title: string;
   status: 'todo' | 'in-progress' | 'review' | 'done';
   priority: 'low' | 'medium' | 'high';
-  assigneeId?: string;
+  assigneeId?: string; // Deprecated, use assigneeIds
+  assigneeIds?: string[];
   clientId: string;
   tags?: string[];
   description?: string;
   deadline?: string;
   createdAt: Date;
+  checklist?: ChecklistItem[];
+  archivedAt?: Date;
+}
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
 }
 
 export interface DiscussionDraft {

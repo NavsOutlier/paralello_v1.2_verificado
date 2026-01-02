@@ -33,7 +33,11 @@ export const Workspace: React.FC = () => {
   // UI State
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [discussionDraft, setDiscussionDraft] = useState<DiscussionDraft | null>(null);
+  const [discussionDraft, setDiscussionDraft] = useState<{
+    sourceMessage: Message;
+    mode: 'new' | 'attach';
+  } | null>(null);
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
 
   // Custom Hooks
@@ -74,9 +78,10 @@ export const Workspace: React.FC = () => {
     description?: string;
     checklist?: ChecklistItem[];
   }, comment?: string) => {
-    if (!organizationId || !discussionDraft || !selectedEntityId || !currentUser) return;
+    if (!organizationId || !discussionDraft || !selectedEntityId || !currentUser || isCreatingTask) return;
 
     try {
+      setIsCreatingTask(true);
       // 1. Create Task
       const taskPayload: any = {
         organization_id: organizationId,
@@ -143,6 +148,8 @@ export const Workspace: React.FC = () => {
       setDiscussionDraft(null);
     } catch (error) {
       console.error('Error creating task:', error);
+    } finally {
+      setIsCreatingTask(false);
     }
   };
 

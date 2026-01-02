@@ -322,14 +322,15 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                     <div className="space-y-2">
                         {filteredTasks.map((t, index) => {
                             const count = props.allMessages.filter(m => m.channelId === t.id).length;
-                            const assignee = props.teamMembers.find(m => m.id === t.assigneeId);
+                            const currentAssigneeIds = t.assigneeIds || (t.assigneeId ? [t.assigneeId] : []);
+                            const assignees = props.teamMembers.filter(m => currentAssigneeIds.includes(m.id));
 
                             return (
                                 <TaskCard
                                     key={t.id}
                                     task={t}
                                     messageCount={count}
-                                    assignee={assignee}
+                                    assignees={assignees}
                                     notificationCount={index === 0 ? 0 : 0}
                                     onClick={() => handleSelectTask(t)}
                                 />

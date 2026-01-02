@@ -1,29 +1,22 @@
 import React from 'react';
-import { MessageSquare, Calendar, CheckSquare, ChevronDown } from 'lucide-react';
+import { MessageSquare, Calendar, CheckSquare, Plus, X } from 'lucide-react';
 import { Task, User as UIUser } from '../../types';
 
 interface TaskCardProps {
     task: Task;
     messageCount: number;
     onClick: () => void;
-    assignee?: UIUser;
+    assignees: UIUser[];
     notificationCount?: number;
 }
 
-const statusConfig = {
-    'done': { label: 'APROVADO', color: 'bg-emerald-500', bg: 'bg-emerald-50/50', text: 'text-emerald-600' },
-    'in-progress': { label: 'EM PROGRESSO', color: 'bg-blue-500', bg: 'bg-blue-50/50', text: 'text-blue-600' },
-    'todo': { label: 'PENDENTE', color: 'bg-amber-500', bg: 'bg-amber-50/50', text: 'text-amber-600' },
-    'review': { label: 'REVISÃO', color: 'bg-indigo-500', bg: 'bg-indigo-50/50', text: 'text-indigo-600' },
-};
-
 const TAG_COLORS = [
-    { bg: 'bg-indigo-50', text: 'text-indigo-700', dot: 'bg-indigo-400' },
-    { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-400' },
-    { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400' },
-    { bg: 'bg-rose-50', text: 'text-rose-700', dot: 'bg-rose-400' },
-    { bg: 'bg-sky-50', text: 'text-sky-700', dot: 'bg-sky-400' },
-    { bg: 'bg-violet-50', text: 'text-violet-700', dot: 'bg-violet-400' },
+    { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200' },
+    { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+    { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+    { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' },
+    { bg: 'bg-sky-50', text: 'text-sky-700', border: 'border-sky-200' },
+    { bg: 'bg-violet-50', text: 'text-violet-700', border: 'border-violet-200' },
 ];
 
 const getTagColor = (tag: string) => {
@@ -31,97 +24,116 @@ const getTagColor = (tag: string) => {
     return TAG_COLORS[hash % TAG_COLORS.length];
 };
 
-export const TaskCard: React.FC<TaskCardProps> = ({ task, messageCount, onClick, assignee, notificationCount = 0 }) => {
-    const config = statusConfig[task.status] || statusConfig.todo;
+export const TaskCard: React.FC<TaskCardProps> = ({ task, messageCount, onClick, assignees = [], notificationCount = 0 }) => {
 
     const formatDate = (date: Date | string) => {
         const d = new Date(date);
         const day = d.getDate();
         const month = d.toLocaleString('pt-BR', { month: 'short' }).replace('.', '');
-        return `${day} ${month.charAt(0).toUpperCase()}${month.slice(1)}`;
+        return `${day} de ${month.toLowerCase()}.`;
     };
+
+    // Checklist stats
+    const totalChecklist = task.checklist?.length || 0;
+    const completedChecklist = task.checklist?.filter(i => i.completed).length || 0;
 
     return (
         <div
             onClick={onClick}
-            className="group relative bg-white p-3 pt-4 rounded-[18px] border border-slate-100 mb-2 cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_12px_24px_-8px_rgba(0,0,0,0.08)] transition-all duration-300"
+            className="group relative bg-white p-4 rounded-[16px] border border-slate-200 cursor-pointer shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200"
         >
-            {/* Notification Badge - Positioned at top right outside padding */}
+            {/* Notification Badge */}
             {notificationCount > 0 && (
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-md z-10 transition-transform group-hover:scale-110">
+                <div className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border-2 border-white shadow-sm z-10">
                     {notificationCount}
                 </div>
             )}
 
-            {/* Top Info: Status and Date Row */}
-            <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white border border-slate-100/80 rounded-full shadow-sm">
-                    <div className={`w-1.5 h-1.5 rounded-full ${config.color}`} />
-                    <span className="text-[9px] font-black text-slate-600 tracking-tight uppercase">{config.label}</span>
-                    <ChevronDown className="w-2.5 h-2.5 text-slate-300" />
-                </div>
-                <span className="text-[10px] font-black text-slate-300 tracking-tight">
-                    {formatDate(task.createdAt)}
-                </span>
-            </div>
-
-            {/* Content: Title & Tags */}
-            <div className="mb-3">
-                <h4 className="text-[14.5px] font-black text-slate-800 leading-tight mb-2 tracking-tight group-hover:text-indigo-600 transition-colors">
+            {/* Title */}
+            <div className="mb-2.5">
+                <h4 className="text-[15px] font-black text-slate-800 leading-tight tracking-tight group-hover:text-indigo-700 transition-colors line-clamp-2">
                     {task.title}
                 </h4>
-
-                {task.tags && task.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                        {task.tags.map(tag => {
-                            const color = getTagColor(tag);
-                            return (
-                                <span
-                                    key={tag}
-                                    className={`text-[8px] px-2 py-0.5 rounded-md font-bold ${color.bg} ${color.text} border border-black/5 uppercase tracking-tighter`}
-                                >
-                                    {tag}
-                                </span>
-                            );
-                        })}
-                    </div>
-                )}
             </div>
 
-            {/* Horizontal Divider - Ultra Light */}
-            <div className="h-[1px] w-full bg-slate-50/60 mb-3" />
+            {/* Tags Row */}
+            <div className="flex flex-wrap gap-2 mb-4">
+                {/* Dashed Add Button Placeholder (Visual only) */}
+                <div className="h-6 px-2 flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-slate-50 text-slate-400">
+                    <Plus className="w-3 h-3" />
+                    <span className="text-[10px] font-bold uppercase">TAG</span>
+                </div>
 
-            {/* Bottom Row: Metrics & Avatars */}
-            <div className="flex justify-between items-center">
+                {task.tags?.map(tag => {
+                    const color = getTagColor(tag);
+                    return (
+                        <div
+                            key={tag}
+                            className={`h-6 px-2.5 flex items-center gap-1.5 rounded-full border ${color.border} ${color.bg} ${color.text}`}
+                        >
+                            <X className="w-3 h-3 opacity-50 cursor-pointer hover:opacity-100" />
+                            <span className="text-[10px] font-bold">{tag}</span>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Bottom Row: Metadata & Assignees */}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-50">
                 <div className="flex items-center gap-2">
-                    {task.deadline && (
-                        <div className="flex items-center gap-1.5 h-6.5 px-2 bg-[#fff5f5] text-[#e03131] text-[9.5px] font-extrabold rounded-lg border border-[#ffc9c9]/40">
-                            <Calendar className="w-3 h-3" />
-                            {formatDate(task.deadline).toLowerCase()}
+                    {/* Checklist Badge */}
+                    {totalChecklist > 0 && (
+                        <div className="h-7 px-2.5 flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-white shadow-sm">
+                            <CheckSquare className="w-3.5 h-3.5 text-indigo-500" />
+                            <span className="text-[10px] font-bold text-slate-600">
+                                Checklist <span className="text-indigo-600">({completedChecklist}/{totalChecklist})</span>
+                            </span>
                         </div>
                     )}
 
-                    {assignee ? (
-                        <div className="w-5 h-5 rounded-full border-2 border-white shadow-sm overflow-hidden bg-slate-100 ring-1 ring-slate-100 shrink-0">
-                            <img src={assignee.avatar} alt={assignee.name} className="w-full h-full object-cover" />
-                        </div>
-                    ) : (
-                        <div className="w-5 h-5 rounded-full border-2 border-white shadow-sm bg-indigo-500 flex items-center justify-center text-[7px] text-white font-black shrink-0">
-                            PN
+                    {/* Deadline Badge */}
+                    {task.deadline && (
+                        <div className="h-7 px-2.5 flex items-center gap-1.5 rounded-lg border border-red-100 bg-red-50">
+                            <Calendar className="w-3.5 h-3.5 text-red-500" />
+                            <span className="text-[10px] font-bold text-red-600">
+                                {formatDate(task.deadline)}
+                            </span>
                         </div>
                     )}
                 </div>
 
-                <div className="flex items-center gap-2.5">
-                    <div className="flex items-center gap-1 h-6.5 px-1.5 bg-slate-50/50 rounded-lg border border-slate-100 text-[9.5px] font-extrabold text-slate-400">
-                        <CheckSquare className="w-3 h-3 text-indigo-400" />
-                        <span>1/3</span>
+                <div className="flex items-center">
+                    {/* Avatar Stack */}
+                    <div className="flex items-center -space-x-2">
+                        {assignees.slice(0, 3).map((assignee, idx) => (
+                            <div
+                                key={assignee.id}
+                                className="w-7 h-7 rounded-full border-2 border-white bg-slate-100 relative z-[2] shadow-sm overflow-hidden"
+                                title={assignee.name}
+                            >
+                                {assignee.avatar ? (
+                                    <img src={assignee.avatar} className="w-full h-full object-cover" alt="" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-indigo-500 text-white text-[9px] font-bold">
+                                        {assignee.name.charAt(0)}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                        {assignees.length > 3 && (
+                            <div className="w-7 h-7 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[9px] font-bold text-slate-500 relative z-[1] shadow-sm">
+                                +{assignees.length - 3}
+                            </div>
+                        )}
                     </div>
 
-                    <div className="flex items-center gap-1 h-6 text-[9.5px] font-black text-slate-300">
-                        <MessageSquare className="w-3.5 h-3.5 opacity-40 shrink-0" />
-                        <span>{messageCount}</span>
-                    </div>
+                    {/* Message Count */}
+                    {messageCount > 0 && (
+                        <div className="ml-3 flex items-center gap-1 text-slate-400">
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span className="text-[10px] font-bold">{messageCount}</span>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

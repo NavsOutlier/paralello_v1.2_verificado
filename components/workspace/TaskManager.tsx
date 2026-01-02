@@ -27,6 +27,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
         return <TaskCreation
             draft={props.discussionDraft}
             existingTasks={props.tasks}
+            teamMembers={props.teamMembers}
             onCancel={props.onCancelDraft}
             onCreate={props.onCreateTaskFromDraft}
             onAttach={props.onAttachTaskFromDraft}

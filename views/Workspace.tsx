@@ -10,6 +10,7 @@ export const Workspace: React.FC = () => {
   const { organizationId, user: currentUser } = useAuth();
   const [clients, setClients] = useState<UIUser[]>([]);
   const [team, setTeam] = useState<UIUser[]>([]);
+  const [allTeamMembers, setAllTeamMembers] = useState<UIUser[]>([]); // All members for task assignment
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
   const [allMessages, setAllMessages] = useState<Message[]>([]);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
@@ -54,8 +55,19 @@ export const Workspace: React.FC = () => {
           status: 'online'
         }));
 
+      // All team members including current user (for task assignment)
+      const allMappedTeam: UIUser[] = (teamRes.data || [])
+        .map(tm => ({
+          id: tm.profile_id,
+          name: tm.profile?.name || 'Membro',
+          avatar: tm.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tm.profile?.name || 'M')}&background=random`,
+          role: 'team',
+          status: 'online'
+        }));
+
       setClients(mappedClients);
       setTeam(mappedTeam);
+      setAllTeamMembers(allMappedTeam);
       setAllMessages((messagesRes.data || []).filter(m => {
         if (m.context_type === 'DIRECT_MESSAGE') {
           return m.sender_id === currentUser?.id || m.dm_channel_id === currentUser?.id;
@@ -265,18 +277,37 @@ export const Workspace: React.FC = () => {
     }
   };
 
-  const handleCreateTask = async (title: string, priority: 'low' | 'medium' | 'high') => {
+  const handleCreateTask = async (data: {
+    title: string;
+    priority: 'low' | 'medium' | 'high';
+    assigneeId?: string;
+    status: 'todo' | 'in-progress' | 'review' | 'done';
+    deadline?: string;
+    tags?: string[];
+    description?: string;
+  }) => {
     if (!selectedEntityId || !discussionDraft || !organizationId) return;
 
     try {
       // 1. Create Task
-      const { data: taskData, error: taskError } = await supabase.from('tasks').insert({
+      const taskPayload: any = {
         organization_id: organizationId,
-        title,
-        status: 'todo',
-        priority,
+        title: data.title,
+        status: data.status,
+        priority: data.priority,
         client_id: selectedEntityId
-      }).select().single();
+      };
+
+      if (data.assigneeId) taskPayload.assignee_id = data.assigneeId;
+      if (data.deadline) taskPayload.deadline = data.deadline;
+      if (data.tags) taskPayload.tags = data.tags;
+      if (data.description) taskPayload.description = data.description;
+
+      const { data: taskData, error: taskError } = await supabase
+        .from('tasks')
+        .insert(taskPayload)
+        .select()
+        .single();
 
       if (taskError) throw taskError;
 
@@ -395,7 +426,7 @@ export const Workspace: React.FC = () => {
           <TaskManager
             tasks={currentEntityTasks}
             allMessages={allMessages}
-            teamMembers={team}
+            teamMembers={allTeamMembers}
             discussionDraft={discussionDraft}
             onCancelDraft={() => setDiscussionDraft(null)}
             onCreateTaskFromDraft={handleCreateTask}

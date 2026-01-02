@@ -137,14 +137,6 @@ export const Workspace: React.FC = () => {
         linkedMessageId: msgData.linked_message_id
       });
 
-      // 4. Notify in Client Chat (WhatsApp Feed)
-      if (taskData) {
-        const _ = await notifyTaskCreated({
-          ...taskData,
-          clientId: taskData.client_id // ensure client_id mapped
-        });
-      }
-
       setDiscussionDraft(null);
     } catch (error) {
       console.error('Error creating task:', error);

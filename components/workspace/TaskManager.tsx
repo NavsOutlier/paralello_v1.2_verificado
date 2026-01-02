@@ -87,7 +87,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
     if (currentTask) {
         return <TaskDetail
             task={currentTask}
-            messages={props.allMessages.filter(m => m.taskId === currentTask.id && m.contextType !== 'WHATSAPP_FEED')}
+            messages={props.allMessages.filter(m => m.taskId === currentTask.id)}
             onBack={() => handleSelectTask(null)}
             onNavigateToMessage={props.onNavigateToMessage}
             onAddComment={(text) => props.onAddTaskComment(currentTask.id, text)}

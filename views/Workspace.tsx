@@ -125,15 +125,26 @@ export const Workspace: React.FC = () => {
         }
         return true;
       }).map(m => {
-        const mapped = {
-          ...m,
+        // Properly construct Message object from database
+        const mapped: Message = {
+          id: m.id,
+          contextType: m.context_type,
+          senderType: m.sender_type,
           senderId: m.sender_id,
-          channelId: m.channel_id || m.client_id || m.task_id || m.dm_channel_id,
-          timestamp: new Date(m.created_at)
+          text: m.text,
+          timestamp: new Date(m.created_at),
+          isInternal: m.is_internal,
+          linkedMessageId: m.linked_message_id,
+          // Polymorphic fields
+          taskId: m.task_id,
+          clientId: m.client_id,
+          dmChannelId: m.dm_channel_id,
+          // Channel routing
+          channelId: m.task_id || m.client_id ||
+            (m.context_type === 'DIRECT_MESSAGE'
+              ? (m.sender_id === currentUser?.id ? m.dm_channel_id : m.sender_id)
+              : undefined)
         };
-        if (m.context_type === 'DIRECT_MESSAGE') {
-          mapped.channelId = m.sender_id === currentUser?.id ? m.dm_channel_id : m.sender_id;
-        }
         return mapped;
       }));
       setAllTasks((tasksRes.data || []).map(t => ({
@@ -182,27 +193,51 @@ export const Workspace: React.FC = () => {
 
             setAllMessages(prev => {
               if (prev.some(m => m.id === newMsg.id)) return prev;
-              const mapped = {
-                ...newMsg,
+
+              // Properly construct Message object from realtime payload
+              const mapped: Message = {
+                id: newMsg.id,
+                contextType: newMsg.context_type,
+                senderType: newMsg.sender_type,
                 senderId: newMsg.sender_id,
-                channelId: newMsg.channel_id || newMsg.client_id || newMsg.task_id,
-                timestamp: new Date(newMsg.created_at)
+                text: newMsg.text,
+                timestamp: new Date(newMsg.created_at),
+                isInternal: newMsg.is_internal,
+                linkedMessageId: newMsg.linked_message_id,
+                // Polymorphic fields
+                taskId: newMsg.task_id,
+                clientId: newMsg.client_id,
+                dmChannelId: newMsg.dm_channel_id,
+                // Channel routing
+                channelId: newMsg.task_id || newMsg.client_id ||
+                  (newMsg.context_type === 'DIRECT_MESSAGE'
+                    ? (newMsg.sender_id === currentUser?.id ? newMsg.dm_channel_id : newMsg.sender_id)
+                    : undefined)
               };
-              if (newMsg.context_type === 'DIRECT_MESSAGE') {
-                mapped.channelId = newMsg.sender_id === currentUser?.id ? newMsg.dm_channel_id : newMsg.sender_id;
-              }
+
               return [...prev, mapped];
             });
           } else if (payload.eventType === 'UPDATE') {
             const updatedMsg = payload.new as any;
             setAllMessages(prev => prev.map(m => m.id === updatedMsg.id ? {
-              ...updatedMsg,
+              id: updatedMsg.id,
+              contextType: updatedMsg.context_type,
+              senderType: updatedMsg.sender_type,
               senderId: updatedMsg.sender_id,
-              channelId: updatedMsg.channel_id || updatedMsg.client_id || updatedMsg.task_id || (updatedMsg.context_type === 'DIRECT_MESSAGE' ? (updatedMsg.sender_id === currentUser?.id ? updatedMsg.dm_channel_id : updatedMsg.sender_id) : undefined),
-              timestamp: new Date(updatedMsg.created_at)
+              text: updatedMsg.text,
+              timestamp: new Date(updatedMsg.created_at),
+              isInternal: updatedMsg.is_internal,
+              linkedMessageId: updatedMsg.linked_message_id,
+              taskId: updatedMsg.task_id,
+              clientId: updatedMsg.client_id,
+              dmChannelId: updatedMsg.dm_channel_id,
+              channelId: updatedMsg.task_id || updatedMsg.client_id ||
+                (updatedMsg.context_type === 'DIRECT_MESSAGE'
+                  ? (updatedMsg.sender_id === currentUser?.id ? updatedMsg.dm_channel_id : updatedMsg.sender_id)
+                  : undefined)
             } : m));
           } else if (payload.eventType === 'DELETE') {
-            setAllMessages(prev => prev.filter(m => m.id === payload.old.id));
+            setAllMessages(prev => prev.filter(m => m.id !== payload.old.id));
           }
         }
       )
@@ -460,11 +495,20 @@ export const Workspace: React.FC = () => {
 
       if (error) throw error;
 
-      setAllMessages(prev => [...prev, {
-        ...data,
-        channelId: data.task_id,
-        timestamp: new Date(data.created_at)
-      }]);
+      // Properly construct Message object from database response
+      const newMessage: Message = {
+        id: data.id,
+        channelId: taskId,
+        taskId: taskId,
+        contextType: 'TASK_INTERNAL',
+        senderType: 'MEMBER',
+        senderId: data.sender_id,
+        text: data.text,
+        timestamp: new Date(data.created_at),
+        isInternal: true
+      };
+
+      setAllMessages(prev => [...prev, newMessage]);
     } catch (error) {
       console.error('Error adding task comment:', error);
     }

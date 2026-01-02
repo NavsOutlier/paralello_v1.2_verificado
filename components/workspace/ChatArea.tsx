@@ -99,6 +99,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                         }
                         onInitiateDiscussion={canManageTasks ? onInitiateDiscussion : undefined}
                         messageRef={(el) => messageRefs.current[msg.id] = el}
+                        colorScheme="green"
                     />
                 ))}
                 <div ref={messagesEndRef} />
@@ -112,7 +113,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     </button>
                     <input
                         type="text"
-                        className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 disabled:opacity-75"
+                        className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 disabled:opacity-75"
                         placeholder={isSending ? "Enviando..." : "Digite uma mensagem..."}
                         value={text}
                         onChange={e => setText(e.target.value)}
@@ -122,7 +123,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     <button
                         onClick={handleSend}
                         disabled={!text.trim() || isSending}
-                        className="bg-indigo-600 text-white p-2.5 rounded-full hover:bg-indigo-700 transition-colors disabled:bg-indigo-400"
+                        className="bg-emerald-600 text-white p-2.5 rounded-full hover:bg-emerald-700 transition-colors disabled:bg-emerald-400"
                     >
                         {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </button>

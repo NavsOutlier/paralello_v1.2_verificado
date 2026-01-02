@@ -2,10 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
     ArrowLeft, Zap, Pencil, Archive, ChevronDown,
     Calendar, CheckSquare, MessageSquare, Plus,
-    X, Smile, Paperclip, Send, Loader2
+    X, Paperclip, Send, Loader2
 } from 'lucide-react';
 import { Task, Message, User as UIUser } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
+import { MessageBubble } from '../MessageBubble';
 
 const TAG_COLORS = [
     { bg: 'bg-indigo-50', text: 'text-indigo-700', dot: 'bg-indigo-400' },
@@ -134,10 +135,10 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
-                <div className="p-4 pb-10">
+            <div className="flex-1 overflow-y-auto bg-[#efeae2]">
+                <div className="p-4 pb-10 space-y-3">
                     {/* Title & Tags Row */}
-                    <div className="mb-4">
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
                         <h2 className="text-[17px] font-black text-slate-800 leading-tight mb-2.5">
                             {task.title}
                         </h2>
@@ -164,10 +165,10 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
                         </div>
                     </div>
 
-                    <div className="h-[1px] bg-slate-50 w-full mb-5" />
+                    <div className="h-[1px] bg-white/50 w-full" />
 
-                    {/* Metrics Bar - Combined and tighter */}
-                    <div className="flex items-center gap-2 mb-6 flex-wrap">
+                    {/* Metrics Bar */}
+                    <div className="flex items-center gap-2 mb-4 flex-wrap bg-white p-3 rounded-xl shadow-sm border border-slate-100">
                         {/* Deadline card */}
                         <div className="bg-[#fff5f5] h-7.5 px-2 rounded-lg border border-[#ffc9c9]/30 flex items-center gap-1.5">
                             <Calendar className="w-3 h-3 text-[#e03131]" />
@@ -193,68 +194,53 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
                         </div>
                     </div>
 
-                    {/* Internal Discussion */}
-                    <div className="border-t border-slate-50 pt-4">
-                        <div className="flex items-center gap-2 mb-4 text-slate-400">
-                            <MessageSquare className="w-3 h-3" />
-                            <h3 className="text-[9px] font-black tracking-widest uppercase opacity-70">Discussão Interna</h3>
-                        </div>
-
-                        <div className="space-y-2.5">
-                            {messages.length === 0 && (
-                                <p className="text-[10px] text-slate-300 italic">Nenhum comentário...</p>
-                            )}
-                            {messages.map((msg) => {
-                                const sender = teamMembers.find(t => t.id === msg.senderId);
-                                return (
-                                    <div key={msg.id} className="bg-white p-2.5 rounded-xl border border-slate-100 shadow-[0_1px_4px_rgba(0,0,0,0.01)] max-w-[95%]">
-                                        <div className="flex justify-between items-baseline mb-0.5">
-                                            <span className="text-[10px] font-black text-slate-700">
-                                                {sender?.name || 'Membro'} <span className="text-slate-400 font-bold opacity-60 ml-0.5">({sender?.jobTitle || 'Equipe'})</span>
-                                            </span>
-                                            <span className="text-[8px] font-bold text-slate-300">
-                                                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
-                                        </div>
-                                        <p className="text-[11px] text-slate-600 leading-normal font-medium">
-                                            {msg.text}
-                                        </p>
-                                    </div>
-                                );
-                            })}
-                            <div ref={messagesEndRef} />
-                        </div>
+                    {/* Chat Messages - WhatsApp Style */}
+                    <div className="space-y-3">
+                        {messages.length === 0 && (
+                            <div className="text-center py-8">
+                                <MessageSquare className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                                <p className="text-[11px] text-slate-400 italic">Nenhuma mensagem ainda...</p>
+                            </div>
+                        )}
+                        {messages.map((msg) => {
+                            const sender = teamMembers.find(t => t.id === msg.senderId);
+                            return (
+                                <MessageBubble
+                                    key={msg.id}
+                                    msg={msg}
+                                    isMe={msg.senderId === currentUser?.id}
+                                    senderName={sender?.name || 'Membro'}
+                                    senderJobTitle={sender?.jobTitle}
+                                />
+                            );
+                        })}
+                        <div ref={messagesEndRef} />
                     </div>
                 </div>
             </div>
 
-            {/* Premium Input Area - even more compact */}
-            <div className="p-3 border-t border-slate-100/60 bg-white">
-                <div className="relative bg-[#f1f3f5]/40 rounded-xl border border-slate-100">
-                    <textarea
-                        className="w-full bg-transparent p-3 pb-10 text-[11.5px] text-slate-600 placeholder:text-slate-300 focus:outline-none resize-none min-h-[40px] font-medium"
-                        placeholder="Comentário interno..."
+            {/* Input Area - ChatArea Style */}
+            <div className="p-4 bg-white border-t border-slate-200">
+                <div className="flex items-center space-x-4">
+                    <button className="text-slate-400 hover:text-slate-600 disabled:opacity-50" disabled={isAddingComment}>
+                        <Paperclip className="w-5 h-5" />
+                    </button>
+                    <input
+                        type="text"
+                        className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 disabled:opacity-75"
+                        placeholder={isAddingComment ? "Enviando..." : "Digite uma mensagem..."}
                         value={comment}
                         onChange={e => setComment(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
+                        onKeyDown={e => { if (e.key === 'Enter') { handleSubmit(); } }}
                         disabled={isAddingComment}
                     />
-                    <div className="absolute bottom-2.5 left-3 flex items-center gap-3 opacity-60 hover:opacity-100 transition-opacity">
-                        <Smile className="w-4 h-4 text-slate-400 cursor-pointer hover:text-slate-600" />
-                        <Paperclip className="w-4 h-4 text-slate-400 cursor-pointer hover:text-slate-600" />
-                    </div>
-                    <div className="absolute bottom-2 right-2">
-                        <button
-                            onClick={handleSubmit}
-                            disabled={!comment.trim() || isAddingComment}
-                            className={`w-7.5 h-7.5 rounded-full flex items-center justify-center transition-all ${comment.trim() && !isAddingComment
-                                ? 'bg-slate-200 text-slate-600 hover:bg-slate-300'
-                                : 'bg-slate-100 text-slate-300'
-                                }`}
-                        >
-                            {isAddingComment ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                        </button>
-                    </div>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={!comment.trim() || isAddingComment}
+                        className="bg-indigo-600 text-white p-2.5 rounded-full hover:bg-indigo-700 transition-colors disabled:bg-indigo-400"
+                    >
+                        {isAddingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </button>
                 </div>
             </div>
         </div>

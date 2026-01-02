@@ -46,7 +46,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const scheme = colors[colorScheme];
 
   // If this message created a task, we render a special card design
-  if (linkedTaskId) {
+  const isTaskCreation = linkedTaskId || msg.text.startsWith('Tarefa Criada:');
+
+  if (isTaskCreation) {
     return (
       <div
         ref={messageRef}

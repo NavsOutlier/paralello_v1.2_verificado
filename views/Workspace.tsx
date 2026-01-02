@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { DiscussionDraft, ChecklistItem, Message, Task } from '../types';
 import { EntityList } from '../components/EntityList';
 import { ChatArea, TaskManager } from '../components/workspace';
 import { Loader2 } from 'lucide-react';
 import { useWorkspaceData } from '../hooks/useWorkspaceData';
+import { useResizableSidebar } from '../hooks/useResizableSidebar';
 
 export const Workspace: React.FC = () => {
   const { organizationId, user: currentUser } = useAuth();
@@ -25,7 +26,8 @@ export const Workspace: React.FC = () => {
     addTaskComment,
     createTask,
     createContextMessage,
-    manualUpdateState
+    manualUpdateState,
+    notifyTaskCreated
   } = useWorkspaceData();
 
   // UI State
@@ -33,8 +35,9 @@ export const Workspace: React.FC = () => {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [discussionDraft, setDiscussionDraft] = useState<DiscussionDraft | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
-  const [rightSidebarWidth, setRightSidebarWidth] = useState(380);
-  const [isResizing, setIsResizing] = useState(false);
+
+  // Custom Hooks
+  const { width: rightSidebarWidth, isResizing, startResizing } = useResizableSidebar();
 
   // Auto-select first client if none selected
   useEffect(() => {
@@ -42,39 +45,6 @@ export const Workspace: React.FC = () => {
       setSelectedEntityId(clients[0].id);
     }
   }, [clients, selectedEntityId, loading]);
-
-  // Resizing Logic
-  const startResizing = (e: React.MouseEvent) => {
-    setIsResizing(true);
-    e.preventDefault();
-  };
-
-  const stopResizing = () => {
-    setIsResizing(false);
-  };
-
-  const resize = useCallback((e: MouseEvent) => {
-    if (isResizing) {
-      const newWidth = window.innerWidth - e.clientX;
-      if (newWidth > 380 && newWidth < 600) {
-        setRightSidebarWidth(newWidth);
-      }
-    }
-  }, [isResizing]);
-
-  useEffect(() => {
-    if (isResizing) {
-      window.addEventListener('mousemove', resize);
-      window.addEventListener('mouseup', stopResizing);
-    } else {
-      window.removeEventListener('mousemove', resize);
-      window.removeEventListener('mouseup', stopResizing);
-    }
-    return () => {
-      window.removeEventListener('mousemove', resize);
-      window.removeEventListener('mouseup', stopResizing);
-    };
-  }, [isResizing, resize]);
 
   // Derived state
   const selectedEntity = [...clients, ...team].find(e => e.id === selectedEntityId) || null;
@@ -164,39 +134,9 @@ export const Workspace: React.FC = () => {
 
       // 4. Notify in Client Chat (WhatsApp Feed)
       if (taskData) {
-        // We use createMessage directly or createContextMessage with Client context
-        const notifData = await createContextMessage({
-          organization_id: organizationId,
-          // For WHATSAPP_FEED context, channel_id usually equals client_id (selectedEntityId)
-          // But here createContextMessage helper might expect task_id if context is TASK_INTERNAL.
-          // Let's rely on the backend to handle 'WHATSAPP_FEED' correctly if we pass client_id as channel_id?
-          // The current createContextMessage definition in useWorkspaceData mainly sets up for tasks.
-          // Let's check useWorkspaceData definition.
-          // Actually, let's use sendMessage directly if possible, or createContextMessage with appropriate overrides.
-          // Since useWorkspaceData's createContextMessage is typed for tasks, let's assume we can use it or sendMessage.
-          // sendMessage enforces WHATSAPP_FEED? No, sendMessage takes text and client.
-          // We need custom fields (is_internal, task_id).
-          client_id: selectedEntityId, // Explicitly set client_id for WHATSAPP_FEED
-          context_type: 'WHATSAPP_FEED',
-          sender_id: currentUser?.id,
-          sender_type: 'MEMBER',
-          text: `Tarefa Criada: ${taskData.title}`,
-          is_internal: true,
-          task_id: taskData.id // Link to the task
-        });
-
-        // Update local state for the notification
-        manualUpdateState('messages', {
-          id: notifData.id,
-          channelId: selectedEntityId, // Main chat
-          taskId: taskData.id, // Linked task
-          contextType: 'WHATSAPP_FEED',
-          senderType: 'MEMBER',
-          senderId: currentUser.id,
-          text: notifData.text,
-          timestamp: new Date(notifData.created_at),
-          isInternal: true,
-          linkedMessageId: null
+        const _ = await notifyTaskCreated({
+          ...taskData,
+          clientId: taskData.client_id // ensure client_id mapped
         });
       }
 

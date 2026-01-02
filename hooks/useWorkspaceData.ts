@@ -375,6 +375,41 @@ export const useWorkspaceData = () => {
         }
     }
 
+    const notifyTaskCreated = async (task: Task) => {
+        if (!organizationId || !currentUser) return;
+        try {
+            const { data, error } = await supabase.from('messages').insert({
+                organization_id: organizationId,
+                client_id: task.clientId,
+                context_type: 'WHATSAPP_FEED',
+                sender_id: currentUser.id,
+                sender_type: 'MEMBER',
+                text: `Tarefa Criada: ${task.title}`,
+                is_internal: true,
+                task_id: task.id
+            }).select().single();
+
+            if (error) throw error;
+
+            // Optimistic update
+            manualUpdateState('messages', {
+                id: data.id,
+                channelId: task.clientId,
+                taskId: task.id,
+                contextType: 'WHATSAPP_FEED',
+                senderType: 'MEMBER',
+                senderId: currentUser.id,
+                text: data.text,
+                timestamp: new Date(data.created_at),
+                isInternal: true,
+                linkedMessageId: null
+            });
+            return data;
+        } catch (error) {
+            console.error('Error notifying task creation:', error);
+        }
+    };
+
     return {
         clients,
         team,
@@ -390,6 +425,7 @@ export const useWorkspaceData = () => {
         addTaskComment,
         createTask,
         createContextMessage,
-        manualUpdateState
+        manualUpdateState,
+        notifyTaskCreated // Exported
     };
 };

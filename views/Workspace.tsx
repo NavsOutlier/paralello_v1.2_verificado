@@ -37,7 +37,7 @@ export const Workspace: React.FC = () => {
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
 
   // Custom Hooks
-  const { width: rightSidebarWidth, isResizing, startResizing } = useResizableSidebar();
+  const { width: rightSidebarWidth, isResizing, startResizing } = useResizableSidebar(440, 440, 800);
 
   // Auto-select first client if none selected
   useEffect(() => {

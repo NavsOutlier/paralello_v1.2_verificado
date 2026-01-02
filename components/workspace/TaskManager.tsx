@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, CheckCircle2, ChevronDown, Folder, Search, X, Archive, Filter } from 'lucide-react';
+import { Plus, CheckCircle2, ChevronDown, Folder, Search, X, Archive, Filter, Flag } from 'lucide-react';
 import { Task, Message, DiscussionDraft, User as UIUser, ChecklistTemplate, ChecklistItem } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { TaskCard } from './TaskCard';
@@ -35,6 +35,7 @@ interface TaskManagerProps {
 }
 
 type StatusFilter = 'all' | 'todo' | 'in-progress' | 'review' | 'done' | 'archived';
+type PriorityFilter = 'all' | 'low' | 'medium' | 'high';
 
 export const TaskManager: React.FC<TaskManagerProps> = (props) => {
     const { isSuperAdmin, permissions } = useAuth();
@@ -55,9 +56,10 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
     const [assigneeFilter, setAssigneeFilter] = useState<string | 'all'>('all');
     const [tagFilter, setTagFilter] = useState<string | 'all'>('all');
+    const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
 
     // Dropdown visibility state
-    const [openFilter, setOpenFilter] = useState<'status' | 'assignee' | 'tag' | null>(null);
+    const [openFilter, setOpenFilter] = useState<'status' | 'assignee' | 'tag' | 'priority' | null>(null);
 
     const handleAttachTask = (taskId: string, comment?: string) => {
         props.onAttachTaskFromDraft(taskId, comment);
@@ -132,10 +134,15 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
             if (!(task.tags || []).includes(tagFilter)) return false;
         }
 
+        // Priority
+        if (priorityFilter !== 'all') {
+            if (task.priority !== priorityFilter) return false;
+        }
+
         return true;
     });
 
-    const activeFilterCount = (statusFilter !== 'all' ? 1 : 0) + (assigneeFilter !== 'all' ? 1 : 0) + (tagFilter !== 'all' ? 1 : 0);
+    const activeFilterCount = (statusFilter !== 'all' ? 1 : 0) + (assigneeFilter !== 'all' ? 1 : 0) + (tagFilter !== 'all' ? 1 : 0) + (priorityFilter !== 'all' ? 1 : 0);
 
     return (
         <div className="flex flex-col h-full bg-slate-50/20">
@@ -215,6 +222,38 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                         )}
                     </div>
 
+                    {/* Priority Filter */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setOpenFilter(openFilter === 'priority' ? null : 'priority')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-[11px] font-bold transition-all whitespace-nowrap shadow-sm ${priorityFilter !== 'all' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200/60 text-slate-700 hover:border-slate-300'
+                                }`}
+                        >
+                            {priorityFilter === 'all' ? 'Prioridade' : priorityFilter.charAt(0).toUpperCase() + priorityFilter.slice(1)}
+                            <ChevronDown className="w-3 h-3 opacity-50" />
+                        </button>
+                        {openFilter === 'priority' && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setOpenFilter(null)} />
+                                <div className="absolute top-full left-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100">
+                                    <div className="py-1">
+                                        <button onClick={() => { setPriorityFilter('all'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${priorityFilter === 'all' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>Todas</button>
+                                        <div className="h-px bg-slate-100 my-1" />
+                                        <button onClick={() => { setPriorityFilter('high'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 ${priorityFilter === 'high' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>
+                                            <Flag className="w-3 h-3 text-red-500 fill-red-500" /> Alta
+                                        </button>
+                                        <button onClick={() => { setPriorityFilter('medium'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 ${priorityFilter === 'medium' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>
+                                            <Flag className="w-3 h-3 text-amber-500 fill-amber-500" /> Média
+                                        </button>
+                                        <button onClick={() => { setPriorityFilter('low'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 ${priorityFilter === 'low' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>
+                                            <Flag className="w-3 h-3 text-emerald-500 fill-emerald-500" /> Baixa
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+
                     {/* Assignee Filter */}
                     <div className="relative">
                         <button
@@ -282,7 +321,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
 
                     {activeFilterCount > 0 && (
                         <button
-                            onClick={() => { setStatusFilter('all'); setAssigneeFilter('all'); setTagFilter('all'); setSearchQuery(''); }}
+                            onClick={() => { setStatusFilter('all'); setAssigneeFilter('all'); setTagFilter('all'); setPriorityFilter('all'); setSearchQuery(''); }}
                             className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-rose-500 transition-colors"
                             title="Limpar filtros"
                         >
@@ -305,7 +344,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                                 <Filter className="w-12 h-12 mb-3 opacity-20" />
                                 <p className="text-sm font-medium">Nenhum resultado para o filtro.</p>
                                 <button
-                                    onClick={() => { setStatusFilter('all'); setAssigneeFilter('all'); setTagFilter('all'); setSearchQuery(''); }}
+                                    onClick={() => { setStatusFilter('all'); setAssigneeFilter('all'); setTagFilter('all'); setPriorityFilter('all'); setSearchQuery(''); }}
                                     className="mt-2 text-xs text-indigo-600 font-bold hover:underline"
                                 >
                                     Limpar filtros

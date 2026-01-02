@@ -29,14 +29,29 @@ export const Workspace: React.FC = () => {
     if (!organizationId) return;
     try {
       setLoading(true);
-      const [clientsRes, teamRes, messagesRes, tasksRes] = await Promise.all([
+      const [clientsRes, teamRes, messagesRes, tasksRes, assignmentsRes] = await Promise.all([
         supabase.from('clients').select('*').eq('organization_id', organizationId).is('deleted_at', null),
         supabase.from('team_members').select('*, profile:profiles!team_members_profile_id_fkey(*)').eq('organization_id', organizationId).is('deleted_at', null),
         supabase.from('messages').select('*').eq('organization_id', organizationId).order('created_at', { ascending: true }),
-        supabase.from('tasks').select('*').eq('organization_id', organizationId)
+        supabase.from('tasks').select('*').eq('organization_id', organizationId),
+        supabase.from('client_assignments').select('client_id, team_member_id').eq('organization_id', organizationId)
       ]);
 
-      const mappedClients: UIUser[] = (clientsRes.data || []).map(c => ({
+      // Get current user's team_member record
+      const currentTeamMember = (teamRes.data || []).find(tm => tm.profile_id === currentUser?.id);
+
+      // Filter clients based on assignments (unless user is manager/admin)
+      let filteredClients = clientsRes.data || [];
+      if (currentTeamMember && currentTeamMember.role !== 'manager') {
+        const assignedClientIds = new Set(
+          (assignmentsRes.data || [])
+            .filter(a => a.team_member_id === currentTeamMember.id)
+            .map(a => a.client_id)
+        );
+        filteredClients = filteredClients.filter(c => assignedClientIds.has(c.id));
+      }
+
+      const mappedClients: UIUser[] = filteredClients.map(c => ({
         id: c.id,
         name: c.name,
         avatar: c.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=random`,

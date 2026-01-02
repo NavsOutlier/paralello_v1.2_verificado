@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Client } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { ClientFormModal } from './ClientFormModal';
+import { ClientAssignmentModal } from './ClientAssignmentModal';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
-import { Users, Plus, Search, Edit2, Trash2, Phone, Mail, Loader2 } from 'lucide-react';
+import { Users, Plus, Search, Edit2, Trash2, Phone, Mail, Loader2, UserCog } from 'lucide-react';
 
 export const ClientManagement: React.FC = () => {
     const { organizationId, isSuperAdmin, permissions } = useAuth();
@@ -18,6 +19,9 @@ export const ClientManagement: React.FC = () => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Client | undefined>();
     const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; client?: Client }>({
+        isOpen: false
+    });
+    const [assignmentModal, setAssignmentModal] = useState<{ isOpen: boolean; client?: Client }>({
         isOpen: false
     });
 
@@ -208,6 +212,13 @@ export const ClientManagement: React.FC = () => {
                                     {canManage && (
                                         <div className="flex gap-1">
                                             <button
+                                                onClick={() => setAssignmentModal({ isOpen: true, client })}
+                                                className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                                                title="Gerenciar acesso"
+                                            >
+                                                <UserCog className="w-4 h-4" />
+                                            </button>
+                                            <button
                                                 onClick={() => {
                                                     setSelectedClient(client);
                                                     setIsFormOpen(true);
@@ -267,6 +278,13 @@ export const ClientManagement: React.FC = () => {
                 confirmLabel="Excluir"
                 onConfirm={handleDeleteClient}
                 onCancel={() => setDeleteDialog({ isOpen: false })}
+            />
+
+            <ClientAssignmentModal
+                isOpen={assignmentModal.isOpen}
+                clientId={assignmentModal.client?.id || ''}
+                clientName={assignmentModal.client?.name || ''}
+                onClose={() => setAssignmentModal({ isOpen: false })}
             />
         </div>
     );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Message, Task, DiscussionDraft, User as UIUser } from '../types';
+import { Message, Task, DiscussionDraft, User as UIUser, ChecklistTemplate, ChecklistItem } from '../types';
 import { EntityList } from '../components/EntityList';
 import { ChatArea, TaskManager } from '../components/workspace';
 import { Loader2 } from 'lucide-react';
@@ -14,6 +14,7 @@ export const Workspace: React.FC = () => {
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
   const [allMessages, setAllMessages] = useState<Message[]>([]);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [checklistTemplates, setChecklistTemplates] = useState<ChecklistTemplate[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Interaction State
@@ -63,12 +64,13 @@ export const Workspace: React.FC = () => {
     if (!organizationId) return;
     try {
       setLoading(true);
-      const [clientsRes, teamRes, messagesRes, tasksRes, assignmentsRes] = await Promise.all([
+      const [clientsRes, teamRes, messagesRes, tasksRes, assignmentsRes, templatesRes] = await Promise.all([
         supabase.from('clients').select('*').eq('organization_id', organizationId).is('deleted_at', null),
         supabase.from('team_members').select('*, profile:profiles!team_members_profile_id_fkey(*)').eq('organization_id', organizationId).is('deleted_at', null),
         supabase.from('messages').select('*').eq('organization_id', organizationId).order('created_at', { ascending: true }),
         supabase.from('tasks').select('*').eq('organization_id', organizationId),
-        supabase.from('client_assignments').select('client_id, team_member_id').eq('organization_id', organizationId)
+        supabase.from('client_assignments').select('client_id, team_member_id').eq('organization_id', organizationId),
+        supabase.from('checklist_templates').select('*')
       ]);
 
       // Get current user's team_member record
@@ -130,6 +132,13 @@ export const Workspace: React.FC = () => {
       setClients(mappedClients);
       setTeam(mappedTeam);
       setAllTeamMembers(allMappedTeam);
+      setChecklistTemplates((templatesRes.data || []).map(t => ({
+        id: t.id,
+        name: t.name,
+        items: t.items,
+        organizationId: t.organization_id,
+        createdAt: t.created_at
+      })));
       setAllMessages((messagesRes.data || []).filter(m => {
         if (m.context_type === 'DIRECT_MESSAGE') {
           return m.sender_id === currentUser?.id || m.dm_channel_id === currentUser?.id;
@@ -399,10 +408,44 @@ export const Workspace: React.FC = () => {
         .eq('id', taskId);
 
       if (error) throw error;
-
-      // Updates will be reflected via Realtime
     } catch (error) {
       console.error('Error updating task:', error);
+    }
+  };
+
+  const handleCreateChecklistTemplate = async (name: string, items: ChecklistItem[]) => {
+    if (!organizationId) return;
+    try {
+      const { data, error } = await supabase
+        .from('checklist_templates')
+        .insert({ name, items, organization_id: organizationId })
+        .select()
+        .single();
+      if (error) throw error;
+      if (data) {
+        setChecklistTemplates(prev => [...prev, {
+          id: data.id,
+          name: data.name,
+          items: data.items,
+          organizationId: data.organization_id,
+          createdAt: data.created_at
+        }]);
+      }
+    } catch (error) {
+      console.error('Error creating checklist template:', error);
+    }
+  };
+
+  const handleDeleteChecklistTemplate = async (templateId: string) => {
+    try {
+      const { error } = await supabase
+        .from('checklist_templates')
+        .delete()
+        .eq('id', templateId);
+      if (error) throw error;
+      setChecklistTemplates(prev => prev.filter(t => t.id !== templateId));
+    } catch (error) {
+      console.error('Error deleting checklist template:', error);
     }
   };
 
@@ -411,9 +454,11 @@ export const Workspace: React.FC = () => {
     status: 'todo' | 'in-progress' | 'review' | 'done';
     priority: 'low' | 'medium' | 'high';
     assigneeId?: string;
+    assigneeIds?: string[];
     deadline?: string;
     tags?: string[];
     description?: string;
+    checklist?: ChecklistItem[];
   }, comment?: string) => {
     if (!organizationId || !discussionDraft || !selectedEntityId || !currentUser) return;
 
@@ -428,9 +473,11 @@ export const Workspace: React.FC = () => {
       };
 
       if (data.assigneeId) taskPayload.assignee_id = data.assigneeId;
+      if (data.assigneeIds) taskPayload.assignee_ids = data.assigneeIds;
       if (data.deadline) taskPayload.deadline = data.deadline;
       if (data.tags) taskPayload.tags = data.tags;
       if (data.description) taskPayload.description = data.description;
+      if (data.checklist) taskPayload.checklist = data.checklist;
 
       const { data: taskData, error: taskError } = await supabase
         .from('tasks')
@@ -631,6 +678,9 @@ export const Workspace: React.FC = () => {
             onAddTaskComment={handleAddTaskComment}
             onUpdateTask={handleUpdateTask}
             onManualCreate={handleManualCreateTask}
+            checklistTemplates={checklistTemplates}
+            onCreateChecklistTemplate={handleCreateChecklistTemplate}
+            onDeleteChecklistTemplate={handleDeleteChecklistTemplate}
           />
         ) : (
           <div className="p-10 text-center text-slate-400">Selecione um cliente para ver tarefas.</div>

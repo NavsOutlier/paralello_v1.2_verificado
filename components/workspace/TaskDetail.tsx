@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
     ArrowLeft, Zap, Pencil, Archive, ChevronDown,
     Calendar, CheckSquare, MessageSquare, Plus,
-    X, Paperclip, Send, Loader2, Trash2, Check
+    X, Paperclip, Send, Loader2, Trash2, Check,
+    Save, Download, Settings, Copy
 } from 'lucide-react';
-import { Task, Message, User as UIUser, ChecklistItem } from '../../types';
+import { Task, Message, User as UIUser, ChecklistItem, ChecklistTemplate } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { MessageBubble } from '../MessageBubble';
 import { MentionInput } from './MentionInput';
@@ -40,6 +41,9 @@ interface TaskDetailProps {
     teamMembers: UIUser[];
     allTasks?: Task[];
     allContextMessages?: Message[];
+    checklistTemplates: ChecklistTemplate[];
+    onCreateChecklistTemplate: (name: string, items: ChecklistItem[]) => void;
+    onDeleteChecklistTemplate: (templateId: string) => void;
 }
 
 export const TaskDetail: React.FC<TaskDetailProps> = ({
@@ -51,7 +55,10 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
     onUpdateTask,
     teamMembers,
     allTasks = [],
-    allContextMessages = []
+    allContextMessages = [],
+    checklistTemplates,
+    onCreateChecklistTemplate,
+    onDeleteChecklistTemplate
 }) => {
     const { user: currentUser } = useAuth();
     const [comment, setComment] = useState('');
@@ -61,6 +68,9 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
     const [isAssigneeDropdownOpen, setIsAssigneeDropdownOpen] = useState(false);
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
     const [isChecklistOpen, setIsChecklistOpen] = useState(false);
+    const [isImportDropdownOpen, setIsImportDropdownOpen] = useState(false);
+    const [isSaveAsTemplateOpen, setIsSaveAsTemplateOpen] = useState(false);
+    const [newTemplateName, setNewTemplateName] = useState('');
 
     // Removed local mention state (handled by MentionInput)
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -144,6 +154,24 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
         onUpdateTask(task.id, { checklist: newChecklist });
     };
 
+    const handleImportTemplate = (template: ChecklistTemplate) => {
+        const newItems = template.items.map(item => ({
+            ...item,
+            id: crypto.randomUUID(),
+            completed: false
+        }));
+        onUpdateTask(task.id, { checklist: [...checklist, ...newItems] });
+        setIsImportDropdownOpen(false);
+    };
+
+    const handleSaveAsTemplate = () => {
+        if (!newTemplateName.trim() || checklist.length === 0) return;
+        onCreateChecklistTemplate(newTemplateName.trim(), checklist.map(i => ({ ...i, completed: false })));
+        setNewTemplateName('');
+        setIsSaveAsTemplateOpen(false);
+        alert('Template salvo com sucesso!');
+    };
+
     const handleArchive = () => {
         if (confirm('Tem certeza que deseja arquivar esta tarefa?')) {
             onUpdateTask(task.id, { archivedAt: new Date() });
@@ -181,10 +209,80 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
                                 <CheckSquare className="w-4 h-4 text-indigo-500" />
                                 <span className="font-bold text-slate-700 text-sm">Checklist</span>
                             </div>
-                            <button onClick={() => setIsChecklistOpen(false)} className="text-slate-400 hover:text-slate-600">
-                                <X className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-1">
+                                {/* Import Template Button */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setIsImportDropdownOpen(!isImportDropdownOpen)}
+                                        className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors"
+                                        title="Importar Modelo"
+                                    >
+                                        <Download className="w-3.5 h-3.5" />
+                                    </button>
+
+                                    {isImportDropdownOpen && (
+                                        <>
+                                            <div className="fixed inset-0 z-20" onClick={() => setIsImportDropdownOpen(false)} />
+                                            <div className="absolute top-full right-0 mt-1 w-48 bg-white border border-slate-200 shadow-xl rounded-xl z-30 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                                                <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400">MODELOS DISPONÍVEIS</div>
+                                                <div className="max-h-48 overflow-y-auto">
+                                                    {checklistTemplates.map(t => (
+                                                        <button
+                                                            key={t.id}
+                                                            onClick={() => handleImportTemplate(t)}
+                                                            className="w-full text-left px-3 py-2 text-[11px] hover:bg-slate-50 text-slate-600 font-medium flex items-center justify-between group"
+                                                        >
+                                                            <span>{t.name}</span>
+                                                            <Plus className="w-3 h-3 text-slate-300 group-hover:text-indigo-500" />
+                                                        </button>
+                                                    ))}
+                                                    {checklistTemplates.length === 0 && (
+                                                        <div className="p-3 text-center text-slate-400 text-[10px]">Nenhum modelo salvo.</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* Save as Template Button */}
+                                <button
+                                    onClick={() => setIsSaveAsTemplateOpen(!isSaveAsTemplateOpen)}
+                                    className={`p-1.5 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors ${checklist.length === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                    title="Salvar como Modelo"
+                                    disabled={checklist.length === 0}
+                                >
+                                    <Save className="w-3.5 h-3.5" />
+                                </button>
+
+                                <button onClick={() => setIsChecklistOpen(false)} className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-400 transition-colors">
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
                         </div>
+
+                        {isSaveAsTemplateOpen && (
+                            <div className="p-3 bg-indigo-50 border-b border-indigo-100 animate-in slide-in-from-top duration-200">
+                                <label className="block text-[10px] font-bold text-indigo-600 uppercase mb-1.5">Salvar Checklist como Modelo</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Nome do modelo (ex: Onboarding)"
+                                        value={newTemplateName}
+                                        onChange={(e) => setNewTemplateName(e.target.value)}
+                                        className="flex-1 text-xs px-2 py-1.5 rounded border border-indigo-200 focus:outline-none focus:border-indigo-500 bg-white"
+                                        autoFocus
+                                    />
+                                    <button
+                                        onClick={handleSaveAsTemplate}
+                                        disabled={!newTemplateName.trim()}
+                                        className="bg-indigo-600 text-white px-3 py-1.5 rounded text-[10px] font-bold hover:bg-indigo-700 disabled:opacity-50"
+                                    >
+                                        SALVAR
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         <div className="p-3 overflow-y-auto flex-1 space-y-2">
                             {checklist.map(item => (
                                 <div key={item.id} className="flex items-start gap-2 group">

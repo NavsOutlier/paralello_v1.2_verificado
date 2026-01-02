@@ -66,6 +66,14 @@ export interface ChecklistItem {
   completed: boolean;
 }
 
+export interface ChecklistTemplate {
+  id: string;
+  name: string;
+  items: ChecklistItem[];
+  organizationId?: string;
+  createdAt?: string;
+}
+
 export interface DiscussionDraft {
   sourceMessage: Message;
   mode: 'new' | 'attach';

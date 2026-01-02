@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { X, Plus, Link2 } from 'lucide-react';
-import { Task, DiscussionDraft, User as UIUser } from '../../types';
+import { Task, DiscussionDraft, User as UIUser, ChecklistTemplate, ChecklistItem } from '../../types';
 import { Button } from '../ui';
 import { MentionInput } from './MentionInput';
+import { CheckSquare, ChevronDown } from 'lucide-react';
 
 interface TaskCreationProps {
     draft: DiscussionDraft;
@@ -17,8 +18,10 @@ interface TaskCreationProps {
         deadline?: string;
         tags?: string[];
         description?: string;
+        checklist?: ChecklistItem[];
     }, comment?: string) => void;
     onAttach: (taskId: string, comment?: string) => void;
+    checklistTemplates: ChecklistTemplate[];
 }
 
 const TAG_COLORS = [
@@ -41,7 +44,8 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
     teamMembers,
     onCancel,
     onCreate,
-    onAttach
+    onAttach,
+    checklistTemplates
 }) => {
     const [mode, setMode] = useState<'select' | 'create' | 'attach'>(draft.sourceMessage.id === 'manual' ? 'create' : 'select');
     const [title, setTitle] = useState('');
@@ -53,6 +57,8 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
     const [comment, setComment] = useState('');
+    const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+    const [currentChecklist, setCurrentChecklist] = useState<ChecklistItem[]>([]);
 
     // Extract all unique tags from existing tasks for suggestions
     const availableTags = (Array.from(new Set(existingTasks.flatMap(t => t.tags || []))) as string[]).filter(t => !selectedTags.includes(t));
@@ -73,6 +79,16 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
         }
     };
 
+    const handleSelectTemplate = (templateId: string) => {
+        setSelectedTemplateId(templateId);
+        const template = checklistTemplates.find(t => t.id === templateId);
+        if (template) {
+            setCurrentChecklist(template.items.map(item => ({ ...item, completed: false })));
+        } else {
+            setCurrentChecklist([]);
+        }
+    };
+
     const handleCreate = () => {
         if (!title.trim()) return;
 
@@ -82,7 +98,8 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
             assigneeId: assigneeId || undefined,
             status,
             deadline: deadline || undefined,
-            tags: selectedTags.length > 0 ? selectedTags : undefined
+            tags: selectedTags.length > 0 ? selectedTags : undefined,
+            checklist: currentChecklist.length > 0 ? currentChecklist : undefined
         }, comment.trim() || undefined);
     };
 
@@ -220,6 +237,37 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
                                 <option value="medium">Média</option>
                                 <option value="high">Alta</option>
                             </select>
+                        </div>
+
+                        {/* Checklist Template */}
+                        <div>
+                            <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wide mb-2">
+                                Atividades (Checklist)
+                            </label>
+                            <div className="relative">
+                                <select
+                                    value={selectedTemplateId}
+                                    onChange={(e) => handleSelectTemplate(e.target.value)}
+                                    className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none"
+                                >
+                                    <option value="">Sem checklist</option>
+                                    {checklistTemplates.map(t => (
+                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                    ))}
+                                </select>
+                                <CheckSquare className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                            </div>
+                            {currentChecklist.length > 0 && (
+                                <div className="mt-3 p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-1.5 grayscale opacity-70">
+                                    {currentChecklist.map((item, idx) => (
+                                        <div key={idx} className="flex items-center gap-2">
+                                            <div className="w-3.5 h-3.5 rounded border border-slate-300 bg-white" />
+                                            <span className="text-[11px] text-slate-600 font-medium">{item.text}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Etiquetas */}

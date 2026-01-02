@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, CheckCircle2, ChevronDown, Folder, Search, X, Archive, Filter } from 'lucide-react';
-import { Task, Message, DiscussionDraft, User as UIUser } from '../../types';
+import { Task, Message, DiscussionDraft, User as UIUser, ChecklistTemplate, ChecklistItem } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { TaskCard } from './TaskCard';
 import { TaskDetail } from './TaskDetail';
@@ -26,6 +26,9 @@ interface TaskManagerProps {
     onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
     onManualCreate: () => void;
     teamMembers: UIUser[];
+    checklistTemplates: ChecklistTemplate[];
+    onCreateChecklistTemplate: (name: string, items: ChecklistItem[]) => void;
+    onDeleteChecklistTemplate: (templateId: string) => void;
 }
 
 type StatusFilter = 'all' | 'todo' | 'in-progress' | 'review' | 'done' | 'archived';
@@ -52,6 +55,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
             onCancel={props.onCancelDraft}
             onCreate={props.onCreateTaskFromDraft}
             onAttach={props.onAttachTaskFromDraft}
+            checklistTemplates={props.checklistTemplates}
         />;
     }
 
@@ -69,6 +73,9 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
             teamMembers={props.teamMembers}
             allTasks={props.tasks}
             allContextMessages={props.allMessages}
+            checklistTemplates={props.checklistTemplates}
+            onCreateChecklistTemplate={props.onCreateChecklistTemplate}
+            onDeleteChecklistTemplate={props.onDeleteChecklistTemplate}
         />;
     }
 

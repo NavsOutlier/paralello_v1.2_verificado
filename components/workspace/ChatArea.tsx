@@ -85,29 +85,40 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {messages.map((msg) => (
-                    <MessageBubble
-                        key={msg.id}
-                        msg={msg}
-                        isMe={msg.senderId === currentUser?.id}
-                        senderName={
-                            msg.senderId === entity.id
-                                ? entity.name
-                                : teamMembers.find(t => t.id === msg.senderId)?.name || 'Membro'
-                        }
-                        senderJobTitle={
-                            msg.senderId !== entity.id
-                                ? teamMembers.find(t => t.id === msg.senderId)?.jobTitle
-                                : undefined
-                        }
-                        onInitiateDiscussion={canManageTasks ? onInitiateDiscussion : undefined}
-                        messageRef={(el) => messageRefs.current[msg.id] = el}
-                        colorScheme="green"
-                        onNavigateToLinked={onNavigateToTask}
-                        linkedTaskId={linkedTaskMap[msg.id]}
-                    />
-                ))}
+            <div className="flex-1 overflow-y-auto p-6 space-y-1">
+                {messages.map((msg) => {
+                    const linkedMessage = msg.linkedMessageId ? messages.find(m => m.id === msg.linkedMessageId) : undefined;
+                    const linkedSender = linkedMessage ? (
+                        linkedMessage.senderId === currentUser?.id ? 'Você' :
+                            linkedMessage.senderId === entity.id ? entity.name :
+                                teamMembers.find(t => t.id === linkedMessage.senderId)?.name || 'Usuário'
+                    ) : undefined;
+
+                    return (
+                        <MessageBubble
+                            key={msg.id}
+                            msg={msg}
+                            isMe={msg.senderId === currentUser?.id}
+                            senderName={
+                                msg.senderId === entity.id
+                                    ? entity.name
+                                    : teamMembers.find(t => t.id === msg.senderId)?.name || 'Membro'
+                            }
+                            senderJobTitle={
+                                msg.senderId !== entity.id
+                                    ? teamMembers.find(t => t.id === msg.senderId)?.jobTitle
+                                    : undefined
+                            }
+                            onInitiateDiscussion={canManageTasks ? onInitiateDiscussion : undefined}
+                            messageRef={(el) => messageRefs.current[msg.id] = el}
+                            colorScheme="green"
+                            onNavigateToLinked={onNavigateToTask}
+                            linkedTaskId={linkedTaskMap[msg.id]}
+                            linkedMessage={linkedMessage}
+                            linkedMessageSenderName={linkedSender}
+                        />
+                    )
+                })}
                 <div ref={messagesEndRef} />
             </div>
 

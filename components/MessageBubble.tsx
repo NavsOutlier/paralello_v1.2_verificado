@@ -12,6 +12,8 @@ interface MessageBubbleProps {
   colorScheme?: 'green' | 'indigo'; // 'green' for client chat, 'indigo' for task chat
   onNavigateToLinked?: (id: string) => void;
   linkedTaskId?: string;
+  linkedMessage?: Message; // Restored
+  linkedMessageSenderName?: string; // Restored
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -23,61 +25,60 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   messageRef,
   colorScheme = 'indigo', // Default to indigo
   onNavigateToLinked,
-  linkedTaskId
+  linkedTaskId,
+  linkedMessage, // Restored
+  linkedMessageSenderName // Restored
 }) => {
   // Color configurations
   const colors = {
     indigo: {
-      myBubble: 'bg-indigo-600 text-white',
-      senderName: 'text-indigo-900',
-      myTime: 'text-indigo-100',
+      myBubble: 'bg-white border border-indigo-100 text-slate-800 shadow-sm', // Cleaner, light look
+      senderName: 'text-indigo-600',
+      myTime: 'text-slate-400',
     },
     green: {
-      myBubble: 'bg-emerald-600 text-white',
-      senderName: 'text-emerald-900',
-      myTime: 'text-emerald-100',
+      myBubble: 'bg-[#e7ffdb] text-slate-800', // Lighter WhatsApp green
+      senderName: 'text-emerald-700',
+      myTime: 'text-slate-500',
     }
   };
 
   const scheme = colors[colorScheme];
-
-  // Mock lookup for linked message (visual only)
-  const linkedMessage = msg.linkedMessageId ? { text: "Mensagem original..." } : null;
 
   // If this message created a task, we render a special card design
   if (linkedTaskId) {
     return (
       <div
         ref={messageRef}
-        className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} transition-all duration-300 mb-2`}
+        className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} transition-all duration-300 mb-1`}
       >
         <div
           onClick={() => onNavigateToLinked?.(linkedTaskId)}
           className={`
-            relative max-w-[85%] rounded-r-lg rounded-bl-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow bg-white
+            relative max-w-[85%] rounded-r-lg rounded-bl-lg p-2 shadow-sm cursor-pointer hover:shadow-md transition-shadow bg-white
             border-l-[4px] border-cyan-500
           `}
         >
           {/* Header */}
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-5 h-5 bg-cyan-50 rounded-full flex items-center justify-center shrink-0">
-              <Check className="w-3 h-3 text-cyan-500 font-bold" strokeWidth={3} />
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="w-4 h-4 bg-cyan-50 rounded-full flex items-center justify-center shrink-0">
+              <Check className="w-2.5 h-2.5 text-cyan-500 font-bold" strokeWidth={3} />
             </div>
-            <span className="text-[10px] font-bold text-cyan-600 tracking-wider uppercase">TAREFA CRIADA</span>
+            <span className="text-[9px] font-bold text-cyan-600 tracking-wider uppercase">TAREFA CRIADA</span>
           </div>
 
           {/* Linked Message Context (if any) */}
           {linkedMessage && msg.linkedMessageId && (
-            <div className="mb-2 border-l-[3px] border-slate-200 pl-2 py-0.5">
-              <div className="text-[10px] text-slate-500 italic">Mensagem Vinculada</div>
+            <div className="mb-1.5 border-l-[2px] border-slate-200 pl-2 py-0.5">
+              <div className="text-[9px] text-slate-500 italic">Mensagem Vinculada</div>
             </div>
           )}
 
           {/* Main Content */}
-          <p className="whitespace-pre-line leading-relaxed text-slate-700 text-sm">{msg.text.replace('Tarefa Criada: ', '')}</p>
+          <p className="whitespace-pre-line leading-snug text-slate-700 text-xs">{msg.text.replace('Tarefa Criada: ', '')}</p>
 
           {/* Timestamp */}
-          <div className="text-[10px] mt-1 text-right text-slate-400">
+          <div className="text-[9px] mt-0.5 text-right text-slate-400">
             {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </div>
         </div>
@@ -88,12 +89,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   return (
     <div
       ref={messageRef}
-      className={`group flex flex-col ${isMe ? 'items-end' : 'items-start'} transition-all duration-300 mb-2`}
+      className={`group flex flex-col ${isMe ? 'items-end' : 'items-start'} transition-all duration-300 mb-1`}
     >
       <div
         onClick={() => msg.linkedMessageId && onNavigateToLinked?.(msg.linkedMessageId)}
-        className={`relative max-w-[85%] rounded-lg p-3 shadow-sm text-sm ${
-          // Only show yellow background for internal messages if we are NOT in the task chat (indigo scheme)
+        className={`relative max-w-[85%] rounded-lg px-3 py-1.5 shadow-sm text-sm ${
+          // Internal message handling
           msg.isInternal && colorScheme !== 'indigo'
             ? 'bg-yellow-50 border border-yellow-200 text-slate-800'
             : isMe
@@ -103,29 +104,33 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
         {/* Linked Message Quote (Reply Block) */}
         {linkedMessage && msg.linkedMessageId && (
-          <div className={`mb-2 border-l-[3px] pl-2 py-0.5 rounded-r ${isMe && colorScheme === 'indigo'
-            ? 'border-indigo-300 bg-indigo-500/20'
-            : 'border-blue-500 bg-blue-50/50'
+          <div className={`mb-1 pl-3 pr-2 py-2 border-l-[3px] rounded-bl-md ${isMe && colorScheme === 'indigo'
+              ? 'border-indigo-400 bg-indigo-50/50' // Distinct but light for internal
+              : 'border-cyan-500 bg-slate-50' // Standard
             }`}>
-            <div className={`text-[11px] font-bold mb-0.5 ${isMe && colorScheme === 'indigo' ? 'text-indigo-200' : 'text-blue-600'
+            <div className={`text-[10px] font-bold mb-1 ${isMe && colorScheme === 'indigo' ? 'text-indigo-600' : 'text-cyan-600'
               }`}>
-              Mensagem Vinculada
+              {linkedMessageSenderName || 'Usuário'}
             </div>
+            <p className={`text-[10px] line-clamp-2 leading-snug ${isMe && colorScheme === 'indigo' ? 'text-slate-600' : 'text-slate-600'
+              }`}>
+              {linkedMessage.text}
+            </p>
           </div>
         )}
 
         {/* Sender Name */}
         {!isMe && (
-          <div className={`text-[10px] font-bold mb-1 ${msg.isInternal && colorScheme !== 'indigo' ? 'text-yellow-700' : scheme.senderName} flex items-center gap-1`}>
+          <div className={`text-[10px] font-bold mb-0.5 ${msg.isInternal && colorScheme !== 'indigo' ? 'text-yellow-700' : scheme.senderName} flex items-center gap-1`}>
             <span>{senderName}</span>
             {senderJobTitle && <span className="opacity-60 font-normal">({senderJobTitle})</span>}
             {msg.isInternal && colorScheme !== 'indigo' && <span className="text-[8px] opacity-75">(INTERNO)</span>}
           </div>
         )}
 
-        <p className="whitespace-pre-line leading-relaxed">{msg.text}</p>
+        <p className="whitespace-pre-line leading-snug">{msg.text}</p>
 
-        <div className={`text-[10px] mt-1 text-right ${isMe && !msg.isInternal ? scheme.myTime : 'text-slate-400'}`}>
+        <div className={`text-[9px] mt-0.5 text-right ${isMe && !msg.isInternal ? scheme.myTime : 'text-slate-400'}`}>
           {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
 

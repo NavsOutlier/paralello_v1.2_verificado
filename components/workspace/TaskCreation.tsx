@@ -130,7 +130,9 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
                             >
                                 <option value="">Selecionar responsáveis...</option>
                                 {teamMembers.map(member => (
-                                    <option key={member.id} value={member.id}>{member.name}</option>
+                                    <option key={member.id} value={member.id}>
+                                        {member.name}{member.jobTitle ? ` - ${member.jobTitle}` : ''}
+                                    </option>
                                 ))}
                             </select>
                         </div>

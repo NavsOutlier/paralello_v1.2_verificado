@@ -72,6 +72,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     <div>
                         <h3 className="text-sm font-bold text-slate-800">{entity.name}</h3>
                         <p className="text-xs text-slate-500 flex items-center">
+                            {entity.jobTitle && <span className="mr-2">{entity.jobTitle} •</span>}
                             {entity.role === 'client' ? 'WhatsApp Business' : 'Chat Interno'} • {entity.status}
                         </p>
                     </div>
@@ -90,6 +91,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                             msg.senderId === entity.id
                                 ? entity.name
                                 : teamMembers.find(t => t.id === msg.senderId)?.name || 'Membro'
+                        }
+                        senderJobTitle={
+                            msg.senderId !== entity.id
+                                ? teamMembers.find(t => t.id === msg.senderId)?.jobTitle
+                                : undefined
                         }
                         onInitiateDiscussion={canManageTasks ? onInitiateDiscussion : undefined}
                         messageRef={(el) => messageRefs.current[msg.id] = el}

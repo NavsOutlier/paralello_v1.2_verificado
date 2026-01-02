@@ -67,7 +67,8 @@ export const Workspace: React.FC = () => {
           name: tm.profile?.name || 'Membro',
           avatar: tm.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tm.profile?.name || 'M')}&background=random`,
           role: 'team',
-          status: 'online'
+          status: 'online',
+          jobTitle: tm.job_title
         }));
 
       // All team members including current user (for task assignment)
@@ -77,7 +78,8 @@ export const Workspace: React.FC = () => {
           name: tm.profile?.name || 'Membro',
           avatar: tm.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tm.profile?.name || 'M')}&background=random`,
           role: 'team',
-          status: 'online'
+          status: 'online',
+          jobTitle: tm.job_title
         }));
 
       setClients(mappedClients);
@@ -216,6 +218,18 @@ export const Workspace: React.FC = () => {
           event: '*',
           schema: 'public',
           table: 'team_members',
+          filter: `organization_id=eq.${organizationId}`
+        },
+        () => {
+          fetchData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles',
           filter: `organization_id=eq.${organizationId}`
         },
         () => {

@@ -93,7 +93,9 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
                             >
                                 <option value="">Sem responsável</option>
                                 {teamMembers.map(m => (
-                                    <option key={m.id} value={m.id}>{m.name}</option>
+                                    <option key={m.id} value={m.id}>
+                                        {m.name}{m.jobTitle && ` - ${m.jobTitle}`}
+                                    </option>
                                 ))}
                             </select>
                         </div>

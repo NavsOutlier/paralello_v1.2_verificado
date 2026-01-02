@@ -22,9 +22,42 @@ export const TeamManagement: React.FC = () => {
     });
 
     useEffect(() => {
-        if (organizationId) {
-            fetchTeamMembers();
-        }
+        if (!organizationId) return;
+
+        fetchTeamMembers();
+
+        // Subscribe to changes in team_members
+        const channel = supabase
+            .channel('team_management_realtime')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'team_members',
+                    filter: `organization_id=eq.${organizationId}`
+                },
+                () => {
+                    fetchTeamMembers();
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'profiles',
+                    filter: `organization_id=eq.${organizationId}`
+                },
+                () => {
+                    fetchTeamMembers();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [organizationId]);
 
     const fetchTeamMembers = async () => {
@@ -79,10 +112,11 @@ export const TeamManagement: React.FC = () => {
         try {
             if (selectedMember) {
                 // Update existing member
-                const { error } = await supabase
+                const { error: memberError } = await supabase
                     .from('team_members')
                     .update({
                         role: memberData.role,
+                        job_title: memberData.jobTitle,
                         permissions: {
                             can_manage_clients: memberData.permissions?.canManageClients ?? true,
                             can_manage_tasks: memberData.permissions?.canManageTasks ?? true,
@@ -91,7 +125,18 @@ export const TeamManagement: React.FC = () => {
                     })
                     .eq('id', selectedMember.id);
 
-                if (error) throw error;
+                if (memberError) throw memberError;
+
+                // Update name in profile
+                if (memberData.profile?.name) {
+                    const { error: profileError } = await supabase
+                        .from('profiles')
+                        .update({ name: memberData.profile.name })
+                        .eq('id', selectedMember.profileId);
+
+                    if (profileError) throw profileError;
+                }
+
                 showToast('Membro atualizado com sucesso');
             } else {
                 // Create new member (Invite via Edge Function)

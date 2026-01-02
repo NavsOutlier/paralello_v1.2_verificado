@@ -11,6 +11,7 @@ interface ClientAssignment {
     role: 'primary' | 'support' | 'viewer';
     member_name?: string;
     member_email?: string;
+    member_job_title?: string;
 }
 
 interface ClientAssignmentModalProps {
@@ -48,6 +49,7 @@ export const ClientAssignmentModal: React.FC<ClientAssignmentModalProps> = ({
                 .select(`
                     *,
                     team_member:team_members!client_assignments_team_member_id_fkey(
+                        job_title,
                         profile:profiles!team_members_profile_id_fkey(name, email)
                     )
                 `)
@@ -61,7 +63,8 @@ export const ClientAssignmentModal: React.FC<ClientAssignmentModalProps> = ({
                 team_member_id: a.team_member_id,
                 role: a.role,
                 member_name: a.team_member?.profile?.name || 'Desconhecido',
-                member_email: a.team_member?.profile?.email
+                member_email: a.team_member?.profile?.email,
+                member_job_title: a.team_member?.job_title
             })));
         } catch (error) {
             console.error('Error fetching assignments:', error);
@@ -204,9 +207,11 @@ export const ClientAssignmentModal: React.FC<ClientAssignmentModalProps> = ({
                                             <p className="text-xs text-slate-500">{assignment.member_email}</p>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full">
-                                                {assignment.role === 'primary' ? 'Principal' : assignment.role === 'support' ? 'Suporte' : 'Visualizador'}
-                                            </span>
+                                            {assignment.member_job_title && (
+                                                <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-full">
+                                                    {assignment.member_job_title}
+                                                </span>
+                                            )}
                                             <button
                                                 onClick={() => handleRemoveAssignment(assignment.id)}
                                                 className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"

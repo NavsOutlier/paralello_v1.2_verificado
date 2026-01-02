@@ -111,13 +111,18 @@ export const useWhatsApp = (instanceId?: string) => {
     }, [instanceId, fetchMessages]);
 
     const createInstance = async (name: string) => {
-        if (!organizationId) return { error: 'No organization' };
+        if (!organizationId) return { error: new Error('No organization') };
 
-        const { data, error } = await supabase.functions.invoke('whatsapp-proxy', {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        const { data, error } = await supabase.functions.invoke('whatsapp-proxy-v2', {
             body: {
                 action: 'create_instance',
                 name: name.trim(),
                 organization_id: organizationId
+            },
+            headers: {
+                Authorization: `Bearer ${session?.access_token}`
             }
         });
 
@@ -125,12 +130,17 @@ export const useWhatsApp = (instanceId?: string) => {
     };
 
     const sendMessage = async (instId: string, to: string, text: string) => {
-        const { data, error } = await supabase.functions.invoke('whatsapp-proxy', {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        const { data, error } = await supabase.functions.invoke('whatsapp-proxy-v2', {
             body: {
                 action: 'send_message',
                 instance_id: instId,
                 to,
                 text
+            },
+            headers: {
+                Authorization: `Bearer ${session?.access_token}`
             }
         });
 

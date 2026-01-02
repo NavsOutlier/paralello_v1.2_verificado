@@ -109,6 +109,8 @@ export const useWorkspaceData = () => {
                     taskId: m.task_id,
                     clientId: m.client_id,
                     dmChannelId: m.dm_channel_id,
+                    direction: m.direction,
+                    uazapiId: m.uazapi_id,
                     channelId: m.task_id || m.client_id ||
                         (m.context_type === 'DIRECT_MESSAGE'
                             ? (m.sender_id === currentUser?.id ? m.dm_channel_id : m.sender_id)
@@ -167,6 +169,8 @@ export const useWorkspaceData = () => {
                                 taskId: newMsg.task_id,
                                 clientId: newMsg.client_id,
                                 dmChannelId: newMsg.dm_channel_id,
+                                direction: newMsg.direction,
+                                uazapiId: newMsg.uazapi_id,
                                 channelId: newMsg.task_id || newMsg.client_id ||
                                     (newMsg.context_type === 'DIRECT_MESSAGE'
                                         ? (newMsg.sender_id === currentUser?.id ? newMsg.dm_channel_id : newMsg.sender_id)
@@ -188,6 +192,8 @@ export const useWorkspaceData = () => {
                             taskId: updatedMsg.task_id,
                             clientId: updatedMsg.client_id,
                             dmChannelId: updatedMsg.dm_channel_id,
+                            direction: updatedMsg.direction,
+                            uazapiId: updatedMsg.uazapi_id,
                             channelId: updatedMsg.task_id || updatedMsg.client_id ||
                                 (updatedMsg.context_type === 'DIRECT_MESSAGE'
                                     ? (updatedMsg.sender_id === currentUser?.id ? updatedMsg.dm_channel_id : updatedMsg.sender_id)

@@ -42,6 +42,8 @@ export interface Message {
   // Metadata
   isInternal?: boolean;   // Whether this is an internal team message
   linkedMessageId?: string; // Points to another message ID
+  direction?: 'inbound' | 'outbound';
+  uazapiId?: string;
 }
 
 export interface Task {

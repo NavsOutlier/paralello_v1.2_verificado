@@ -18,7 +18,7 @@ interface MessageBubbleProps {
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
   msg,
-  isMe,
+  isMe: isMeProp,
   senderName,
   senderJobTitle,
   onInitiateDiscussion,
@@ -29,6 +29,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   linkedMessage, // Restored
   linkedMessageSenderName // Restored
 }) => {
+  // Logic for positioning: 
+  // 1. If it's a WhatsApp message with direction, use that
+  // 2. Otherwise use the isMe prop
+  const isMe = msg.contextType === 'WHATSAPP_FEED' && msg.direction
+    ? msg.direction === 'outbound'
+    : isMeProp;
   // Color configurations
   const colors = {
     indigo: {

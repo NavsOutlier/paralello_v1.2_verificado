@@ -19,7 +19,7 @@ export const WhatsAppManager: React.FC<WhatsAppManagerProps> = ({ organizationId
         setIsCreating(true);
         try {
             const { error } = await createInstance(newInstanceName.trim());
-            if (error) alert('Erro ao solicitar instância: ' + error.message);
+            if (error) alert('Erro ao solicitar instância: ' + (error.message || 'Erro desconhecido'));
             else setNewInstanceName('');
         } catch (err) {
             console.error(err);
@@ -89,7 +89,7 @@ export const WhatsAppManager: React.FC<WhatsAppManagerProps> = ({ organizationId
                                 <div className="flex items-center justify-between mb-6">
                                     <div className="flex items-center gap-3">
                                         <div className={`p-2.5 rounded-2xl transition-colors ${inst.status === 'connected' ? 'bg-emerald-50 text-emerald-600' :
-                                                inst.status === 'waiting_scan' ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400'
+                                            inst.status === 'waiting_scan' ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400'
                                             }`}>
                                             <MessageSquare className="w-5 h-5" />
                                         </div>
@@ -97,7 +97,7 @@ export const WhatsAppManager: React.FC<WhatsAppManagerProps> = ({ organizationId
                                             <h4 className="font-bold text-slate-800 leading-tight">{inst.name}</h4>
                                             <div className="flex items-center gap-1.5 mt-0.5">
                                                 <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${inst.status === 'connected' ? 'bg-emerald-500' :
-                                                        inst.status === 'waiting_scan' ? 'bg-amber-500' : 'bg-slate-300'
+                                                    inst.status === 'waiting_scan' ? 'bg-amber-500' : 'bg-slate-300'
                                                     }`} />
                                                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                                                     {inst.status === 'waiting_scan' ? 'Aguardando Scan' : inst.status}

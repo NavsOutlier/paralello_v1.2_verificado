@@ -4,7 +4,8 @@ import { TeamManagement } from './TeamManagement';
 import { SettingsPanel } from '../../views/SettingsPanel';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { Users, UserPlus, LayoutDashboard, Loader2, Settings } from 'lucide-react';
+import { Users, UserPlus, LayoutDashboard, Loader2, Settings, MessageSquare } from 'lucide-react';
+import { OnboardingChecklist } from './OnboardingChecklist';
 
 type Tab = 'overview' | 'clients' | 'team' | 'settings';
 
@@ -89,7 +90,7 @@ interface OverviewTabProps {
 
 const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, canSeeTeam }) => {
     const { organizationId } = useAuth();
-    const [stats, setStats] = useState({ clients: 0, members: 0 });
+    const [stats, setStats] = useState({ clients: 0, members: 0, hasWhatsApp: false });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -102,7 +103,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
         if (!organizationId) return;
         try {
             setLoading(true);
-            const [clientsRes, membersRes] = await Promise.all([
+            const [clientsRes, membersRes, whatsappRes] = await Promise.all([
                 supabase
                     .from('clients')
                     .select('id', { count: 'exact', head: true })
@@ -112,12 +113,19 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
                     .from('team_members')
                     .select('id', { count: 'exact', head: true })
                     .eq('organization_id', organizationId)
-                    .is('deleted_at', null)
+                    .is('deleted_at', null),
+                supabase
+                    .from('instances')
+                    .select('id')
+                    .eq('organization_id', organizationId)
+                    .eq('status', 'connected')
+                    .limit(1)
             ]);
 
             setStats({
                 clients: clientsRes.count || 0,
-                members: membersRes.count || 0
+                members: membersRes.count || 0,
+                hasWhatsApp: (whatsappRes.data && whatsappRes.data.length > 0) || false
             });
         } catch (error) {
             console.error('Error fetching dashboard stats:', error);
@@ -133,6 +141,14 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
                 <p className="text-slate-600 mb-8">
                     Gerencie os ativos e a equipe da sua organização em tempo real.
                 </p>
+
+                {/* Onboarding Checklist - Only show if not loading */}
+                {!loading && (
+                    <OnboardingChecklist
+                        stats={stats}
+                        onNavigate={onNavigate}
+                    />
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Clients Card */}

@@ -13,7 +13,8 @@ import {
     createOrganization,
     updateOrganization,
     toggleOrganizationStatus,
-    changeOrganizationPlan
+    changeOrganizationPlan,
+    deleteOrganization
 } from '../../lib/supabase-admin';
 
 export const SuperAdminDashboard: React.FC = () => {
@@ -132,6 +133,17 @@ export const SuperAdminDashboard: React.FC = () => {
         setIsSetupOpen(true);
     };
 
+    const handleDelete = async (org: Organization) => {
+        try {
+            await deleteOrganization(org.id);
+            showToast(`Organização ${org.name} excluída com sucesso`, 'success');
+            await loadOrganizations();
+        } catch (err) {
+            showToast('Erro ao excluir organização', 'error');
+            console.error(err);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex-1 flex items-center justify-center bg-slate-50 h-full">
@@ -244,6 +256,7 @@ export const SuperAdminDashboard: React.FC = () => {
                 onToggleStatus={handleToggleStatus}
                 onChangePlan={handleChangePlan}
                 onOpenSetup={handleOpenSetup}
+                onDelete={handleDelete}
             />
 
             {/* Modal */}

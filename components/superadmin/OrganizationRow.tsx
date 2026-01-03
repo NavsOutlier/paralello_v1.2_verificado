@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pencil, Power, CreditCard } from 'lucide-react';
+import { Pencil, Power, CreditCard, Trash2 } from 'lucide-react';
 import { Organization } from '../../types';
 import { Badge, Button } from '../ui';
 import { PlanBadge } from './PlanBadge';
@@ -10,6 +10,7 @@ interface OrganizationRowProps {
     onToggleStatus: (org: Organization) => void;
     onChangePlan: (org: Organization) => void;
     onOpenSetup: (org: Organization) => void;
+    onDelete: (org: Organization) => void;
 }
 
 export const OrganizationRow: React.FC<OrganizationRowProps> = ({
@@ -17,7 +18,8 @@ export const OrganizationRow: React.FC<OrganizationRowProps> = ({
     onEdit,
     onToggleStatus,
     onChangePlan,
-    onOpenSetup
+    onOpenSetup,
+    onDelete
 }) => {
     const formatDate = (date: Date) => {
         return new Date(date).toLocaleDateString('pt-BR', {
@@ -97,6 +99,18 @@ export const OrganizationRow: React.FC<OrganizationRowProps> = ({
                         icon={<CreditCard className="w-4 h-4" />}
                         onClick={() => onChangePlan(organization)}
                         title="Mudar Plano"
+                    />
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={<Trash2 className="w-4 h-4" />}
+                        onClick={() => {
+                            if (window.confirm(`Tem certeza que deseja excluir permanentemente a organização "${organization.name}"? Esta ação não pode ser desfeita.`)) {
+                                onDelete(organization);
+                            }
+                        }}
+                        title="Excluir"
+                        className="text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                     />
                 </div>
             </td>

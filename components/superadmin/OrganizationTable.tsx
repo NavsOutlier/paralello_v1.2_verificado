@@ -10,6 +10,7 @@ interface OrganizationTableProps {
     onToggleStatus: (org: Organization) => void;
     onChangePlan: (org: Organization) => void;
     onOpenSetup: (org: Organization) => void;
+    onDelete: (org: Organization) => void;
 }
 
 export const OrganizationTable: React.FC<OrganizationTableProps> = ({
@@ -17,7 +18,8 @@ export const OrganizationTable: React.FC<OrganizationTableProps> = ({
     onEdit,
     onToggleStatus,
     onChangePlan,
-    onOpenSetup
+    onOpenSetup,
+    onDelete
 }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -118,6 +120,7 @@ export const OrganizationTable: React.FC<OrganizationTableProps> = ({
                                     onToggleStatus={onToggleStatus}
                                     onChangePlan={onChangePlan}
                                     onOpenSetup={onOpenSetup}
+                                    onDelete={onDelete}
                                 />
                             ))
                         )}

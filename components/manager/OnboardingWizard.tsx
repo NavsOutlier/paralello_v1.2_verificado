@@ -265,19 +265,19 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                 </div>
 
                 <div className="p-8 md:p-12 relative">
-                    {/* Exit Button */}
+                    {/* Exit Button - Positioned in the top-right corner */}
                     <button
                         onClick={onComplete}
-                        className="absolute top-8 right-8 p-3 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-2xl transition-all"
+                        className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all z-10"
                         title="Sair e configurar depois"
                     >
-                        <X className="w-6 h-6" />
+                        <X className="w-5 h-5" />
                     </button>
 
                     {/* Header Controls */}
                     <div className="flex items-center justify-between mb-12">
                         <div className="flex items-center gap-2">
-                            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
                                 <Building2 className="w-6 h-6" />
                             </div>
                             <span className="font-black text-slate-800 tracking-tighter text-xl">PARALELLO</span>

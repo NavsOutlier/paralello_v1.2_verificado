@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Users, UserPlus, LayoutDashboard, Loader2, Settings, MessageSquare } from 'lucide-react';
 import { OnboardingChecklist } from './OnboardingChecklist';
+import { OnboardingWizard } from './OnboardingWizard';
 
 type Tab = 'overview' | 'clients' | 'team' | 'settings';
 
@@ -134,8 +135,30 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
         }
     };
 
+    const [showWizard, setShowWizard] = useState(false);
+    const [hasDismissedWizard, setHasDismissedWizard] = useState(false);
+
+    useEffect(() => {
+        if (!loading && !hasDismissedWizard) {
+            // Show wizard if haven't connected WhatsApp OR have no clients
+            const isIncomplete = !stats.hasWhatsApp || stats.clients === 0;
+            setShowWizard(isIncomplete);
+        }
+    }, [loading, stats.hasWhatsApp, stats.clients, hasDismissedWizard]);
+
     return (
         <div className="flex-1 p-6 overflow-y-auto">
+            {/* Onboarding Wizard Overlay */}
+            {showWizard && (
+                <OnboardingWizard
+                    stats={stats}
+                    onComplete={() => {
+                        setShowWizard(false);
+                        setHasDismissedWizard(true);
+                    }}
+                />
+            )}
+
             <div className="max-w-6xl mx-auto">
                 <h1 className="text-3xl font-bold text-slate-800 mb-2">Painel do Gestor</h1>
                 <p className="text-slate-600 mb-8">
@@ -146,7 +169,13 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
                 {!loading && (
                     <OnboardingChecklist
                         stats={stats}
-                        onNavigate={onNavigate}
+                        onNavigate={(tab) => {
+                            if (tab === 'open_wizard') {
+                                setShowWizard(true);
+                            } else {
+                                onNavigate(tab);
+                            }
+                        }}
                     />
                 )}
 

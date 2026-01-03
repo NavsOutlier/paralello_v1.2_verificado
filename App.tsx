@@ -14,15 +14,27 @@ const AppContent: React.FC = () => {
   const { user, loading, isSuperAdmin, isManager } = useAuth();
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.WORKSPACE);
 
-  // Protection: Ensure user can only see views they have access to
+  // Protection & Initial View Routing
   React.useEffect(() => {
-    if (currentView === ViewState.MANAGER && !isManager && !isSuperAdmin) {
-      setCurrentView(ViewState.WORKSPACE);
+    if (!loading && user) {
+      // If we are at the default view and have specific roles, redirect to the most relevant dashboard
+      if (currentView === ViewState.WORKSPACE) {
+        if (isSuperAdmin) {
+          setCurrentView(ViewState.SUPERADMIN);
+        } else if (isManager) {
+          setCurrentView(ViewState.MANAGER);
+        }
+      }
+
+      // Security: Ensure user can only see views they have access to
+      if (currentView === ViewState.MANAGER && !isManager && !isSuperAdmin) {
+        setCurrentView(ViewState.WORKSPACE);
+      }
+      if (currentView === ViewState.SUPERADMIN && !isSuperAdmin) {
+        setCurrentView(ViewState.WORKSPACE);
+      }
     }
-    if (currentView === ViewState.SUPERADMIN && !isSuperAdmin) {
-      setCurrentView(ViewState.WORKSPACE);
-    }
-  }, [currentView, isManager, isSuperAdmin]);
+  }, [loading, user, isManager, isSuperAdmin, currentView]);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   // Detect invitation or recovery link

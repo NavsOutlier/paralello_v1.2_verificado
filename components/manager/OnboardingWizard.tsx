@@ -101,7 +101,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     const renderStep1 = () => {
         const instance = instances[0];
         const isConnected = instance?.status === 'connected';
-        const isWaiting = instance?.status === 'waiting_scan';
+        const isWaiting = instance?.status === 'waiting_scan' || instance?.status === 'connecting';
 
         return (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
@@ -115,7 +115,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     </p>
                 </div>
 
-                {!instance && (
+                {(!instance || (!instance.qrCode && !isConnected)) && (
                     <div className="flex flex-col items-center gap-4 py-8">
                         <div className="p-12 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50 text-center w-full max-w-sm">
                             <Smartphone className="w-12 h-12 text-slate-300 mx-auto mb-4" />
@@ -134,17 +134,33 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
                 {isWaiting && instance.qrCode && (
                     <Card className="p-8 border-indigo-200 bg-indigo-50/30 flex flex-col items-center gap-6 animate-in zoom-in-95 duration-500">
-                        <div className="relative">
-                            <div className="bg-white p-3 rounded-2xl border-2 border-indigo-100 shadow-xl">
+                        <div className="relative group">
+                            <div className="bg-white p-3 rounded-2xl border-2 border-indigo-100 shadow-xl transition-all group-hover:shadow-indigo-200">
                                 <img src={instance.qrCode} alt="WhatsApp QR Code" className="w-48 h-48" />
                             </div>
-                            <div className="absolute -top-3 -right-3 bg-indigo-600 text-white p-2 rounded-full shadow-lg">
-                                <RefreshCw className="w-4 h-4 animate-spin-slow" />
-                            </div>
+                            <button
+                                onClick={handleConnectWhatsApp}
+                                disabled={loading}
+                                className="absolute -top-3 -right-3 bg-indigo-600 text-white p-2.5 rounded-full shadow-lg hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Atualizar QR Code"
+                            >
+                                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                            </button>
                         </div>
                         <div className="text-center">
                             <p className="font-bold text-indigo-900">Aguardando leitura...</p>
-                            <p className="text-xs text-indigo-600 mt-1">Abra o WhatsApp &gt; Dispositivos Conectados</p>
+                            <p className="text-xs text-indigo-600 mt-1 mb-4">Abra o WhatsApp &gt; Dispositivos Conectados</p>
+
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleConnectWhatsApp}
+                                disabled={loading}
+                                className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100 font-bold"
+                            >
+                                {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                                Não apareceu? Gerar novo código
+                            </Button>
                         </div>
                     </Card>
                 )}

@@ -95,9 +95,37 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (organizationId) {
-            fetchStats();
-        }
+        if (!organizationId) return;
+
+        // Fetch initial stats
+        fetchStats();
+
+        // Realtime subscription to keep stats updated
+        const statsChannel = supabase
+            .channel('dashboard-stats')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'instances',
+                filter: `organization_id=eq.${organizationId}`
+            }, () => fetchStats())
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'clients',
+                filter: `organization_id=eq.${organizationId}`
+            }, () => fetchStats())
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'team_members',
+                filter: `organization_id=eq.${organizationId}`
+            }, () => fetchStats())
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(statsChannel);
+        };
     }, [organizationId]);
 
     const fetchStats = async () => {

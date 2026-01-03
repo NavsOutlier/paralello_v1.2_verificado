@@ -31,7 +31,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     const { showToast } = useToast();
     const { instances, createInstance, createGroup, loading: wsLoading } = useWhatsApp();
 
-    const [step, setStep] = useState(1);
+    const [step, setStep] = useState(() => {
+        if (initialStats.hasWhatsApp && initialStats.clients > 0) return 3;
+        if (initialStats.hasWhatsApp) return 2;
+        return 1;
+    });
     const [loading, setLoading] = useState(false);
 
     // Step 2 Form State
@@ -40,15 +44,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     const [clientPhone, setClientPhone] = useState('');
     const [autoCreateGroup, setAutoCreateGroup] = useState(true);
 
-    // Dynamic Step Calculation
-    useEffect(() => {
-        if (initialStats.hasWhatsApp && step === 1) {
-            setStep(2);
-        }
-        if (initialStats.hasWhatsApp && initialStats.clients > 0 && step < 3) {
-            setStep(3);
-        }
-    }, [initialStats]);
+    // No longer jumping automatically via useEffect to avoid jarring transitions
+    // while the user is actively using the wizard. The initial state handles the "reopen" case.
 
     // Step 1: WhatsApp Logic
     const handleConnectWhatsApp = async () => {

@@ -296,18 +296,17 @@ export const useWorkspaceData = () => {
                     const { data: { session } } = await supabase.auth.getSession();
 
                     // We don't await this to avoid blocking the UI, but we log errors
-                    supabase.functions.invoke('whatsapp-proxy-v2', {
+                    const { data: proxyResult, error: proxyError } = await supabase.functions.invoke('whatsapp-proxy-v2', {
                         body: {
                             action: 'send_message',
                             instance_id: connectedInstance.id,
                             to: selectedEntity.whatsappGroupId,
-                            text: text.trim()
+                            text: text.trim(),
+                            organization_id: organizationId
                         },
                         headers: {
                             Authorization: `Bearer ${session?.access_token}`
                         }
-                    }).then(({ error }) => {
-                        if (error) console.error('Error relaying to WhatsApp:', error);
                     });
                 }
             }

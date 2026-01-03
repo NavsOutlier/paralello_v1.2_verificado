@@ -6,6 +6,7 @@ import { Button } from '../ui';
 import { MetricsCard } from './MetricsCard';
 import { OrganizationTable } from './OrganizationTable';
 import { OrganizationModal } from './OrganizationModal';
+import { AdminOrgSetupModal } from './AdminOrgSetupModal';
 import { useToast } from '../../contexts/ToastContext';
 import {
     fetchOrganizations,
@@ -19,6 +20,10 @@ export const SuperAdminDashboard: React.FC = () => {
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
+    const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isSetupOpen, setIsSetupOpen] = useState(false);
+    const [setupOrg, setSetupOrg] = useState<Organization | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { showToast } = useToast();
@@ -122,6 +127,11 @@ export const SuperAdminDashboard: React.FC = () => {
     };
 
     // Loading state
+    const handleOpenSetup = (org: Organization) => {
+        setSetupOrg(org);
+        setIsSetupOpen(true);
+    };
+
     if (loading) {
         return (
             <div className="flex-1 flex items-center justify-center bg-slate-50 h-full">
@@ -233,6 +243,7 @@ export const SuperAdminDashboard: React.FC = () => {
                 onEdit={handleEdit}
                 onToggleStatus={handleToggleStatus}
                 onChangePlan={handleChangePlan}
+                onOpenSetup={handleOpenSetup}
             />
 
             {/* Modal */}
@@ -241,6 +252,12 @@ export const SuperAdminDashboard: React.FC = () => {
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}
                 onSave={handleSave}
+            />
+
+            <AdminOrgSetupModal
+                isOpen={isSetupOpen}
+                organization={setupOrg}
+                onClose={() => setIsSetupOpen(false)}
             />
         </div>
     );

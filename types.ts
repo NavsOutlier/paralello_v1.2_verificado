@@ -114,6 +114,11 @@ export interface Organization {
     clients: number;
     tasks: number;
   };
+  onboardingStatus?: {
+    isOwnerInvited: boolean;
+    isOwnerActive: boolean;
+    isWhatsAppConnected: boolean;
+  };
 }
 
 // Manager Types

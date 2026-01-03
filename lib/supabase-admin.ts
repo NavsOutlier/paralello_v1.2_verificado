@@ -11,7 +11,7 @@ import { Organization, PlanType } from '../types';
 export async function fetchOrganizations(): Promise<Organization[]> {
     const { data, error } = await supabase
         .from('organizations')
-        .select('*')
+        .select('*, instances(id, status)')
         .order('created_at', { ascending: false });
 
     if (error) {
@@ -36,6 +36,11 @@ export async function fetchOrganizations(): Promise<Organization[]> {
             users: org.stats_users || 0,
             clients: org.stats_clients || 0,
             tasks: org.stats_tasks || 0
+        },
+        onboardingStatus: {
+            isOwnerInvited: true, // Placeholder for now
+            isOwnerActive: (org.stats_users || 0) > 0,
+            isWhatsAppConnected: (org.instances as any[])?.some(inst => inst.status === 'connected') || false
         }
     }));
 }

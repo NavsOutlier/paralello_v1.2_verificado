@@ -9,13 +9,15 @@ interface OrganizationTableProps {
     onEdit: (org: Organization) => void;
     onToggleStatus: (org: Organization) => void;
     onChangePlan: (org: Organization) => void;
+    onOpenSetup: (org: Organization) => void;
 }
 
 export const OrganizationTable: React.FC<OrganizationTableProps> = ({
     organizations,
     onEdit,
     onToggleStatus,
-    onChangePlan
+    onChangePlan,
+    onOpenSetup
 }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -115,6 +117,7 @@ export const OrganizationTable: React.FC<OrganizationTableProps> = ({
                                     onEdit={onEdit}
                                     onToggleStatus={onToggleStatus}
                                     onChangePlan={onChangePlan}
+                                    onOpenSetup={onOpenSetup}
                                 />
                             ))
                         )}

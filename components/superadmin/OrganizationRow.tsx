@@ -9,13 +9,15 @@ interface OrganizationRowProps {
     onEdit: (org: Organization) => void;
     onToggleStatus: (org: Organization) => void;
     onChangePlan: (org: Organization) => void;
+    onOpenSetup: (org: Organization) => void;
 }
 
 export const OrganizationRow: React.FC<OrganizationRowProps> = ({
     organization,
     onEdit,
     onToggleStatus,
-    onChangePlan
+    onChangePlan,
+    onOpenSetup
 }) => {
     const formatDate = (date: Date) => {
         return new Date(date).toLocaleDateString('pt-BR', {
@@ -37,9 +39,22 @@ export const OrganizationRow: React.FC<OrganizationRowProps> = ({
                 <PlanBadge plan={organization.plan} />
             </td>
             <td className="px-6 py-4">
-                <Badge variant={organization.status === 'active' ? 'success' : 'default'} size="sm">
-                    {organization.status === 'active' ? 'Ativo' : 'Inativo'}
-                </Badge>
+                <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Acesso:</span>
+                        <Badge variant={organization.onboardingStatus?.isOwnerActive ? 'success' : 'default'} size="sm">
+                            {organization.onboardingStatus?.isOwnerActive ? 'Ativo' : 'Pendente'}
+                        </Badge>
+                    </div>
+                </div>
+            </td>
+            <td className="px-6 py-4 text-sm text-slate-600">
+                <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Zap:</span>
+                    <Badge variant={organization.onboardingStatus?.isWhatsAppConnected ? 'success' : 'warning'} size="sm">
+                        {organization.onboardingStatus?.isWhatsAppConnected ? 'Conectado' : 'Off'}
+                    </Badge>
+                </div>
             </td>
             <td className="px-6 py-4 text-sm text-slate-600">
                 {organization.stats.users}
@@ -52,6 +67,16 @@ export const OrganizationRow: React.FC<OrganizationRowProps> = ({
             </td>
             <td className="px-6 py-4">
                 <div className="flex items-center gap-2">
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        icon={<CreditCard className="w-4 h-4" />}
+                        onClick={() => onOpenSetup(organization)}
+                        title="Setup Assistant"
+                        className="bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100"
+                    >
+                        Setup
+                    </Button>
                     <Button
                         variant="ghost"
                         size="sm"

@@ -49,29 +49,31 @@ export const WhatsAppManager: React.FC<WhatsAppManagerProps> = ({ organizationId
                 <p className="text-slate-500 text-sm">Gerencie suas conexões com a Uazapi para atendimento omnichannel.</p>
             </div>
 
-            {/* Creation Area */}
-            <Card className="p-6 border-slate-200/60 bg-white/50 backdrop-blur-sm shadow-sm">
-                <div className="flex flex-col gap-4">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Adicionar Nova Instância</h3>
-                    <div className="flex gap-3">
-                        <input
-                            type="text"
-                            value={newInstanceName}
-                            onChange={(e) => setNewInstanceName(e.target.value)}
-                            placeholder="Ex: Comercial, Suporte Brasil..."
-                            className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
-                        />
-                        <Button
-                            onClick={handleCreate}
-                            disabled={isCreating || !newInstanceName.trim()}
-                            className="px-6 rounded-xl font-bold shadow-lg shadow-indigo-200 bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all"
-                        >
-                            {isCreating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-                            Criar Instância
-                        </Button>
+            {/* Creation Area - Only show if no instance exists */}
+            {instances.length === 0 && (
+                <Card className="p-6 border-slate-200/60 bg-white/50 backdrop-blur-sm shadow-sm">
+                    <div className="flex flex-col gap-4">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Adicionar Nova Instância</h3>
+                        <div className="flex gap-3">
+                            <input
+                                type="text"
+                                value={newInstanceName}
+                                onChange={(e) => setNewInstanceName(e.target.value)}
+                                placeholder="Ex: Comercial, Suporte Brasil..."
+                                className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+                            />
+                            <Button
+                                onClick={handleCreate}
+                                disabled={isCreating || !newInstanceName.trim()}
+                                className="px-6 rounded-xl font-bold shadow-lg shadow-indigo-200 bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all"
+                            >
+                                {isCreating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+                                Criar Instância
+                            </Button>
+                        </div>
                     </div>
-                </div>
-            </Card>
+                </Card>
+            )}
 
             {/* Instance Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

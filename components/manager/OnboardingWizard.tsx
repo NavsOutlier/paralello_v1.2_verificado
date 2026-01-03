@@ -56,13 +56,31 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         try {
             const { error } = await createInstance('Principal');
             if (error) throw error;
-            showToast('Instância solicitada. Escaneie o QR Code abaixo.');
+            showToast('Solicitação enviada. Aguardando QR Code...');
         } catch (err: any) {
             showToast(err.message || 'Erro ao criar instância', 'error');
         } finally {
-            setLoading(false);
+            // Keep loading true until qrCode actually appears via realtime
+            setTimeout(() => setLoading(false), 2000);
         }
     };
+
+    // Auto-refresh interval (10s)
+    useEffect(() => {
+        let interval: any;
+        const instance = instances[0];
+
+        if (step === 1 && instance && instance.status !== 'connected' && !loading) {
+            interval = setInterval(() => {
+                console.log('--- Automated QR Refresh (10s) ---');
+                createInstance('Principal').catch(console.error);
+            }, 10000);
+        }
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [step, instances, loading, createInstance]);
 
     // Step 2: Client Logic
     const handleCreateClient = async (e: React.FormEvent) => {
@@ -117,18 +135,32 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
                 {(!instance || (!instance.qrCode && !isConnected)) && (
                     <div className="flex flex-col items-center gap-4 py-8">
-                        <div className="p-12 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50 text-center w-full max-w-sm">
-                            <Smartphone className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                            <p className="text-sm text-slate-400 font-medium">Nenhuma conexão ativa</p>
+                        <div className="p-12 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50 text-center w-full max-w-sm flex flex-col items-center justify-center min-h-[220px]">
+                            {loading ? (
+                                <>
+                                    <div className="relative">
+                                        <Loader2 className="w-12 h-12 text-indigo-500 animate-spin mb-4" />
+                                        <div className="absolute inset-0 bg-indigo-500/10 blur-xl animate-pulse rounded-full" />
+                                    </div>
+                                    <p className="font-bold text-slate-800">Gerando seu QR Code...</p>
+                                    <p className="text-xs text-slate-400 mt-2 max-w-[200px]">Isso pode levar alguns segundos enquanto falamos com o WhatsApp.</p>
+                                </>
+                            ) : (
+                                <>
+                                    <Smartphone className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                                    <p className="text-sm text-slate-400 font-medium">Nenhuma conexão ativa</p>
+                                </>
+                            )}
                         </div>
-                        <Button
-                            onClick={handleConnectWhatsApp}
-                            disabled={loading || wsLoading}
-                            className="w-full max-w-sm h-12 rounded-xl text-md font-bold"
-                        >
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Plus className="w-5 h-5 mr-2" />}
-                            Gerar QR Code de Conexão
-                        </Button>
+                        {!loading && (
+                            <Button
+                                onClick={handleConnectWhatsApp}
+                                className="w-full max-w-sm h-12 rounded-xl text-md font-bold"
+                            >
+                                <Plus className="w-5 h-5 mr-2" />
+                                Gerar QR Code de Conexão
+                            </Button>
+                        )}
                     </div>
                 )}
 

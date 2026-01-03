@@ -101,10 +101,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             if (error) throw error;
 
             if (autoCreateGroup && newClient) {
+                showToast('Cliente cadastrado! Criando grupo de WhatsApp...');
                 await createGroup(newClient.name, newClient.id);
             }
 
-            showToast('Cliente cadastrado com sucesso!');
+            showToast('Tudo pronto! Seu primeiro cliente foi configurado.');
             setStep(3);
         } catch (err: any) {
             showToast(err.message || 'Erro ao cadastrar cliente', 'error');

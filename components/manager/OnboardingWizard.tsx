@@ -40,13 +40,28 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
     const [step, setStep] = useState(() => {
         if (initialStats.hasWhatsApp && initialStats.clients > 0 && initialStats.members > 1) return 5;
-        if (initialStats.hasWhatsApp && initialStats.clients > 0) return 3;
-        if (initialStats.hasWhatsApp) return 2;
+        // Step 1: WhatsApp -> Step 2: Team (if members <= 1) -> Step 3: Client (if clients == 0) -> Step 4: Assignment
+        if (initialStats.hasWhatsApp && initialStats.members > 1 && initialStats.clients === 0) return 3;
+        if (initialStats.hasWhatsApp && initialStats.members <= 1) return 2;
+        if (initialStats.hasWhatsApp && initialStats.clients > 0) return 4;
         return 1;
     });
     const [loading, setLoading] = useState(false);
 
-    // Step 2 Form State
+    // Step 2 Form State (Previously Step 3)
+    const [invitedMembers, setInvitedMembers] = useState([{
+        name: '',
+        email: '',
+        jobTitle: '',
+        role: 'member',
+        permissions: {
+            can_manage_clients: true,
+            can_manage_tasks: true,
+            can_manage_team: false
+        }
+    }]);
+
+    // Step 3: Client Logic (Previously Step 2)
     const [clientName, setClientName] = useState('');
     const [clientEmail, setClientEmail] = useState('');
     const [clientPhone, setClientPhone] = useState('');
@@ -57,9 +72,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     const [showHelp, setShowHelp] = useState(false);
     const [isCreatingGroup, setIsCreatingGroup] = useState(false);
     const [newClientId, setNewClientId] = useState<string | null>(null);
-
-    // Step 3: Team Invitation State
-    const [invitedMembers, setInvitedMembers] = useState([{ name: '', email: '', jobTitle: '' }]);
 
     // Step 4: Assignment State
     const [allTeamMembers, setAllTeamMembers] = useState<any[]>([]);
@@ -142,7 +154,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                             .eq('id', newClient.id);
                     }
                     showToast('Tudo pronto com seu primeiro cliente!');
-                    setStep(3);
+                    setStep(4);
                 }
             }
             setLoading(false);
@@ -172,7 +184,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         console.log('--- Group Created Successfully! ---');
                         showToast('Grupo de WhatsApp criado com sucesso!');
                         setIsCreatingGroup(false);
-                        setStep(3);
+                        setStep(4);
                     }
                 }
             )
@@ -189,6 +201,18 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         setLoading(true);
 
         try {
+            // First, register unique specialties if provided
+            const uniqueTitles = Array.from(new Set(invitedMembers.map(m => m.jobTitle.trim()).filter(t => t.length > 0)));
+            if (uniqueTitles.length > 0) {
+                // Upsert into team_specialties (ignore duplicates via ON CONFLICT if the DB supports it, or just insert)
+                for (const title of uniqueTitles) {
+                    await supabase
+                        .from('team_specialties')
+                        .upsert({ organization_id: organizationId, name: title }, { onConflict: 'organization_id,name' })
+                        .select();
+                }
+            }
+
             for (const member of invitedMembers) {
                 if (!member.email || !member.name) continue;
 
@@ -197,14 +221,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         email: member.email.trim(),
                         name: member.name.trim(),
                         job_title: (member.jobTitle || '').trim(),
-                        role: 'member',
+                        role: member.role,
                         organization_id: organizationId,
                         invited_by: (await supabase.auth.getUser()).data.user?.id,
-                        permissions: {
-                            can_manage_clients: true,
-                            can_manage_tasks: true,
-                            can_manage_team: false
-                        }
+                        permissions: member.permissions
                     }
                 });
 
@@ -213,8 +233,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                 }
             }
 
+            // If we already have clients, we could go to assignment, but usually after team we go to client creation
             showToast('Processamento de convites concluído');
-            setStep(4);
+            setStep(3);
         } catch (err: any) {
             showToast(err.message || 'Erro ao processar convites', 'error');
         } finally {
@@ -280,7 +301,17 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     };
 
     const addMemberRow = () => {
-        setInvitedMembers([...invitedMembers, { name: '', email: '', jobTitle: '' }]);
+        setInvitedMembers([...invitedMembers, {
+            name: '',
+            email: '',
+            jobTitle: '',
+            role: 'member',
+            permissions: {
+                can_manage_clients: true,
+                can_manage_tasks: true,
+                can_manage_team: false
+            }
+        }]);
     };
 
     const removeMemberRow = (index: number) => {
@@ -289,9 +320,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         }
     };
 
-    const updateMemberRow = (index: number, field: string, value: string) => {
+    const updateMemberRow = (index: number, field: string, value: any) => {
         const newMembers = [...invitedMembers];
-        newMembers[index] = { ...newMembers[index], [field]: value };
+        if (field.includes('.')) {
+            const [parent, child] = field.split('.');
+            (newMembers[index] as any)[parent][child] = value;
+        } else {
+            (newMembers[index] as any)[field] = value;
+        }
         setInvitedMembers(newMembers);
     };
 
@@ -399,53 +435,208 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     };
 
     const renderStep2 = () => (
+        <div className="animate-in slide-in-from-right-8 fade-in duration-500">
+            <div className="mb-8 flex flex-col items-center">
+                <div className="w-16 h-16 bg-emerald-100 rounded-3xl flex items-center justify-center text-emerald-600 mb-4 shadow-xl shadow-emerald-50">
+                    <UserPlus className="w-8 h-8" />
+                </div>
+                <h2 className="text-3xl font-black text-slate-800 tracking-tight text-center">Convidar Equipe 🤝</h2>
+                <p className="text-slate-500 mt-2 text-center max-w-sm text-sm leading-relaxed">
+                    Defina quem ajudará você na gestão, suas funções e permissões.
+                </p>
+            </div>
+
+            <form onSubmit={handleInviteMembers} className="space-y-4">
+                <div className="space-y-4 max-h-[400px] overflow-y-auto px-1 custom-scrollbar">
+                    {invitedMembers.map((member, idx) => (
+                        <div key={idx} className="p-5 bg-white border-2 border-slate-100 rounded-3xl relative group animate-in zoom-in-95 shadow-sm hover:border-indigo-100 transition-all">
+                            {invitedMembers.length > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={() => removeMemberRow(idx)}
+                                    className="absolute -top-2 -right-2 w-8 h-8 bg-white border border-red-100 text-red-500 rounded-full flex items-center justify-center hover:bg-red-50 shadow-sm transition-all"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nome Completo</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        value={member.name}
+                                        onChange={(e) => updateMemberRow(idx, 'name', e.target.value)}
+                                        placeholder="Ex: João Silva"
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Email de Convite</label>
+                                    <input
+                                        required
+                                        type="email"
+                                        value={member.email}
+                                        onChange={(e) => updateMemberRow(idx, 'email', e.target.value)}
+                                        placeholder="joao@suaagencia.com"
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Especialidade / Cargo</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        value={member.jobTitle}
+                                        onChange={(e) => updateMemberRow(idx, 'jobTitle', e.target.value)}
+                                        placeholder="Ex: Gestor de Tráfego"
+                                        className="w-full px-4 py-2.5 bg-indigo-50/30 border border-indigo-100/50 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-bold text-indigo-700"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Função no Sistema</label>
+                                    <select
+                                        value={member.role}
+                                        onChange={(e) => updateMemberRow(idx, 'role', e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium"
+                                    >
+                                        <option value="member">Membro (Operacional)</option>
+                                        <option value="manager">Gestor (Administrativo)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                                <label className="text-[10px] font-black text-slate-400 uppercase block mb-3 ml-1">Permissões de Acesso</label>
+                                <div className="flex flex-wrap gap-4">
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={member.permissions.can_manage_clients}
+                                                onChange={(e) => updateMemberRow(idx, 'permissions.can_manage_clients', e.target.checked)}
+                                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                                            />
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-600 group-hover:text-slate-800 transition-colors">Clientes</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={member.permissions.can_manage_tasks}
+                                                onChange={(e) => updateMemberRow(idx, 'permissions.can_manage_tasks', e.target.checked)}
+                                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                                            />
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-600 group-hover:text-slate-800 transition-colors">Tarefas</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={member.permissions.can_manage_team}
+                                                onChange={(e) => updateMemberRow(idx, 'permissions.can_manage_team', e.target.checked)}
+                                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                                            />
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-600 group-hover:text-slate-800 transition-colors">Equipe</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="flex justify-center mt-2">
+                    <button
+                        type="button"
+                        onClick={addMemberRow}
+                        className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-dashed border-indigo-200 text-indigo-600 rounded-2xl hover:bg-indigo-50 hover:border-indigo-300 transition-all font-bold text-xs"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Adicionar outro membro
+                    </button>
+                </div>
+
+                <div className="pt-4 flex flex-col gap-3">
+                    <Button
+                        type="submit"
+                        disabled={loading || invitedMembers.some(m => !m.email || !m.name)}
+                        className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-100 transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                        {loading ? (
+                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                        ) : (
+                            <>
+                                Próximo: Configurar Primeiro Cliente
+                                <ArrowRight className="ml-2 w-5 h-5" />
+                            </>
+                        )}
+                    </Button>
+                    <button
+                        type="button"
+                        onClick={() => setStep(3)}
+                        className="text-[10px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest text-center py-2"
+                    >
+                        Pular por enquanto
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+
+    const renderStep3 = () => (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="text-center space-y-2">
                 <div className="inline-flex p-3 bg-blue-100 text-blue-600 rounded-2xl mb-2">
                     <Users className="w-8 h-8" />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-800">Primeiro Cliente</h2>
-                <p className="text-slate-500 max-w-sm mx-auto">
-                    Vamos cadastrar seu primeiro cliente para testar o sistema.
+                <h2 className="text-3xl font-black text-slate-800">Primeiro Cliente</h2>
+                <p className="text-slate-500 max-w-sm mx-auto text-sm">
+                    Cadastre seu primeiro cliente e crie o grupo de atendimento automático.
                 </p>
             </div>
 
-            <form onSubmit={handleCreateClient} className="space-y-4 max-w-sm mx-auto bg-white p-6 rounded-3xl border border-slate-200">
+            <form onSubmit={handleCreateClient} className="space-y-4 max-w-sm mx-auto bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm">
                 <div>
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nome do Cliente</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nome do Cliente</label>
                     <input
                         required
                         value={clientName}
                         onChange={(e) => {
                             const newName = e.target.value;
                             setClientName(newName);
-                            // Auto-populate group name if it was empty or followed the default pattern
                             if (!groupName || groupName === `Atendimento: ${clientName}`) {
                                 setGroupName(`Atendimento: ${newName}`);
                             }
                         }}
                         placeholder="Ex: Pedro Alvares"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium"
                     />
                 </div>
                 <div>
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">WhatsApp (55 + DDD + Número)</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">WhatsApp (55 + DDD + Número)</label>
                     <input
                         value={clientPhone}
                         onChange={(e) => setClientPhone(e.target.value)}
                         placeholder="Ex: 5511999998888"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium"
                     />
                 </div>
 
                 <div className="space-y-3">
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Configuração do Grupo</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Configuração do Grupo</label>
                     <div className="grid grid-cols-2 gap-2">
                         <button
                             type="button"
                             onClick={() => setGroupMode('create')}
                             className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${groupMode === 'create'
-                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-inner'
                                 : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'
                                 }`}
                         >
@@ -456,7 +647,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                             type="button"
                             onClick={() => setGroupMode('link')}
                             className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${groupMode === 'link'
-                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-inner'
                                 : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'
                                 }`}
                         >
@@ -468,13 +659,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
                 {groupMode === 'create' && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nome do Grupo a ser criado</label>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nome do Grupo</label>
                         <input
                             required
                             value={groupName}
                             onChange={(e) => setGroupName(e.target.value)}
                             placeholder="Ex: Suporte VIP - Pedro"
-                            className="w-full px-4 py-3 bg-blue-50/50 border border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                            className="w-full px-4 py-3 bg-indigo-50/50 border border-indigo-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-bold text-indigo-700"
                         />
                     </div>
                 )}
@@ -482,7 +673,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                 {groupMode === 'link' && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-2">
                         <div className="flex items-center justify-between ml-1">
-                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">ID do Grupo</label>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">ID do Grupo</label>
                             <button
                                 type="button"
                                 onClick={() => setShowHelp(true)}
@@ -514,123 +705,30 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         </div>
                     </Card>
                 ) : (
-                    <Button
-                        type="submit"
-                        disabled={loading || !clientName}
-                        className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-[0.98] disabled:opacity-50 mt-4"
-                    >
-                        {loading ? (
-                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                        ) : (
-                            <>
-                                Finalizar Cadastro
-                                <ArrowRight className="ml-2 w-5 h-5" />
-                            </>
-                        )}
-                    </Button>
-                )}
-            </form>
-        </div>
-    );
-
-    const renderStep3 = () => (
-        <div className="animate-in slide-in-from-right-8 fade-in duration-500">
-            <div className="mb-10 flex flex-col items-center">
-                <div className="w-16 h-16 bg-emerald-100 rounded-3xl flex items-center justify-center text-emerald-600 mb-6 shadow-xl shadow-emerald-50">
-                    <UserPlus className="w-8 h-8" />
-                </div>
-                <h2 className="text-4xl font-black text-slate-800 tracking-tight text-center">Convidar Equipe 🤝</h2>
-                <p className="text-slate-500 mt-3 text-center max-w-sm text-lg leading-relaxed">
-                    Traga seus colaboradores para ajudar na gestão dos clientes e tarefas.
-                </p>
-            </div>
-
-            <form onSubmit={handleInviteMembers} className="space-y-6">
-                <div className="space-y-4 max-h-[300px] overflow-y-auto px-1">
-                    {invitedMembers.map((member, idx) => (
-                        <div key={idx} className="p-4 bg-white border-2 border-slate-100 rounded-2xl relative group animate-in zoom-in-95">
-                            {invitedMembers.length > 1 && (
-                                <button
-                                    type="button"
-                                    onClick={() => removeMemberRow(idx)}
-                                    className="absolute -top-2 -right-2 w-8 h-8 bg-white border border-red-100 text-red-500 rounded-full flex items-center justify-center hover:bg-red-50 shadow-sm transition-all"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                    <>
+                        <Button
+                            type="submit"
+                            disabled={loading || !clientName}
+                            className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl shadow-lg shadow-indigo-100 transition-all active:scale-[0.98] disabled:opacity-50 mt-4 uppercase tracking-wider text-sm"
+                        >
+                            {loading ? (
+                                <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                            ) : (
+                                <>
+                                    Próximo: Vincular Equipe
+                                    <ArrowRight className="ml-2 w-5 h-5" />
+                                </>
                             )}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nome</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        value={member.name}
-                                        onChange={(e) => updateMemberRow(idx, 'name', e.target.value)}
-                                        placeholder="Ex: João Silva"
-                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm"
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Email</label>
-                                    <input
-                                        required
-                                        type="email"
-                                        value={member.email}
-                                        onChange={(e) => updateMemberRow(idx, 'email', e.target.value)}
-                                        placeholder="joao@suaagencia.com"
-                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm"
-                                    />
-                                </div>
-                            </div>
-                            <div className="mt-3">
-                                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Cargo</label>
-                                <input
-                                    required
-                                    type="text"
-                                    value={member.jobTitle}
-                                    onChange={(e) => updateMemberRow(idx, 'jobTitle', e.target.value)}
-                                    placeholder="Ex: Gestor de Tráfego"
-                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm"
-                                />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                <div className="flex justify-center">
-                    <button
-                        type="button"
-                        onClick={addMemberRow}
-                        className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-dashed border-indigo-200 text-indigo-600 rounded-2xl hover:bg-indigo-50 hover:border-indigo-300 transition-all font-bold text-sm"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Adicionar outro membro
-                    </button>
-                </div>
-
-                <div className="pt-6 flex flex-col gap-4">
-                    <Button
-                        type="submit"
-                        disabled={loading || invitedMembers.some(m => !m.email || !m.name)}
-                        className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-[0.98] disabled:opacity-50"
-                    >
-                        {loading ? (
-                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                        ) : (
-                            <>
-                                Enviar Convites
-                                <ArrowRight className="ml-2 w-5 h-5" />
-                            </>
-                        )}
-                    </Button>
-                    <button
-                        type="button"
-                        onClick={() => setStep(4)}
-                        className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest"
-                    >
-                        Pular por enquanto
-                    </button>
-                </div>
+                        </Button>
+                        <button
+                            type="button"
+                            onClick={() => setStep(5)}
+                            className="text-[10px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest text-center py-2"
+                        >
+                            Pular por enquanto
+                        </button>
+                    </>
+                )}
             </form>
         </div>
     );
@@ -714,7 +812,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     );
 
     const renderStep5 = () => (
-        <div className="text-center space-y-10 py-6 animate-in zoom-in-95 fade-in duration-700">
+        <div className="text-center space-y-10 py-4 animate-in zoom-in-95 fade-in duration-700">
             {/* Header com Brilho */}
             <div className="relative inline-block group">
                 <div className="absolute inset-0 bg-emerald-400 blur-[80px] opacity-30 group-hover:opacity-50 transition-opacity animate-pulse" />
@@ -737,12 +835,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             </div>
 
             {/* Checklist de Sucesso */}
-            <div className="max-w-xs mx-auto space-y-3 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+            <div className="max-w-xs mx-auto space-y-3 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                 {[
                     'WhatsApp Conectado',
+                    'Equipe Convidada e Roles Atribuídos',
                     'Primeiro Cliente Cadastrado',
-                    'Grupo de Atendimento Criado',
-                    'Equipe Convidada e Vinculada'
+                    'Acesso da Equipe Vinculado'
                 ].map((item, idx) => (
                     <div
                         key={idx}
@@ -752,13 +850,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
                             <Check className="w-3.5 h-3.5" />
                         </div>
-                        <span className="text-sm font-bold text-slate-600">{item}</span>
+                        <span className="text-xs font-bold text-slate-600">{item}</span>
                     </div>
                 ))}
             </div>
 
             {/* Ação Final */}
-            <div className="max-w-xs mx-auto pt-4">
+            <div className="max-w-sm mx-auto pt-4 px-8">
                 <Button
                     onClick={onComplete}
                     className="w-full h-16 rounded-[24px] bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xl shadow-2xl shadow-indigo-200 active:scale-95 transition-all group overflow-hidden relative"
@@ -769,9 +867,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         <ArrowRight className="w-6 h-6 ml-2" />
                     </span>
                 </Button>
-                <p className="text-[10px] text-slate-400 mt-4 uppercase font-bold tracking-widest">
-                    Pressione ESC para fechar
-                </p>
             </div>
         </div>
     );

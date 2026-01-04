@@ -136,7 +136,7 @@ export const AdminOrgSetupModal: React.FC<AdminOrgSetupModalProps> = ({
                                     <div key={inst.id} className="p-5 border border-slate-200 rounded-3xl bg-white shadow-sm hover:border-indigo-200 transition-all">
                                         <div className="flex items-start justify-between mb-4">
                                             <div className="flex items-center gap-3">
-                                                <div className={`p-2 rounded-xl ${inst.status === 'connected' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                                <div className={`p-2 rounded-xl ${inst.status === 'conectado' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
                                                     <MessageSquare className="w-4 h-4" />
                                                 </div>
                                                 <div>
@@ -144,8 +144,8 @@ export const AdminOrgSetupModal: React.FC<AdminOrgSetupModalProps> = ({
                                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{inst.status}</span>
                                                 </div>
                                             </div>
-                                            <Badge variant={inst.status === 'connected' ? 'success' : 'warning'}>
-                                                {inst.status === 'connected' ? 'Ativa' : 'Pendente'}
+                                            <Badge variant={inst.status === 'conectado' ? 'success' : 'warning'}>
+                                                {inst.status === 'conectado' ? 'Ativa' : 'Pendente'}
                                             </Badge>
                                         </div>
 
@@ -159,7 +159,7 @@ export const AdminOrgSetupModal: React.FC<AdminOrgSetupModalProps> = ({
                                                     <p className="text-slate-400 text-[10px]">Você pode enviar este código para o cliente escanear remotamente.</p>
                                                 </div>
                                             </div>
-                                        ) : inst.status === 'connected' ? (
+                                        ) : inst.status === 'conectado' ? (
                                             <div className="bg-emerald-50 rounded-2xl p-4 flex items-center justify-center gap-2 border border-emerald-100 text-emerald-700">
                                                 <CheckCircle2 className="w-4 h-4" />
                                                 <span className="text-xs font-bold">Tudo certo! Canal operando normalmente.</span>

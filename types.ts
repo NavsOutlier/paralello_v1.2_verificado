@@ -141,7 +141,7 @@ export interface WhatsAppInstance {
   id: string;
   organizationId: string;
   name: string;
-  status: 'connected' | 'disconnected' | 'connecting' | 'error' | 'waiting_scan';
+  status: 'conectado' | 'desconectado' | 'connecting' | 'error' | 'waiting_scan';
   qrCode?: string;
   instanceApiId?: string;
   instanceApiToken?: string;

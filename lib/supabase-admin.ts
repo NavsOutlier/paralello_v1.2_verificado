@@ -40,7 +40,7 @@ export async function fetchOrganizations(): Promise<Organization[]> {
         onboardingStatus: {
             isOwnerInvited: true, // Placeholder for now
             isOwnerActive: (org.stats_users || 0) > 0,
-            isWhatsAppConnected: (org.instances as any[])?.some(inst => inst.status === 'connected') || false
+            isWhatsAppConnected: (org.instances as any[])?.some(inst => inst.status === 'conectado') || false
         }
     }));
 }

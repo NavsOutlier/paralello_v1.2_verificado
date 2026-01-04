@@ -88,7 +88,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         let interval: any;
         const instance = instances[0];
 
-        if (step === 1 && instance && instance.status !== 'connected' && !loading) {
+        if (step === 1 && instance && instance.status !== 'conectado' && !loading) {
             interval = setInterval(() => {
                 console.log('--- Automated QR Refresh (10s) ---');
                 createInstance('Principal').catch(console.error);
@@ -291,7 +291,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
     const renderStep1 = () => {
         const instance = instances[0];
-        const isConnected = instance?.status === 'connected';
+        const isConnected = instance?.status === 'conectado';
         const isWaiting = instance?.status === 'waiting_scan' || instance?.status === 'connecting';
 
         return (

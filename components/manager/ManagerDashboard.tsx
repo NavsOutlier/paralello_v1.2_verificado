@@ -161,7 +161,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
                     .from('instances')
                     .select('id')
                     .eq('organization_id', organizationId)
-                    .eq('status', 'connected')
+                    .eq('status', 'conectado')
                     .limit(1)
             ]);
 

@@ -290,7 +290,7 @@ export const useWorkspaceData = () => {
 
             // 2. If it's a client message, relay to WhatsApp via Proxy
             if (isClient && selectedEntity.whatsappGroupId) {
-                const connectedInstance = whatsappInstances.find(inst => inst.status === 'connected');
+                const connectedInstance = whatsappInstances.find(inst => inst.status === 'conectado');
 
                 if (connectedInstance) {
                     const { data: { session } } = await supabase.auth.getSession();

@@ -90,7 +90,7 @@ export const WhatsAppManager: React.FC<WhatsAppManagerProps> = ({ organizationId
                             <div className="p-6">
                                 <div className="flex items-center justify-between mb-6">
                                     <div className="flex items-center gap-3">
-                                        <div className={`p-2.5 rounded-2xl transition-colors ${inst.status === 'conectado' ? 'bg-emerald-50 text-emerald-600' :
+                                        <div className={`p-2.5 rounded-2xl transition-colors ${['connected', 'conectado'].includes(inst.status) ? 'bg-emerald-50 text-emerald-600' :
                                             inst.status === 'waiting_scan' ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400'
                                             }`}>
                                             <MessageSquare className="w-5 h-5" />
@@ -98,7 +98,7 @@ export const WhatsAppManager: React.FC<WhatsAppManagerProps> = ({ organizationId
                                         <div>
                                             <h4 className="font-bold text-slate-800 leading-tight">{inst.name}</h4>
                                             <div className="flex items-center gap-1.5 mt-0.5">
-                                                <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${inst.status === 'conectado' ? 'bg-emerald-500' :
+                                                <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${['connected', 'conectado'].includes(inst.status) ? 'bg-emerald-500' :
                                                     inst.status === 'waiting_scan' ? 'bg-amber-500' : 'bg-slate-300'
                                                     }`} />
                                                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
@@ -129,7 +129,7 @@ export const WhatsAppManager: React.FC<WhatsAppManagerProps> = ({ organizationId
                                             <span className="text-[10px] font-bold text-slate-600">Escaneie no seu WhatsApp</span>
                                         </div>
                                     </div>
-                                ) : inst.status === 'conectado' ? (
+                                ) : ['connected', 'conectado'].includes(inst.status) ? (
                                     <div className="flex flex-col items-center justify-center py-6 bg-emerald-50/30 rounded-2xl border border-emerald-100 overflow-hidden relative">
                                         <CheckCircle2 className="w-10 h-10 text-emerald-500 mb-2 drop-shadow-sm" />
                                         <span className="text-xs font-bold text-emerald-700">Conectado com Sucesso</span>
@@ -149,7 +149,7 @@ export const WhatsAppManager: React.FC<WhatsAppManagerProps> = ({ organizationId
                                 <span className="text-[10px] font-medium text-slate-400 font-mono">
                                     ID: {inst.instanceApiId || 'PENDENTE'}
                                 </span>
-                                <Badge variant={inst.status === 'conectado' ? 'success' : 'secondary'} className="rounded-full text-[9px] px-2 py-0.5 border-none shadow-sm">
+                                <Badge variant={['connected', 'conectado'].includes(inst.status) ? 'success' : 'secondary'} className="rounded-full text-[9px] px-2 py-0.5 border-none shadow-sm">
                                     Ready to Chat
                                 </Badge>
                             </div>

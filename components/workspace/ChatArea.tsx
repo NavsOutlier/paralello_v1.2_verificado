@@ -3,6 +3,7 @@ import { Message, User } from '../../types';
 import { Send, Loader2, MessageSquarePlus, ExternalLink } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatTime } from '../../lib/utils/formatting';
+import { MessageBubble } from '../MessageBubble';
 
 interface ChatAreaProps {
     entity: User | null;
@@ -108,58 +109,51 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                         const isHighlighted = highlightedMessageId === message.id;
                         const linkedTaskId = linkedTaskMap[message.id];
 
+                        // Find linked message for reply quote
+                        const linkedMessage = message.linkedMessageId
+                            ? messages.find(m => m.id === message.linkedMessageId)
+                            : undefined;
+
+                        const senderMember = teamMembers.find(m => m.id === message.senderId);
+                        const senderName = message.senderType === 'CLIENT'
+                            ? (entity?.name || 'Cliente')
+                            : (senderMember?.name || (isOwn ? 'Você' : 'Membro'));
+
+                        const senderJobTitle = message.senderType === 'CLIENT'
+                            ? 'Contratante'
+                            : senderMember?.jobTitle;
+
+                        const linkedMessageSender = linkedMessage
+                            ? (linkedMessage.senderType === 'CLIENT'
+                                ? (entity?.name || 'Cliente')
+                                : (teamMembers.find(m => m.id === linkedMessage.senderId)?.name || 'Membro'))
+                            : undefined;
+
                         return (
                             <div
                                 key={message.id}
                                 ref={isHighlighted ? highlightedRef : null}
-                                className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${isHighlighted ? 'bg-indigo-50/50 -mx-6 px-6 py-2 rounded-lg' : ''}`}
+                                className={isHighlighted ? 'bg-indigo-50/50 -mx-6 px-6 py-2 rounded-lg' : ''}
                             >
-                                <div className="flex items-center gap-2 mb-1 px-1">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                        {getSenderName(message)}
-                                    </span>
-                                </div>
-
-                                <div className="flex items-start gap-2 group max-w-[85%]">
-                                    {/* Action buttons (only for client messages) */}
-                                    {!isOwn && onInitiateDiscussion && (
-                                        <button
-                                            onClick={() => onInitiateDiscussion(message)}
-                                            className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-indigo-600 bg-white rounded-lg shadow-sm border border-slate-200 transition-all self-center order-2 ml-2"
-                                            title="Iniciar discussão/tarefa"
-                                        >
-                                            <MessageSquarePlus className="w-4 h-4" />
-                                        </button>
-                                    )}
-
-                                    <div className={`relative rounded-2xl px-4 py-3 ${isOwn
-                                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100'
-                                        : 'bg-white text-slate-900 border border-slate-200 shadow-sm'
-                                        }`}>
-                                        <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
-                                            {message.text}
-                                        </p>
-
-                                        <div className={`flex items-center justify-end gap-1.5 mt-2 text-[10px] ${isOwn ? 'text-indigo-200' : 'text-slate-400'
-                                            }`}>
-                                            <span>{formatTime(message.timestamp)}</span>
-                                        </div>
-
-                                        {/* Linked Task Indicator */}
-                                        {linkedTaskId && (
-                                            <button
-                                                onClick={() => onNavigateToTask?.(linkedTaskId)}
-                                                className={`mt-2 w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${isOwn
-                                                        ? 'bg-indigo-700 text-white hover:bg-indigo-800'
-                                                        : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-                                                    }`}
-                                            >
-                                                <span className="truncate">Ver Tarefa Vinculada</span>
-                                                <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
+                                <MessageBubble
+                                    msg={message}
+                                    isMe={isOwn}
+                                    senderName={senderName}
+                                    senderJobTitle={senderJobTitle}
+                                    onInitiateDiscussion={onInitiateDiscussion}
+                                    onNavigateToLinked={(id) => {
+                                        if (linkedTaskId) onNavigateToTask?.(linkedTaskId);
+                                        else if (message.linkedMessageId) {
+                                            // Scroll to message logic if it's a quote
+                                            const el = document.getElementById(`msg-${id}`);
+                                            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        }
+                                    }}
+                                    linkedTaskId={linkedTaskId}
+                                    linkedMessage={linkedMessage}
+                                    linkedMessageSenderName={linkedMessageSender}
+                                    colorScheme={entity.role === 'client' ? 'green' : 'indigo'}
+                                />
                             </div>
                         );
                     })

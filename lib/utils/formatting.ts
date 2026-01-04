@@ -96,10 +96,10 @@ export function pluralize(count: number, singular: string, plural: string): stri
 /**
  * Format time to HH:MM
  */
-export function formatTime(date: Date | string): string {
+export const formatTime = (date: Date | string): string => {
     const d = typeof date === 'string' ? new Date(date) : date;
     return d.toLocaleTimeString('pt-BR', {
         hour: '2-digit',
         minute: '2-digit'
     });
-}
+};

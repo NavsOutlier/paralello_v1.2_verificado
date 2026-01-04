@@ -18,7 +18,7 @@ interface DBTeamMember {
     profile?: {
         name: string;
         email: string;
-        avatar_url?: string;
+        avatar?: string;
     };
 }
 

@@ -33,6 +33,7 @@ export const Workspace: React.FC = () => {
   const { clients, loading: loadingClients } = useClients();
   const { team, allMembers: allTeamMembers } = useTeam();
   const { messages, loading: loadingMessages, linkedTaskMap, refreshMessages } = useMessages(selectedEntityId);
+  const { messages: taskMessages, refreshMessages: refreshTaskMessages } = useMessages(selectedTaskId);
   const { tasks, refreshTasks } = useTasks(selectedEntityId); // Fetch tasks for selected client/member
   const { templates: checklistTemplates, createTemplate, deleteTemplate } = useChecklists();
   const {
@@ -94,6 +95,7 @@ export const Workspace: React.FC = () => {
       await createContextMessage({
         organization_id: organizationId,
         task_id: taskData.id,
+        client_id: selectedEntityId, // Crucial for showing linkage in client feed
         context_type: 'TASK_INTERNAL',
         sender_id: currentUser?.id,
         sender_type: 'MEMBER',
@@ -122,6 +124,7 @@ export const Workspace: React.FC = () => {
       await createContextMessage({
         organization_id: organizationId,
         task_id: taskId,
+        client_id: selectedEntityId, // Crucial for linkage
         context_type: 'TASK_INTERNAL',
         sender_id: currentUser.id,
         sender_type: 'MEMBER',
@@ -175,7 +178,7 @@ export const Workspace: React.FC = () => {
         <ChatArea
           entity={selectedEntity}
           messages={messages}
-          teamMembers={team}
+          teamMembers={allTeamMembers}
           onSendMessage={(text) => selectedEntity && sendMessage(text, selectedEntity)}
           onInitiateDiscussion={(msg) => setDiscussionDraft({ sourceMessage: msg, mode: 'new' })}
           highlightedMessageId={highlightedMessageId}
@@ -197,7 +200,7 @@ export const Workspace: React.FC = () => {
         {selectedEntityId ? (
           <TaskManager
             tasks={tasks}
-            allMessages={messages}
+            allMessages={[...messages, ...taskMessages]}
             teamMembers={allTeamMembers}
             discussionDraft={discussionDraft}
             onCancelDraft={() => setDiscussionDraft(null)}

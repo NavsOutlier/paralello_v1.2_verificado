@@ -13,20 +13,23 @@ import { UpdatePasswordView } from './views/UpdatePasswordView';
 const AppContent: React.FC = () => {
   const { user, loading, isSuperAdmin, isManager } = useAuth();
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.WORKSPACE);
+  const [hasRouted, setHasRouted] = useState(false);
 
-  // Protection & Initial View Routing
+  // Initial Role-Based Redirection
+  React.useEffect(() => {
+    if (!loading && user && !hasRouted) {
+      if (isSuperAdmin) {
+        setCurrentView(ViewState.SUPERADMIN);
+      } else if (isManager) {
+        setCurrentView(ViewState.MANAGER);
+      }
+      setHasRouted(true);
+    }
+  }, [loading, user, isManager, isSuperAdmin, hasRouted]);
+
+  // Security: Persistent View Protection
   React.useEffect(() => {
     if (!loading && user) {
-      // If we are at the default view and have specific roles, redirect to the most relevant dashboard
-      if (currentView === ViewState.WORKSPACE) {
-        if (isSuperAdmin) {
-          setCurrentView(ViewState.SUPERADMIN);
-        } else if (isManager) {
-          setCurrentView(ViewState.MANAGER);
-        }
-      }
-
-      // Security: Ensure user can only see views they have access to
       if (currentView === ViewState.MANAGER && !isManager && !isSuperAdmin) {
         setCurrentView(ViewState.WORKSPACE);
       }

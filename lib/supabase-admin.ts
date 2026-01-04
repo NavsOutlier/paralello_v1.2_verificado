@@ -77,9 +77,25 @@ export async function changeOrganizationPlan(id: string, newPlan: PlanType): Pro
 }
 
 /**
- * Delete an organization (soft delete could be implemented by status)
+ * Delete an organization (with instance cleanup)
  */
 export async function deleteOrganization(id: string): Promise<void> {
+    try {
+        // 1. Cleanup WhatsApp instances via Proxy (triggers n8n)
+        // This ensures UAZAPI instances are disconnected and deleted
+        await supabase.functions.invoke('whatsapp-proxy-v2', {
+            body: {
+                action: 'delete_organization_instances',
+                organization_id: id
+            }
+        });
+    } catch (cleanupError) {
+        // We log the error but proceed with organization deletion to avoid orphaned data in Supabase
+        // if UAZAPI/n8n fails.
+        console.error('Failed to cleanup instances before deletion:', cleanupError);
+    }
+
+    // 2. Delete from database
     await OrganizationRepository.delete(id);
 }
 

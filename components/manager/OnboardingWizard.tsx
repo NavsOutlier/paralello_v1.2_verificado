@@ -10,7 +10,9 @@ import {
     Building2,
     Sparkles,
     RefreshCw,
-    X
+    X,
+    HelpCircle,
+    Info
 } from 'lucide-react';
 import { useWhatsApp } from '../../hooks/useWhatsApp';
 import { supabase } from '../../lib/supabase';
@@ -43,6 +45,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     const [clientEmail, setClientEmail] = useState('');
     const [clientPhone, setClientPhone] = useState('');
     const [autoCreateGroup, setAutoCreateGroup] = useState(true);
+    const [groupMode, setGroupMode] = useState<'create' | 'link'>('create');
+    const [whatsappGroupId, setWhatsappGroupId] = useState('');
+    const [groupName, setGroupName] = useState('');
+    const [showHelp, setShowHelp] = useState(false);
 
     // No longer jumping automatically via useEffect to avoid jarring transitions
     // while the user is actively using the wizard. The initial state handles the "reopen" case.
@@ -93,6 +99,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     name: clientName,
                     email: clientEmail || null,
                     phone: clientPhone || null,
+                    whatsapp_group_id: groupMode === 'link' ? whatsappGroupId : null,
                     status: 'active'
                 })
                 .select()
@@ -100,9 +107,16 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
             if (error) throw error;
 
-            if (autoCreateGroup && newClient) {
-                showToast('Cliente cadastrado! Criando grupo de WhatsApp...');
-                await createGroup(newClient.name, newClient.id);
+            if (newClient) {
+                if (groupMode === 'create') {
+                    showToast('Cliente cadastrado! Criando grupo de WhatsApp...');
+                    await createGroup(groupName || `Atendimento: ${newClient.name}`, newClient.id);
+                } else if (groupMode === 'link' && whatsappGroupId) {
+                    await supabase
+                        .from('clients')
+                        .update({ whatsapp_group_id: whatsappGroupId })
+                        .eq('id', newClient.id);
+                }
             }
 
             showToast('Tudo pronto! Seu primeiro cliente foi configurado.');
@@ -235,7 +249,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     <input
                         required
                         value={clientName}
-                        onChange={(e) => setClientName(e.target.value)}
+                        onChange={(e) => {
+                            const newName = e.target.value;
+                            setClientName(newName);
+                            // Auto-populate group name if it was empty or followed the default pattern
+                            if (!groupName || groupName === `Atendimento: ${clientName}`) {
+                                setGroupName(`Atendimento: ${newName}`);
+                            }
+                        }}
                         placeholder="Ex: Pedro Alvares"
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                     />
@@ -249,22 +270,75 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                     />
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
-                    <input
-                        type="checkbox"
-                        id="autoGroup"
-                        checked={autoCreateGroup}
-                        onChange={(e) => setAutoCreateGroup(e.target.checked)}
-                        className="w-5 h-5 text-blue-600 rounded-lg focus:ring-blue-500"
-                    />
-                    <label htmlFor="autoGroup" className="text-sm font-bold text-blue-800 cursor-pointer">
-                        Criar Grupo WhatsApp automaticamente
-                    </label>
+
+                <div className="space-y-3">
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Configuração do Grupo</label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setGroupMode('create')}
+                            className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${groupMode === 'create'
+                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'
+                                }`}
+                        >
+                            <Sparkles className="w-5 h-5" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">Criar Novo</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setGroupMode('link')}
+                            className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${groupMode === 'link'
+                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'
+                                }`}
+                        >
+                            <Users className="w-5 h-5" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">Já Existente</span>
+                        </button>
+                    </div>
                 </div>
+
+                {groupMode === 'create' && (
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nome do Grupo a ser criado</label>
+                        <input
+                            required
+                            value={groupName}
+                            onChange={(e) => setGroupName(e.target.value)}
+                            placeholder="Ex: Suporte VIP - Pedro"
+                            className="w-full px-4 py-3 bg-blue-50/50 border border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                        />
+                    </div>
+                )}
+
+                {groupMode === 'link' && (
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-2">
+                        <div className="flex items-center justify-between ml-1">
+                            <label className="block text-xs font-black text-slate-400 uppercase tracking-widest">ID do Grupo</label>
+                            <button
+                                type="button"
+                                onClick={() => setShowHelp(true)}
+                                className="text-[10px] font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1"
+                            >
+                                <HelpCircle className="w-3 h-3" />
+                                COMO ACHAR?
+                            </button>
+                        </div>
+                        <input
+                            required
+                            value={whatsappGroupId}
+                            onChange={(e) => setWhatsappGroupId(e.target.value)}
+                            placeholder="123456789@g.us"
+                            className="w-full px-4 py-3 bg-white border-2 border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-mono text-sm"
+                        />
+                    </div>
+                )}
+
                 <Button
                     type="submit"
                     disabled={loading || !clientName}
-                    className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 font-black tracking-wide"
+                    className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 font-black tracking-wide shadow-lg shadow-blue-100 mt-4"
                 >
                     {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Sparkles className="w-5 h-5 mr-2" />}
                     Finalizar Cadastro
@@ -352,6 +426,67 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     </footer>
                 </div>
             </div>
+
+            {/* Help Modal */}
+            {showHelp && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[110] p-4 scale-in-center animate-in duration-300">
+                    <div className="bg-slate-900 text-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-700/50">
+                        <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-800/50">
+                            <div className="flex items-center gap-3">
+                                <Info className="w-6 h-6 text-blue-400" />
+                                <h3 className="text-xl font-bold tracking-tight">Como achar o ID do Grupo</h3>
+                            </div>
+                            <button
+                                onClick={() => setShowHelp(false)}
+                                className="p-2 hover:bg-slate-700 rounded-xl transition-colors"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <div className="space-y-4">
+                                <div className="flex gap-4">
+                                    <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-xs">1</div>
+                                    <p className="text-slate-300 leading-relaxed text-sm">
+                                        Acesse o <strong>WhatsApp Web</strong> no seu computador.
+                                    </p>
+                                </div>
+                                <div className="flex gap-4">
+                                    <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-xs">2</div>
+                                    <p className="text-slate-300 leading-relaxed text-sm">
+                                        Abra a conversa do <strong>grupo desejado</strong>.
+                                    </p>
+                                </div>
+                                <div className="flex gap-4">
+                                    <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-xs">3</div>
+                                    <p className="text-slate-300 leading-relaxed text-sm">
+                                        Clique com o <strong>botão direito</strong> sobre qualquer mensagem ou sobre o nome do grupo na barra lateral e selecione <strong>"Inspecionar"</strong>.
+                                    </p>
+                                </div>
+                                <div className="flex gap-4">
+                                    <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-xs">4</div>
+                                    <p className="text-slate-300 leading-relaxed text-sm">
+                                        No código que aparecer, procure pelo atributo que contenha o termo <code className="bg-slate-800 px-1.5 py-0.5 rounded text-blue-300 font-bold">@g.us</code>.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20">
+                                <p className="text-xs text-blue-300 italic text-center leading-relaxed">
+                                    <strong>Dica:</strong> Pressione <code className="bg-blue-900/40 px-1 rounded text-white font-mono uppercase text-[10px]">Ctrl + F</code> e digite <span className="text-white font-bold ml-1">@g.us</span> para localizar o ID numérico que precede esse sufixo.
+                                </p>
+                            </div>
+
+                            <Button
+                                onClick={() => setShowHelp(false)}
+                                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold"
+                            >
+                                Entendi, Vou Copiar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -49,7 +49,7 @@ export const useWorkspaceActions = () => {
             console.error('Error in sendMessage action:', error);
             throw error;
         }
-    }, [organizationId, currentUser]);
+    }, [organizationId, currentUser, currentUserMember]);
 
     const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
         if (!organizationId) return;

@@ -53,6 +53,51 @@ class TaskRepositoryClass extends BaseRepository<DBTask> {
     }
 
     /**
+     * Create a new task (UI Friendly)
+     */
+    async createNewTask(payload: Partial<DBTask>): Promise<Task> {
+        const { data, error } = await this.supabase
+            .from(this.tableName)
+            .insert(payload)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error creating task:', error);
+            throw new Error('Failed to create task');
+        }
+
+        return this.mapToTask(data);
+    }
+
+    /**
+     * Update task details (polymorphic)
+     */
+    async updateDetails(id: string, updates: Partial<Task>): Promise<void> {
+        const dbUpdates: any = {};
+        if (updates.title) dbUpdates.title = updates.title;
+        if (updates.status) dbUpdates.status = updates.status;
+        if (updates.priority) dbUpdates.priority = updates.priority;
+        if (updates.assigneeId !== undefined) dbUpdates.assignee_id = updates.assigneeId;
+        if (updates.assigneeIds !== undefined) dbUpdates.assignee_ids = updates.assigneeIds;
+        if (updates.tags) dbUpdates.tags = updates.tags;
+        if (updates.description !== undefined) dbUpdates.description = updates.description;
+        if (updates.deadline !== undefined) dbUpdates.deadline = updates.deadline;
+        if (updates.checklist) dbUpdates.checklist = updates.checklist;
+        if (updates.archivedAt !== undefined) dbUpdates.archived_at = updates.archivedAt?.toISOString();
+
+        const { error } = await this.supabase
+            .from(this.tableName)
+            .update(dbUpdates)
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error updating task details:', error);
+            throw new Error('Failed to update task');
+        }
+    }
+
+    /**
      * Find all tasks for an organization
      */
     async findByOrganization(organizationId: string, includeArchived: boolean = false): Promise<Task[]> {
@@ -128,45 +173,21 @@ class TaskRepositoryClass extends BaseRepository<DBTask> {
      * Archive a task
      */
     async archive(id: string): Promise<void> {
-        const { error } = await this.supabase
-            .from(this.tableName)
-            .update({ archived_at: new Date().toISOString() })
-            .eq('id', id);
-
-        if (error) {
-            console.error('Error archiving task:', error);
-            throw new Error('Failed to archive task');
-        }
+        await this.updateDetails(id, { archivedAt: new Date() });
     }
 
     /**
      * Unarchive a task
      */
     async unarchive(id: string): Promise<void> {
-        const { error } = await this.supabase
-            .from(this.tableName)
-            .update({ archived_at: null })
-            .eq('id', id);
-
-        if (error) {
-            console.error('Error unarchiving task:', error);
-            throw new Error('Failed to unarchive task');
-        }
+        await this.updateDetails(id, { archivedAt: undefined });
     }
 
     /**
      * Update task status
      */
     async updateStatus(id: string, status: 'todo' | 'in-progress' | 'review' | 'done'): Promise<void> {
-        const { error } = await this.supabase
-            .from(this.tableName)
-            .update({ status })
-            .eq('id', id);
-
-        if (error) {
-            console.error('Error updating task status:', error);
-            throw new Error('Failed to update task status');
-        }
+        await this.updateDetails(id, { status });
     }
 }
 

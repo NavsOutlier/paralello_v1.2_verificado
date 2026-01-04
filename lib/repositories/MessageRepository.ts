@@ -29,6 +29,7 @@ interface DBMessage {
 
     created_at: string;
     updated_at?: string;
+    deleted_at?: string;
 }
 
 /**
@@ -44,7 +45,7 @@ class MessageRepositoryClass extends BaseRepository<DBMessage> {
     /**
      * Map database message to UI Message type
      */
-    private mapToMessage(dbMsg: DBMessage): Message {
+    public mapToMessage(dbMsg: DBMessage, currentUserId?: string): Message {
         return {
             id: dbMsg.id,
             senderType: dbMsg.sender_type,
@@ -62,44 +63,30 @@ class MessageRepositoryClass extends BaseRepository<DBMessage> {
             isInternal: dbMsg.is_internal,
             linkedMessageId: dbMsg.linked_message_id,
             direction: dbMsg.direction,
-            uazapiId: dbMsg.uazapi_id
+            uazapiId: dbMsg.uazapi_id,
+
+            // Channel ID logic for UI routing
+            channelId: dbMsg.task_id || dbMsg.client_id ||
+                (dbMsg.context_type === 'DIRECT_MESSAGE'
+                    ? (dbMsg.sender_id === currentUserId ? dbMsg.dm_channel_id : dbMsg.sender_id)
+                    : undefined)
         };
     }
 
     /**
-     * Find messages for a WhatsApp client conversation
+     * Find messages for a specific channel (Client, Task, or DM)
      */
-    async findByClient(clientId: string, limit: number = 50): Promise<Message[]> {
+    async findByChannel(organizationId: string, channelId: string, limit: number = 100): Promise<Message[]> {
         const { data, error } = await this.supabase
             .from(this.tableName)
             .select('*')
-            .eq('client_id', clientId)
-            .eq('context_type', 'WHATSAPP_FEED')
+            .eq('organization_id', organizationId)
+            .or(`client_id.eq.${channelId},task_id.eq.${channelId},dm_channel_id.eq.${channelId},sender_id.eq.${channelId}`)
             .order('created_at', { ascending: true })
             .limit(limit);
 
         if (error) {
-            console.error('Error fetching client messages:', error);
-            return [];
-        }
-
-        return (data || []).map(msg => this.mapToMessage(msg));
-    }
-
-    /**
-     * Find messages for a task (internal discussions)
-     */
-    async findByTask(taskId: string, limit: number = 50): Promise<Message[]> {
-        const { data, error } = await this.supabase
-            .from(this.tableName)
-            .select('*')
-            .eq('task_id', taskId)
-            .eq('context_type', 'TASK_INTERNAL')
-            .order('created_at', { ascending: true })
-            .limit(limit);
-
-        if (error) {
-            console.error('Error fetching task messages:', error);
+            console.error('Error fetching channel messages:', error);
             return [];
         }
 
@@ -122,7 +109,6 @@ class MessageRepositoryClass extends BaseRepository<DBMessage> {
             return new Map();
         }
 
-        // Group by client_id and get latest
         const latestMap = new Map<string, Message>();
         data?.forEach(msg => {
             if (msg.client_id && !latestMap.has(msg.client_id)) {
@@ -134,7 +120,51 @@ class MessageRepositoryClass extends BaseRepository<DBMessage> {
     }
 
     /**
-     * Send a text message to WhatsApp client
+     * Create/Save a message from any source (frontend, webhook, etc.)
+     */
+    async receiveFromClient(params: {
+        organizationId: string;
+        senderId: string;
+        senderType: 'CLIENT' | 'MEMBER';
+        text: string;
+        contextType: 'WHATSAPP_FEED' | 'TASK_INTERNAL' | 'DIRECT_MESSAGE';
+        clientId?: string;
+        task_id?: string;
+        dmChannelId?: string;
+        direction?: 'inbound' | 'outbound';
+        uazapiId?: string;
+        isInternal?: boolean;
+        linked_message_id?: string;
+    }): Promise<Message> {
+        const { data, error } = await this.supabase
+            .from(this.tableName)
+            .insert({
+                organization_id: params.organizationId,
+                sender_id: params.senderId,
+                sender_type: params.senderType,
+                text: params.text,
+                context_type: params.contextType,
+                client_id: params.clientId,
+                task_id: params.task_id,
+                dm_channel_id: params.dmChannelId,
+                direction: params.direction,
+                uazapi_id: params.uazapiId,
+                is_internal: params.isInternal,
+                linked_message_id: params.linked_message_id
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error saving message:', error);
+            throw new Error('Failed to save message');
+        }
+
+        return this.mapToMessage(data);
+    }
+
+    /**
+     * Specific helper for member-to-client outbound messages
      */
     async sendToClient(params: {
         organizationId: string;
@@ -142,78 +172,13 @@ class MessageRepositoryClass extends BaseRepository<DBMessage> {
         senderId: string;
         text: string;
     }): Promise<Message> {
-        const { data, error } = await this.supabase
-            .from(this.tableName)
-            .insert({
-                organization_id: params.organizationId,
-                client_id: params.clientId,
-                sender_id: params.senderId,
-                sender_type: 'MEMBER',
-                text: params.text,
-                context_type: 'WHATSAPP_FEED',
-                direction: 'outbound',
-                is_internal: false
-            })
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Error sending message:', error);
-            throw new Error('Failed to send message');
-        }
-
-        return this.mapToMessage(data);
-    }
-
-    /**
-     * Save incoming WhatsApp message (from webhook)
-     */
-    async receiveFromClient(params: {
-        organizationId: string;
-        clientId: string;
-        text: string;
-        uazapiId?: string;
-    }): Promise<Message> {
-        const { data, error } = await this.supabase
-            .from(this.tableName)
-            .insert({
-                organization_id: params.organizationId,
-                client_id: params.clientId,
-                sender_id: params.clientId, // Client is sender
-                sender_type: 'CLIENT',
-                text: params.text,
-                context_type: 'WHATSAPP_FEED',
-                direction: 'inbound',
-                uazapi_id: params.uazapiId,
-                is_internal: false
-            })
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Error receiving message:', error);
-            throw new Error('Failed to save incoming message');
-        }
-
-        return this.mapToMessage(data);
-    }
-
-    /**
-     * Update message status (sent, delivered, read, failed)
-     */
-    async updateStatus(messageId: string, status: string): Promise<void> {
-        const { error } = await this.supabase
-            .from(this.tableName)
-            .update({
-                status,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', messageId);
-
-        if (error) {
-            console.error('Error updating message status:', error);
-            throw new Error('Failed to update message status');
-        }
+        return this.receiveFromClient({
+            ...params,
+            senderType: 'MEMBER',
+            contextType: 'WHATSAPP_FEED',
+            direction: 'outbound',
+            isInternal: false
+        });
     }
 
     /**
@@ -224,7 +189,6 @@ class MessageRepositoryClass extends BaseRepository<DBMessage> {
             .from(this.tableName)
             .update({
                 uazapi_id: uazapiId,
-                status: 'sent',
                 updated_at: new Date().toISOString()
             })
             .eq('id', messageId);
@@ -236,5 +200,4 @@ class MessageRepositoryClass extends BaseRepository<DBMessage> {
     }
 }
 
-// Export singleton instance
 export const MessageRepository = new MessageRepositoryClass();

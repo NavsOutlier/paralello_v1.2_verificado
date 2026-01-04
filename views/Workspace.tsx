@@ -1,71 +1,62 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { DiscussionDraft, ChecklistItem, Message, Task } from '../types';
+import { ChecklistItem, Message } from '../types';
 import { EntityList } from '../components/EntityList';
 import { ChatArea, TaskManager } from '../components/workspace';
 import { Loader2 } from 'lucide-react';
-import { useWorkspaceData } from '../hooks/useWorkspaceData';
+
+// New Modular Hooks
+import { useClients } from '../hooks/useClients';
+import { useTeam } from '../hooks/useTeam';
+import { useMessages } from '../hooks/useMessages';
+import { useTasks } from '../hooks/useTasks';
+import { useChecklists } from '../hooks/useChecklists';
+import { useWorkspaceActions } from '../hooks/useWorkspaceActions';
 import { useResizableSidebar } from '../hooks/useResizableSidebar';
 
 export const Workspace: React.FC = () => {
   const { organizationId, user: currentUser } = useAuth();
 
-  // Data Hook
-  const {
-    clients,
-    team,
-    allTeamMembers,
-    allMessages,
-    allTasks,
-    checklistTemplates,
-    loading,
-    sendMessage,
-    updateTask,
-    createChecklistTemplate,
-    deleteChecklistTemplate,
-    addTaskComment,
-    createTask,
-    createContextMessage,
-    manualUpdateState,
-    notifyTaskCreated
-  } = useWorkspaceData();
-
   // UI State
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+
+  // Discussion state
   const [discussionDraft, setDiscussionDraft] = useState<{
     sourceMessage: Message;
     mode: 'new' | 'attach';
   } | null>(null);
-  const [isCreatingTask, setIsCreatingTask] = useState(false);
-  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
 
-  // Custom Hooks
+  // Modular Data Hook Instances
+  const { clients, loading: loadingClients } = useClients();
+  const { team, allMembers: allTeamMembers } = useTeam();
+  const { messages, loading: loadingMessages, linkedTaskMap, refreshMessages } = useMessages(selectedEntityId);
+  const { tasks, refreshTasks } = useTasks(selectedEntityId); // Fetch tasks for selected client/member
+  const { templates: checklistTemplates, createTemplate, deleteTemplate } = useChecklists();
+  const {
+    sendMessage,
+    updateTask,
+    addTaskComment,
+    createTask,
+    createContextMessage,
+    notifyTaskCreated
+  } = useWorkspaceActions();
+
+  // UI Hooks
   const { width: rightSidebarWidth, isResizing, startResizing } = useResizableSidebar(440, 440, 800);
 
   // Auto-select first client if none selected
   useEffect(() => {
-    if (clients.length > 0 && !selectedEntityId && !loading) {
+    if (clients.length > 0 && !selectedEntityId && !loadingClients) {
       setSelectedEntityId(clients[0].id);
     }
-  }, [clients, selectedEntityId, loading]);
+  }, [clients, selectedEntityId, loadingClients]);
 
   // Derived state
   const selectedEntity = [...clients, ...team].find(e => e.id === selectedEntityId) || null;
-  const currentChatMessages = allMessages.filter(m => m.channelId === selectedEntityId);
-  const currentEntityTasks = allTasks.filter(t => t.clientId === selectedEntityId);
-  const selectedTask = allTasks.find(t => t.id === selectedTaskId) || null;
-
-  // Map of Message ID -> Task ID for messages that have been turned into tasks
-  const linkedTaskMap = React.useMemo(() => {
-    const map: Record<string, string> = {};
-    allMessages.forEach(m => {
-      if (m.linkedMessageId && m.taskId && m.isInternal) {
-        map[m.linkedMessageId] = m.taskId;
-      }
-    });
-    return map;
-  }, [allMessages]);
+  const selectedTask = (tasks || []).find(t => t.id === selectedTaskId) || null;
 
   const handleCreateTaskFromDraft = async (data: {
     title: string;
@@ -82,28 +73,25 @@ export const Workspace: React.FC = () => {
 
     try {
       setIsCreatingTask(true);
-      // 1. Create Task
-      const taskPayload: any = {
+
+      // 1. Create Task via repository (through action hook)
+      const taskData = await createTask({
         organization_id: organizationId,
         title: data.title,
         status: data.status,
         priority: data.priority,
-        client_id: selectedEntityId
-      };
+        client_id: selectedEntityId,
+        assignee_id: data.assigneeId,
+        assignee_ids: data.assigneeIds,
+        deadline: data.deadline,
+        tags: data.tags,
+        description: data.description,
+        checklist: data.checklist
+      });
 
-      if (data.assigneeId) taskPayload.assignee_id = data.assigneeId;
-      if (data.assigneeIds) taskPayload.assignee_ids = data.assigneeIds;
-      if (data.deadline) taskPayload.deadline = data.deadline;
-      if (data.tags) taskPayload.tags = data.tags;
-      if (data.description) taskPayload.description = data.description;
-      if (data.checklist) taskPayload.checklist = data.checklist;
-
-      const taskData = await createTask(taskPayload);
-
-      // 2. Create Context Message
+      // 2. Create Context Message to link task to source message
       const messageText = comment?.trim() || "Discussão iniciada a partir desta mensagem";
-
-      const msgData = await createContextMessage({
+      await createContextMessage({
         organization_id: organizationId,
         task_id: taskData.id,
         context_type: 'TASK_INTERNAL',
@@ -114,32 +102,13 @@ export const Workspace: React.FC = () => {
         linked_message_id: discussionDraft.sourceMessage.id
       });
 
-      // 3. Update Local State via Hook
-      manualUpdateState('tasks', {
-        ...taskData,
-        clientId: taskData.client_id,
-        assigneeId: taskData.assignee_id,
-        assigneeIds: taskData.assignee_ids || (taskData.assignee_id ? [taskData.assignee_id] : []),
-        checklist: taskData.checklist || [],
-        createdAt: new Date(taskData.created_at)
-      });
-
-      manualUpdateState('messages', {
-        id: msgData.id,
-        channelId: msgData.task_id,
-        taskId: msgData.task_id,
-        contextType: msgData.context_type,
-        senderType: msgData.sender_type,
-        senderId: msgData.sender_id,
-        text: msgData.text,
-        timestamp: new Date(msgData.created_at),
-        isInternal: msgData.is_internal,
-        linkedMessageId: msgData.linked_message_id
-      });
-
+      // Refresh data (realtime will also catch it, but this is faster for same-user experience)
+      refreshTasks();
+      refreshMessages();
       setDiscussionDraft(null);
+
     } catch (error) {
-      console.error('Error creating task:', error);
+      console.error('Error creating task from draft:', error);
     } finally {
       setIsCreatingTask(false);
     }
@@ -150,8 +119,7 @@ export const Workspace: React.FC = () => {
 
     try {
       const messageText = comment?.trim() || "Mensagem vinculada à discussão";
-
-      const data = await createContextMessage({
+      await createContextMessage({
         organization_id: organizationId,
         task_id: taskId,
         context_type: 'TASK_INTERNAL',
@@ -162,19 +130,7 @@ export const Workspace: React.FC = () => {
         linked_message_id: discussionDraft.sourceMessage.id
       });
 
-      manualUpdateState('messages', {
-        id: data.id,
-        channelId: data.task_id,
-        taskId: data.task_id,
-        contextType: data.context_type,
-        senderType: data.sender_type,
-        senderId: data.sender_id,
-        text: data.text,
-        timestamp: new Date(data.created_at),
-        isInternal: data.is_internal,
-        linkedMessageId: data.linked_message_id
-      });
-
+      refreshMessages();
       setDiscussionDraft(null);
     } catch (error) {
       console.error('Error attaching message to task:', error);
@@ -186,18 +142,17 @@ export const Workspace: React.FC = () => {
     setDiscussionDraft({
       sourceMessage: {
         id: 'manual',
-        content: '',
+        text: '',
         senderId: currentUser.id,
         timestamp: new Date(),
         channelId: selectedEntityId,
-        organization_id: organizationId,
-        context_type: 'TASK_DISCUSSION'
+        contextType: 'TASK_INTERNAL'
       } as any,
       mode: 'new'
     });
   };
 
-  if (loading && !clients.length && !team.length) {
+  if (loadingClients && !clients.length) {
     return (
       <div className="flex-1 flex items-center justify-center bg-slate-50">
         <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
@@ -219,7 +174,7 @@ export const Workspace: React.FC = () => {
       <div className="flex-1 min-w-[350px]">
         <ChatArea
           entity={selectedEntity}
-          messages={currentChatMessages}
+          messages={messages}
           teamMembers={team}
           onSendMessage={(text) => selectedEntity && sendMessage(text, selectedEntity)}
           onInitiateDiscussion={(msg) => setDiscussionDraft({ sourceMessage: msg, mode: 'new' })}
@@ -241,8 +196,8 @@ export const Workspace: React.FC = () => {
       >
         {selectedEntityId ? (
           <TaskManager
-            tasks={currentEntityTasks}
-            allMessages={allMessages}
+            tasks={tasks}
+            allMessages={messages}
             teamMembers={allTeamMembers}
             discussionDraft={discussionDraft}
             onCancelDraft={() => setDiscussionDraft(null)}
@@ -253,8 +208,8 @@ export const Workspace: React.FC = () => {
             onUpdateTask={updateTask}
             onManualCreate={handleManualCreateTask}
             checklistTemplates={checklistTemplates}
-            onCreateChecklistTemplate={createChecklistTemplate}
-            onDeleteChecklistTemplate={deleteChecklistTemplate}
+            onCreateChecklistTemplate={createTemplate}
+            onDeleteChecklistTemplate={deleteTemplate}
             selectedTask={selectedTask}
             onSelectTask={(t) => setSelectedTaskId(t ? t.id : null)}
           />

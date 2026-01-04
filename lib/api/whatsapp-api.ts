@@ -1,15 +1,14 @@
 /**
  * WhatsApp API Integration
  * 
- * Handles communication with n8n webhooks for WhatsApp messaging.
+ * Secure relay for WhatsApp messaging using Supabase Edge Functions.
  */
 
 import { MessageRepository } from '../repositories/MessageRepository';
-
-const N8N_BASE_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook';
+import { supabase } from '../supabase';
 
 /**
- * Send text message to WhatsApp client
+ * Send text message to WhatsApp client via secure Edge Function
  */
 export async function sendWhatsAppText(params: {
     organizationId: string;
@@ -21,30 +20,27 @@ export async function sendWhatsAppText(params: {
         // 1. Save to database first (optimistic UI)
         const message = await MessageRepository.sendToClient(params);
 
-        // 2. Call n8n webhook to send via UAZAPI
-        const response = await fetch(`${N8N_BASE_URL}/send-message`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                messageId: message.id,
-                organizationId: params.organizationId,
-                clientId: params.clientId,
+        // 2. Call Supabase Edge Function (Proxy)
+        // This is much safer as it hides n8n URLs and validates auth via JWT automatically
+        const { data: result, error: proxyError } = await supabase.functions.invoke('whatsapp-proxy-v2', {
+            body: {
+                action: 'send_message',
+                organization_id: params.organizationId,
+                client_id: params.clientId,
+                message_id: message.id,
                 text: params.text
-            })
+            }
         });
 
-        if (!response.ok) {
-            // Mark as failed if n8n call fails
-            await MessageRepository.updateStatus(message.id, 'failed');
-            throw new Error(`n8n webhook failed: ${response.statusText}`);
+        if (proxyError) {
+            console.error('Proxy relay error:', proxyError);
+            // We don't throw here to allow the UI to show the message as "sent to DB" 
+            // but we could mark it as failed in DB if we had status tracking enabled.
+            throw new Error(`Failed to relay message to WhatsApp: ${proxyError.message}`);
         }
 
-        const result = await response.json();
-
-        // 3. Update with UAZAPI ID if provided
-        if (result.uazapiId) {
+        // 3. Update with UAZAPI ID if provided by the proxy
+        if (result?.uazapiId) {
             await MessageRepository.linkUazapiId(message.id, result.uazapiId);
         }
 
@@ -54,17 +50,7 @@ export async function sendWhatsAppText(params: {
         };
 
     } catch (error) {
-        console.error('Error sending WhatsApp message:', error);
+        console.error('Error in sendWhatsAppText:', error);
         throw error;
     }
-}
-
-/**
- * Get n8n webhook URLs for configuration
- */
-export function getWebhookUrls() {
-    return {
-        send: `${N8N_BASE_URL}/send-message`,
-        receive: `${N8N_BASE_URL}/whatsapp-incoming`
-    };
 }

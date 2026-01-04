@@ -82,13 +82,11 @@ export async function changeOrganizationPlan(id: string, newPlan: PlanType): Pro
 export async function deleteOrganization(id: string): Promise<void> {
     try {
         // 1. Fetch current instances for this organization BEFORE deletion
-        // This ensures the signal to n8n contains the IDs to be removed from UAZAPI
+        // This ensures the signal to n8n contains all credentials needed to remove them from UAZAPI
         const { data: instances } = await supabase
             .from('instances')
-            .select('id, name')
+            .select('id, name, instance_api_id, instance_api_token')
             .eq('organization_id', id);
-
-        const instanceIds = instances?.map(i => i.id) || [];
 
         // 2. Cleanup WhatsApp instances via Proxy (triggers n8n)
         // We WAIT for the response from n8n. If n8n returns 200 OK, the proxy returns data.
@@ -97,7 +95,7 @@ export async function deleteOrganization(id: string): Promise<void> {
             body: {
                 action: 'delete_organization_instances',
                 organization_id: id,
-                instance_ids: instanceIds // Explicit list for n8n cleanup
+                instances: instances || [] // Full metadata (ID, API ID, Token)
             }
         });
 

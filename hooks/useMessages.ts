@@ -55,6 +55,7 @@ export const useMessages = (selectedEntityId: string | null) => {
                 const isRelevant =
                     newMsg.client_id === selectedEntityId ||
                     newMsg.dm_channel_id === selectedEntityId ||
+                    newMsg.task_id === selectedEntityId ||
                     (newMsg.context_type === 'DIRECT_MESSAGE' && newMsg.sender_id === selectedEntityId);
 
                 if (isRelevant) {

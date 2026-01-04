@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { Organization, PlanType } from '../types';
+import { OrganizationRepository } from './repositories/OrganizationRepository';
 
 // =====================================================
 // Organizations CRUD
@@ -9,49 +10,7 @@ import { Organization, PlanType } from '../types';
  * Fetch all organizations
  */
 export async function fetchOrganizations(): Promise<Organization[]> {
-    const { data, error } = await supabase
-        .from('organizations')
-        .select('*, instances(id, status)')
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error('Error fetching organizations:', error);
-        throw new Error('Failed to fetch organizations');
-    }
-
-    if (!data) return [];
-
-    return data.map(org => ({
-        id: org.id,
-        name: org.name,
-        slug: org.slug,
-        plan: org.plan as PlanType,
-        status: org.status as 'active' | 'inactive',
-        createdAt: new Date(org.created_at),
-        owner: {
-            name: org.owner_name,
-            email: org.owner_email
-        },
-        stats: {
-            users: org.stats_users || 0,
-            clients: org.stats_clients || 0,
-            tasks: org.stats_tasks || 0
-        },
-        onboardingStatus: {
-            isOwnerInvited: true, // Placeholder for now
-            isOwnerActive: (org.stats_users || 0) > 0,
-            isWhatsAppConnected: (() => {
-                const insts = org.instances;
-                const arr = Array.isArray(insts) ? insts : (insts ? [insts] : []);
-                return arr.some((i: any) =>
-                    i?.status && (
-                        i.status.toLowerCase().includes('connect') ||
-                        i.status.toLowerCase().includes('conec')
-                    )
-                );
-            })()
-        }
-    }));
+    return OrganizationRepository.findWithInstances();
 }
 
 /**
@@ -95,65 +54,33 @@ export async function createOrganization(data: Partial<Organization>): Promise<O
  * Update an existing organization
  */
 export async function updateOrganization(id: string, data: Partial<Organization>): Promise<void> {
-    const { error } = await supabase
-        .from('organizations')
-        .update({
-            name: data.name,
-            plan: data.plan,
-            owner_name: data.owner?.name,
-            owner_email: data.owner?.email
-        })
-        .eq('id', id);
-
-    if (error) {
-        console.error('Error updating organization:', error);
-        throw new Error('Failed to update organization');
-    }
+    await OrganizationRepository.updateDetails(id, {
+        name: data.name,
+        plan: data.plan,
+        owner_name: data.owner?.name,
+        owner_email: data.owner?.email
+    });
 }
 
 /**
  * Toggle organization status (active/inactive)
  */
 export async function toggleOrganizationStatus(id: string, newStatus: 'active' | 'inactive'): Promise<void> {
-    const { error } = await supabase
-        .from('organizations')
-        .update({ status: newStatus })
-        .eq('id', id);
-
-    if (error) {
-        console.error('Error toggling organization status:', error);
-        throw new Error('Failed to toggle organization status');
-    }
+    await OrganizationRepository.toggleStatus(id, newStatus);
 }
 
 /**
  * Change organization plan
  */
 export async function changeOrganizationPlan(id: string, newPlan: PlanType): Promise<void> {
-    const { error } = await supabase
-        .from('organizations')
-        .update({ plan: newPlan })
-        .eq('id', id);
-
-    if (error) {
-        console.error('Error changing organization plan:', error);
-        throw new Error('Failed to change organization plan');
-    }
+    await OrganizationRepository.updatePlan(id, newPlan);
 }
 
 /**
  * Delete an organization (soft delete could be implemented by status)
  */
 export async function deleteOrganization(id: string): Promise<void> {
-    const { error } = await supabase
-        .from('organizations')
-        .delete()
-        .eq('id', id);
-
-    if (error) {
-        console.error('Error deleting organization:', error);
-        throw new Error('Failed to delete organization');
-    }
+    await OrganizationRepository.delete(id);
 }
 
 // =====================================================

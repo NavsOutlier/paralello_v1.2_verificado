@@ -1,99 +1,49 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '../../lib/supabase';
-import { MessageRepository } from '../../lib/repositories/MessageRepository';
-import { sendWhatsAppText } from '../../lib/api/whatsapp-api';
-import { Message } from '../../types';
-import { Send, Loader2 } from 'lucide-react';
+import { Message, User } from '../../types';
+import { Send, Loader2, MessageSquarePlus, ExternalLink } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useToast } from '../../contexts/ToastContext';
+import { formatTime } from '../../lib/utils/formatting';
 
 interface ChatAreaProps {
-    clientId: string;
-    clientName: string;
+    entity: User | null;
+    messages: Message[];
+    teamMembers: User[];
+    onSendMessage: (text: string) => void;
+    onInitiateDiscussion?: (msg: Message) => void;
+    highlightedMessageId?: string | null;
+    onNavigateToTask?: (taskId: string) => void;
+    linkedTaskMap?: Record<string, string>;
 }
 
-export const ChatArea: React.FC<ChatAreaProps> = ({ clientId, clientName }) => {
-    const [messages, setMessages] = useState<Message[]>([]);
+export const ChatArea: React.FC<ChatAreaProps> = ({
+    entity,
+    messages,
+    teamMembers,
+    onSendMessage,
+    onInitiateDiscussion,
+    highlightedMessageId,
+    onNavigateToTask,
+    linkedTaskMap = {}
+}) => {
     const [inputText, setInputText] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const { user } = useAuth();
-    const { showToast } = useToast();
-
-    // Load messages on mount and when client changes
-    useEffect(() => {
-        loadMessages();
-        const subscription = subscribeToMessages();
-
-        return () => {
-            subscription?.unsubscribe();
-        };
-    }, [clientId]);
+    const highlightedRef = useRef<HTMLDivElement>(null);
+    const { user: currentUser } = useAuth();
 
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
-
-    const loadMessages = async () => {
-        setIsLoading(true);
-        try {
-            const msgs = await MessageRepository.findByClient(clientId);
-            setMessages(msgs);
-        } catch (error) {
-            console.error('Error loading messages:', error);
-            showToast('Erro ao carregar mensagens', 'error');
-        } finally {
-            setIsLoading(false);
+        if (!highlightedMessageId) {
+            scrollToBottom();
         }
-    };
+    }, [messages, highlightedMessageId]);
 
-    const subscribeToMessages = () => {
-        const channel = supabase
-            .channel(`messages:${clientId}`)
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'messages',
-                filter: `client_id=eq.${clientId}`
-            }, (payload) => {
-                const newMessage = mapDBMessageToMessage(payload.new as any);
-                setMessages(prev => [...prev, newMessage]);
-            })
-            .on('postgres_changes', {
-                event: 'UPDATE',
-                schema: 'public',
-                table: 'messages',
-                filter: `client_id=eq.${clientId}`
-            }, (payload) => {
-                const updatedMessage = mapDBMessageToMessage(payload.new as any);
-                setMessages(prev => prev.map(msg =>
-                    msg.id === updatedMessage.id ? updatedMessage : msg
-                ));
-            })
-            .subscribe();
-
-        return channel;
-    };
-
-    const mapDBMessageToMessage = (dbMsg: any): Message => {
-        return {
-            id: dbMsg.id,
-            senderType: dbMsg.sender_type,
-            senderId: dbMsg.sender_id,
-            text: dbMsg.text,
-            timestamp: new Date(dbMsg.created_at),
-            contextType: dbMsg.context_type,
-            clientId: dbMsg.client_id,
-            taskId: dbMsg.task_id,
-            dmChannelId: dbMsg.dm_channel_id,
-            isInternal: dbMsg.is_internal,
-            linkedMessageId: dbMsg.linked_message_id,
-            direction: dbMsg.direction,
-            uazapiId: dbMsg.uazapi_id
-        };
-    };
+    // Scroll to highlighted message
+    useEffect(() => {
+        if (highlightedMessageId && highlightedRef.current) {
+            highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, [highlightedMessageId]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -103,20 +53,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ clientId, clientName }) => {
         if (!inputText.trim() || isSending) return;
 
         setIsSending(true);
-        const textToSend = inputText;
-        setInputText(''); // Clear immediately for better UX
-
         try {
-            await sendWhatsAppText({
-                organizationId: user.organizationId,
-                clientId,
-                senderId: user.id,
-                text: textToSend
-            });
+            await onSendMessage(inputText.trim());
+            setInputText('');
         } catch (error) {
             console.error('Error sending message:', error);
-            showToast('Erro ao enviar mensagem', 'error');
-            setInputText(textToSend); // Restore text on error
         } finally {
             setIsSending(false);
         }
@@ -129,54 +70,94 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ clientId, clientName }) => {
         }
     };
 
-    const formatTime = (date: Date) => {
-        return date.toLocaleTimeString('pt-BR', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+    const getSenderName = (message: Message) => {
+        if (message.senderType === 'CLIENT') return entity?.name || 'Cliente';
+        const member = teamMembers.find(m => m.id === message.senderId);
+        return member?.name || (message.senderId === currentUser?.id ? 'Você' : 'Membro');
     };
 
-    if (isLoading) {
+    if (!entity) {
         return (
-            <div className="flex-1 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+            <div className="flex-1 flex items-center justify-center bg-slate-50 text-slate-400">
+                Selecione um contato para carregar a conversa.
             </div>
         );
     }
 
     return (
-        <div className="flex-1 flex flex-col h-full bg-slate-50">
+        <div className="flex flex-col h-full bg-slate-50">
             {/* Header */}
-            <div className="bg-white border-b border-slate-200 px-6 py-4">
-                <h2 className="text-lg font-semibold text-slate-900">{clientName}</h2>
-                <p className="text-sm text-slate-500">WhatsApp</p>
+            <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h2 className="text-lg font-semibold text-slate-900">{entity.name}</h2>
+                    <p className="text-sm text-slate-500 capitalize">
+                        {entity.role === 'client' ? 'WhatsApp' : entity.jobTitle || 'Equipe'}
+                    </p>
+                </div>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {messages.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
                         <p className="text-slate-400">Nenhuma mensagem ainda. Inicie a conversa!</p>
                     </div>
                 ) : (
                     messages.map((message) => {
-                        const isOwn = message.senderType === 'MEMBER' && message.senderId === user.id;
+                        const isOwn = message.senderType === 'MEMBER' && message.senderId === currentUser?.id;
+                        const isHighlighted = highlightedMessageId === message.id;
+                        const linkedTaskId = linkedTaskMap[message.id];
 
                         return (
                             <div
                                 key={message.id}
-                                className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                                ref={isHighlighted ? highlightedRef : null}
+                                className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} ${isHighlighted ? 'bg-indigo-50/50 -mx-6 px-6 py-2 rounded-lg' : ''}`}
                             >
-                                <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${isOwn
-                                        ? 'bg-indigo-600 text-white'
-                                        : 'bg-white text-slate-900 border border-slate-200'
-                                    }`}>
-                                    <p className="text-sm whitespace-pre-wrap break-words">
-                                        {message.text}
-                                    </p>
-                                    <div className={`flex items-center justify-end gap-1 mt-1 text-xs ${isOwn ? 'text-indigo-200' : 'text-slate-400'
+                                <div className="flex items-center gap-2 mb-1 px-1">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                        {getSenderName(message)}
+                                    </span>
+                                </div>
+
+                                <div className="flex items-start gap-2 group max-w-[85%]">
+                                    {/* Action buttons (only for client messages) */}
+                                    {!isOwn && onInitiateDiscussion && (
+                                        <button
+                                            onClick={() => onInitiateDiscussion(message)}
+                                            className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-indigo-600 bg-white rounded-lg shadow-sm border border-slate-200 transition-all self-center order-2 ml-2"
+                                            title="Iniciar discussão/tarefa"
+                                        >
+                                            <MessageSquarePlus className="w-4 h-4" />
+                                        </button>
+                                    )}
+
+                                    <div className={`relative rounded-2xl px-4 py-3 ${isOwn
+                                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-100'
+                                        : 'bg-white text-slate-900 border border-slate-200 shadow-sm'
                                         }`}>
-                                        <span>{formatTime(message.timestamp)}</span>
+                                        <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                                            {message.text}
+                                        </p>
+
+                                        <div className={`flex items-center justify-end gap-1.5 mt-2 text-[10px] ${isOwn ? 'text-indigo-200' : 'text-slate-400'
+                                            }`}>
+                                            <span>{formatTime(message.timestamp)}</span>
+                                        </div>
+
+                                        {/* Linked Task Indicator */}
+                                        {linkedTaskId && (
+                                            <button
+                                                onClick={() => onNavigateToTask?.(linkedTaskId)}
+                                                className={`mt-2 w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${isOwn
+                                                        ? 'bg-indigo-700 text-white hover:bg-indigo-800'
+                                                        : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                                                    }`}
+                                            >
+                                                <span className="truncate">Ver Tarefa Vinculada</span>
+                                                <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -188,35 +169,39 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ clientId, clientName }) => {
 
             {/* Input Area */}
             <div className="bg-white border-t border-slate-200 p-4">
-                <div className="flex items-end gap-2">
-                    <textarea
-                        value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        placeholder="Digite sua mensagem..."
-                        disabled={isSending}
-                        rows={1}
-                        className="flex-1 resize-none border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{
-                            minHeight: '48px',
-                            maxHeight: '120px'
-                        }}
-                    />
+                <div className="flex items-end gap-3 max-w-5xl mx-auto">
+                    <div className="flex-1 relative">
+                        <textarea
+                            value={inputText}
+                            onChange={(e) => setInputText(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            placeholder="Digite sua mensagem..."
+                            disabled={isSending}
+                            rows={1}
+                            className="w-full resize-none border border-slate-200 rounded-2xl px-5 py-3.5 pr-12 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-slate-50/50 disabled:opacity-50 text-sm"
+                            style={{
+                                minHeight: '52px',
+                                maxHeight: '150px'
+                            }}
+                        />
+                    </div>
                     <button
                         onClick={handleSend}
                         disabled={!inputText.trim() || isSending}
-                        className="bg-indigo-600 text-white p-3 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                        className="bg-indigo-600 text-white p-3.5 rounded-2xl hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:grayscale shadow-lg shadow-indigo-200 active:scale-95 flex items-center justify-center shrink-0"
                     >
                         {isSending ? (
                             <Loader2 className="w-5 h-5 animate-spin" />
                         ) : (
-                            <Send className="w-5 h-5" />
+                            <Send className="w-5 h-5 translate-x-0.5 -translate-y-0.5" />
                         )}
                     </button>
                 </div>
-                <p className="text-xs text-slate-400 mt-2">
-                    Pressione Enter para enviar, Shift+Enter para quebra de linha
-                </p>
+                <div className="max-w-5xl mx-auto flex justify-between items-center mt-2 px-2">
+                    <p className="text-[10px] text-slate-400">
+                        Pressione <span className="font-semibold">Enter</span> para enviar
+                    </p>
+                </div>
             </div>
         </div>
     );

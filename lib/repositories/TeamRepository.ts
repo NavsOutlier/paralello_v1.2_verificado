@@ -47,9 +47,9 @@ class TeamRepositoryClass extends BaseRepository<DBTeamMember> {
             createdAt: new Date(db.created_at),
             updatedAt: new Date(db.updated_at),
             profile: db.profile ? {
-                name: db.profile.name,
-                email: db.profile.email,
-                avatarUrl: db.profile.avatar_url
+                name: (db.profile as any).name,
+                email: (db.profile as any).email,
+                avatarUrl: (db.profile as any).avatar
             } : undefined,
             permissions: {
                 canManageClients: db.role === 'manager',
@@ -65,7 +65,7 @@ class TeamRepositoryClass extends BaseRepository<DBTeamMember> {
     async findByOrganization(organizationId: string): Promise<TeamMember[]> {
         const { data, error } = await this.supabase
             .from(this.tableName)
-            .select('*, profile:profiles(*)')
+            .select('*, profile:profiles!team_members_profile_id_fkey(*)')
             .eq('organization_id', organizationId)
             .is('deleted_at', null)
             .order('created_at', { ascending: true });
@@ -84,7 +84,7 @@ class TeamRepositoryClass extends BaseRepository<DBTeamMember> {
     async findByProfile(organizationId: string, profileId: string): Promise<TeamMember | null> {
         const { data, error } = await this.supabase
             .from(this.tableName)
-            .select('*, profile:profiles(*)')
+            .select('*, profile:profiles!team_members_profile_id_fkey(*)')
             .eq('organization_id', organizationId)
             .eq('profile_id', profileId)
             .is('deleted_at', null)

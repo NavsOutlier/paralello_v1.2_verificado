@@ -94,7 +94,7 @@ export const useMessages = (selectedEntityId: string | null) => {
     const linkedTaskMap = useMemo(() => {
         const map: Record<string, string> = {};
         messages.forEach(m => {
-            if (m.linkedMessageId && m.taskId && m.isInternal) {
+            if (m.linkedMessageId && m.taskId && m.contextType === 'TASK_INTERNAL') {
                 map[m.linkedMessageId] = m.taskId;
             }
         });

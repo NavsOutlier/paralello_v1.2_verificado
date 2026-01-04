@@ -92,3 +92,14 @@ export function capitalize(text: string): string {
 export function pluralize(count: number, singular: string, plural: string): string {
     return count === 1 ? singular : plural;
 }
+
+/**
+ * Format time to HH:MM
+ */
+export function formatTime(date: Date | string): string {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}

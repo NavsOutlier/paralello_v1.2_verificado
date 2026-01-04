@@ -81,22 +81,39 @@ export async function changeOrganizationPlan(id: string, newPlan: PlanType): Pro
  */
 export async function deleteOrganization(id: string): Promise<void> {
     try {
-        // 1. Cleanup WhatsApp instances via Proxy (triggers n8n)
-        // This ensures UAZAPI instances are disconnected and deleted
-        await supabase.functions.invoke('whatsapp-proxy-v2', {
+        // 1. Fetch current instances for this organization BEFORE deletion
+        // This ensures the signal to n8n contains the IDs to be removed from UAZAPI
+        const { data: instances } = await supabase
+            .from('instances')
+            .select('id, name')
+            .eq('organization_id', id);
+
+        const instanceIds = instances?.map(i => i.id) || [];
+
+        // 2. Cleanup WhatsApp instances via Proxy (triggers n8n)
+        // We WAIT for the response from n8n. If n8n returns 200 OK, the proxy returns data.
+        // If n8n returns an error, the proxy returns an error and we STOP the deletion.
+        const { error: proxyError } = await supabase.functions.invoke('whatsapp-proxy-v2', {
             body: {
                 action: 'delete_organization_instances',
-                organization_id: id
+                organization_id: id,
+                instance_ids: instanceIds // Explicit list for n8n cleanup
             }
         });
-    } catch (cleanupError) {
-        // We log the error but proceed with organization deletion to avoid orphaned data in Supabase
-        // if UAZAPI/n8n fails.
-        console.error('Failed to cleanup instances before deletion:', cleanupError);
-    }
 
-    // 2. Delete from database
-    await OrganizationRepository.delete(id);
+        if (proxyError) {
+            console.error('Cleanup failed, aborting deletion:', proxyError);
+            throw new Error(`Exclusão cancelada: Não foi possível limpar as instâncias no WhatsApp (${proxyError.message}).`);
+        }
+
+        // 3. Delete from database
+        // Only reached if proxy returned 200/Success
+        await OrganizationRepository.delete(id);
+
+    } catch (err: any) {
+        console.error('Error in deleteOrganization:', err);
+        throw err;
+    }
 }
 
 // =====================================================

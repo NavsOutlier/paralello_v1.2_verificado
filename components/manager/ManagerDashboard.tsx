@@ -4,9 +4,10 @@ import { TeamManagement } from './TeamManagement';
 import { SettingsPanel } from '../../views/SettingsPanel';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { Users, UserPlus, LayoutDashboard, Loader2, Settings, MessageSquare } from 'lucide-react';
+import { Users, UserPlus, LayoutDashboard, Loader2, Settings, MessageSquare, Sparkles } from 'lucide-react';
 import { OnboardingChecklist } from './OnboardingChecklist';
 import { OnboardingWizard } from './OnboardingWizard';
+import { Badge } from '../ui';
 
 type Tab = 'overview' | 'clients' | 'team' | 'settings';
 
@@ -172,7 +173,22 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
             const isIncomplete = !stats.hasWhatsApp || stats.clients === 0 || stats.members <= 1;
             setShowWizard(isIncomplete);
         }
-    }, [loading, stats.hasWhatsApp, stats.clients, hasDismissedWizard]);
+    }, [loading, stats.hasWhatsApp, stats.clients, hasDismissedWizard, stats.members]);
+
+    const engagementMessages = [
+        "🚀 Integração concluída! Agora você é oficialmente o Capitão do Navio. Só não deixe ele bater no iceberg dos prazos!",
+        "📱 Tudo pronto! Seu WhatsApp está tão conectado que se bobear ele responde até sua sogra por engano. Brincadeira... ou não!",
+        "⚡ Configuração finalizada! Agora você tem superpoderes de gestão! Use-os com sabedoria, ou use para impressionar seus clientes.",
+        "🎯 Onboarding feito! Você configurou tudo tão rápido que o sistema ainda está no vácuo. Relaxa e aproveita o dashboard!",
+        "🏎️ Parabéns! Sua agência agora está no modo Turbo. Tira o pé do freio e vamos escalar esses resultados!",
+        "🏆 Fim do setup! Se a eficiência fosse esporte, você já estaria no pódio assistindo aos outros começarem.",
+        "☕ Organização nota 10! Seu Paralello está pronto. Só falta o café, mas isso a gente ainda está tentando integrar via USB!"
+    ];
+
+    const getWeeklyMessage = () => {
+        const weekIndex = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));
+        return engagementMessages[weekIndex % engagementMessages.length];
+    };
 
     return (
         <div className="flex-1 p-6 overflow-y-auto">
@@ -278,15 +294,26 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
                     </div>
                 </div>
 
-                {/* Productivity Hint */}
-                <div className="mt-6 p-4 bg-slate-100 border border-slate-200 rounded-lg flex items-center gap-3">
-                    <div className="p-2 bg-white rounded-full text-blue-600">
-                        <LayoutDashboard className="w-5 h-5" />
+                {/* Engagement / Productivity Card */}
+                {!showWizard && !loading && (
+                    <div className="mt-8 relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 animate-pulse" />
+                        <div className="relative p-8 bg-white border-2 border-indigo-50 rounded-3xl shadow-xl shadow-indigo-100/20 flex flex-col md:flex-row items-center gap-6">
+                            <div className="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center text-white shadow-lg transform group-hover:rotate-6 transition-transform">
+                                <Sparkles className="w-8 h-8" />
+                            </div>
+                            <div className="flex-1 text-center md:text-left">
+                                <h3 className="text-xl font-black text-slate-800 mb-2 tracking-tight">Status: Modo Lendário Ativado! 🥂</h3>
+                                <p className="text-slate-600 font-medium leading-relaxed italic">
+                                    "{getWeeklyMessage()}"
+                                </p>
+                            </div>
+                            <div className="flex gap-2">
+                                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-100 font-black">100% CONFIGURADO</Badge>
+                            </div>
+                        </div>
                     </div>
-                    <p className="text-sm text-slate-700">
-                        <strong>Dica:</strong> Navegue pelas abas superiores para acessar ferramentas específicas de gestão e controle de permissões.
-                    </p>
-                </div>
+                )}
             </div>
         </div>
     );

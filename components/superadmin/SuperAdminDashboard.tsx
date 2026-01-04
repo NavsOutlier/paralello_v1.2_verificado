@@ -168,11 +168,13 @@ export const SuperAdminDashboard: React.FC = () => {
 
     const handleDelete = async (org: Organization) => {
         try {
+            setLoading(true);
             await deleteOrganization(org.id);
             showToast(`Organização ${org.name} excluída com sucesso`, 'success');
             await loadOrganizations();
-        } catch (err) {
-            showToast('Erro ao excluir organização', 'error');
+        } catch (err: any) {
+            showToast(err.message || 'Erro ao excluir organização', 'error');
+            setLoading(false);
             console.error(err);
         }
     };

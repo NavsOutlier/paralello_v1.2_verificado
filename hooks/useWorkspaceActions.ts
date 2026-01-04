@@ -1,5 +1,6 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTeam } from './useTeam';
 import { TaskRepository } from '../lib/repositories/TaskRepository';
 import { MessageRepository } from '../lib/repositories/MessageRepository';
 import { sendWhatsAppText } from '../lib/api/whatsapp-api';
@@ -11,6 +12,11 @@ import { Task, ChecklistItem, User as UIUser } from '../types';
  */
 export const useWorkspaceActions = () => {
     const { organizationId, user: currentUser } = useAuth();
+    const { allMembers } = useTeam();
+
+    const currentUserMember = useMemo(() =>
+        allMembers.find(m => m.id === currentUser?.id),
+        [allMembers, currentUser?.id]);
 
     const sendMessage = useCallback(async (text: string, selectedEntity: UIUser) => {
         if (!text.trim() || !organizationId || !currentUser) return;
@@ -24,6 +30,8 @@ export const useWorkspaceActions = () => {
                     organizationId,
                     clientId: selectedEntity.id,
                     senderId: currentUser.id,
+                    senderName: currentUserMember?.name || currentUser.email || 'Membro',
+                    senderJobTitle: currentUserMember?.jobTitle,
                     text: text.trim()
                 });
             } else {

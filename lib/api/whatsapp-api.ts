@@ -6,6 +6,7 @@
 
 import { MessageRepository } from '../repositories/MessageRepository';
 import { WhatsAppRepository } from '../repositories/WhatsAppRepository';
+import { ClientRepository } from '../repositories/ClientRepository';
 import { supabase } from '../supabase';
 
 /**
@@ -15,14 +16,19 @@ export async function sendWhatsAppText(params: {
     organizationId: string;
     clientId: string;
     senderId: string;
+    senderName: string;
+    senderJobTitle?: string;
     text: string;
 }): Promise<{ messageId: string; success: boolean }> {
     try {
         // 1. Save to database first (optimistic UI)
         const message = await MessageRepository.sendToClient(params);
 
-        // 2. Fetch active WhatsApp instance for the organization
-        const activeInstance = await WhatsAppRepository.findActiveInstance(params.organizationId);
+        // 2. Fetch active WhatsApp instance and client data
+        const [activeInstance, client] = await Promise.all([
+            WhatsAppRepository.findActiveInstance(params.organizationId),
+            ClientRepository.findById(params.clientId)
+        ]);
 
         // 3. Call Supabase Edge Function (Proxy)
         // This is much safer as it hides n8n URLs and validates auth via JWT automatically
@@ -32,6 +38,9 @@ export async function sendWhatsAppText(params: {
                 organization_id: params.organizationId,
                 client_id: params.clientId,
                 instance_id: activeInstance?.id, // Pass database instance UUID
+                whatsapp_group_id: client?.whatsapp_group_id, // Pass WhatsApp Group ID if it exists
+                sender_name: params.senderName, // Pass sender name for logging/context
+                sender_role: params.senderJobTitle, // Pass sender job title/role
                 message_id: message.id,
                 text: params.text
             }

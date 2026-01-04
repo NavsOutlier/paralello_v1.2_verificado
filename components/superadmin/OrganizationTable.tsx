@@ -85,13 +85,19 @@ export const OrganizationTable: React.FC<OrganizationTableProps> = ({
                                 Organização
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                ID
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                                 Plano
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                Status
+                                Status (Acesso)
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                Usuários
+                                WhatsApp
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                Equipe
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                                 Clientes

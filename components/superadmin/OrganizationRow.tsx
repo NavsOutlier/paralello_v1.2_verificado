@@ -30,87 +30,102 @@ export const OrganizationRow: React.FC<OrganizationRowProps> = ({
     };
 
     return (
-        <tr className="border-b border-slate-200 hover:bg-slate-50">
-            <td className="px-6 py-4">
-                <div>
-                    <div className="font-semibold text-slate-800">{organization.name}</div>
-                    <div className="text-sm text-slate-500">{organization.slug}</div>
+        <tr className="border-b border-slate-200 hover:bg-slate-50 transition-all duration-200">
+            {/* 1. Organização */}
+            <td className="px-6 py-5">
+                <div className="flex flex-col gap-0.5">
+                    <span className="font-bold text-slate-900 line-clamp-1">{organization.name}</span>
+                    <span className="text-xs text-slate-400 font-medium">/{organization.slug}</span>
                 </div>
             </td>
-            <td className="px-6 py-4">
+
+            {/* 2. ID Column */}
+            <td className="px-6 py-5">
+                <code className="text-[10px] bg-slate-50 text-slate-500 px-2 py-1 rounded-md font-mono border border-slate-100 shadow-sm" title={organization.id}>
+                    {organization.id.substring(0, 2)}...{organization.id.substring(organization.id.length - 2)}
+                </code>
+            </td>
+
+            {/* 3. Plano */}
+            <td className="px-6 py-5">
                 <PlanBadge plan={organization.plan} />
             </td>
-            <td className="px-6 py-4">
-                <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Acesso:</span>
-                        <Badge variant={organization.onboardingStatus?.isOwnerActive ? 'success' : 'default'} size="sm">
-                            {organization.onboardingStatus?.isOwnerActive ? 'Ativo' : 'Pendente'}
-                        </Badge>
-                    </div>
+
+            {/* 4. Status (Acesso) */}
+            <td className="px-6 py-5">
+                <Badge variant={organization.onboardingStatus?.isOwnerActive ? 'success' : 'default'} size="sm" className="font-bold">
+                    {organization.onboardingStatus?.isOwnerActive ? 'ATIVO' : 'PENDENTE'}
+                </Badge>
+            </td>
+
+            {/* 5. WhatsApp */}
+            <td className="px-6 py-5">
+                <Badge variant={organization.onboardingStatus?.isWhatsAppConnected ? 'success' : 'warning'} size="sm" className="font-bold">
+                    {organization.onboardingStatus?.isWhatsAppConnected ? 'CONECTADO' : 'DESCONECTADO'}
+                </Badge>
+            </td>
+
+            {/* 6. Equipe */}
+            <td className="px-6 py-5">
+                <div className="flex items-center gap-1.5 text-slate-700">
+                    <span className="font-bold">{organization.stats.users}</span>
+                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">membros</span>
                 </div>
             </td>
-            <td className="px-6 py-4 text-sm text-slate-600">
-                <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Zap:</span>
-                    <Badge variant={organization.onboardingStatus?.isWhatsAppConnected ? 'success' : 'warning'} size="sm">
-                        {organization.onboardingStatus?.isWhatsAppConnected ? 'Conectado' : 'Off'}
-                    </Badge>
+
+            {/* 7. Clientes */}
+            <td className="px-6 py-5">
+                <div className="flex items-center gap-1.5 text-slate-700">
+                    <span className="font-bold">{organization.stats.clients}</span>
+                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">ativos</span>
                 </div>
             </td>
-            <td className="px-6 py-4 text-sm text-slate-600">
-                {organization.stats.users}
-            </td>
-            <td className="px-6 py-4 text-sm text-slate-600">
-                {organization.stats.clients}
-            </td>
-            <td className="px-6 py-4 text-sm text-slate-500">
+
+            {/* 8. Criado em */}
+            <td className="px-6 py-5 text-sm text-slate-500 font-medium whitespace-nowrap">
                 {formatDate(organization.createdAt)}
             </td>
-            <td className="px-6 py-4">
-                <div className="flex items-center gap-2">
+
+            {/* 9. Ações */}
+            <td className="px-6 py-5">
+                <div className="flex items-center gap-1">
                     <Button
                         variant="secondary"
                         size="sm"
-                        icon={<CreditCard className="w-4 h-4" />}
                         onClick={() => onOpenSetup(organization)}
                         title="Setup Assistant"
-                        className="bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100"
+                        className="bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100 font-bold text-[10px] h-8"
                     >
-                        Setup
+                        SETUP
                     </Button>
+                    <div className="h-4 w-[1px] bg-slate-200 mx-1" />
                     <Button
                         variant="ghost"
                         size="sm"
-                        icon={<Pencil className="w-4 h-4" />}
+                        icon={<Pencil className="w-3.5 h-3.5" />}
                         onClick={() => onEdit(organization)}
                         title="Editar"
+                        className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
                     />
                     <Button
                         variant="ghost"
                         size="sm"
-                        icon={<Power className="w-4 h-4" />}
+                        icon={<Power className="w-3.5 h-3.5" />}
                         onClick={() => onToggleStatus(organization)}
                         title={organization.status === 'active' ? 'Desativar' : 'Ativar'}
+                        className={organization.status === 'active' ? 'text-emerald-500 hover:bg-emerald-50' : 'text-slate-300 hover:text-emerald-500 hover:bg-emerald-50'}
                     />
                     <Button
                         variant="ghost"
                         size="sm"
-                        icon={<CreditCard className="w-4 h-4" />}
-                        onClick={() => onChangePlan(organization)}
-                        title="Mudar Plano"
-                    />
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        icon={<Trash2 className="w-4 h-4" />}
+                        icon={<Trash2 className="w-3.5 h-3.5" />}
                         onClick={() => {
                             if (window.confirm(`Tem certeza que deseja excluir permanentemente a organização "${organization.name}"? Esta ação não pode ser desfeita.`)) {
                                 onDelete(organization);
                             }
                         }}
                         title="Excluir"
-                        className="text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                        className="text-slate-300 hover:text-rose-600 hover:bg-rose-50"
                     />
                 </div>
             </td>

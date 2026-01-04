@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 import { Building2, DollarSign, Users, TrendingUp, Plus, RefreshCw } from 'lucide-react';
 import { PLANS } from '../../constants-superadmin';
 import { Organization, PlanType } from '../../types';
@@ -32,6 +33,31 @@ export const SuperAdminDashboard: React.FC = () => {
     // Load organizations on mount
     useEffect(() => {
         loadOrganizations();
+
+        // Realtime subscription for critical updates
+        const channel = supabase
+            .channel('super-admin-updates')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'instances'
+            }, () => {
+                console.log('Instance change detected, refreshing organizations...');
+                loadOrganizations();
+            })
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'organizations'
+            }, () => {
+                console.log('Organization change detected, refreshing...');
+                loadOrganizations();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const loadOrganizations = async () => {
@@ -215,7 +241,7 @@ export const SuperAdminDashboard: React.FC = () => {
                     subtitle="Monthly Recurring Revenue"
                 />
                 <MetricsCard
-                    title="Total de Usuários"
+                    title="Membros da Equipe"
                     value={organizations.reduce((sum, o) => sum + o.stats.users, 0)}
                     icon={Users}
                     color="bg-purple-500"

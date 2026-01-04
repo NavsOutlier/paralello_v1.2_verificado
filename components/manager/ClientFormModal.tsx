@@ -7,7 +7,7 @@ interface ClientFormModalProps {
     isOpen: boolean;
     client?: Client;
     onClose: () => void;
-    onSave: (client: Partial<Client> & { autoCreateGroup?: boolean }) => Promise<void>;
+    onSave: (client: Partial<Client> & { autoCreateGroup?: boolean; groupName?: string }) => Promise<void>;
 }
 
 export const ClientFormModal: React.FC<ClientFormModalProps> = ({
@@ -17,13 +17,14 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
     onSave
 }) => {
     const { showToast } = useToast();
-    const [formData, setFormData] = useState<Partial<Client> & { autoCreateGroup: boolean }>({
+    const [formData, setFormData] = useState<Partial<Client> & { autoCreateGroup: boolean; groupName: string }>({
         name: '',
         email: '',
         phone: '',
         whatsapp: '',
         whatsappGroupId: '',
         autoCreateGroup: false,
+        groupName: '',
         notes: '',
         status: 'active'
     });
@@ -41,7 +42,8 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
                 whatsappGroupId: client?.whatsappGroupId || '',
                 notes: client?.notes || '',
                 status: client?.status || 'active',
-                autoCreateGroup: false
+                autoCreateGroup: false,
+                groupName: client?.name ? `Atendimento: ${client.name}` : ''
             });
             setGroupMode(client?.whatsappGroupId ? 'link' : 'none');
         }
@@ -67,6 +69,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
                 name: formData.name.trim(),
                 email: formData.email?.trim() || '',
                 autoCreateGroup: groupMode === 'create',
+                groupName: groupMode === 'create' ? formData.groupName : undefined,
                 whatsappGroupId: groupMode === 'link' ? formData.whatsappGroupId : ''
             };
 
@@ -99,7 +102,17 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
                             type="text"
                             required
                             value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            onChange={(e) => {
+                                const newName = e.target.value;
+                                setFormData(prev => {
+                                    const newData = { ...prev, name: newName };
+                                    // Auto-populate group name if it was empty or followed the default pattern
+                                    if (!prev.groupName || prev.groupName === `Atendimento: ${prev.name}`) {
+                                        newData.groupName = `Atendimento: ${newName}`;
+                                    }
+                                    return newData;
+                                });
+                            }}
                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
@@ -198,6 +211,22 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
                                     <span className="text-sm text-emerald-700">Vincular grupo EXISTENTE (colar ID)</span>
                                 </label>
                             </div>
+
+                            {groupMode === 'create' && (
+                                <div className="mt-4 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <label className="block text-xs font-bold text-emerald-700 uppercase mb-1.5 ml-1">
+                                        Nome do Grupo a ser criado
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.groupName}
+                                        onChange={(e) => setFormData({ ...formData, groupName: e.target.value })}
+                                        className="w-full px-3 py-2 border border-emerald-200 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                                        placeholder="Ex: Suporte VIP - Cliente"
+                                    />
+                                </div>
+                            )}
                         </div>
                     )}
 

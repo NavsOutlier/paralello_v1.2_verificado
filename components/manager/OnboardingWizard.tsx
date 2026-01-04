@@ -262,11 +262,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     />
                 </div>
                 <div>
-                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">WhatsApp (com DDD)</label>
+                    <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">WhatsApp (55 + DDD + Número)</label>
                     <input
                         value={clientPhone}
                         onChange={(e) => setClientPhone(e.target.value)}
-                        placeholder="5511999999999"
+                        placeholder="Ex: 5511999998888"
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                     />
                 </div>

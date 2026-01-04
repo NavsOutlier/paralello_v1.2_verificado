@@ -262,7 +262,7 @@ export const SuperAdminDashboard: React.FC = () => {
                         <h3 className="text-sm font-semibold text-slate-600">BASIC</h3>
                         <span className="text-2xl font-bold text-slate-800">{getPlanCount(PlanType.BASIC)}</span>
                     </div>
-                    <div className="text-sm text-slate-500">$49/mês • {PLANS[0].maxUsers} usuários</div>
+                    <div className="text-sm text-slate-500">$49/mês • {PLANS[PlanType.BASIC].maxUsers} usuários</div>
                 </div>
 
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-indigo-100 border-2">
@@ -270,7 +270,7 @@ export const SuperAdminDashboard: React.FC = () => {
                         <h3 className="text-sm font-semibold text-indigo-600">PRO</h3>
                         <span className="text-2xl font-bold text-indigo-600">{getPlanCount(PlanType.PRO)}</span>
                     </div>
-                    <div className="text-sm text-slate-500">$149/mês • {PLANS[1].maxUsers} usuários</div>
+                    <div className="text-sm text-slate-500">$149/mês • {PLANS[PlanType.PRO].maxUsers} usuários</div>
                 </div>
 
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-purple-100 border-2">

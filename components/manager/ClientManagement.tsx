@@ -124,7 +124,9 @@ export const ClientManagement: React.FC = () => {
                     showToast('Solicitando criação do grupo WhatsApp...');
                     // Use custom groupName if provided, otherwise fallback to client name
                     const customName = clientDataExtended.groupName || newClient.name;
-                    createGroup(customName, newClient.id).then(({ error: groupError }) => {
+                    // Pass the phone number to createGroup
+                    const customPhone = clientDataExtended.phone || clientDataExtended.whatsapp;
+                    createGroup(customName, newClient.id, customPhone).then(({ error: groupError }) => {
                         if (groupError) {
                             showToast('Erro ao solicitar criação do grupo', 'error');
                         }

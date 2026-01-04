@@ -49,6 +49,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     const [whatsappGroupId, setWhatsappGroupId] = useState('');
     const [groupName, setGroupName] = useState('');
     const [showHelp, setShowHelp] = useState(false);
+    const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+    const [newClientId, setNewClientId] = useState<string | null>(null);
 
     // No longer jumping automatically via useEffect to avoid jarring transitions
     // while the user is actively using the wizard. The initial state handles the "reopen" case.
@@ -109,24 +111,58 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
             if (newClient) {
                 if (groupMode === 'create') {
+                    setNewClientId(newClient.id);
+                    setIsCreatingGroup(true);
                     showToast('Cliente cadastrado! Criando grupo de WhatsApp...');
-                    await createGroup(groupName || `Atendimento: ${newClient.name}`, newClient.id);
-                } else if (groupMode === 'link' && whatsappGroupId) {
-                    await supabase
-                        .from('clients')
-                        .update({ whatsapp_group_id: whatsappGroupId })
-                        .eq('id', newClient.id);
+                    await createGroup(groupName || `Atendimento: ${newClient.name}`, newClient.id, clientPhone);
+                    // We don't setStep(3) yet, the useEffect will handle it
+                } else {
+                    if (groupMode === 'link' && whatsappGroupId) {
+                        await supabase
+                            .from('clients')
+                            .update({ whatsapp_group_id: whatsappGroupId })
+                            .eq('id', newClient.id);
+                    }
+                    showToast('Tudo pronto! Seu primeiro cliente foi configurado.');
+                    setStep(3);
                 }
             }
-
-            showToast('Tudo pronto! Seu primeiro cliente foi configurado.');
-            setStep(3);
         } catch (err: any) {
             showToast(err.message || 'Erro ao cadastrar cliente', 'error');
-        } finally {
             setLoading(false);
+            setIsCreatingGroup(false);
         }
     };
+
+    // Listen for Group ID update in Realtime
+    useEffect(() => {
+        if (!isCreatingGroup || !newClientId) return;
+
+        const channel = supabase
+            .channel(`client-group-sync-${newClientId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'clients',
+                    filter: `id=eq.${newClientId}`
+                },
+                (payload) => {
+                    if (payload.new.whatsapp_group_id) {
+                        console.log('--- Group Created Successfully! ---');
+                        showToast('Grupo de WhatsApp criado com sucesso!');
+                        setIsCreatingGroup(false);
+                        setStep(3);
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [isCreatingGroup, newClientId, showToast]);
 
     const renderStep1 = () => {
         const instance = instances[0];
@@ -335,14 +371,33 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     </div>
                 )}
 
-                <Button
-                    type="submit"
-                    disabled={loading || !clientName}
-                    className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 font-black tracking-wide shadow-lg shadow-blue-100 mt-4"
-                >
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Sparkles className="w-5 h-5 mr-2" />}
-                    Finalizar Cadastro
-                </Button>
+                {isCreatingGroup ? (
+                    <Card className="p-6 bg-blue-50/50 border-blue-200 flex flex-col items-center gap-4 animate-pulse mt-4">
+                        <div className="relative">
+                            <div className="w-12 h-12 rounded-full border-4 border-blue-100 border-t-blue-600 animate-spin" />
+                            <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-yellow-500 animate-bounce" />
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-blue-900 font-bold">Criando Grupo...</h3>
+                            <p className="text-blue-600 text-xs mt-1">Quase lá! Estamos configurando seu WhatsApp.</p>
+                        </div>
+                    </Card>
+                ) : (
+                    <Button
+                        type="submit"
+                        disabled={loading || !clientName}
+                        className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-[0.98] disabled:opacity-50 mt-4"
+                    >
+                        {loading ? (
+                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                        ) : (
+                            <>
+                                Finalizar Cadastro
+                                <ArrowRight className="ml-2 w-5 h-5" />
+                            </>
+                        )}
+                    </Button>
+                )}
             </form>
         </div>
     );

@@ -65,6 +65,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     const [allTeamMembers, setAllTeamMembers] = useState<any[]>([]);
     const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
 
+    // Safety: Reset global loading state whenever switching steps
+    useEffect(() => {
+        setLoading(false);
+    }, [step]);
+
     // No longer jumping automatically via useEffect to avoid jarring transitions
     // while the user is actively using the wizard. The initial state handles the "reopen" case.
 
@@ -140,6 +145,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     setStep(3);
                 }
             }
+            setLoading(false);
         } catch (err: any) {
             showToast(err.message || 'Erro ao cadastrar cliente', 'error');
             setLoading(false);

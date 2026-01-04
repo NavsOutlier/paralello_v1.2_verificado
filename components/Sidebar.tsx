@@ -33,20 +33,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
       </div>
 
       <div className="flex-1 w-full space-y-2">
-        <NavItem view={ViewState.DASHBOARD} icon={LayoutDashboard} label="Dash" />
-        <NavItem view={ViewState.WORKSPACE} icon={MessageSquare} label="Workspace" />
-        <NavItem view={ViewState.KANBAN} icon={KanbanSquare} label="Tarefas" />
+        {!isSuperAdmin && (
+          <>
+            <NavItem view={ViewState.DASHBOARD} icon={LayoutDashboard} label="Dash" />
+            <NavItem view={ViewState.WORKSPACE} icon={MessageSquare} label="Workspace" />
+            <NavItem view={ViewState.KANBAN} icon={KanbanSquare} label="Tarefas" />
 
-        {/* Manager/Team Management - Visible only to authorized members */}
-        {(isManager || isSuperAdmin || permissions?.can_manage_clients || permissions?.can_manage_team) && (
-          <NavItem view={ViewState.MANAGER} icon={Users} label="Manager" />
+            {/* Manager/Team Management - Visible only to authorized members */}
+            {(isManager || permissions?.can_manage_clients || permissions?.can_manage_team) && (
+              <NavItem view={ViewState.MANAGER} icon={Users} label="Manager" />
+            )}
+          </>
         )}
 
         {/* Super Admin - Visible only to super admins */}
         {isSuperAdmin && (
-          <div className="border-t border-slate-200 pt-2 mt-2">
-            <NavItem view={ViewState.SUPERADMIN} icon={Shield} label="Admin" />
-          </div>
+          <NavItem view={ViewState.SUPERADMIN} icon={Shield} label="Admin" />
         )}
       </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Message, User } from '../../types';
-import { Send, Loader2, MessageSquarePlus, ExternalLink } from 'lucide-react';
+import { Send, Loader2, MessageSquarePlus, ExternalLink, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatTime } from '../../lib/utils/formatting';
 import { MessageBubble } from '../MessageBubble';
@@ -88,17 +88,27 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     return (
         <div className="flex flex-col h-full bg-slate-50">
             {/* Header */}
-            <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+            <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between relative">
                 <div>
                     <h2 className="text-lg font-semibold text-slate-900">{entity.name}</h2>
                     <p className="text-sm text-slate-500 capitalize">
                         {entity.role === 'client' ? 'WhatsApp' : entity.jobTitle || 'Equipe'}
                     </p>
                 </div>
+
+                {/* Centralized Title Badge - Matching Discussion Interna style */}
+                <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1 bg-white/80 backdrop-blur-sm border border-slate-200/50 rounded-full shadow-sm">
+                    <MessageSquare className="w-3 h-3 text-emerald-500" />
+                    <span className="text-[9px] font-bold text-slate-500 tracking-[0.2em] uppercase">Chat do Cliente</span>
+                </div>
+
+                {/* Right actions (could add call/options here later) */}
+                <div className="w-10" />
             </div>
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
                 {messages.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
                         <p className="text-slate-400">Nenhuma mensagem ainda. Inicie a conversa!</p>
@@ -117,7 +127,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                         const senderMember = teamMembers.find(m => m.id === message.senderId);
                         const senderName = message.senderType === 'CLIENT'
                             ? (entity?.name || 'Cliente')
-                            : (senderMember?.name || (isOwn ? 'Você' : 'Membro'));
+                            : (senderMember?.name || 'Membro');
 
                         const senderJobTitle = message.senderType === 'CLIENT'
                             ? 'Contratante'

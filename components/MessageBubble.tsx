@@ -60,10 +60,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           else if (msg.linkedMessageId) onNavigateToLinked?.(msg.linkedMessageId);
         }}
         className={`relative max-w-[85%] rounded-lg px-3 py-1.5 shadow-sm text-sm ${msg.isInternal && colorScheme !== 'indigo'
-            ? 'bg-amber-50 border border-amber-200 text-slate-800'
-            : isMe
-              ? scheme.myBubble
-              : 'bg-white border border-slate-100 text-slate-800'
+          ? 'bg-amber-50 border border-amber-200 text-slate-800'
+          : isMe
+            ? scheme.myBubble
+            : 'bg-white border border-slate-100 text-slate-800'
           } ${(linkedTaskId || msg.linkedMessageId) ? 'cursor-pointer hover:opacity-95 active:scale-[0.99] transition-all' : ''}`}>
 
         {/* Task Created Marking (Title on derived message) */}

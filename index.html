@@ -1,57 +1,62 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Paralello AgencyOS</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              primary: '#6366f1', // Indigo 500
-              secondary: '#4f46e5', // Indigo 600
-              dark: '#1e293b',
-              light: '#f8fafc',
-            }
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paralello AgencyOS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#6366f1', // Indigo 500
+            secondary: '#4f46e5', // Indigo 600
+            dark: '#1e293b',
+            light: '#f8fafc',
           }
         }
       }
-    </script>
-    <style>
-      /* Custom scrollbar for better aesthetics */
-      ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
+    }
+  </script>
+  <style>
+    /* Custom scrollbar for better aesthetics */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Toast animations */
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
       }
-      ::-webkit-scrollbar-track {
-        background: transparent; 
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
       }
-      ::-webkit-scrollbar-thumb {
-        background: #cbd5e1; 
-        border-radius: 3px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8; 
-      }
-      
-      /* Toast animations */
-      @keyframes slideInRight {
-        from {
-          transform: translateX(100%);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
-      }
-      
-      .animate-slide-in-right {
-        animation: slideInRight 0.3s ease-out;
-      }
-    </style>
+    }
+
+    .animate-slide-in-right {
+      animation: slideInRight 0.3s ease-out;
+    }
+  </style>
   <script type="importmap">
 {
   "imports": {
@@ -63,10 +68,12 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
+  <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-gray-50 text-slate-800 antialiased overflow-hidden">
-    <div id="root" class="h-screen w-screen flex flex-col"></div>
+
+<body class="bg-gray-50 text-slate-800 antialiased overflow-hidden">
+  <div id="root" class="h-screen w-screen flex flex-col"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>

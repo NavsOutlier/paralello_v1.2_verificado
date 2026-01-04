@@ -588,10 +588,10 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
             <div className="flex-1 overflow-y-auto bg-[#efeae2] discussion-container">
                 <div className="p-4 pb-10 space-y-4">
 
-                    {/* Cool Designer Separator */}
-                    <div className="relative py-4 flex items-center justify-center">
+                    {/* Fixed Separator */}
+                    <div className="sticky top-0 z-20 py-4 mb-2 -mx-4 px-4 bg-[#efeae2] flex items-center justify-center">
                         <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-slate-300/50 to-transparent" />
-                        <div className="relative bg-[#efeae2] px-4">
+                        <div className="relative px-4">
                             <div className="flex items-center gap-2 px-3 py-1 bg-white/60 backdrop-blur-sm border border-white/50 rounded-full shadow-sm">
                                 <MessageSquare className="w-3 h-3 text-indigo-500" />
                                 <span className="text-[9px] font-black text-slate-500 tracking-[0.2em] uppercase">Discussão Interna</span>

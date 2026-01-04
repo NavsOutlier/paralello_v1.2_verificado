@@ -4,7 +4,7 @@ import { TeamManagement } from './TeamManagement';
 import { SettingsPanel } from '../../views/SettingsPanel';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { Users, UserPlus, LayoutDashboard, Loader2, Settings, MessageSquare, Sparkles } from 'lucide-react';
+import { Users, UserPlus, LayoutDashboard, Loader2, Settings, MessageSquare, Sparkles, ShieldCheck } from 'lucide-react';
 import { OnboardingChecklist } from './OnboardingChecklist';
 import { OnboardingWizard } from './OnboardingWizard';
 import { Badge } from '../ui';
@@ -14,6 +14,12 @@ type Tab = 'overview' | 'clients' | 'team' | 'settings';
 export const ManagerDashboard: React.FC = () => {
     const { isSuperAdmin, permissions, organizationId } = useAuth();
     const [activeTab, setActiveTab] = useState<Tab>('overview');
+    const [settingsInitialTab, setSettingsInitialTab] = useState<string | undefined>(undefined);
+
+    const handleNavigate = (tab: Tab, subTab?: string) => {
+        setSettingsInitialTab(subTab);
+        setActiveTab(tab);
+    };
 
     const canSeeClients = isSuperAdmin || permissions?.can_manage_clients;
     const canSeeTeam = isSuperAdmin || permissions?.can_manage_team;
@@ -24,7 +30,7 @@ export const ManagerDashboard: React.FC = () => {
             <div className="bg-white border-b border-slate-200">
                 <div className="flex gap-1 p-4">
                     <button
-                        onClick={() => setActiveTab('overview')}
+                        onClick={() => handleNavigate('overview')}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'overview'
                             ? 'bg-blue-100 text-blue-700'
                             : 'text-slate-600 hover:bg-slate-100'
@@ -35,7 +41,7 @@ export const ManagerDashboard: React.FC = () => {
                     </button>
                     {canSeeClients && (
                         <button
-                            onClick={() => setActiveTab('clients')}
+                            onClick={() => handleNavigate('clients')}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'clients'
                                 ? 'bg-blue-100 text-blue-700'
                                 : 'text-slate-600 hover:bg-slate-100'
@@ -47,7 +53,7 @@ export const ManagerDashboard: React.FC = () => {
                     )}
                     {canSeeTeam && (
                         <button
-                            onClick={() => setActiveTab('team')}
+                            onClick={() => handleNavigate('team')}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'team'
                                 ? 'bg-blue-100 text-blue-700'
                                 : 'text-slate-600 hover:bg-slate-100'
@@ -58,7 +64,7 @@ export const ManagerDashboard: React.FC = () => {
                         </button>
                     )}
                     <button
-                        onClick={() => setActiveTab('settings')}
+                        onClick={() => handleNavigate('settings')}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'settings'
                             ? 'bg-blue-100 text-blue-700'
                             : 'text-slate-600 hover:bg-slate-100'
@@ -71,13 +77,19 @@ export const ManagerDashboard: React.FC = () => {
             </div>
 
             {/* Content */}
-            {activeTab === 'overview' && <OverviewTab onNavigate={setActiveTab} canSeeClients={!!canSeeClients} canSeeTeam={!!canSeeTeam} />}
+            {activeTab === 'overview' && <OverviewTab
+                onNavigate={handleNavigate as any}
+                canSeeClients={!!canSeeClients}
+                canSeeTeam={!!canSeeTeam}
+                isSuperAdmin={!!isSuperAdmin}
+            />}
             {activeTab === 'clients' && canSeeClients && <ClientManagement />}
             {activeTab === 'team' && canSeeTeam && <TeamManagement />}
             {activeTab === 'settings' && organizationId && (
                 <SettingsPanel
-                    onBack={() => setActiveTab('overview')}
+                    onBack={() => handleNavigate('overview')}
                     organizationId={organizationId}
+                    initialTab={settingsInitialTab as any}
                 />
             )}
         </div>
@@ -85,12 +97,13 @@ export const ManagerDashboard: React.FC = () => {
 };
 
 interface OverviewTabProps {
-    onNavigate: (tab: Tab) => void;
+    onNavigate: (tab: Tab, subTab?: string) => void;
     canSeeClients: boolean;
     canSeeTeam: boolean;
+    isSuperAdmin: boolean;
 }
 
-const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, canSeeTeam }) => {
+const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, canSeeTeam, isSuperAdmin }) => {
     const { organizationId } = useAuth();
     const [stats, setStats] = useState({ clients: 0, members: 0, hasWhatsApp: false });
     const [loading, setLoading] = useState(true);
@@ -166,6 +179,67 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
 
     const [showWizard, setShowWizard] = useState(false);
     const [hasDismissedWizard, setHasDismissedWizard] = useState(false);
+    const [usageStats, setUsageStats] = useState<Record<string, number>>({});
+
+    const trackAction = async (actionId: string) => {
+        const userId = (await supabase.auth.getUser()).data.user?.id;
+        if (!userId) return;
+
+        try {
+            const currentCount = usageStats[actionId] || 0;
+            const { error } = await supabase
+                .from('usage_stats')
+                .upsert({
+                    profile_id: userId,
+                    action_id: actionId,
+                    count: currentCount + 1,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'profile_id,action_id' });
+
+            if (!error) {
+                setUsageStats(prev => ({ ...prev, [actionId]: currentCount + 1 }));
+            }
+        } catch (error) {
+            console.error('Error tracking action:', error);
+        }
+    };
+
+    const fetchUsageStats = async () => {
+        const userId = (await supabase.auth.getUser()).data.user?.id;
+        if (!userId) return;
+
+        try {
+            const { data, error } = await supabase
+                .from('usage_stats')
+                .select('action_id, count')
+                .eq('profile_id', userId);
+
+            if (error) throw error;
+            const statsMap = (data || []).reduce((acc: any, curr: any) => {
+                acc[curr.action_id] = curr.count;
+                return acc;
+            }, {});
+            setUsageStats(statsMap);
+        } catch (error) {
+            console.error('Error fetching usage stats:', error);
+        }
+    };
+
+    useEffect(() => {
+        if (organizationId) {
+            fetchUsageStats();
+        }
+    }, [organizationId]);
+
+    const quickActions = [
+        { id: 'whatsapp', label: 'Configurar WhatsApp', icon: MessageSquare, color: 'bg-emerald-600', hover: 'hover:bg-emerald-700', canSee: true, targetTab: 'settings', subTab: 'whatsapp' },
+        { id: 'settings', label: 'Perfil da Organização', icon: Settings, color: 'bg-slate-600', hover: 'hover:bg-slate-700', canSee: true, targetTab: 'settings', subTab: 'info' },
+        { id: 'security', label: 'Segurança & RLS', icon: ShieldCheck, color: 'bg-indigo-600', hover: 'hover:bg-indigo-700', canSee: isSuperAdmin, targetTab: 'settings', subTab: 'security' }
+    ];
+
+    const sortedActions = [...quickActions]
+        .filter(a => a.canSee)
+        .sort((a, b) => (usageStats[b.id] || 0) - (usageStats[a.id] || 0));
 
     useEffect(() => {
         if (!loading && !hasDismissedWizard) {
@@ -271,26 +345,29 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
 
                 {/* Quick Actions */}
                 <div className="mt-8 bg-white rounded-xl shadow-md p-6 border border-slate-200">
-                    <h3 className="text-lg font-semibold text-slate-800 mb-4">Ações Rápidas</h3>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-slate-800">Ações Inteligentes</h3>
+                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Ordenado por uso</span>
+                    </div>
                     <div className="flex flex-wrap gap-3">
-                        {canSeeClients && (
+                        {sortedActions.map((action) => (
                             <button
-                                onClick={() => onNavigate('clients')}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                                key={action.id}
+                                onClick={() => {
+                                    trackAction(action.id);
+                                    onNavigate(action.targetTab as any, action.subTab);
+                                }}
+                                className={`flex items-center gap-2 px-4 py-2 ${action.color} ${action.hover} text-white rounded-lg transition-all shadow-sm active:scale-95`}
                             >
-                                <Users className="w-4 h-4" />
-                                Gerenciar Clientes
+                                <action.icon className="w-4 h-4" />
+                                {action.label}
+                                {usageStats[action.id] > 0 && (
+                                    <span className="ml-1 w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[8px] font-black">
+                                        {usageStats[action.id]}
+                                    </span>
+                                )}
                             </button>
-                        )}
-                        {canSeeTeam && (
-                            <button
-                                onClick={() => onNavigate('team')}
-                                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
-                            >
-                                <UserPlus className="w-4 h-4" />
-                                Gerenciar Equipe
-                            </button>
-                        )}
+                        ))}
                     </div>
                 </div>
 

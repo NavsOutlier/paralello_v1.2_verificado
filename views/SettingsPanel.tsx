@@ -14,10 +14,11 @@ type SettingsTab = 'info' | 'tags' | 'workflow' | 'templates' | 'specialties' | 
 interface SettingsPanelProps {
     onBack: () => void;
     organizationId: string;
+    initialTab?: SettingsTab;
 }
 
-export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, organizationId }) => {
-    const [activeTab, setActiveTab] = useState<SettingsTab>('info');
+export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, organizationId, initialTab = 'info' }) => {
+    const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
 
     const tabs = [
         { id: 'info' as SettingsTab, label: 'Informações Gerais', icon: Building2 },

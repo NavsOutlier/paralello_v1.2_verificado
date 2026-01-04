@@ -168,8 +168,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
 
     useEffect(() => {
         if (!loading && !hasDismissedWizard) {
-            // Show wizard if haven't connected WhatsApp OR have no clients
-            const isIncomplete = !stats.hasWhatsApp || stats.clients === 0;
+            // Show wizard if haven't connected WhatsApp OR have no clients OR no team members invited
+            const isIncomplete = !stats.hasWhatsApp || stats.clients === 0 || stats.members <= 1;
             setShowWizard(isIncomplete);
         }
     }, [loading, stats.hasWhatsApp, stats.clients, hasDismissedWizard]);

@@ -12,6 +12,10 @@ import {
     RefreshCw,
     X,
     HelpCircle,
+    Check,
+    UserPlus,
+    UserCog,
+    Trash2,
     Info
 } from 'lucide-react';
 import { useWhatsApp } from '../../hooks/useWhatsApp';
@@ -25,6 +29,7 @@ interface OnboardingWizardProps {
     stats: {
         hasWhatsApp: boolean;
         clients: number;
+        members: number;
     };
 }
 
@@ -34,6 +39,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     const { instances, createInstance, createGroup, loading: wsLoading } = useWhatsApp();
 
     const [step, setStep] = useState(() => {
+        if (initialStats.hasWhatsApp && initialStats.clients > 0 && initialStats.members > 1) return 5;
         if (initialStats.hasWhatsApp && initialStats.clients > 0) return 3;
         if (initialStats.hasWhatsApp) return 2;
         return 1;
@@ -51,6 +57,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     const [showHelp, setShowHelp] = useState(false);
     const [isCreatingGroup, setIsCreatingGroup] = useState(false);
     const [newClientId, setNewClientId] = useState<string | null>(null);
+
+    // Step 3: Team Invitation State
+    const [invitedMembers, setInvitedMembers] = useState([{ name: '', email: '', jobTitle: '' }]);
+
+    // Step 4: Assignment State
+    const [allTeamMembers, setAllTeamMembers] = useState<any[]>([]);
+    const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
 
     // No longer jumping automatically via useEffect to avoid jarring transitions
     // while the user is actively using the wizard. The initial state handles the "reopen" case.
@@ -123,7 +136,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                             .update({ whatsapp_group_id: whatsappGroupId })
                             .eq('id', newClient.id);
                     }
-                    showToast('Tudo pronto! Seu primeiro cliente foi configurado.');
+                    showToast('Tudo pronto com seu primeiro cliente!');
                     setStep(3);
                 }
             }
@@ -163,6 +176,118 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             supabase.removeChannel(channel);
         };
     }, [isCreatingGroup, newClientId, showToast]);
+
+    const handleInviteMembers = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!organizationId) return;
+        setLoading(true);
+
+        try {
+            for (const member of invitedMembers) {
+                if (!member.email || !member.name) continue;
+
+                const { data: response, error: inviteError } = await supabase.functions.invoke('invite-team-member', {
+                    body: {
+                        email: member.email.trim(),
+                        name: member.name.trim(),
+                        job_title: (member.jobTitle || '').trim(),
+                        role: 'member',
+                        organization_id: organizationId,
+                        invited_by: (await supabase.auth.getUser()).data.user?.id,
+                        permissions: {
+                            can_manage_clients: true,
+                            can_manage_tasks: true,
+                            can_manage_team: false
+                        }
+                    }
+                });
+
+                if (inviteError || (response && response.error)) {
+                    console.error('Erro ao convidar:', member.email, inviteError || response?.error);
+                }
+            }
+
+            showToast('Processamento de convites concluído');
+            setStep(4);
+        } catch (err: any) {
+            showToast(err.message || 'Erro ao processar convites', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchAllTeamMembers = async () => {
+        if (!organizationId) return;
+        try {
+            const { data, error } = await supabase
+                .from('team_members')
+                .select('*, profile:profiles!team_members_profile_id_fkey(name, email)')
+                .eq('organization_id', organizationId)
+                .is('deleted_at', null);
+
+            if (error) throw error;
+            setAllTeamMembers(data || []);
+            // Auto-select the current user (manager)
+            const me = (await supabase.auth.getUser()).data.user;
+            const myMember = data?.find(m => m.profile_id === me?.id);
+            if (myMember) {
+                setSelectedMemberIds([myMember.id]);
+            }
+        } catch (error) {
+            console.error('Error fetching team members:', error);
+        }
+    };
+
+    useEffect(() => {
+        if (step === 4) {
+            fetchAllTeamMembers();
+        }
+    }, [step]);
+
+    const handleAssignMembers = async () => {
+        if (!organizationId || !newClientId || selectedMemberIds.length === 0) {
+            setStep(5); // Skip if nothing selected
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const assignments = selectedMemberIds.map(memberId => ({
+                organization_id: organizationId,
+                client_id: newClientId,
+                team_member_id: memberId,
+                role: 'support'
+            }));
+
+            const { error } = await supabase
+                .from('client_assignments')
+                .insert(assignments);
+
+            if (error) throw error;
+            showToast('Equipe vinculada ao cliente com sucesso!');
+            setStep(5);
+        } catch (error: any) {
+            showToast(error.message || 'Erro ao vincular equipe', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const addMemberRow = () => {
+        setInvitedMembers([...invitedMembers, { name: '', email: '', jobTitle: '' }]);
+    };
+
+    const removeMemberRow = (index: number) => {
+        if (invitedMembers.length > 1) {
+            setInvitedMembers(invitedMembers.filter((_, i) => i !== index));
+        }
+    };
+
+    const updateMemberRow = (index: number, field: string, value: string) => {
+        const newMembers = [...invitedMembers];
+        newMembers[index] = { ...newMembers[index], [field]: value };
+        setInvitedMembers(newMembers);
+    };
 
     const renderStep1 = () => {
         const instance = instances[0];
@@ -403,27 +528,244 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     );
 
     const renderStep3 = () => (
-        <div className="text-center space-y-8 py-10 animate-in zoom-in-95 duration-700">
-            <div className="relative inline-block">
-                <div className="absolute inset-0 bg-emerald-400 blur-3xl opacity-20 animate-pulse" />
-                <div className="relative p-6 bg-white rounded-[40px] shadow-2xl border border-emerald-50">
-                    <Sparkles className="w-20 h-20 text-emerald-500" />
+        <div className="animate-in slide-in-from-right-8 fade-in duration-500">
+            <div className="mb-10 flex flex-col items-center">
+                <div className="w-16 h-16 bg-emerald-100 rounded-3xl flex items-center justify-center text-emerald-600 mb-6 shadow-xl shadow-emerald-50">
+                    <UserPlus className="w-8 h-8" />
                 </div>
-            </div>
-            <div className="space-y-3">
-                <h2 className="text-4xl font-black text-slate-800 tracking-tight">Tudo Pronto!</h2>
-                <p className="text-slate-500 max-w-sm mx-auto text-lg">
-                    Sua organização foi configurada com sucesso. Agora você pode gerenciar sua equipe e tarefas.
+                <h2 className="text-4xl font-black text-slate-800 tracking-tight text-center">Convidar Equipe 🤝</h2>
+                <p className="text-slate-500 mt-3 text-center max-w-sm text-lg leading-relaxed">
+                    Traga seus colaboradores para ajudar na gestão dos clientes e tarefas.
                 </p>
             </div>
-            <div className="flex flex-col gap-3 max-w-xs mx-auto">
+
+            <form onSubmit={handleInviteMembers} className="space-y-6">
+                <div className="space-y-4 max-h-[300px] overflow-y-auto px-1">
+                    {invitedMembers.map((member, idx) => (
+                        <div key={idx} className="p-4 bg-white border-2 border-slate-100 rounded-2xl relative group animate-in zoom-in-95">
+                            {invitedMembers.length > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={() => removeMemberRow(idx)}
+                                    className="absolute -top-2 -right-2 w-8 h-8 bg-white border border-red-100 text-red-500 rounded-full flex items-center justify-center hover:bg-red-50 shadow-sm transition-all"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nome</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        value={member.name}
+                                        onChange={(e) => updateMemberRow(idx, 'name', e.target.value)}
+                                        placeholder="Ex: João Silva"
+                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Email</label>
+                                    <input
+                                        required
+                                        type="email"
+                                        value={member.email}
+                                        onChange={(e) => updateMemberRow(idx, 'email', e.target.value)}
+                                        placeholder="joao@suaagencia.com"
+                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm"
+                                    />
+                                </div>
+                            </div>
+                            <div className="mt-3">
+                                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Cargo</label>
+                                <input
+                                    required
+                                    type="text"
+                                    value={member.jobTitle}
+                                    onChange={(e) => updateMemberRow(idx, 'jobTitle', e.target.value)}
+                                    placeholder="Ex: Gestor de Tráfego"
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm"
+                                />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="flex justify-center">
+                    <button
+                        type="button"
+                        onClick={addMemberRow}
+                        className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-dashed border-indigo-200 text-indigo-600 rounded-2xl hover:bg-indigo-50 hover:border-indigo-300 transition-all font-bold text-sm"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Adicionar outro membro
+                    </button>
+                </div>
+
+                <div className="pt-6 flex flex-col gap-4">
+                    <Button
+                        type="submit"
+                        disabled={loading || invitedMembers.some(m => !m.email || !m.name)}
+                        className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                        {loading ? (
+                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                        ) : (
+                            <>
+                                Enviar Convites
+                                <ArrowRight className="ml-2 w-5 h-5" />
+                            </>
+                        )}
+                    </Button>
+                    <button
+                        type="button"
+                        onClick={() => setStep(4)}
+                        className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest"
+                    >
+                        Pular por enquanto
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+
+    const renderStep4 = () => (
+        <div className="animate-in slide-in-from-right-8 fade-in duration-500">
+            <div className="mb-10 flex flex-col items-center">
+                <div className="w-16 h-16 bg-blue-100 rounded-3xl flex items-center justify-center text-blue-600 mb-6 shadow-xl shadow-blue-50">
+                    <UserCog className="w-8 h-8" />
+                </div>
+                <h2 className="text-4xl font-black text-slate-800 tracking-tight text-center">Quem atuará com o cliente?</h2>
+                <p className="text-slate-500 mt-3 text-center max-w-sm text-lg leading-relaxed">
+                    Selecione os membros da equipe que terão acesso ao atendimento deste cliente.
+                </p>
+            </div>
+
+            <div className="space-y-3 max-h-[300px] overflow-y-auto px-1 mb-8">
+                {allTeamMembers.length === 0 ? (
+                    <div className="text-center py-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-300 mb-2" />
+                        <p className="text-sm text-slate-500 font-bold">Carregando sua equipe...</p>
+                    </div>
+                ) : (
+                    allTeamMembers.map((member) => (
+                        <label
+                            key={member.id}
+                            className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all cursor-pointer ${selectedMemberIds.includes(member.id)
+                                ? 'bg-blue-50 border-blue-200 shadow-md transform scale-[1.02]'
+                                : 'bg-white border-slate-100 hover:border-blue-100'
+                                }`}
+                        >
+                            <div className="relative">
+                                <input
+                                    type="checkbox"
+                                    className="hidden"
+                                    checked={selectedMemberIds.includes(member.id)}
+                                    onChange={(e) => {
+                                        if (e.target.checked) {
+                                            setSelectedMemberIds([...selectedMemberIds, member.id]);
+                                        } else {
+                                            setSelectedMemberIds(selectedMemberIds.filter(id => id !== member.id));
+                                        }
+                                    }}
+                                />
+                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedMemberIds.includes(member.id)
+                                    ? 'bg-blue-600 border-blue-600 text-white'
+                                    : 'border-slate-200 bg-white'
+                                    }`}>
+                                    {selectedMemberIds.includes(member.id) && <Check className="w-3.5 h-3.5" />}
+                                </div>
+                            </div>
+                            <div className="flex-1">
+                                <p className="font-bold text-slate-800">{member.profile?.name || 'Membro'}</p>
+                                <p className="text-xs text-slate-500">{member.profile?.email}</p>
+                            </div>
+                            {member.job_title && (
+                                <Badge variant="outline" className="bg-white text-blue-600 border-blue-100">
+                                    {member.job_title}
+                                </Badge>
+                            )}
+                        </label>
+                    ))
+                )}
+            </div>
+
+            <Button
+                onClick={handleAssignMembers}
+                disabled={loading || allTeamMembers.length === 0}
+                className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+                {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                ) : (
+                    <>
+                        Vincular Equipe e Finalizar
+                        <ArrowRight className="ml-2 w-5 h-5" />
+                    </>
+                )}
+            </Button>
+        </div>
+    );
+
+    const renderStep5 = () => (
+        <div className="text-center space-y-10 py-6 animate-in zoom-in-95 fade-in duration-700">
+            {/* Header com Brilho */}
+            <div className="relative inline-block group">
+                <div className="absolute inset-0 bg-emerald-400 blur-[80px] opacity-30 group-hover:opacity-50 transition-opacity animate-pulse" />
+                <div className="relative p-8 bg-white rounded-[40px] shadow-2xl border border-emerald-100 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-500">
+                    <Sparkles className="w-16 h-16 text-emerald-500" />
+                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white p-1">
+                        <Check className="w-4 h-4" />
+                    </div>
+                </div>
+            </div>
+
+            {/* Títulos */}
+            <div className="space-y-4">
+                <h2 className="text-4xl font-black text-slate-800 tracking-tight">
+                    Tudo Pronto! 🚀
+                </h2>
+                <p className="text-slate-500 max-w-sm mx-auto text-lg leading-relaxed">
+                    Sua organização está configurada e pronta para escalar com o Paralello.
+                </p>
+            </div>
+
+            {/* Checklist de Sucesso */}
+            <div className="max-w-xs mx-auto space-y-3 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                {[
+                    'WhatsApp Conectado',
+                    'Primeiro Cliente Cadastrado',
+                    'Grupo de Atendimento Criado',
+                    'Equipe Convidada e Vinculada'
+                ].map((item, idx) => (
+                    <div
+                        key={idx}
+                        className="flex items-center gap-3 animate-in slide-in-from-left-4 fade-in duration-500 fill-mode-both"
+                        style={{ animationDelay: `${idx * 200}ms` }}
+                    >
+                        <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                            <Check className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="text-sm font-bold text-slate-600">{item}</span>
+                    </div>
+                ))}
+            </div>
+
+            {/* Ação Final */}
+            <div className="max-w-xs mx-auto pt-4">
                 <Button
                     onClick={onComplete}
-                    className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 font-black text-lg shadow-xl shadow-indigo-200 active:scale-95 transition-all"
+                    className="w-full h-16 rounded-[24px] bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xl shadow-2xl shadow-indigo-200 active:scale-95 transition-all group overflow-hidden relative"
                 >
-                    Ir para meu Painel
-                    <ArrowRight className="w-6 h-6 ml-2" />
+                    <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 skew-x-[-20deg]" />
+                    <span className="relative z-10 flex items-center justify-center">
+                        Ir para meu Painel
+                        <ArrowRight className="w-6 h-6 ml-2" />
+                    </span>
                 </Button>
+                <p className="text-[10px] text-slate-400 mt-4 uppercase font-bold tracking-widest">
+                    Pressione ESC para fechar
+                </p>
             </div>
         </div>
     );
@@ -435,7 +777,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                 <div className="absolute top-0 left-0 right-0 h-1.5 bg-slate-200">
                     <div
                         className="h-full bg-indigo-500 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(99,102,241,0.5)]"
-                        style={{ width: `${(step / 3) * 100}%` }}
+                        style={{ width: `${(step / 5) * 100}%` }}
                     />
                 </div>
 
@@ -457,15 +799,17 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                             </div>
                             <span className="font-black text-slate-800 tracking-tighter text-xl">PARALELLO</span>
                         </div>
-                        <div className="flex gap-2">
-                            {[1, 2, 3].map((s) => (
-                                <div
-                                    key={s}
-                                    className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${step === s ? 'w-8 bg-indigo-600' : s < step ? 'bg-emerald-500' : 'bg-slate-200'
-                                        }`}
-                                />
-                            ))}
-                        </div>
+                        {window.innerWidth > 768 && (
+                            <div className="flex gap-2">
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                    <div
+                                        key={s}
+                                        className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${step === s ? 'w-8 bg-indigo-600' : s < step ? 'bg-emerald-500' : 'bg-slate-200'
+                                            }`}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Main Content */}
@@ -473,11 +817,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         {step === 1 && renderStep1()}
                         {step === 2 && renderStep2()}
                         {step === 3 && renderStep3()}
+                        {step === 4 && renderStep4()}
+                        {step === 5 && renderStep5()}
                     </main>
 
                     {/* Footer Info */}
                     <footer className="mt-12 text-center">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">Setup de Onboarding • Passo {step} de 3</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">Setup de Onboarding • Passo {step} de 5</p>
                     </footer>
                 </div>
             </div>

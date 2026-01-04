@@ -74,7 +74,7 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ stats,
                             onClick={() => (onNavigate as any)('open_wizard')}
                         >
                             <Sparkles className="w-3.5 h-3.5 mr-2" />
-                            INICIAR ONBOARDING
+                            {stats.hasWhatsApp ? 'FINALIZAR ONBOARDING' : 'INICIAR ONBOARDING'}
                         </Button>
                     </div>
                 </div>

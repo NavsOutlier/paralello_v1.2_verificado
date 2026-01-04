@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Building2, DollarSign, Users, TrendingUp, Plus, RefreshCw } from 'lucide-react';
-import { PLANS } from '../../constants-superadmin';
+import { PLANS, PLAN_ARRAY } from '../../config/plans';
 import { Organization, PlanType } from '../../types';
 import { Button } from '../ui';
 import { MetricsCard } from './MetricsCard';
@@ -82,7 +82,7 @@ export const SuperAdminDashboard: React.FC = () => {
     const mrr = organizations
         .filter(o => o.status === 'active')
         .reduce((sum, org) => {
-            const plan = PLANS.find(p => p.id === org.plan);
+            const plan = PLAN_ARRAY.find(p => p.id === org.plan);
             return sum + (plan?.price || 0);
         }, 0);
 
@@ -118,9 +118,16 @@ export const SuperAdminDashboard: React.FC = () => {
 
     const handleChangePlan = async (org: Organization) => {
         try {
-            const currentPlanIndex = PLANS.findIndex(p => p.id === org.plan);
-            const nextPlan = PLANS[(currentPlanIndex + 1) % PLANS.length];
-            const currentPlanName = PLANS.find(p => p.id === org.plan)?.name;
+            const currentIndex = PLAN_ARRAY.findIndex(p => p.id === org.plan);
+            const nextPlan = currentIndex < PLAN_ARRAY.length - 1 ? PLAN_ARRAY[currentIndex + 1] : null;
+            const prevPlan = currentIndex > 0 ? PLAN_ARRAY.find((p, i) => i === currentIndex - 1) : null;
+            const currentPlanName = PLAN_ARRAY.find(p => p.id === org.plan)?.name;
+
+
+            if (!nextPlan) {
+                showToast('Não há um próximo plano disponível.', 'info');
+                return;
+            }
 
             await changeOrganizationPlan(org.id, nextPlan.id);
             showToast(

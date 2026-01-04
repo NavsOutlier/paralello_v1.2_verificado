@@ -43,8 +43,8 @@ class OrganizationRepositoryClass extends BaseRepository<DBOrganization> {
     /**
      * Check if organization has an active WhatsApp connection
      */
-    private hasActiveWhatsAppConnection(instances?: Array<{ id: string; status: string }>): boolean {
-        if (!instances || !Array.isArray(instances)) return false;
+    private hasActiveWhatsAppConnection(instances?: Array<{ id: string; status: string }> | { id: string; status: string }): boolean {
+        if (!instances) return false;
 
         // Handle both array and single object returns from Supabase
         const instanceArray = Array.isArray(instances) ? instances : [instances];

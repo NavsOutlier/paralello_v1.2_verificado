@@ -174,11 +174,44 @@ export const useWhatsApp = (instanceId?: string) => {
     };
 
     const deleteInstance = async (instId: string) => {
-        const { error } = await supabase
-            .from('instances')
-            .delete()
-            .eq('id', instId);
-        return { error };
+        try {
+            // 1. Fetch metadata before deletion
+            const { data: instance } = await supabase
+                .from('instances')
+                .select('*')
+                .eq('id', instId)
+                .single();
+
+            if (instance) {
+                // 2. Call proxy to cleanup remotely (n8n)
+                const { data: result, error: proxyError } = await supabase.functions.invoke('whatsapp-proxy-v2', {
+                    body: {
+                        action: 'delete_instance',
+                        instance_id: instId,
+                        instance_api_id: instance.instance_api_id,
+                        instance_api_token: instance.instance_api_token,
+                        organization_id: organizationId
+                    }
+                });
+
+                if (proxyError || result?.error) {
+                    const errorMsg = proxyError?.message || result?.error;
+                    console.error('Remote cleanup failed:', errorMsg);
+                    return { error: new Error(`Não foi possível remover no WhatsApp: ${errorMsg}`) };
+                }
+            }
+
+            // 3. Delete from DB only after remote success
+            const { error } = await supabase
+                .from('instances')
+                .delete()
+                .eq('id', instId);
+
+            return { error };
+        } catch (err: any) {
+            console.error('Error deleting instance:', err);
+            return { error: err };
+        }
     };
 
     return {

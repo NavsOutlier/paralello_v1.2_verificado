@@ -90,8 +90,8 @@ export async function deleteOrganization(id: string): Promise<void> {
 
         // 2. Cleanup WhatsApp instances via Proxy (triggers n8n)
         // We WAIT for the response from n8n. If n8n returns 200 OK, the proxy returns data.
-        // If n8n returns an error, the proxy returns an error and we STOP the deletion.
-        const { error: proxyError } = await supabase.functions.invoke('whatsapp-proxy-v2', {
+        // If n8n returns an error, the proxy returns an error in 'data.error' or 'proxyError'
+        const { data: proxyResult, error: proxyError } = await supabase.functions.invoke('whatsapp-proxy-v2', {
             body: {
                 action: 'delete_organization_instances',
                 organization_id: id,
@@ -99,13 +99,16 @@ export async function deleteOrganization(id: string): Promise<void> {
             }
         });
 
-        if (proxyError) {
-            console.error('Cleanup failed, aborting deletion:', proxyError);
-            throw new Error(`Exclusão cancelada: Não foi possível limpar as instâncias no WhatsApp (${proxyError.message}).`);
+        // CRITICAL: We must stop if the proxy or n8n reported an error
+        if (proxyError || proxyResult?.error) {
+            const finalError = proxyError?.message || proxyResult?.error;
+            console.error('Cleanup failed, aborting deletion:', finalError);
+            throw new Error(`Exclusão cancelada: Não foi possível limpar as instâncias no WhatsApp (${finalError}).`);
         }
 
         // 3. Delete from database
-        // Only reached if proxy returned 200/Success
+        // Only reached if proxy returned success (no error in proxyError AND no error in result)
+        console.log('Cleanup successful, proceeding with DB deletion');
         await OrganizationRepository.delete(id);
 
     } catch (err: any) {

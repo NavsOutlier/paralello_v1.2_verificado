@@ -8,6 +8,7 @@ import { MetricsCard } from './MetricsCard';
 import { OrganizationTable } from './OrganizationTable';
 import { OrganizationModal } from './OrganizationModal';
 import { AdminOrgSetupModal } from './AdminOrgSetupModal';
+import { ConfirmModal } from '../ui/ConfirmModal';
 import { useToast } from '../../contexts/ToastContext';
 import {
     fetchOrganizations,
@@ -28,6 +29,7 @@ export const SuperAdminDashboard: React.FC = () => {
     const [setupOrg, setSetupOrg] = useState<Organization | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [deletingOrg, setDeletingOrg] = useState<Organization | null>(null);
     const { showToast } = useToast();
 
     // Load organizations on mount
@@ -166,11 +168,19 @@ export const SuperAdminDashboard: React.FC = () => {
         setIsSetupOpen(true);
     };
 
-    const handleDelete = async (org: Organization) => {
+    const handleDelete = (org: Organization) => {
+        setDeletingOrg(org);
+    };
+
+    const confirmDelete = async () => {
+        if (!deletingOrg) return;
+
         try {
             setLoading(true);
-            await deleteOrganization(org.id);
-            showToast(`Organização ${org.name} excluída com sucesso`, 'success');
+            const orgName = deletingOrg.name;
+            await deleteOrganization(deletingOrg.id);
+            setDeletingOrg(null);
+            showToast(`Organização ${orgName} excluída com sucesso`, 'success');
             await loadOrganizations();
         } catch (err: any) {
             showToast(err.message || 'Erro ao excluir organização', 'error');
@@ -306,6 +316,17 @@ export const SuperAdminDashboard: React.FC = () => {
                 isOpen={isSetupOpen}
                 organization={setupOrg}
                 onClose={() => setIsSetupOpen(false)}
+            />
+
+            <ConfirmModal
+                isOpen={!!deletingOrg}
+                onClose={() => setDeletingOrg(null)}
+                onConfirm={confirmDelete}
+                title="Excluir Organização"
+                message={`Tem certeza que deseja excluir permanentemente a organização "${deletingOrg?.name}"? Todas as instâncias, chats e dados vinculados serão removidos. Esta ação não pode ser desfeita.`}
+                confirmLabel="Sim, Excluir Tudo"
+                cancelLabel="Manter Organização"
+                variant="danger"
             />
         </div>
     );

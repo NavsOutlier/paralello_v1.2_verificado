@@ -119,11 +119,7 @@ export const OrganizationRow: React.FC<OrganizationRowProps> = ({
                         variant="ghost"
                         size="sm"
                         icon={<Trash2 className="w-3.5 h-3.5" />}
-                        onClick={() => {
-                            if (window.confirm(`Tem certeza que deseja excluir permanentemente a organização "${organization.name}"? Esta ação não pode ser desfeita.`)) {
-                                onDelete(organization);
-                            }
-                        }}
+                        onClick={() => onDelete(organization)}
                         title="Excluir"
                         className="text-slate-300 hover:text-rose-600 hover:bg-rose-50"
                     />

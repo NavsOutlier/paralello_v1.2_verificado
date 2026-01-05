@@ -44,15 +44,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // 1. Get profile data (robust source for org id)
             const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
-                .select('is_super_admin, organization_id, role')
+                .select('is_super_admin, organization_id, role, email')
                 .eq('id', userId)
                 .maybeSingle();
 
             if (profileError) {
-                console.error('Error fetching profile:', profileError);
+                console.error('AUTH: Error fetching profile:', profileError);
             }
 
-            const isSuper = profileData?.is_super_admin ?? false;
+            const isSuper = !!profileData?.is_super_admin;
             setIsSuperAdmin(isSuper);
 
             // Set organization context from profile if available
@@ -69,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .maybeSingle();
 
             if (teamError) {
-                console.error('Error fetching team membership:', teamError);
+                console.error('AUTH: Error fetching team membership:', teamError);
             }
 
             if (teamData) {
@@ -83,7 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setPermissions(null);
             }
         } catch (err) {
-            console.error('Error checking user roles:', err);
+            console.error('AUTH: Exception in checkRoles:', err);
             setIsSuperAdmin(false);
             setIsManager(false);
             setOrganizationId(null);
@@ -93,13 +93,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         // Check active session
         const initAuth = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setSession(session);
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                await checkRoles(session.user.id);
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                setSession(session);
+                setUser(session?.user ?? null);
+                if (session?.user) {
+                    // Start checking roles in background, don't block
+                    checkRoles(session.user.id);
+                }
+            } catch (err) {
+                console.error('AUTH: Init error:', err);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         initAuth();
@@ -107,11 +113,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Listen for changes
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                await checkRoles(session.user.id);
+            const newUser = session?.user ?? null;
+            setUser(newUser);
+
+            if (newUser) {
+                checkRoles(newUser.id);
             } else {
                 setIsSuperAdmin(false);
                 setIsManager(false);

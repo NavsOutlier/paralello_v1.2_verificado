@@ -12,22 +12,36 @@ import { LoginView } from './views/LoginView';
 import { UpdatePasswordView } from './views/UpdatePasswordView';
 const AppContent: React.FC = () => {
   const { user, loading, isSuperAdmin, isManager } = useAuth();
-  const [currentView, setCurrentView] = useState<ViewState>(ViewState.WORKSPACE);
+  const [currentView, setCurrentView] = useState<ViewState | null>(null);
   const [hasRouted, setHasRouted] = useState(false);
 
   // Initial Role-Based Redirection
   React.useEffect(() => {
-    if (!loading && user && !hasRouted) {
-      if (isSuperAdmin) {
-        setCurrentView(ViewState.SUPERADMIN);
-      } else if (isManager) {
-        setCurrentView(ViewState.MANAGER);
+    if (!loading && user) {
+      // Only route if we haven't routed yet OR if we are in null/initial state
+      if (!hasRouted) {
+        if (isSuperAdmin) {
+          setCurrentView(ViewState.SUPERADMIN);
+          setHasRouted(true);
+        } else if (isManager) {
+          setCurrentView(ViewState.MANAGER);
+          setHasRouted(true);
+        } else {
+          setCurrentView(ViewState.WORKSPACE);
+          setHasRouted(true);
+        }
       } else {
-        setCurrentView(ViewState.WORKSPACE); // Default for regular members
+        // If we already routed to WORKSPACE but later discovered user is Admin/Manager
+        if (currentView === ViewState.WORKSPACE) {
+          if (isSuperAdmin) {
+            setCurrentView(ViewState.SUPERADMIN);
+          } else if (isManager) {
+            setCurrentView(ViewState.MANAGER);
+          }
+        }
       }
-      setHasRouted(true);
     }
-  }, [loading, user, isManager, isSuperAdmin, hasRouted]);
+  }, [loading, user, isManager, isSuperAdmin, hasRouted, currentView]);
 
   // Security: Persistent View Protection (enforce roles if user tries to switch via UI)
   React.useEffect(() => {
@@ -50,8 +64,8 @@ const AppContent: React.FC = () => {
     }
   }, []);
 
-  if (loading) {
-    return <div className="h-screen flex items-center justify-center bg-slate-100 text-slate-400">Carregando...</div>;
+  if (loading || (user && currentView === null)) {
+    return <div className="h-screen flex items-center justify-center bg-slate-100 text-slate-400">Carregando perfil...</div>;
   }
 
   if (!user) {
@@ -61,7 +75,7 @@ const AppContent: React.FC = () => {
   return (
     <div className="flex h-screen w-screen bg-slate-100 font-sans">
       {/* Reusable Sidebar Component */}
-      <Sidebar currentView={currentView} onViewChange={setCurrentView} />
+      {currentView && <Sidebar currentView={currentView} onViewChange={setCurrentView} />}
 
       {/* Main Content Area */}
       <main className="flex-1 flex overflow-hidden relative">

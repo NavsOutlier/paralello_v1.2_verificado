@@ -5,7 +5,7 @@ import { Button } from './Button';
 interface ConfirmModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: () => void;
+    onConfirm: () => Promise<void> | void; // Updated to allow async
     title: string;
     message: string;
     confirmLabel?: string;
@@ -23,6 +23,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
     cancelLabel = 'Cancelar',
     variant = 'danger'
 }) => {
+    const [isConfirming, setIsConfirming] = React.useState(false);
+
     if (!isOpen) return null;
 
     const colors = {
@@ -31,12 +33,22 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         info: 'text-blue-600 bg-blue-50 border-blue-100'
     };
 
+    const handleConfirm = async () => {
+        setIsConfirming(true);
+        try {
+            await onConfirm();
+            onClose();
+        } finally {
+            setIsConfirming(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300"
-                onClick={onClose}
+                onClick={!isConfirming ? onClose : undefined}
             />
 
             {/* Modal */}
@@ -48,7 +60,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+                            disabled={isConfirming}
+                            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-30"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -66,20 +79,24 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                         <Button
                             variant="secondary"
                             onClick={onClose}
-                            className="flex-1 h-14 rounded-2xl font-bold text-slate-600 hover:bg-slate-50 border-slate-200"
+                            disabled={isConfirming}
+                            className="flex-1 h-14 rounded-2xl font-bold text-slate-600 hover:bg-slate-50 border-slate-200 disabled:opacity-50"
                         >
                             {cancelLabel}
                         </Button>
                         <Button
                             variant="primary"
-                            onClick={() => {
-                                onConfirm();
-                                onClose();
-                            }}
+                            onClick={handleConfirm}
+                            disabled={isConfirming}
                             className={`flex-1 h-14 rounded-2xl font-bold shadow-lg shadow-rose-100 ${variant === 'danger' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-indigo-600 hover:bg-indigo-700'
                                 }`}
                         >
-                            {confirmLabel}
+                            {isConfirming ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    <span>Excluindo...</span>
+                                </div>
+                            ) : confirmLabel}
                         </Button>
                     </div>
                 </div>

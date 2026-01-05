@@ -22,12 +22,14 @@ const AppContent: React.FC = () => {
         setCurrentView(ViewState.SUPERADMIN);
       } else if (isManager) {
         setCurrentView(ViewState.MANAGER);
+      } else {
+        setCurrentView(ViewState.WORKSPACE); // Default for regular members
       }
       setHasRouted(true);
     }
   }, [loading, user, isManager, isSuperAdmin, hasRouted]);
 
-  // Security: Persistent View Protection
+  // Security: Persistent View Protection (enforce roles if user tries to switch via UI)
   React.useEffect(() => {
     if (!loading && user) {
       if (currentView === ViewState.MANAGER && !isManager && !isSuperAdmin) {

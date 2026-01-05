@@ -28,13 +28,14 @@ export const SuperAdminDashboard: React.FC = () => {
     const [isSetupOpen, setIsSetupOpen] = useState(false);
     const [setupOrg, setSetupOrg] = useState<Organization | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [deletingOrg, setDeletingOrg] = useState<Organization | null>(null);
     const { showToast } = useToast();
 
     // Load organizations on mount
     useEffect(() => {
-        loadOrganizations();
+        loadOrganizations(true);
 
         // Realtime subscription for critical updates
         const channel = supabase
@@ -62,9 +63,11 @@ export const SuperAdminDashboard: React.FC = () => {
         };
     }, []);
 
-    const loadOrganizations = async () => {
+    const loadOrganizations = async (isInitial = false) => {
         try {
-            setLoading(true);
+            if (isInitial) setLoading(true);
+            else setIsRefreshing(true);
+
             setError(null);
             const data = await fetchOrganizations();
             setOrganizations(data);
@@ -75,6 +78,7 @@ export const SuperAdminDashboard: React.FC = () => {
             console.error(err);
         } finally {
             setLoading(false);
+            setIsRefreshing(false);
         }
     };
 
@@ -176,20 +180,19 @@ export const SuperAdminDashboard: React.FC = () => {
         if (!deletingOrg) return;
 
         try {
-            setLoading(true);
             const orgName = deletingOrg.name;
+            // Now we just await, the modal itself manages the "Excluindo..." button state
             await deleteOrganization(deletingOrg.id);
             setDeletingOrg(null);
             showToast(`Organização ${orgName} excluída com sucesso`, 'success');
             await loadOrganizations();
         } catch (err: any) {
             showToast(err.message || 'Erro ao excluir organização', 'error');
-            setLoading(false);
             console.error(err);
         }
     };
 
-    if (loading) {
+    if (loading && !isRefreshing) {
         return (
             <div className="flex-1 flex items-center justify-center bg-slate-50 h-full">
                 <div className="text-center">
@@ -224,9 +227,10 @@ export const SuperAdminDashboard: React.FC = () => {
                 <div className="flex gap-3">
                     <Button
                         variant="secondary"
-                        icon={<RefreshCw className="w-4 h-4" />}
-                        onClick={loadOrganizations}
+                        icon={<RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />}
+                        onClick={() => loadOrganizations()}
                         title="Recarregar"
+                        disabled={isRefreshing}
                     />
                     <Button
                         icon={<Plus className="w-4 h-4" />}

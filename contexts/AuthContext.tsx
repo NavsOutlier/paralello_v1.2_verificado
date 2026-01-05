@@ -92,23 +92,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         // Check active session
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        const initAuth = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
             setSession(session);
             setUser(session?.user ?? null);
             if (session?.user) {
-                checkRoles(session.user.id);
+                await checkRoles(session.user.id);
             }
             setLoading(false);
-        });
+        };
+
+        initAuth();
 
         // Listen for changes
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
+        } = supabase.auth.onAuthStateChange(async (_event, session) => {
             setSession(session);
             setUser(session?.user ?? null);
             if (session?.user) {
-                checkRoles(session.user.id);
+                await checkRoles(session.user.id);
             } else {
                 setIsSuperAdmin(false);
                 setIsManager(false);

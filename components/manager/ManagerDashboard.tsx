@@ -241,6 +241,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
         .filter(a => a.canSee)
         .sort((a, b) => (usageStats[b.id] || 0) - (usageStats[a.id] || 0));
 
+    // We no longer auto-show the wizard to let users see the dashboard first
+    /*
     useEffect(() => {
         if (!loading && !hasDismissedWizard) {
             // Show wizard if haven't connected WhatsApp OR have no clients OR no team members invited
@@ -248,6 +250,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
             setShowWizard(isIncomplete);
         }
     }, [loading, stats.hasWhatsApp, stats.clients, hasDismissedWizard, stats.members]);
+    */
 
     const engagementMessages = [
         "🚀 Integração concluída! Agora você é oficialmente o Capitão do Navio. Só não deixe ele bater no iceberg dos prazos!",

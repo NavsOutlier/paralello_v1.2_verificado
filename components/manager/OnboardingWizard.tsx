@@ -40,12 +40,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
     const [step, setStep] = useState(() => {
         if (initialStats.hasWhatsApp && initialStats.clients > 0 && initialStats.members > 1) return 5;
-        // Step 1: WhatsApp -> Step 2: Team (if members <= 1) -> Step 3: Client (if clients == 0) -> Step 4: Assignment
         if (initialStats.hasWhatsApp && initialStats.members > 1 && initialStats.clients === 0) return 3;
         if (initialStats.hasWhatsApp && initialStats.members <= 1) return 2;
         if (initialStats.hasWhatsApp && initialStats.clients > 0) return 4;
         return 1;
     });
+    const [isConfirmed, setIsConfirmed] = useState(false);
     const [loading, setLoading] = useState(false);
 
     // Step 2 Form State (Previously Step 3)
@@ -811,6 +811,37 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         </div>
     );
 
+    const renderAdvisory = () => (
+        <div className="text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="mx-auto w-20 h-20 bg-amber-100 rounded-[30px] flex items-center justify-center text-amber-600 shadow-xl shadow-amber-50">
+                <Smartphone className="w-10 h-10" />
+            </div>
+            <div className="space-y-3 font-sans">
+                <h2 className="text-3xl font-black text-slate-800 tracking-tight">Aviso Importante 📱</h2>
+                <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm max-w-sm mx-auto">
+                    <p className="text-slate-600 leading-relaxed font-medium text-sm">
+                        Para configurar sua automação agora, você precisará estar com o <span className="text-indigo-600 font-bold">celular em mãos</span> que você usa para falar com seus clientes para <span className="text-indigo-600 font-bold">escanear o QR Code</span>.
+                    </p>
+                </div>
+            </div>
+            <div className="space-y-4 max-w-sm mx-auto">
+                <Button
+                    onClick={() => setIsConfirmed(true)}
+                    className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl shadow-xl shadow-indigo-100 transition-all active:scale-[0.98] uppercase tracking-wider text-sm"
+                >
+                    Estou com o celular, quero iniciar a configuração!
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+                <button
+                    onClick={onComplete}
+                    className="text-[10px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-[0.2em]"
+                >
+                    Configurar em outro momento
+                </button>
+            </div>
+        </div>
+    );
+
     const renderStep5 = () => (
         <div className="text-center space-y-10 py-4 animate-in zoom-in-95 fade-in duration-700">
             {/* Header com Brilho */}
@@ -915,16 +946,24 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
                     {/* Main Content */}
                     <main className="min-h-[400px] flex flex-col justify-center">
-                        {step === 1 && renderStep1()}
-                        {step === 2 && renderStep2()}
-                        {step === 3 && renderStep3()}
-                        {step === 4 && renderStep4()}
-                        {step === 5 && renderStep5()}
+                        {!isConfirmed ? (
+                            renderAdvisory()
+                        ) : (
+                            <>
+                                {step === 1 && renderStep1()}
+                                {step === 2 && renderStep2()}
+                                {step === 3 && renderStep3()}
+                                {step === 4 && renderStep4()}
+                                {step === 5 && renderStep5()}
+                            </>
+                        )}
                     </main>
 
                     {/* Footer Info */}
                     <footer className="mt-12 text-center">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">Setup de Onboarding • Passo {step} de 5</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">
+                            {!isConfirmed ? 'Preparação do Setup' : `Onboarding Paralello • Passo ${step} de 5`}
+                        </p>
                     </footer>
                 </div>
             </div>

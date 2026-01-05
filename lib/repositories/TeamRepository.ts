@@ -47,9 +47,9 @@ class TeamRepositoryClass extends BaseRepository<DBTeamMember> {
             createdAt: new Date(db.created_at),
             updatedAt: new Date(db.updated_at),
             profile: db.profile ? {
-                name: (db.profile as any).name,
-                email: (db.profile as any).email,
-                avatarUrl: (db.profile as any).avatar
+                name: (Array.isArray(db.profile) ? db.profile[0] : db.profile).name,
+                email: (Array.isArray(db.profile) ? db.profile[0] : db.profile).email,
+                avatarUrl: (Array.isArray(db.profile) ? db.profile[0] : db.profile).avatar
             } : undefined,
             permissions: {
                 canManageClients: db.role === 'manager',

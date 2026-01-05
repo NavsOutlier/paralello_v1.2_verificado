@@ -42,21 +42,23 @@ export const useMessages = (selectedEntityId: string | null) => {
         // Optimized Realtime: Only listen to messages relevant to this org
         // (RLS handles security, but we filter at the channel level for efficiency)
         const channel = supabase
-            .channel(`chat-${selectedEntityId}`)
+            .channel(`chat-${selectedEntityId}-${organizationId}`)
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
                 table: 'messages',
-                filter: `organization_id=eq.${organizationId}`
+                // Removed filter to ensure reliability, filtering manually below
             }, (payload) => {
                 const newMsg = payload.new as any;
 
-                // Only add if it belongs to current chat context
+                // Security & Context check
+                if (newMsg.organization_id !== organizationId) return;
+
                 const isRelevant =
                     newMsg.client_id === selectedEntityId ||
                     newMsg.dm_channel_id === selectedEntityId ||
                     newMsg.task_id === selectedEntityId ||
-                    (newMsg.context_type === 'DIRECT_MESSAGE' && newMsg.sender_id === selectedEntityId);
+                    (newMsg.context_type === 'DIRECT_MESSAGE' && (newMsg.sender_id === selectedEntityId || newMsg.dm_channel_id === selectedEntityId));
 
                 if (isRelevant) {
                     setMessages(prev => {
@@ -69,9 +71,10 @@ export const useMessages = (selectedEntityId: string | null) => {
                 event: 'UPDATE',
                 schema: 'public',
                 table: 'messages',
-                filter: `organization_id=eq.${organizationId}`
             }, (payload) => {
                 const updatedMsg = payload.new as any;
+                if (updatedMsg.organization_id !== organizationId) return;
+
                 setMessages(prev => prev.map(m =>
                     m.id === updatedMsg.id ? MessageRepository.mapToMessage(updatedMsg, currentUser?.id) : m
                 ));
@@ -80,11 +83,13 @@ export const useMessages = (selectedEntityId: string | null) => {
                 event: 'DELETE',
                 schema: 'public',
                 table: 'messages',
-                filter: `organization_id=eq.${organizationId}`
             }, (payload) => {
+                // For delete, we only have the old record (usually just the ID)
                 setMessages(prev => prev.filter(m => m.id !== payload.old.id));
             })
-            .subscribe();
+            .subscribe((status) => {
+                console.log(`Realtime subscription status for ${selectedEntityId}:`, status);
+            });
 
         return () => {
             supabase.removeChannel(channel);

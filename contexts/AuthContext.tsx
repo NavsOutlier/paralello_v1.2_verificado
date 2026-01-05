@@ -133,7 +133,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const signOut = async () => {
-        await supabase.auth.signOut();
+        try {
+            await supabase.auth.signOut();
+        } catch (error) {
+            console.error('AUTH: Error during sign out:', error);
+        } finally {
+            // Manually clear states to force UI update even if server call failed
+            setIsSuperAdmin(false);
+            setIsManager(false);
+            setOrganizationId(null);
+            setPermissions(null);
+            setSession(null);
+            setUser(null);
+        }
     };
 
     const value = {

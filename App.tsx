@@ -18,7 +18,6 @@ const AppContent: React.FC = () => {
   // Initial Role-Based Redirection
   React.useEffect(() => {
     if (!loading && user) {
-      // Only route if we haven't routed yet OR if we are in null/initial state
       if (!hasRouted) {
         if (isSuperAdmin) {
           setCurrentView(ViewState.SUPERADMIN);
@@ -31,13 +30,10 @@ const AppContent: React.FC = () => {
           setHasRouted(true);
         }
       } else {
-        // If we already routed to WORKSPACE but later discovered user is Admin/Manager
+        // Late detection (handling slow network)
         if (currentView === ViewState.WORKSPACE) {
-          if (isSuperAdmin) {
-            setCurrentView(ViewState.SUPERADMIN);
-          } else if (isManager) {
-            setCurrentView(ViewState.MANAGER);
-          }
+          if (isSuperAdmin) setCurrentView(ViewState.SUPERADMIN);
+          else if (isManager) setCurrentView(ViewState.MANAGER);
         }
       }
     }
@@ -63,9 +59,20 @@ const AppContent: React.FC = () => {
       setIsUpdatingPassword(true);
     }
   }, []);
+  // Reset routing state on logout
+  React.useEffect(() => {
+    if (!user && !loading) {
+      setHasRouted(false);
+      setCurrentView(null);
+    }
+  }, [user, loading]);
 
   if (loading || (user && currentView === null)) {
-    return <div className="h-screen flex items-center justify-center bg-slate-100 text-slate-400">Carregando perfil...</div>;
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-slate-100">
+        <div className="text-slate-400 font-medium animate-pulse">Carregando perfil...</div>
+      </div>
+    );
   }
 
   if (!user) {

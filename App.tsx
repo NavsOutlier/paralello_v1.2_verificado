@@ -14,30 +14,36 @@ const AppContent: React.FC = () => {
   const { user, loading, isSuperAdmin, isManager } = useAuth();
   const [currentView, setCurrentView] = useState<ViewState | null>(null);
   const [hasRouted, setHasRouted] = useState(false);
+  const [performedRoleRedirection, setPerformedRoleRedirection] = useState(false);
 
   // Initial Role-Based Redirection
   React.useEffect(() => {
     if (!loading && user) {
       if (!hasRouted) {
+        // First placement attempt
         if (isSuperAdmin) {
           setCurrentView(ViewState.SUPERADMIN);
-          setHasRouted(true);
+          setPerformedRoleRedirection(true);
         } else if (isManager) {
           setCurrentView(ViewState.MANAGER);
-          setHasRouted(true);
+          setPerformedRoleRedirection(true);
         } else {
           setCurrentView(ViewState.WORKSPACE);
-          setHasRouted(true);
         }
-      } else {
-        // Late detection (handling slow network)
-        if (currentView === ViewState.WORKSPACE) {
-          if (isSuperAdmin) setCurrentView(ViewState.SUPERADMIN);
-          else if (isManager) setCurrentView(ViewState.MANAGER);
+        setHasRouted(true);
+      } else if (!performedRoleRedirection) {
+        // Initial placement was WORKSPACE (likely because roles were still loading)
+        // Now that we confirmed a role, move to the correct dashboard ONCE
+        if (isSuperAdmin) {
+          setCurrentView(ViewState.SUPERADMIN);
+          setPerformedRoleRedirection(true);
+        } else if (isManager) {
+          setCurrentView(ViewState.MANAGER);
+          setPerformedRoleRedirection(true);
         }
       }
     }
-  }, [loading, user, isManager, isSuperAdmin, hasRouted, currentView]);
+  }, [loading, user, isManager, isSuperAdmin, hasRouted, performedRoleRedirection]);
 
   // Security: Persistent View Protection (enforce roles if user tries to switch via UI)
   React.useEffect(() => {

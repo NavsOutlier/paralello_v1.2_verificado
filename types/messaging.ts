@@ -28,6 +28,7 @@ export interface Message {
     linkedMessageId?: string;
     direction?: 'inbound' | 'outbound';
     uazapiId?: string;
+    position?: { x: number; y: number };
 }
 
 /**

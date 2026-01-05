@@ -4,6 +4,8 @@ import { Send, Loader2, MessageSquarePlus, ExternalLink, MessageSquare, Search, 
 import { useAuth } from '../../contexts/AuthContext';
 import { formatTime } from '../../lib/utils/formatting';
 import { MessageBubble } from '../MessageBubble';
+import { DistortionCanvas } from './DistortionCanvas';
+import { Atom, LayoutGrid } from 'lucide-react';
 
 interface ChatAreaProps {
     entity: User | null;
@@ -31,6 +33,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const highlightedRef = useRef<HTMLDivElement>(null);
     const { user: currentUser } = useAuth();
+    const [viewMode, setViewMode] = useState<'standard' | 'distortion'>('standard');
 
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
@@ -86,16 +89,16 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     }
 
     return (
-        <div className="flex flex-col h-full bg-[#fdfdff] relative overflow-hidden">
+        <div className="flex flex-col h-full bg-[#fdfdff] relative overflow-hidden pt-2">
             {/* Mesh Gradient Background Blobs */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-100/30 rounded-full blur-[120px] pointer-events-none animate-pulse" />
             <div className="absolute bottom-[-5%] right-[-5%] w-[35%] h-[35%] bg-emerald-50/40 rounded-full blur-[100px] pointer-events-none" />
 
             {/* Header - Glassmorphism */}
-            <div className="bg-white/70 backdrop-blur-md border-b border-white/20 px-6 py-3 flex items-center justify-between relative z-20 shadow-sm">
-                <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
-                        <span className="text-[14px] font-black">{entity.name.slice(0, 1).toUpperCase()}</span>
+            <div className="bg-white/90 backdrop-blur-xl border-b border-slate-200/50 px-6 py-6 flex items-center justify-between relative z-20 shadow-lg shadow-slate-200/30 mx-2 rounded-t-3xl">
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-violet-600 rounded-full flex items-center justify-center text-white shadow-xl shadow-indigo-100 border-2 border-white">
+                        <span className="text-[15px] font-black">{entity.name.slice(0, 1).toUpperCase()}</span>
                     </div>
                     <div>
                         <h2 className="text-[15px] font-black text-slate-900 tracking-tight leading-none mb-1">{entity.name}</h2>
@@ -108,10 +111,28 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     </div>
                 </div>
 
-                {/* Centralized Title Badge - Premium Style */}
-                <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-2 px-3 py-1 bg-white/40 backdrop-blur-sm border border-white shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] rounded-full">
-                    <MessageSquarePlus className="w-3 h-3 text-indigo-500" />
-                    <span className="text-[9px] font-black text-slate-600 tracking-[0.2em] uppercase">Feed do Cliente</span>
+                {/* Perspective Toggle - Disruptive Style */}
+                <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center p-1 bg-slate-100/50 backdrop-blur-sm border border-slate-200/30 rounded-full shadow-inner ring-1 ring-black/[0.03]">
+                    <button
+                        onClick={() => setViewMode('standard')}
+                        className={`flex items-center gap-2 px-3 py-1 rounded-full transition-all duration-300 ${viewMode === 'standard'
+                            ? 'bg-white shadow-sm text-indigo-600'
+                            : 'text-slate-400 hover:text-slate-600'
+                            }`}
+                    >
+                        <LayoutGrid className="w-3 h-3" />
+                        <span className="text-[9px] font-black tracking-widest uppercase">Padrão</span>
+                    </button>
+                    <button
+                        onClick={() => setViewMode('distortion')}
+                        className={`flex items-center gap-2 px-3 py-1 rounded-full transition-all duration-300 ${viewMode === 'distortion'
+                            ? 'bg-white shadow-sm text-emerald-600'
+                            : 'text-slate-400 hover:text-slate-600'
+                            }`}
+                    >
+                        <Atom className={`w-3 h-3 ${viewMode === 'distortion' ? 'animate-spin-slow' : ''}`} />
+                        <span className="text-[9px] font-black tracking-widest uppercase">Distorção</span>
+                    </button>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -124,124 +145,137 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 </div>
             </div>
 
-            {/* Messages Area - Enhanced Spacing and Entry */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth relative z-10 custom-scrollbar">
-                {messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full opacity-40 grayscale">
-                        <MessageSquare className="w-12 h-12 mb-4 text-indigo-200" />
-                        <p className="text-slate-400 text-sm font-medium">Inicie uma revolução nesta conversa...</p>
+            {/* Messages Area - Conditional Rendering */}
+            <div className={`flex-1 overflow-hidden relative z-10 ${viewMode === 'standard' ? 'overflow-y-auto' : ''}`}>
+                {viewMode === 'standard' ? (
+                    <div className="p-4 md:p-8 pt-12 space-y-12 scroll-smooth custom-scrollbar">
+                        {messages.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-full opacity-40 grayscale mt-20">
+                                <MessageSquare className="w-12 h-12 mb-4 text-indigo-200" />
+                                <p className="text-slate-400 text-sm font-medium">Inicie uma revolução nesta conversa...</p>
+                            </div>
+                        ) : (
+                            messages.map((message) => {
+                                const isMe = message.senderId === currentUser?.id && !message.isInternal;
+                                const isClient = message.senderType === 'CLIENT';
+                                const isSystem = message.isInternal || message.text?.toLowerCase().includes('tarefa criada');
+                                const isOtherMember = !isMe && !isClient && !isSystem;
+
+                                const isHighlighted = highlightedMessageId === message.id;
+                                const linkedTaskId = linkedTaskMap[message.id];
+
+                                const linkedMessage = message.linkedMessageId
+                                    ? messages.find(m => m.id === message.linkedMessageId)
+                                    : undefined;
+
+                                const senderMember = teamMembers.find(m => m.id === message.senderId);
+                                const senderName = message.senderType === 'CLIENT'
+                                    ? (entity?.name || 'Cliente')
+                                    : (senderMember?.name || 'Sistema');
+
+                                const senderJobTitle = message.senderType === 'CLIENT'
+                                    ? 'Contratante'
+                                    : senderMember?.jobTitle;
+
+                                const linkedMessageSender = linkedMessage
+                                    ? (linkedMessage.senderType === 'CLIENT'
+                                        ? (entity?.name || 'Cliente')
+                                        : (teamMembers.find(m => m.id === linkedMessage.senderId)?.name || 'Membro'))
+                                    : undefined;
+
+                                return (
+                                    <div
+                                        key={message.id}
+                                        ref={isHighlighted ? highlightedRef : null}
+                                        className={`grid grid-cols-1 md:grid-cols-3 w-full gap-4 transition-all duration-500 ${isHighlighted ? 'scale-[1.01] bg-indigo-50/20 rounded-2xl p-2' : ''}`}
+                                    >
+                                        {/* Column 1: Client */}
+                                        <div className="flex flex-col items-start w-full">
+                                            {isClient && (
+                                                <MessageBubble
+                                                    msg={message}
+                                                    isMe={false}
+                                                    senderName={senderName}
+                                                    senderJobTitle={senderJobTitle}
+                                                    onInitiateDiscussion={onInitiateDiscussion}
+                                                    onNavigateToLinked={(id) => {
+                                                        if (linkedTaskId) onNavigateToTask?.(linkedTaskId);
+                                                        else if (message.linkedMessageId) {
+                                                            const el = document.getElementById(`msg-${id}`);
+                                                            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                        }
+                                                    }}
+                                                    linkedTaskId={linkedTaskId}
+                                                    linkedMessage={linkedMessage}
+                                                    linkedMessageSenderName={linkedMessageSender}
+                                                    colorScheme="green"
+                                                />
+                                            )}
+                                        </div>
+
+                                        {/* Column 2: System / Other Members */}
+                                        <div className="flex flex-col items-center w-full">
+                                            {(isOtherMember || isSystem) && (
+                                                <MessageBubble
+                                                    msg={message}
+                                                    isMe={false}
+                                                    senderName={senderName}
+                                                    senderJobTitle={senderJobTitle}
+                                                    onInitiateDiscussion={onInitiateDiscussion}
+                                                    onNavigateToLinked={(id) => {
+                                                        if (linkedTaskId) onNavigateToTask?.(linkedTaskId);
+                                                        else if (message.linkedMessageId) {
+                                                            const el = document.getElementById(`msg-${id}`);
+                                                            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                        }
+                                                    }}
+                                                    linkedTaskId={linkedTaskId}
+                                                    linkedMessage={linkedMessage}
+                                                    linkedMessageSenderName={linkedMessageSender}
+                                                    colorScheme="indigo"
+                                                />
+                                            )}
+                                        </div>
+
+                                        {/* Column 3: Me (Current User) */}
+                                        <div className="flex flex-col items-end w-full">
+                                            {isMe && (
+                                                <MessageBubble
+                                                    msg={message}
+                                                    isMe={true}
+                                                    senderName={senderName}
+                                                    senderJobTitle={senderJobTitle}
+                                                    onInitiateDiscussion={onInitiateDiscussion}
+                                                    onNavigateToLinked={(id) => {
+                                                        if (linkedTaskId) onNavigateToTask?.(linkedTaskId);
+                                                        else if (message.linkedMessageId) {
+                                                            const el = document.getElementById(`msg-${id}`);
+                                                            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                        }
+                                                    }}
+                                                    linkedTaskId={linkedTaskId}
+                                                    linkedMessage={linkedMessage}
+                                                    linkedMessageSenderName={linkedMessageSender}
+                                                    colorScheme="indigo"
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                        <div ref={messagesEndRef} />
                     </div>
                 ) : (
-                    messages.map((message) => {
-                        const isMe = message.senderId === currentUser?.id && !message.isInternal;
-                        const isClient = message.senderType === 'CLIENT';
-                        const isSystem = message.isInternal || message.text?.toLowerCase().includes('tarefa criada');
-                        const isOtherMember = !isMe && !isClient && !isSystem;
-
-                        const isHighlighted = highlightedMessageId === message.id;
-                        const linkedTaskId = linkedTaskMap[message.id];
-
-                        const linkedMessage = message.linkedMessageId
-                            ? messages.find(m => m.id === message.linkedMessageId)
-                            : undefined;
-
-                        const senderMember = teamMembers.find(m => m.id === message.senderId);
-                        const senderName = message.senderType === 'CLIENT'
-                            ? (entity?.name || 'Cliente')
-                            : (senderMember?.name || 'Sistema');
-
-                        const senderJobTitle = message.senderType === 'CLIENT'
-                            ? 'Contratante'
-                            : senderMember?.jobTitle;
-
-                        const linkedMessageSender = linkedMessage
-                            ? (linkedMessage.senderType === 'CLIENT'
-                                ? (entity?.name || 'Cliente')
-                                : (teamMembers.find(m => m.id === linkedMessage.senderId)?.name || 'Membro'))
-                            : undefined;
-
-                        return (
-                            <div
-                                key={message.id}
-                                ref={isHighlighted ? highlightedRef : null}
-                                className={`grid grid-cols-1 md:grid-cols-3 w-full gap-4 transition-all duration-500 ${isHighlighted ? 'scale-[1.01] bg-indigo-50/20 rounded-2xl p-2' : ''}`}
-                            >
-                                {/* Column 1: Client */}
-                                <div className="flex flex-col items-start w-full">
-                                    {isClient && (
-                                        <MessageBubble
-                                            msg={message}
-                                            isMe={false}
-                                            senderName={senderName}
-                                            senderJobTitle={senderJobTitle}
-                                            onInitiateDiscussion={onInitiateDiscussion}
-                                            onNavigateToLinked={(id) => {
-                                                if (linkedTaskId) onNavigateToTask?.(linkedTaskId);
-                                                else if (message.linkedMessageId) {
-                                                    const el = document.getElementById(`msg-${id}`);
-                                                    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                                }
-                                            }}
-                                            linkedTaskId={linkedTaskId}
-                                            linkedMessage={linkedMessage}
-                                            linkedMessageSenderName={linkedMessageSender}
-                                            colorScheme="green"
-                                        />
-                                    )}
-                                </div>
-
-                                {/* Column 2: System / Other Members */}
-                                <div className="flex flex-col items-center w-full">
-                                    {(isOtherMember || isSystem) && (
-                                        <MessageBubble
-                                            msg={message}
-                                            isMe={false} // Middle is never "Me" vibrant style
-                                            senderName={senderName}
-                                            senderJobTitle={senderJobTitle}
-                                            onInitiateDiscussion={onInitiateDiscussion}
-                                            onNavigateToLinked={(id) => {
-                                                if (linkedTaskId) onNavigateToTask?.(linkedTaskId);
-                                                else if (message.linkedMessageId) {
-                                                    const el = document.getElementById(`msg-${id}`);
-                                                    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                                }
-                                            }}
-                                            linkedTaskId={linkedTaskId}
-                                            linkedMessage={linkedMessage}
-                                            linkedMessageSenderName={linkedMessageSender}
-                                            colorScheme="indigo"
-                                        />
-                                    )}
-                                </div>
-
-                                {/* Column 3: Me (Current User) */}
-                                <div className="flex flex-col items-end w-full">
-                                    {isMe && (
-                                        <MessageBubble
-                                            msg={message}
-                                            isMe={true}
-                                            senderName={senderName}
-                                            senderJobTitle={senderJobTitle}
-                                            onInitiateDiscussion={onInitiateDiscussion}
-                                            onNavigateToLinked={(id) => {
-                                                if (linkedTaskId) onNavigateToTask?.(linkedTaskId);
-                                                else if (message.linkedMessageId) {
-                                                    const el = document.getElementById(`msg-${id}`);
-                                                    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                                }
-                                            }}
-                                            linkedTaskId={linkedTaskId}
-                                            linkedMessage={linkedMessage}
-                                            linkedMessageSenderName={linkedMessageSender}
-                                            colorScheme="indigo"
-                                        />
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })
+                    <DistortionCanvas
+                        messages={messages}
+                        currentUser={currentUser}
+                        teamMembers={teamMembers}
+                        entity={entity!}
+                        onInitiateDiscussion={onInitiateDiscussion}
+                        onNavigateToTask={onNavigateToTask}
+                    />
                 )}
-                <div ref={messagesEndRef} />
             </div>
 
             {/* Floating Input Area (Pill Style) */}

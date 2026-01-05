@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Message, User } from '../../types';
-import { Send, Loader2, MessageSquarePlus, ExternalLink, MessageSquare } from 'lucide-react';
+import { Send, Loader2, MessageSquarePlus, ExternalLink, MessageSquare, Search, Plus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatTime } from '../../lib/utils/formatting';
 import { MessageBubble } from '../MessageBubble';
@@ -86,40 +86,61 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     }
 
     return (
-        <div className="flex flex-col h-full bg-slate-50">
-            {/* Header */}
-            <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between relative">
-                <div>
-                    <h2 className="text-lg font-semibold text-slate-900">{entity.name}</h2>
-                    <p className="text-sm text-slate-500 capitalize">
-                        {entity.role === 'client' ? 'WhatsApp' : entity.jobTitle || 'Equipe'}
-                    </p>
+        <div className="flex flex-col h-full bg-[#fdfdff] relative overflow-hidden">
+            {/* Mesh Gradient Background Blobs */}
+            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-100/30 rounded-full blur-[120px] pointer-events-none animate-pulse" />
+            <div className="absolute bottom-[-5%] right-[-5%] w-[35%] h-[35%] bg-emerald-50/40 rounded-full blur-[100px] pointer-events-none" />
+
+            {/* Header - Glassmorphism */}
+            <div className="bg-white/70 backdrop-blur-md border-b border-white/20 px-6 py-3 flex items-center justify-between relative z-20 shadow-sm">
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+                        <span className="text-[14px] font-black">{entity.name.slice(0, 1).toUpperCase()}</span>
+                    </div>
+                    <div>
+                        <h2 className="text-[15px] font-black text-slate-900 tracking-tight leading-none mb-1">{entity.name}</h2>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                {entity.role === 'client' ? 'WhatsApp Online' : entity.jobTitle || 'Equipe'}
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Centralized Title Badge - Matching Discussion Interna style */}
-                <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1 bg-white/80 backdrop-blur-sm border border-slate-200/50 rounded-full shadow-sm">
-                    <MessageSquare className="w-3 h-3 text-emerald-500" />
-                    <span className="text-[9px] font-bold text-slate-500 tracking-[0.2em] uppercase">Chat do Cliente</span>
+                {/* Centralized Title Badge - Premium Style */}
+                <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-2 px-3 py-1 bg-white/40 backdrop-blur-sm border border-white shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] rounded-full">
+                    <MessageSquarePlus className="w-3 h-3 text-indigo-500" />
+                    <span className="text-[9px] font-black text-slate-600 tracking-[0.2em] uppercase">Feed do Cliente</span>
                 </div>
 
-                {/* Right actions (could add call/options here later) */}
-                <div className="w-10" />
+                <div className="flex items-center gap-2">
+                    <button className="p-2 hover:bg-slate-100/50 rounded-full transition-colors text-slate-400">
+                        <Search className="w-4 h-4" />
+                    </button>
+                    <button className="p-2 hover:bg-slate-100/50 rounded-full transition-colors text-slate-400">
+                        <ExternalLink className="w-4 h-4" />
+                    </button>
+                </div>
             </div>
 
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-
+            {/* Messages Area - Enhanced Spacing and Entry */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scroll-smooth relative z-10 custom-scrollbar">
                 {messages.length === 0 ? (
-                    <div className="flex items-center justify-center h-full">
-                        <p className="text-slate-400">Nenhuma mensagem ainda. Inicie a conversa!</p>
+                    <div className="flex flex-col items-center justify-center h-full opacity-40 grayscale">
+                        <MessageSquare className="w-12 h-12 mb-4 text-indigo-200" />
+                        <p className="text-slate-400 text-sm font-medium">Inicie uma revolução nesta conversa...</p>
                     </div>
                 ) : (
                     messages.map((message) => {
-                        const isOwn = message.senderType === 'MEMBER' && message.senderId === currentUser?.id;
+                        const isMe = message.senderId === currentUser?.id && !message.isInternal;
+                        const isClient = message.senderType === 'CLIENT';
+                        const isSystem = message.isInternal || message.text?.toLowerCase().includes('tarefa criada');
+                        const isOtherMember = !isMe && !isClient && !isSystem;
+
                         const isHighlighted = highlightedMessageId === message.id;
                         const linkedTaskId = linkedTaskMap[message.id];
 
-                        // Find linked message for reply quote
                         const linkedMessage = message.linkedMessageId
                             ? messages.find(m => m.id === message.linkedMessageId)
                             : undefined;
@@ -127,7 +148,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                         const senderMember = teamMembers.find(m => m.id === message.senderId);
                         const senderName = message.senderType === 'CLIENT'
                             ? (entity?.name || 'Cliente')
-                            : (senderMember?.name || 'Membro');
+                            : (senderMember?.name || 'Sistema');
 
                         const senderJobTitle = message.senderType === 'CLIENT'
                             ? 'Contratante'
@@ -143,27 +164,79 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                             <div
                                 key={message.id}
                                 ref={isHighlighted ? highlightedRef : null}
-                                className={isHighlighted ? 'bg-indigo-50/50 -mx-6 px-6 py-2 rounded-lg' : ''}
+                                className={`grid grid-cols-1 md:grid-cols-3 w-full gap-4 transition-all duration-500 ${isHighlighted ? 'scale-[1.01] bg-indigo-50/20 rounded-2xl p-2' : ''}`}
                             >
-                                <MessageBubble
-                                    msg={message}
-                                    isMe={isOwn}
-                                    senderName={senderName}
-                                    senderJobTitle={senderJobTitle}
-                                    onInitiateDiscussion={onInitiateDiscussion}
-                                    onNavigateToLinked={(id) => {
-                                        if (linkedTaskId) onNavigateToTask?.(linkedTaskId);
-                                        else if (message.linkedMessageId) {
-                                            // Scroll to message logic if it's a quote
-                                            const el = document.getElementById(`msg-${id}`);
-                                            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                        }
-                                    }}
-                                    linkedTaskId={linkedTaskId}
-                                    linkedMessage={linkedMessage}
-                                    linkedMessageSenderName={linkedMessageSender}
-                                    colorScheme={entity.role === 'client' ? 'green' : 'indigo'}
-                                />
+                                {/* Column 1: Client */}
+                                <div className="flex flex-col items-start w-full">
+                                    {isClient && (
+                                        <MessageBubble
+                                            msg={message}
+                                            isMe={false}
+                                            senderName={senderName}
+                                            senderJobTitle={senderJobTitle}
+                                            onInitiateDiscussion={onInitiateDiscussion}
+                                            onNavigateToLinked={(id) => {
+                                                if (linkedTaskId) onNavigateToTask?.(linkedTaskId);
+                                                else if (message.linkedMessageId) {
+                                                    const el = document.getElementById(`msg-${id}`);
+                                                    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                }
+                                            }}
+                                            linkedTaskId={linkedTaskId}
+                                            linkedMessage={linkedMessage}
+                                            linkedMessageSenderName={linkedMessageSender}
+                                            colorScheme="green"
+                                        />
+                                    )}
+                                </div>
+
+                                {/* Column 2: System / Other Members */}
+                                <div className="flex flex-col items-center w-full">
+                                    {(isOtherMember || isSystem) && (
+                                        <MessageBubble
+                                            msg={message}
+                                            isMe={false} // Middle is never "Me" vibrant style
+                                            senderName={senderName}
+                                            senderJobTitle={senderJobTitle}
+                                            onInitiateDiscussion={onInitiateDiscussion}
+                                            onNavigateToLinked={(id) => {
+                                                if (linkedTaskId) onNavigateToTask?.(linkedTaskId);
+                                                else if (message.linkedMessageId) {
+                                                    const el = document.getElementById(`msg-${id}`);
+                                                    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                }
+                                            }}
+                                            linkedTaskId={linkedTaskId}
+                                            linkedMessage={linkedMessage}
+                                            linkedMessageSenderName={linkedMessageSender}
+                                            colorScheme="indigo"
+                                        />
+                                    )}
+                                </div>
+
+                                {/* Column 3: Me (Current User) */}
+                                <div className="flex flex-col items-end w-full">
+                                    {isMe && (
+                                        <MessageBubble
+                                            msg={message}
+                                            isMe={true}
+                                            senderName={senderName}
+                                            senderJobTitle={senderJobTitle}
+                                            onInitiateDiscussion={onInitiateDiscussion}
+                                            onNavigateToLinked={(id) => {
+                                                if (linkedTaskId) onNavigateToTask?.(linkedTaskId);
+                                                else if (message.linkedMessageId) {
+                                                    const el = document.getElementById(`msg-${id}`);
+                                                    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                }
+                                            }}
+                                            linkedTaskId={linkedTaskId}
+                                            linkedMessage={linkedMessage}
+                                            linkedMessageSenderName={linkedMessageSender}
+                                            colorScheme="indigo"
+                                        />
+                                    )}
+                                </div>
                             </div>
                         );
                     })
@@ -171,40 +244,47 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
-            <div className="bg-white border-t border-slate-200 p-4">
-                <div className="flex items-end gap-3 max-w-5xl mx-auto">
-                    <div className="flex-1 relative">
-                        <textarea
-                            value={inputText}
-                            onChange={(e) => setInputText(e.target.value)}
-                            onKeyPress={handleKeyPress}
-                            placeholder="Digite sua mensagem..."
-                            disabled={isSending}
-                            rows={1}
-                            className="w-full resize-none border border-slate-200 rounded-2xl px-5 py-3.5 pr-12 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-slate-50/50 disabled:opacity-50 text-sm"
-                            style={{
-                                minHeight: '52px',
-                                maxHeight: '150px'
-                            }}
-                        />
+            {/* Floating Input Area (Pill Style) */}
+            <div className="p-6 relative z-20">
+                <div className="max-w-4xl mx-auto">
+                    <div className="relative group">
+                        {/* Shadow and Background Glow */}
+                        <div className="absolute inset-0 bg-indigo-500/10 blur-xl rounded-full opacity-0 group-focus-within:opacity-100 transition-opacity duration-700" />
+
+                        <div className="relative bg-white/80 backdrop-blur-xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2rem] p-2 flex items-end gap-2 ring-1 ring-black/[0.03]">
+                            <button className="flex items-center justify-center w-11 h-11 text-slate-400 hover:text-indigo-500 transition-colors rounded-full hover:bg-slate-50">
+                                <Plus className="w-5 h-5" />
+                            </button>
+
+                            <textarea
+                                value={inputText}
+                                onChange={(e) => setInputText(e.target.value)}
+                                onKeyPress={handleKeyPress}
+                                placeholder="Fale com o cliente de forma assertiva..."
+                                disabled={isSending}
+                                rows={1}
+                                className="flex-1 bg-transparent border-none focus:ring-0 py-3 text-[14px] font-medium placeholder:text-slate-400/80 resize-none max-h-40 scrollbar-hide"
+                                style={{
+                                    minHeight: '44px',
+                                }}
+                            />
+
+                            <button
+                                onClick={handleSend}
+                                disabled={!inputText.trim() || isSending}
+                                className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 ${!inputText.trim() || isSending
+                                    ? 'bg-slate-100 text-slate-300'
+                                    : 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:scale-105 active:scale-95'
+                                    }`}
+                            >
+                                {isSending ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    <Send className="w-4 h-4 translate-x-0.5 -translate-y-0.5" />
+                                )}
+                            </button>
+                        </div>
                     </div>
-                    <button
-                        onClick={handleSend}
-                        disabled={!inputText.trim() || isSending}
-                        className="bg-indigo-600 text-white p-3.5 rounded-2xl hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:grayscale shadow-lg shadow-indigo-200 active:scale-95 flex items-center justify-center shrink-0"
-                    >
-                        {isSending ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                            <Send className="w-5 h-5 translate-x-0.5 -translate-y-0.5" />
-                        )}
-                    </button>
-                </div>
-                <div className="max-w-5xl mx-auto flex justify-between items-center mt-2 px-2">
-                    <p className="text-[10px] text-slate-400">
-                        Pressione <span className="font-semibold">Enter</span> para enviar
-                    </p>
                 </div>
             </div>
         </div>

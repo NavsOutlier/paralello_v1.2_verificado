@@ -35,14 +35,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   const colors = {
     indigo: {
-      myBubble: 'bg-white border border-indigo-100 text-slate-800 shadow-sm',
+      myBubble: 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-[0_4px_12px_rgba(99,102,241,0.2)] border-none',
       senderName: 'text-indigo-600',
-      myTime: 'text-slate-400',
+      myTime: 'text-indigo-100',
     },
     green: {
-      myBubble: 'bg-[#e7ffdb] text-slate-800',
-      senderName: 'text-emerald-700',
-      myTime: 'text-slate-500',
+      myBubble: 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-[0_4px_12px_rgba(16,185,129,0.2)] border-none',
+      senderName: 'text-emerald-600',
+      myTime: 'text-emerald-100',
     }
   };
 
@@ -51,7 +51,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   return (
     <div
       ref={messageRef}
-      className={`group flex flex-col ${isMe ? 'items-end' : 'items-start'} transition-all duration-300 mb-1`}
+      className={`group flex flex-col ${isMe ? 'items-end' : 'items-start'} transition-all duration-300 mb-2 animate-in slide-in-from-bottom-2 fade-in duration-500`}
     >
       <div
         id={`msg-${msg.id}`}
@@ -59,50 +59,59 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           if (linkedTaskId) onNavigateToLinked?.(linkedTaskId);
           else if (msg.linkedMessageId) onNavigateToLinked?.(msg.linkedMessageId);
         }}
-        className={`relative max-w-[85%] rounded-lg px-3 py-1.5 shadow-sm text-sm ${msg.isInternal && colorScheme !== 'indigo'
-          ? 'bg-amber-50 border border-amber-200 text-slate-800'
-          : isMe
-            ? scheme.myBubble
-            : 'bg-white border border-slate-100 text-slate-800'
+        className={`relative w-full px-4 py-2.5 shadow-sm text-[14px] leading-relaxed tracking-tight ${msg.isInternal && colorScheme !== 'indigo'
+            ? 'bg-amber-50/80 backdrop-blur-sm border border-amber-200 text-slate-800 rounded-2xl rounded-tr-none'
+            : isMe
+              ? `${scheme.myBubble} rounded-[1.25rem] rounded-tr-none`
+              : colorScheme === 'green'
+                ? 'bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200/50 text-emerald-900 rounded-[1.25rem] rounded-tl-none shadow-sm'
+                : 'bg-white border border-slate-100/50 text-slate-800 rounded-[1.25rem] rounded-tl-none shadow-sm'
           } ${(linkedTaskId || msg.linkedMessageId) ? 'cursor-pointer hover:opacity-95 active:scale-[0.99] transition-all' : ''}`}>
 
-        {/* Task Created Marking (Title on derived message) */}
+        {/* Task Created Marking - Premium Status Style */}
         {linkedTaskId && (
-          <div className="mb-2 border-b border-indigo-100 pb-1.5">
+          <div className="mb-2 bg-indigo-50/50 border border-indigo-100/50 rounded-lg p-2 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-indigo-600">
-              <Clock className="w-3.5 h-3.5" />
-              <span className="text-[10px] font-bold tracking-wider uppercase">TAREFA CRIADA</span>
+              <div className="w-6 h-6 bg-white rounded-md flex items-center justify-center shadow-sm">
+                <Clock className="w-3 h-3" />
+              </div>
+              <span className="text-[9px] font-black tracking-widest uppercase">Sistema Paralello</span>
             </div>
+            <span className="text-[8px] font-bold text-indigo-400 bg-white px-1.5 py-0.5 rounded border border-indigo-50">#TAREFA</span>
           </div>
         )}
 
-        {/* Linked Message Quote (Reply Block) */}
+        {/* Linked Message Quote (Reply Block) - Premium Subtle */}
         {linkedMessage && msg.linkedMessageId && (
-          <div className={`mb-1 pl-3 pr-2 py-2 border-l-[3px] rounded-bl-md ${isMe && colorScheme === 'indigo'
-            ? 'border-indigo-400 bg-indigo-50/50'
-            : 'border-cyan-500 bg-slate-50'
+          <div className={`mb-2 pl-3 pr-2 py-1.5 border-l-2 rounded-r-lg ${isMe && colorScheme === 'indigo'
+            ? 'border-indigo-300 bg-indigo-50/30'
+            : 'border-slate-300 bg-slate-50/50'
             }`}>
-            <div className={`text-[10px] font-bold mb-1 ${isMe && colorScheme === 'indigo' ? 'text-indigo-600' : 'text-cyan-600'
+            <div className={`text-[10px] font-black mb-0.5 ${isMe && colorScheme === 'indigo' ? 'text-indigo-600' : 'text-slate-500'
               }`}>
               {linkedMessageSenderName || 'Usuário'}
             </div>
-            <p className="text-[10px] line-clamp-2 leading-snug text-slate-600">
+            <p className="text-[10px] line-clamp-1 leading-snug text-slate-500 font-medium">
               {linkedMessage.text}
             </p>
           </div>
         )}
 
-        {/* Sender Info - Always show as requested */}
-        <div className={`text-[10px] font-bold mb-1 ${msg.isInternal && colorScheme !== 'indigo' ? 'text-amber-700' : scheme.senderName} flex items-center gap-1`}>
-          <span>{senderName}</span>
-          {senderJobTitle && <span className="opacity-60 font-normal">({senderJobTitle})</span>}
-          {msg.isInternal && colorScheme !== 'indigo' && <span className="text-[8px] opacity-75">(INTERNO)</span>}
-        </div>
+        {/* Sender Info - High End Look */}
+        {!isMe && (
+          <div className={`text-[10px] font-black mb-1 ${msg.isInternal && colorScheme !== 'indigo' ? 'text-amber-700' : scheme.senderName} flex items-center gap-1 opacity-80 uppercase tracking-tighter`}>
+            <span>{senderName}</span>
+            {senderJobTitle && <span className="opacity-40 font-bold"> • {senderJobTitle}</span>}
+          </div>
+        )}
 
-        <p className="whitespace-pre-line leading-relaxed">{msg.text}</p>
+        <p className={`whitespace-pre-line font-medium ${isMe ? 'text-white' : 'text-slate-700'}`}>{msg.text}</p>
 
-        <div className={`text-[9px] mt-1 text-right ${isMe && !msg.isInternal ? scheme.myTime : 'text-slate-400'}`}>
-          {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        <div className={`flex items-center justify-end gap-1 mt-1 ${isMe ? 'text-white/60' : 'opacity-40'}`}>
+          <span className="text-[9px] font-bold">
+            {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+          {isMe && <Check className="w-2.5 h-2.5" />}
         </div>
 
         {/* Hover Action: Create Discussion */}

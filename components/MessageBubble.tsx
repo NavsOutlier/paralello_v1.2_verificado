@@ -60,12 +60,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           else if (msg.linkedMessageId) onNavigateToLinked?.(msg.linkedMessageId);
         }}
         className={`relative w-full px-4 py-2.5 shadow-sm text-[14px] leading-relaxed tracking-tight ${msg.isInternal && colorScheme !== 'indigo'
-            ? 'bg-amber-50/80 backdrop-blur-sm border border-amber-200 text-slate-800 rounded-2xl rounded-tr-none'
-            : isMe
-              ? `${scheme.myBubble} rounded-[1.25rem] rounded-tr-none`
-              : colorScheme === 'green'
-                ? 'bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200/50 text-emerald-900 rounded-[1.25rem] rounded-tl-none shadow-sm'
-                : 'bg-white border border-slate-100/50 text-slate-800 rounded-[1.25rem] rounded-tl-none shadow-sm'
+          ? 'bg-amber-50/80 backdrop-blur-sm border border-amber-200 text-slate-800 rounded-2xl rounded-tr-none'
+          : isMe
+            ? `${scheme.myBubble} rounded-[1.25rem] rounded-tr-none`
+            : colorScheme === 'green'
+              ? 'bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200/50 text-emerald-900 rounded-[1.25rem] rounded-tl-none shadow-sm'
+              : 'bg-white border border-slate-100/50 text-slate-800 rounded-[1.25rem] rounded-tl-none shadow-sm'
           } ${(linkedTaskId || msg.linkedMessageId) ? 'cursor-pointer hover:opacity-95 active:scale-[0.99] transition-all' : ''}`}>
 
         {/* Task Created Marking - Premium Status Style */}

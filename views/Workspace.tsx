@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { ChecklistItem, Message } from '../types';
 import { EntityList } from '../components/EntityList';
@@ -58,6 +58,27 @@ export const Workspace: React.FC = () => {
   // Derived state
   const selectedEntity = [...clients, ...team].find(e => e.id === selectedEntityId) || null;
   const selectedTask = (tasks || []).find(t => t.id === selectedTaskId) || null;
+
+  // Memoized and Deduped messages for TaskManager
+  const allWorkspaceMessages = useMemo(() => {
+    const combined = [...messages, ...taskMessages];
+    const map = new Map();
+    combined.forEach(m => {
+      if (m && m.id) map.set(m.id, m);
+    });
+    return Array.from(map.values()).sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  }, [messages, taskMessages]);
+
+  const clientFeedMessages = useMemo(() => {
+    return messages.filter(m => {
+      // 1. Show all regular messages (not internal)
+      if (!m.isInternal) return true;
+      // 2. Show task creation notifications in the main feed
+      if (m.text?.toLowerCase().includes('tarefa criada')) return true;
+      // 3. Hide everything else that is internal (manual task comments, etc.)
+      return false;
+    });
+  }, [messages]);
 
   const handleCreateTaskFromDraft = async (data: {
     title: string;
@@ -177,7 +198,7 @@ export const Workspace: React.FC = () => {
       <div className="flex-1 min-w-[350px]">
         <ChatArea
           entity={selectedEntity}
-          messages={messages}
+          messages={clientFeedMessages}
           teamMembers={allTeamMembers}
           onSendMessage={(text) => selectedEntity && sendMessage(text, selectedEntity)}
           onInitiateDiscussion={(msg) => setDiscussionDraft({ sourceMessage: msg, mode: 'new' })}
@@ -200,7 +221,7 @@ export const Workspace: React.FC = () => {
         {selectedEntityId ? (
           <TaskManager
             tasks={tasks}
-            allMessages={[...messages, ...taskMessages]}
+            allMessages={allWorkspaceMessages}
             teamMembers={allTeamMembers}
             discussionDraft={discussionDraft}
             onCancelDraft={() => setDiscussionDraft(null)}

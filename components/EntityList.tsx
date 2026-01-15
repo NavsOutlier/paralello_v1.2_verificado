@@ -38,7 +38,7 @@ export const EntityList: React.FC<EntityListProps> = ({ clients, team, selectedI
             {user.jobTitle}
           </p>
         )}
-        <p className="text-xs text-slate-500 truncate">{user.lastMessage || '...'}</p>
+        <p className="text-xs text-slate-500 truncate">{user.lastMessage}</p>
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ interface MessageBubbleProps {
   senderJobTitle?: string;
   onInitiateDiscussion?: (message: Message) => void;
   messageRef?: (el: HTMLDivElement | null) => void;
-  colorScheme?: 'green' | 'indigo'; // 'green' for client chat, 'indigo' for task chat
+  colorScheme?: 'green' | 'indigo' | 'blue'; // 'green' for client chat, 'indigo' for task chat
   onNavigateToLinked?: (id: string) => void;
   linkedTaskId?: string;
   linkedMessage?: Message;
@@ -43,10 +43,15 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       myBubble: 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-none',
       senderName: 'text-emerald-600',
       myTime: 'text-emerald-100',
+    },
+    blue: {
+      myBubble: 'bg-gradient-to-br from-blue-500 to-blue-600 text-white border-none',
+      senderName: 'text-blue-600',
+      myTime: 'text-blue-100',
     }
   };
 
-  const scheme = colors[colorScheme];
+  const scheme = colors[colorScheme] || colors.indigo;
 
   return (
     <div
@@ -56,13 +61,15 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         if (linkedTaskId) onNavigateToLinked?.(linkedTaskId);
         else if (msg.linkedMessageId) onNavigateToLinked?.(msg.linkedMessageId);
       }}
-      className={`group relative w-fit max-w-[300px] px-4 py-2.5 text-[14px] leading-relaxed tracking-tight ${msg.isInternal && colorScheme !== 'indigo'
+      className={`group relative w-fit max-w-[300px] px-4 py-2.5 text-[14px] leading-relaxed tracking-tight ${isMe ? 'ml-auto' : ''} ${msg.isInternal && colorScheme !== 'indigo'
         ? 'bg-amber-50/80 backdrop-blur-sm border border-amber-200 text-slate-800 rounded-2xl rounded-tr-none'
         : isMe
           ? `${scheme.myBubble} rounded-[1.25rem] rounded-tr-none`
           : colorScheme === 'green'
             ? 'bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200/50 text-emerald-900 rounded-[1.25rem] rounded-tl-none'
-            : 'bg-white border border-slate-100/50 text-slate-800 rounded-[1.25rem] rounded-tl-none'
+            : colorScheme === 'blue'
+              ? 'bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-200/50 text-blue-900 rounded-[1.25rem] rounded-tl-none'
+              : 'bg-white border border-slate-100/50 text-slate-800 rounded-[1.25rem] rounded-tl-none'
         } ${(linkedTaskId || msg.linkedMessageId) ? 'cursor-pointer hover:opacity-95 active:scale-[0.99] transition-all' : ''}`}
     >
 

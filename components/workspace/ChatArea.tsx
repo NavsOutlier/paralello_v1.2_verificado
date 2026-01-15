@@ -251,7 +251,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                                                     linkedTaskId={linkedTaskId}
                                                     linkedMessage={linkedMessage}
                                                     linkedMessageSenderName={linkedMessageSender}
-                                                    colorScheme="indigo"
+                                                    colorScheme="blue"
                                                 />
                                             )}
                                         </div>

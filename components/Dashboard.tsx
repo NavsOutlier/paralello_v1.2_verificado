@@ -127,14 +127,21 @@ export const Dashboard: React.FC = () => {
         tasksRes,
         teamRes,
         messagesRes,
-        clientMessagesRes
+        clientMessagesRes,
+        allMessagesForResponseTime
       ] = await Promise.all([
         supabase.from('clients').select('id, name').eq('organization_id', organizationId).is('deleted_at', null),
         supabase.from('tasks').select('*').eq('organization_id', organizationId).is('archived_at', null),
         supabase.from('team_members').select('*, profile:profiles!team_members_profile_id_fkey(name, email, avatar)').eq('organization_id', organizationId).is('deleted_at', null),
         supabase.from('messages').select('id, created_at, sender_type, client_id').eq('organization_id', organizationId).gte('created_at', startDate.toISOString()),
         // Get last message per client for engagement tracking
-        supabase.from('messages').select('client_id, created_at').eq('organization_id', organizationId).order('created_at', { ascending: false })
+        supabase.from('messages').select('client_id, created_at').eq('organization_id', organizationId).order('created_at', { ascending: false }),
+        // Get messages for response time calculation (last 7 days, ordered by time)
+        supabase.from('messages')
+          .select('id, client_id, sender_type, created_at')
+          .eq('organization_id', organizationId)
+          .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+          .order('created_at', { ascending: true })
       ]);
 
       const clients = clientsRes.data || [];
@@ -142,6 +149,7 @@ export const Dashboard: React.FC = () => {
       const team = teamRes.data || [];
       const messages = messagesRes.data || [];
       const clientMessages = clientMessagesRes.data || [];
+      const responseTimeMessages = allMessagesForResponseTime.data || [];
 
       // Store for filters
       setAllMembers(team);
@@ -196,8 +204,47 @@ export const Dashboard: React.FC = () => {
       const activeClientIds = new Set(messages.map(m => m.client_id).filter(Boolean));
       const activeClients = activeClientIds.size;
 
-      const teamMessages = messages.filter(m => m.sender_type === 'team' || m.sender_type === 'TEAM');
-      const avgResponseTime = teamMessages.length > 0 ? Math.round(15 + Math.random() * 30) : 0;
+      // Calculate REAL average response time
+      // Group messages by client_id, find pairs of client message -> team response
+      const responseTimes: number[] = [];
+
+      // Group messages by client
+      const messagesByClient = new Map<string, { sender_type: string; created_at: string }[]>();
+      responseTimeMessages.forEach(msg => {
+        if (msg.client_id) {
+          if (!messagesByClient.has(msg.client_id)) {
+            messagesByClient.set(msg.client_id, []);
+          }
+          messagesByClient.get(msg.client_id)!.push(msg);
+        }
+      });
+
+      // For each client, find response times
+      messagesByClient.forEach((msgs) => {
+        for (let i = 0; i < msgs.length - 1; i++) {
+          const current = msgs[i];
+          const next = msgs[i + 1];
+
+          // If client sent message and team responded next
+          const isClientMessage = current.sender_type === 'client' || current.sender_type === 'CLIENT';
+          const isTeamResponse = next.sender_type === 'team' || next.sender_type === 'TEAM';
+
+          if (isClientMessage && isTeamResponse) {
+            const clientTime = new Date(current.created_at).getTime();
+            const teamTime = new Date(next.created_at).getTime();
+            const diffMinutes = Math.round((teamTime - clientTime) / (1000 * 60));
+
+            // Only count reasonable response times (between 1 min and 24 hours)
+            if (diffMinutes > 0 && diffMinutes < 1440) {
+              responseTimes.push(diffMinutes);
+            }
+          }
+        }
+      });
+
+      const avgResponseTime = responseTimes.length > 0
+        ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
+        : 0;
 
       setStats({
         totalClients: clients.length,
@@ -293,10 +340,24 @@ export const Dashboard: React.FC = () => {
       const filteredTeam = roleFilter !== 'all' ? team.filter(m => m.role === roleFilter) : team;
       const memberStats = filteredTeam.map(member => {
         const memberTasks = tasks.filter(t => t.assignee_id === member.id);
-        const completed = memberTasks.filter(t => t.status === 'done').length;
+        const completedMemberTasks = memberTasks.filter(t => t.status === 'done');
+        const completed = completedMemberTasks.length;
         const active = memberTasks.filter(t => t.status !== 'done').length;
         const clientsServed = new Set(memberTasks.map(t => t.client_id)).size;
-        const avgCompletionTime = completed > 0 ? Math.round(24 + Math.random() * 48) : 0;
+
+        // Calculate REAL average completion time (hours from created_at to updated_at for done tasks)
+        let avgCompletionTime = 0;
+        if (completed > 0) {
+          const completionTimes = completedMemberTasks.map(t => {
+            const created = new Date(t.created_at).getTime();
+            const updated = new Date(t.updated_at).getTime();
+            return Math.round((updated - created) / (1000 * 60 * 60)); // hours
+          }).filter(h => h > 0 && h < 720); // Filter reasonable times (< 30 days)
+
+          avgCompletionTime = completionTimes.length > 0
+            ? Math.round(completionTimes.reduce((a, b) => a + b, 0) / completionTimes.length)
+            : 0;
+        }
 
         return {
           member,

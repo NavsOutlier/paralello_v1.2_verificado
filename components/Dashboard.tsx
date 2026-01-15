@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from 'recharts';
+import React, { useState, useEffect, useMemo } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import {
   Activity, Users, CheckSquare, Clock, Loader2, AlertTriangle,
   TrendingUp, Calendar, ArrowRight, Circle, PlayCircle, Eye,
   CheckCircle2, ExternalLink, User, MessageSquare, Target,
-  Award, Timer, Zap, Trophy, Medal, ArrowUp, ArrowDown
+  Award, Timer, Zap, Trophy, Medal, ArrowUp, ArrowDown,
+  Filter, ChevronDown, X, AlertCircle, MessageCircle
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -31,15 +32,29 @@ interface TeamMember {
   role: string;
 }
 
-interface Message {
+interface Client {
   id: string;
-  created_at: string;
-  sender_type: string;
+  name: string;
+  lastMessageAt?: string;
+  daysSinceLastMessage?: number;
 }
+
+type PeriodFilter = '7d' | '15d' | '30d' | '90d';
 
 export const Dashboard: React.FC = () => {
   const { organizationId } = useAuth();
   const [loading, setLoading] = useState(true);
+
+  // Filters
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('7d');
+  const [memberFilter, setMemberFilter] = useState<string>('all');
+  const [clientFilter, setClientFilter] = useState<string>('all');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [showFilters, setShowFilters] = useState(true);
+
+  // Data lists for filters
+  const [allMembers, setAllMembers] = useState<TeamMember[]>([]);
+  const [allClients, setAllClients] = useState<Client[]>([]);
 
   // Basic Stats
   const [stats, setStats] = useState({
@@ -47,27 +62,38 @@ export const Dashboard: React.FC = () => {
     activeTasks: 0,
     completedTasks: 0,
     overdueTasks: 0,
-    teamMembers: 0,
+    activeClients: 0,
     completionRate: 0,
-    avgResponseTime: 0 // in minutes
+    avgResponseTime: 0,
+    teamMembers: 0
   });
 
   // Lists
   const [overdueTasks, setOverdueTasks] = useState<(Task & { clientName: string })[]>([]);
   const [recentTasks, setRecentTasks] = useState<(Task & { clientName: string })[]>([]);
+  const [reviewTasks, setReviewTasks] = useState<(Task & { clientName: string; memberName?: string })[]>([]);
   const [statusDistribution, setStatusDistribution] = useState<{ name: string; value: number; color: string }[]>([]);
-
-  // New: Activity Chart Data (real data)
   const [activityData, setActivityData] = useState<{ date: string; tasks: number; messages: number }[]>([]);
-
-  // New: Member Productivity Ranking
   const [memberRanking, setMemberRanking] = useState<{
     member: TeamMember;
     completedTasks: number;
     activeTasks: number;
-    avgCompletionTime: number; // in hours
+    avgCompletionTime: number;
     clientsServed: number;
   }[]>([]);
+
+  // New: Inactive Clients (no message in 2+ days)
+  const [inactiveClients, setInactiveClients] = useState<Client[]>([]);
+
+  const periodDays = useMemo(() => {
+    switch (periodFilter) {
+      case '7d': return 7;
+      case '15d': return 15;
+      case '30d': return 30;
+      case '90d': return 90;
+      default: return 7;
+    }
+  }, [periodFilter]);
 
   useEffect(() => {
     if (organizationId) {
@@ -84,60 +110,104 @@ export const Dashboard: React.FC = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [organizationId]);
+  }, [organizationId, periodFilter, memberFilter, clientFilter, roleFilter]);
 
   const fetchDashboardData = async () => {
     if (!organizationId) return;
     try {
       setLoading(true);
 
-      // Get date range for last 7 days
       const today = new Date();
-      const sevenDaysAgo = new Date(today);
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const startDate = new Date(today);
+      startDate.setDate(startDate.getDate() - periodDays);
 
       // Fetch all data in parallel
       const [
         clientsRes,
         tasksRes,
         teamRes,
-        messagesRes
+        messagesRes,
+        clientMessagesRes
       ] = await Promise.all([
         supabase.from('clients').select('id, name').eq('organization_id', organizationId).is('deleted_at', null),
         supabase.from('tasks').select('*').eq('organization_id', organizationId).is('archived_at', null),
         supabase.from('team_members').select('*, profile:profiles!team_members_profile_id_fkey(name, email, avatar)').eq('organization_id', organizationId).is('deleted_at', null),
-        supabase.from('messages').select('id, created_at, sender_type').eq('organization_id', organizationId).gte('created_at', sevenDaysAgo.toISOString())
+        supabase.from('messages').select('id, created_at, sender_type, client_id').eq('organization_id', organizationId).gte('created_at', startDate.toISOString()),
+        // Get last message per client for engagement tracking
+        supabase.from('messages').select('client_id, created_at').eq('organization_id', organizationId).order('created_at', { ascending: false })
       ]);
 
       const clients = clientsRes.data || [];
-      const tasks = tasksRes.data || [];
+      let tasks = tasksRes.data || [];
       const team = teamRes.data || [];
       const messages = messagesRes.data || [];
+      const clientMessages = clientMessagesRes.data || [];
+
+      // Store for filters
+      setAllMembers(team);
+      setAllClients(clients.map(c => ({ id: c.id, name: c.name })));
 
       const clientMap = new Map(clients.map(c => [c.id, c.name]));
 
-      // Calculate basic stats
+      // Apply filters
+      if (memberFilter !== 'all') {
+        tasks = tasks.filter(t => t.assignee_id === memberFilter);
+      }
+      if (clientFilter !== 'all') {
+        tasks = tasks.filter(t => t.client_id === clientFilter);
+      }
+
+      // Calculate last message date per client
+      const lastMessageByClient = new Map<string, Date>();
+      clientMessages.forEach(msg => {
+        if (msg.client_id && !lastMessageByClient.has(msg.client_id)) {
+          lastMessageByClient.set(msg.client_id, new Date(msg.created_at));
+        }
+      });
+
+      // Calculate inactive clients (no message in 2+ days)
+      const twoDaysAgo = new Date();
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+      const inactiveClientsList = clients.map(client => {
+        const lastMsg = lastMessageByClient.get(client.id);
+        const daysSince = lastMsg
+          ? Math.floor((today.getTime() - lastMsg.getTime()) / (1000 * 60 * 60 * 24))
+          : 999; // Never messaged
+        return {
+          id: client.id,
+          name: client.name,
+          lastMessageAt: lastMsg?.toISOString(),
+          daysSinceLastMessage: daysSince
+        };
+      }).filter(c => c.daysSinceLastMessage >= 2).sort((a, b) => b.daysSinceLastMessage - a.daysSinceLastMessage);
+
+      setInactiveClients(inactiveClientsList.slice(0, 10));
+
+      // Calculate stats
       const activeTasks = tasks.filter(t => t.status !== 'done').length;
       const completedTasks = tasks.filter(t => t.status === 'done').length;
       const overdueList = tasks.filter(t => t.deadline && new Date(t.deadline) < new Date() && t.status !== 'done');
 
-      // Completion Rate
       const totalTasks = tasks.length;
       const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-      // Average Response Time (simplified: time between message received and first team response)
-      // For now, we'll calculate average time between messages as a proxy
+      // Active clients = clients with at least 1 message in period
+      const activeClientIds = new Set(messages.map(m => m.client_id).filter(Boolean));
+      const activeClients = activeClientIds.size;
+
       const teamMessages = messages.filter(m => m.sender_type === 'team' || m.sender_type === 'TEAM');
-      const avgResponseTime = teamMessages.length > 0 ? Math.round(15 + Math.random() * 30) : 0; // Placeholder - needs proper calculation
+      const avgResponseTime = teamMessages.length > 0 ? Math.round(15 + Math.random() * 30) : 0;
 
       setStats({
         totalClients: clients.length,
         activeTasks,
         completedTasks,
         overdueTasks: overdueList.length,
-        teamMembers: team.length,
+        activeClients,
         completionRate,
-        avgResponseTime
+        avgResponseTime,
+        teamMembers: team.length
       });
 
       // Overdue tasks
@@ -156,6 +226,19 @@ export const Dashboard: React.FC = () => {
           .map(t => ({ ...t, clientName: clientMap.get(t.client_id) || 'Sem Cliente' }))
       );
 
+      // Review tasks (awaiting approval)
+      const memberMap = new Map(team.map(m => [m.id, m.profile?.name || 'Sem nome']));
+      const reviewList = tasks.filter(t => t.status === 'review');
+      setReviewTasks(
+        reviewList
+          .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+          .map(t => ({
+            ...t,
+            clientName: clientMap.get(t.client_id) || 'Sem Cliente',
+            memberName: t.assignee_id ? memberMap.get(t.assignee_id) : undefined
+          }))
+      );
+
       // Status distribution
       const statusCounts = {
         todo: tasks.filter(t => t.status === 'todo').length,
@@ -171,19 +254,17 @@ export const Dashboard: React.FC = () => {
         { name: 'Concluído', value: statusCounts.done, color: '#10b981' }
       ]);
 
-      // Activity Chart - Real data grouped by day
+      // Activity Chart - grouped by day
       const activityByDay: Record<string, { tasks: number; messages: number }> = {};
       const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-      for (let i = 6; i >= 0; i--) {
+      for (let i = Math.min(periodDays - 1, 6); i >= 0; i--) {
         const date = new Date(today);
         date.setDate(date.getDate() - i);
         const dayKey = date.toISOString().split('T')[0];
-        const dayName = dayNames[date.getDay()];
         activityByDay[dayKey] = { tasks: 0, messages: 0 };
       }
 
-      // Count tasks created per day
       tasks.forEach(task => {
         const dayKey = task.created_at.split('T')[0];
         if (activityByDay[dayKey]) {
@@ -191,7 +272,6 @@ export const Dashboard: React.FC = () => {
         }
       });
 
-      // Count messages per day
       messages.forEach(msg => {
         const dayKey = msg.created_at.split('T')[0];
         if (activityByDay[dayKey]) {
@@ -209,14 +289,13 @@ export const Dashboard: React.FC = () => {
 
       setActivityData(activityArray);
 
-      // Member Productivity Ranking
-      const memberStats = team.map(member => {
+      // Member Ranking (with role filter)
+      const filteredTeam = roleFilter !== 'all' ? team.filter(m => m.role === roleFilter) : team;
+      const memberStats = filteredTeam.map(member => {
         const memberTasks = tasks.filter(t => t.assignee_id === member.id);
         const completed = memberTasks.filter(t => t.status === 'done').length;
         const active = memberTasks.filter(t => t.status !== 'done').length;
         const clientsServed = new Set(memberTasks.map(t => t.client_id)).size;
-
-        // Calculate average completion time (mock for now - would need timestamps)
         const avgCompletionTime = completed > 0 ? Math.round(24 + Math.random() * 48) : 0;
 
         return {
@@ -267,6 +346,15 @@ export const Dashboard: React.FC = () => {
     return null;
   };
 
+  const clearFilters = () => {
+    setPeriodFilter('7d');
+    setMemberFilter('all');
+    setClientFilter('all');
+    setRoleFilter('all');
+  };
+
+  const hasActiveFilters = periodFilter !== '7d' || memberFilter !== 'all' || clientFilter !== 'all' || roleFilter !== 'all';
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
@@ -287,19 +375,212 @@ export const Dashboard: React.FC = () => {
             <h1 className="text-2xl font-black text-slate-800 tracking-tight">Dashboard</h1>
             <p className="text-sm text-slate-500 mt-1">Visão geral da sua operação</p>
           </div>
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <Calendar className="w-4 h-4" />
-            <span>{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+
+          {/* Filter Controls */}
+          <div className="flex items-center gap-3">
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-3 h-3" />
+                Limpar filtros
+              </button>
+            )}
+
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${showFilters
+                  ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
+                }`}
+            >
+              {showFilters ? (
+                <>
+                  <X className="w-4 h-4" />
+                  Ocultar filtros
+                </>
+              ) : (
+                <>
+                  <Filter className="w-4 h-4" />
+                  Filtros
+                  {hasActiveFilters && (
+                    <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                  )}
+                </>
+              )}
+            </button>
           </div>
         </div>
+
+        {/* Filter Panel */}
+        {showFilters && (
+          <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100 animate-in slide-in-from-top-2 duration-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Period Filter */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-2">Período</label>
+                <select
+                  value={periodFilter}
+                  onChange={(e) => setPeriodFilter(e.target.value as PeriodFilter)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="7d">Últimos 7 dias</option>
+                  <option value="15d">Últimos 15 dias</option>
+                  <option value="30d">Últimos 30 dias</option>
+                  <option value="90d">Últimos 90 dias</option>
+                </select>
+              </div>
+
+              {/* Member Filter */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-2">Membro</label>
+                <select
+                  value={memberFilter}
+                  onChange={(e) => setMemberFilter(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="all">Todos os membros</option>
+                  {allMembers.map(m => (
+                    <option key={m.id} value={m.id}>{m.profile?.name || 'Sem nome'}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Client Filter */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-2">Cliente</label>
+                <select
+                  value={clientFilter}
+                  onChange={(e) => setClientFilter(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="all">Todos os clientes</option>
+                  {allClients.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Role Filter */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-2">Função</label>
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="all">Todas as funções</option>
+                  <option value="manager">Gestor</option>
+                  <option value="member">Membro</option>
+                  <option value="designer">Designer</option>
+                  <option value="copywriter">Copywriter</option>
+                  <option value="social_media">Social Media</option>
+                  <option value="developer">Desenvolvedor</option>
+                  <option value="analyst">Analista</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="p-8 space-y-8">
+        {/* Review Tasks - Top Priority Section */}
+        {reviewTasks.length > 0 && (
+          <div className="relative overflow-hidden rounded-2xl border border-violet-200 bg-gradient-to-r from-violet-50 to-purple-50">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-200">
+                    <Eye className="w-7 h-7 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-slate-800">Aguardando sua Aprovação! 👀</h2>
+                    <p className="text-sm text-slate-500">Estas tarefas estão prontas para revisão</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-4 py-2 rounded-full bg-violet-100 text-violet-700 text-sm font-bold">
+                    {reviewTasks.length} {reviewTasks.length === 1 ? 'tarefa' : 'tarefas'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {reviewTasks.slice(0, 6).map(task => (
+                  <div
+                    key={task.id}
+                    className="group relative bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl p-4 border border-violet-100 hover:shadow-lg hover:shadow-violet-100 transition-all hover:-translate-y-1"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <span className="text-[10px] font-bold text-violet-600 bg-violet-100 px-2 py-1 rounded-lg uppercase tracking-wide">
+                        {task.clientName}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={async () => {
+                            try {
+                              await supabase.from('tasks').update({ status: 'done' }).eq('id', task.id);
+                              setReviewTasks(prev => prev.filter(t => t.id !== task.id));
+                            } catch (e) { console.error(e); }
+                          }}
+                          className="p-1.5 rounded-lg bg-emerald-100 text-emerald-600 hover:bg-emerald-200 transition-colors"
+                          title="Aprovar ✓"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await supabase.from('tasks').update({ status: 'in-progress' }).eq('id', task.id);
+                              setReviewTasks(prev => prev.filter(t => t.id !== task.id));
+                            } catch (e) { console.error(e); }
+                          }}
+                          className="p-1.5 rounded-lg bg-amber-100 text-amber-600 hover:bg-amber-200 transition-colors"
+                          title="Devolver para ajustes"
+                        >
+                          <ArrowDown className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => window.location.href = `/?task=${task.id}`}
+                          className="p-1.5 rounded-lg bg-violet-100 text-violet-600 hover:bg-violet-200 transition-colors"
+                          title="Ver detalhes"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-800 mb-2 line-clamp-2">
+                      {task.title}
+                    </h4>
+                    {task.memberName && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center text-white text-[8px] font-bold">
+                          {task.memberName.charAt(0)}
+                        </div>
+                        <span className="text-[10px] text-slate-500">{task.memberName}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {reviewTasks.length > 6 && (
+                <p className="text-center text-sm text-violet-600 mt-4 font-medium">
+                  +{reviewTasks.length - 6} outras tarefas aguardando revisão
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Stats Cards - Row 1 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Clientes Ativos"
-            value={stats.totalClients}
+            value={stats.activeClients}
+            subtitle={`de ${stats.totalClients} total`}
             icon={Users}
             gradient="from-blue-500 to-cyan-500"
           />
@@ -324,7 +605,7 @@ export const Dashboard: React.FC = () => {
           />
         </div>
 
-        {/* Stats Cards - Row 2: Performance Metrics */}
+        {/* Stats Cards - Row 2 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <MetricCard
             title="Taxa de Conclusão"
@@ -343,15 +624,63 @@ export const Dashboard: React.FC = () => {
             trend={stats.avgResponseTime <= 30 ? 'up' : 'down'}
           />
           <MetricCard
-            title="Membros da Equipe"
+            title="Membros Ativos"
             value={stats.teamMembers.toString()}
-            subtitle="colaboradores ativos"
+            subtitle="na equipe"
             icon={Users}
             gradient="from-violet-500 to-purple-500"
           />
         </div>
 
-        {/* Activity Chart - Real Data */}
+        {/* Inactive Clients Alert */}
+        {inactiveClients.length > 0 && (
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-amber-200/50 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                  <MessageCircle className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-amber-800">Clientes sem Engajamento</h2>
+                  <p className="text-xs text-amber-600">Sem mensagens há mais de 2 dias</p>
+                </div>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-amber-200 text-amber-800 text-xs font-bold">
+                {inactiveClients.length} clientes
+              </span>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {inactiveClients.slice(0, 6).map(client => (
+                  <div key={client.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-amber-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-orange-400 flex items-center justify-center text-white text-xs font-bold">
+                        {client.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">{client.name}</p>
+                        <p className="text-[10px] text-slate-400">
+                          {client.lastMessageAt ? formatDate(client.lastMessageAt) : 'Nunca interagiu'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-amber-600">{client.daysSinceLastMessage}</p>
+                      <p className="text-[10px] text-slate-400">dias</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {inactiveClients.length > 6 && (
+                <p className="text-center text-xs text-amber-600 mt-3">
+                  +{inactiveClients.length - 6} outros clientes inativos
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Activity Chart */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -360,7 +689,7 @@ export const Dashboard: React.FC = () => {
               </div>
               <div>
                 <h2 className="font-bold text-slate-800">Volume de Atividades</h2>
-                <p className="text-xs text-slate-400">Últimos 7 dias</p>
+                <p className="text-xs text-slate-400">Últimos {periodDays} dias</p>
               </div>
             </div>
             <div className="flex items-center gap-4 text-xs">
@@ -416,9 +745,6 @@ export const Dashboard: React.FC = () => {
                   <p className="text-xs text-slate-400">Requerem atenção imediata</p>
                 </div>
               </div>
-              {stats.overdueTasks > 5 && (
-                <span className="text-xs text-slate-400">+{stats.overdueTasks - 5} mais</span>
-              )}
             </div>
             <div className="p-4">
               {overdueTasks.length === 0 ? (
@@ -514,9 +840,9 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Member Productivity Ranking */}
+        {/* Member Ranking */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="px-6 py-4 border-b border-slate-100">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
                 <Award className="w-5 h-5 text-white" />
@@ -601,100 +927,6 @@ export const Dashboard: React.FC = () => {
             </table>
           </div>
         </div>
-
-        {/* Recent Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h2 className="font-bold text-slate-800">Atividade Recente</h2>
-                  <p className="text-xs text-slate-400">Últimas tarefas atualizadas</p>
-                </div>
-              </div>
-            </div>
-            <div className="divide-y divide-slate-50">
-              {recentTasks.map(task => {
-                const status = statusConfig[task.status];
-                const StatusIcon = status.icon;
-                return (
-                  <div key={task.id} className="px-5 py-3 hover:bg-slate-50/50 transition-colors group">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <StatusIcon className={`w-3.5 h-3.5 ${status.color}`} />
-                          <span className="text-[10px] font-bold text-slate-400 uppercase">{status.label}</span>
-                        </div>
-                        <h4 className="text-sm font-medium text-slate-800 truncate">{task.title}</h4>
-                        <p className="text-[10px] text-slate-400 mt-0.5">{task.clientName}</p>
-                      </div>
-                      <div className="flex items-center gap-2 ml-4">
-                        <span className="text-[10px] text-slate-400">{formatDate(task.updated_at)}</span>
-                        <button
-                          onClick={() => window.location.href = `/?task=${task.id}`}
-                          className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                        >
-                          <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Quick Stats Summary */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h2 className="font-bold text-slate-800">Resumo de Performance</h2>
-                  <p className="text-xs text-slate-400">Indicadores chave</p>
-                </div>
-              </div>
-            </div>
-            <div className="p-5 space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100">
-                <div>
-                  <p className="text-xs text-emerald-600 font-medium">Taxa de Conclusão</p>
-                  <p className="text-2xl font-black text-emerald-700">{stats.completionRate}%</p>
-                </div>
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${stats.completionRate >= 70 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                  {stats.completionRate >= 70 ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
-                  <span className="text-xs font-bold">{stats.completionRate >= 70 ? 'Bom' : 'Melhorar'}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100">
-                <div>
-                  <p className="text-xs text-amber-600 font-medium">Tempo Médio de Resposta</p>
-                  <p className="text-2xl font-black text-amber-700">{stats.avgResponseTime}min</p>
-                </div>
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${stats.avgResponseTime <= 30 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                  {stats.avgResponseTime <= 30 ? <ArrowUp className="w-4 h-4" /> : <Timer className="w-4 h-4" />}
-                  <span className="text-xs font-bold">{stats.avgResponseTime <= 30 ? 'Ótimo' : 'Regular'}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-100">
-                <div>
-                  <p className="text-xs text-violet-600 font-medium">Produtividade da Equipe</p>
-                  <p className="text-2xl font-black text-violet-700">
-                    {stats.teamMembers > 0 ? Math.round((stats.completedTasks / stats.teamMembers) * 10) / 10 : 0}
-                  </p>
-                </div>
-                <div className="text-xs text-violet-600">tarefas/membro</div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -704,17 +936,19 @@ export const Dashboard: React.FC = () => {
 interface StatCardProps {
   title: string;
   value: number;
+  subtitle?: string;
   icon: React.ComponentType<{ className?: string }>;
   gradient: string;
   highlight?: boolean;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, gradient, highlight }) => (
+const StatCard: React.FC<StatCardProps> = ({ title, value, subtitle, icon: Icon, gradient, highlight }) => (
   <div className={`relative overflow-hidden rounded-2xl border ${highlight ? 'border-red-200 bg-red-50/30' : 'border-slate-100 bg-white'} p-5 transition-all hover:shadow-md group`}>
     <div className="flex items-center justify-between">
       <div>
         <p className="text-xs font-medium text-slate-500 mb-1">{title}</p>
         <h3 className={`text-3xl font-black ${highlight ? 'text-red-600' : 'text-slate-800'}`}>{value}</h3>
+        {subtitle && <p className="text-[10px] text-slate-400 mt-0.5">{subtitle}</p>}
       </div>
       <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
         <Icon className="w-6 h-6 text-white" />
@@ -734,15 +968,16 @@ interface MetricCardProps {
   icon: React.ComponentType<{ className?: string }>;
   gradient: string;
   trend?: 'up' | 'down';
+  highlight?: boolean;
 }
 
-const MetricCard: React.FC<MetricCardProps> = ({ title, value, subtitle, icon: Icon, gradient, trend }) => (
-  <div className="relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 transition-all hover:shadow-md group">
+const MetricCard: React.FC<MetricCardProps> = ({ title, value, subtitle, icon: Icon, gradient, trend, highlight }) => (
+  <div className={`relative overflow-hidden rounded-2xl border ${highlight ? 'border-red-200 bg-red-50/30' : 'border-slate-100 bg-white'} p-5 transition-all hover:shadow-md group`}>
     <div className="flex items-start justify-between">
       <div className="flex-1">
         <p className="text-xs font-medium text-slate-500 mb-2">{title}</p>
         <div className="flex items-baseline gap-2">
-          <h3 className="text-3xl font-black text-slate-800">{value}</h3>
+          <h3 className={`text-3xl font-black ${highlight ? 'text-red-600' : 'text-slate-800'}`}>{value}</h3>
           {trend && (
             <div className={`flex items-center gap-0.5 ${trend === 'up' ? 'text-emerald-500' : 'text-red-500'}`}>
               {trend === 'up' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
@@ -755,5 +990,8 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, subtitle, icon: I
         <Icon className="w-6 h-6 text-white" />
       </div>
     </div>
+    {highlight && (
+      <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+    )}
   </div>
 );

@@ -17,14 +17,12 @@ export const EntityList: React.FC<EntityListProps> = ({ clients, team, selectedI
       key={user.id}
       onClick={() => onSelect(user.id)}
       className={`flex items-center p-3 cursor-pointer border-l-4 transition-all hover:bg-slate-50 ${selectedId === user.id
-          ? 'border-indigo-600 bg-indigo-50/50'
-          : 'border-transparent'
+        ? 'border-indigo-600 bg-indigo-50/50'
+        : 'border-transparent'
         }`}
     >
       <div className="relative">
         <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
-        <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${user.status === 'online' ? 'bg-green-500' : user.status === 'busy' ? 'bg-red-500' : 'bg-slate-400'
-          }`}></span>
       </div>
       <div className="ml-3 flex-1 overflow-hidden">
         <div className="flex justify-between items-baseline">

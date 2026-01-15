@@ -20,6 +20,7 @@ interface ChatAreaProps {
     setDistortionPositions?: (positions: Record<string, { x: number, y: number }>) => void;
     distortionLabels?: any[];
     setDistortionLabels?: (labels: any[]) => void;
+    whatsappStatus?: string;
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({
@@ -34,7 +35,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     distortionPositions = {},
     setDistortionPositions,
     distortionLabels = [],
-    setDistortionLabels
+    setDistortionLabels,
+    whatsappStatus = 'online'
 }) => {
     const [inputText, setInputText] = useState('');
     const [isSending, setIsSending] = useState(false);
@@ -107,9 +109,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                     <div>
                         <h2 className="text-[15px] font-black text-slate-900 tracking-tight leading-none mb-1">{entity.name}</h2>
                         <div className="flex items-center gap-1.5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                {entity.role === 'client' ? 'WhatsApp Online' : entity.jobTitle || 'Equipe'}
+                            <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${whatsappStatus === 'conectado' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                            <p className={`text-[10px] font-bold uppercase tracking-widest ${whatsappStatus === 'conectado' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                {entity.role === 'client'
+                                    ? `WhatsApp ${whatsappStatus === 'conectado' ? 'Conectado' : (whatsappStatus || 'Desconectado')}`
+                                    : entity.jobTitle || 'Equipe'}
                             </p>
                         </div>
                     </div>

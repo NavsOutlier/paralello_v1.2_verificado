@@ -47,7 +47,6 @@ export const useWorkspaceData = () => {
                 name: c.name,
                 avatar: c.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=random`,
                 role: 'client',
-                status: 'online',
                 whatsappGroupId: c.whatsapp_group_id,
                 lastMessage: ''
             }));
@@ -67,7 +66,6 @@ export const useWorkspaceData = () => {
                     name: tm.profile?.name || 'Membro',
                     avatar: tm.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tm.profile?.name || 'M')}&background=random`,
                     role: 'team',
-                    status: 'online',
                     jobTitle: tm.job_title,
                     assignedClientIds: assignmentsMap.get(tm.id) || []
                 }));
@@ -78,7 +76,6 @@ export const useWorkspaceData = () => {
                     name: tm.profile?.name || 'Membro',
                     avatar: tm.profile?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tm.profile?.name || 'M')}&background=random`,
                     role: 'team',
-                    status: 'online',
                     jobTitle: tm.job_title,
                     assignedClientIds: assignmentsMap.get(tm.id) || []
                 }));

@@ -13,6 +13,7 @@ import { useTasks } from '../hooks/useTasks';
 import { useChecklists } from '../hooks/useChecklists';
 import { useWorkspaceActions } from '../hooks/useWorkspaceActions';
 import { useResizableSidebar } from '../hooks/useResizableSidebar';
+import { useWhatsApp } from '../hooks/useWhatsApp';
 import { distortionRepository } from '../lib/repositories/DistortionRepository';
 import { TaskRepository } from '../lib/repositories/TaskRepository';
 
@@ -40,6 +41,15 @@ export const Workspace: React.FC = () => {
   const { messages: taskMessages, refreshMessages: refreshTaskMessages } = useMessages(selectedTaskId);
   const { tasks, refreshTasks } = useTasks(selectedEntityId); // Fetch tasks for selected client/member
   const { templates: checklistTemplates, createTemplate, deleteTemplate } = useChecklists();
+  const { instances } = useWhatsApp();
+
+  const activeWhatsappStatus = useMemo(() => {
+    if (!instances || instances.length === 0) return 'desconectado';
+    // Match both 'conectado' and 'connected'
+    const active = instances.find(inst => ['connected', 'conectado'].includes(inst.status));
+    return active ? 'conectado' : instances[0].status;
+  }, [instances]);
+
   const {
     sendMessage,
     updateTask,
@@ -341,6 +351,7 @@ export const Workspace: React.FC = () => {
           setDistortionPositions={setDistortionPositions}
           distortionLabels={distortionLabels}
           setDistortionLabels={setDistortionLabels}
+          whatsappStatus={activeWhatsappStatus}
         />
       </div>
 

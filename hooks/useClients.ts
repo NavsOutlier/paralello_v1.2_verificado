@@ -53,7 +53,6 @@ export const useClients = () => {
                 name: c.name,
                 avatar: c.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=random`,
                 role: 'client',
-                status: 'online',
                 whatsappGroupId: c.whatsappGroupId,
                 lastMessage: ''
             }));

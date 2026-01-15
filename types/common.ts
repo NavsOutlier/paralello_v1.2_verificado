@@ -24,7 +24,6 @@ export interface User {
     name: string;
     avatar: string;
     role: 'client' | 'team';
-    status: 'online' | 'offline' | 'busy';
     jobTitle?: string;
     unreadCount?: number;
     lastMessage?: string;

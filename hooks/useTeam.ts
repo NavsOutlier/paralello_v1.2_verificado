@@ -26,7 +26,6 @@ export const useTeam = () => {
                 name: m.profile?.name || 'Membro',
                 avatar: m.profile?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.profile?.name || 'M')}&background=random`,
                 role: 'team',
-                status: 'online',
                 jobTitle: m.jobTitle
             }));
 

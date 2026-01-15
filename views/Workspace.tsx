@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { ChecklistItem, Message } from '../types';
 import { EntityList } from '../components/EntityList';
 import { ChatArea, TaskManager } from '../components/workspace';
-import { Loader2 } from 'lucide-react';
+import { Loader2, PanelLeftClose, PanelRightClose, PanelLeft, PanelRight } from 'lucide-react';
 
 // New Modular Hooks
 import { useClients } from '../hooks/useClients';
@@ -22,6 +22,8 @@ export const Workspace: React.FC = () => {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [leftSidebarVisible, setLeftSidebarVisible] = useState(true);
+  const [rightSidebarVisible, setRightSidebarVisible] = useState(true);
 
   // Discussion state
   const [discussionDraft, setDiscussionDraft] = useState<{
@@ -185,16 +187,45 @@ export const Workspace: React.FC = () => {
   }
 
   return (
-    <div className="flex h-full w-full">
-      <div className="w-[260px] flex-shrink-0 h-full overflow-hidden">
-        <EntityList
-          clients={clients}
-          team={team}
-          selectedId={selectedEntityId}
-          onSelect={setSelectedEntityId}
-        />
+    <div className="flex h-full w-full relative">
+      {/* Left Sidebar Toggle - Thin discrete strip */}
+      <button
+        onClick={() => setLeftSidebarVisible(!leftSidebarVisible)}
+        className={`absolute top-1/2 -translate-y-1/2 z-50 w-4 h-12 flex items-center justify-center bg-slate-100/80 hover:bg-indigo-100 border-y border-r border-slate-200/50 hover:border-indigo-200 rounded-r-md opacity-40 hover:opacity-100 transition-all duration-300 ${leftSidebarVisible ? 'left-[260px]' : 'left-0'
+          }`}
+        title={leftSidebarVisible ? 'Esconder' : 'Mostrar'}
+      >
+        <span className={`text-slate-500 text-[10px] font-bold transition-transform ${leftSidebarVisible ? '' : 'rotate-180'}`}>‹</span>
+      </button>
+
+      {/* Right Sidebar Toggle - Thin discrete strip */}
+      <button
+        onClick={() => setRightSidebarVisible(!rightSidebarVisible)}
+        className={`absolute top-1/2 -translate-y-1/2 z-50 w-4 h-12 flex items-center justify-center bg-slate-100/80 hover:bg-indigo-100 border-y border-l border-slate-200/50 hover:border-indigo-200 rounded-l-md opacity-40 hover:opacity-100 transition-all duration-300 ${rightSidebarVisible ? '' : 'right-0'
+          }`}
+        style={rightSidebarVisible ? { right: `${rightSidebarWidth}px` } : undefined}
+        title={rightSidebarVisible ? 'Esconder' : 'Mostrar'}
+      >
+        <span className={`text-slate-500 text-[10px] font-bold transition-transform ${rightSidebarVisible ? '' : 'rotate-180'}`}>›</span>
+      </button>
+
+      {/* Left Sidebar - EntityList */}
+      <div
+        className={`flex-shrink-0 h-full overflow-hidden transition-all duration-300 ease-in-out ${leftSidebarVisible ? 'w-[260px]' : 'w-0'
+          }`}
+      >
+        <div className={`w-[260px] h-full transition-transform duration-300 ${leftSidebarVisible ? 'translate-x-0' : '-translate-x-full'
+          }`}>
+          <EntityList
+            clients={clients}
+            team={team}
+            selectedId={selectedEntityId}
+            onSelect={setSelectedEntityId}
+          />
+        </div>
       </div>
 
+      {/* Main Chat Area */}
       <div className="flex-1 min-w-[350px] h-full overflow-hidden">
         <ChatArea
           entity={selectedEntity}
@@ -208,38 +239,47 @@ export const Workspace: React.FC = () => {
         />
       </div>
 
-      {/* Resizer Handle */}
-      <div
-        onMouseDown={startResizing}
-        className={`w-1.5 h-full cursor-col-resize hover:bg-indigo-400/30 transition-colors flex-shrink-0 z-10 -ml-0.5 border-l border-r border-slate-200 ${isResizing ? 'bg-indigo-400/50' : ''}`}
-      />
+      {/* Resizer Handle - Only visible when right sidebar is open */}
+      {rightSidebarVisible && (
+        <div
+          onMouseDown={startResizing}
+          className={`w-1.5 h-full cursor-col-resize hover:bg-indigo-400/30 transition-colors flex-shrink-0 z-10 -ml-0.5 border-l border-r border-slate-200 ${isResizing ? 'bg-indigo-400/50' : ''}`}
+        />
+      )}
 
+      {/* Right Sidebar - TaskManager */}
       <div
-        style={{ width: `${rightSidebarWidth}px` }}
-        className="flex-shrink-0 bg-slate-50 h-full overflow-hidden"
+        style={{ width: rightSidebarVisible ? `${rightSidebarWidth}px` : '0px' }}
+        className="flex-shrink-0 bg-slate-50 h-full overflow-hidden transition-all duration-300 ease-in-out"
       >
-        {selectedEntityId ? (
-          <TaskManager
-            tasks={tasks}
-            allMessages={allWorkspaceMessages}
-            teamMembers={allTeamMembers}
-            discussionDraft={discussionDraft}
-            onCancelDraft={() => setDiscussionDraft(null)}
-            onCreateTaskFromDraft={handleCreateTaskFromDraft}
-            onAttachTaskFromDraft={handleAttachTaskFromDraft}
-            onNavigateToMessage={(id) => setHighlightedMessageId(id)}
-            onAddTaskComment={addTaskComment}
-            onUpdateTask={updateTask}
-            onManualCreate={handleManualCreateTask}
-            checklistTemplates={checklistTemplates}
-            onCreateChecklistTemplate={createTemplate}
-            onDeleteChecklistTemplate={deleteTemplate}
-            selectedTask={selectedTask}
-            onSelectTask={(t) => setSelectedTaskId(t ? t.id : null)}
-          />
-        ) : (
-          <div className="p-10 text-center text-slate-400">Selecione um cliente para ver tarefas.</div>
-        )}
+        <div
+          style={{ width: `${rightSidebarWidth}px` }}
+          className={`h-full transition-transform duration-300 ${rightSidebarVisible ? 'translate-x-0' : 'translate-x-full'
+            }`}
+        >
+          {selectedEntityId ? (
+            <TaskManager
+              tasks={tasks}
+              allMessages={allWorkspaceMessages}
+              teamMembers={allTeamMembers}
+              discussionDraft={discussionDraft}
+              onCancelDraft={() => setDiscussionDraft(null)}
+              onCreateTaskFromDraft={handleCreateTaskFromDraft}
+              onAttachTaskFromDraft={handleAttachTaskFromDraft}
+              onNavigateToMessage={(id) => setHighlightedMessageId(id)}
+              onAddTaskComment={addTaskComment}
+              onUpdateTask={updateTask}
+              onManualCreate={handleManualCreateTask}
+              checklistTemplates={checklistTemplates}
+              onCreateChecklistTemplate={createTemplate}
+              onDeleteChecklistTemplate={deleteTemplate}
+              selectedTask={selectedTask}
+              onSelectTask={(t) => setSelectedTaskId(t ? t.id : null)}
+            />
+          ) : (
+            <div className="p-10 text-center text-slate-400">Selecione um cliente para ver tarefas.</div>
+          )}
+        </div>
       </div>
     </div>
   );

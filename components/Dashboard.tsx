@@ -446,13 +446,21 @@ export const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 bg-gradient-to-br from-slate-50 via-white to-slate-50 overflow-y-auto h-full">
-      {/* Header */}
-      <div className="px-8 py-6 border-b border-slate-100 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Dashboard</h1>
-            <p className="text-sm text-slate-500 mt-1">Visão geral da sua operação</p>
+    <div className="flex-1 bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 overflow-y-auto h-full">
+      {/* Header - Premium Design */}
+      <div className="relative px-8 py-8 border-b border-slate-100/50 bg-white/60 backdrop-blur-xl sticky top-0 z-10">
+        {/* Background decoration */}
+        <div className="absolute top-0 right-0 w-96 h-32 bg-gradient-to-bl from-indigo-500/5 to-transparent rounded-bl-full" />
+
+        <div className="relative flex justify-between items-center">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+                <Activity className="w-5 h-5 text-white" />
+              </div>
+              <h1 className="text-3xl font-black text-slate-800 tracking-tight">Dashboard</h1>
+            </div>
+            <p className="text-sm text-slate-500 ml-[52px]">Visão geral da sua operação • <span className="font-medium text-indigo-600">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span></p>
           </div>
 
           {/* Filter Controls */}
@@ -759,51 +767,101 @@ export const Dashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Activity Chart */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-white" />
+        {/* Activity Chart - Premium Design */}
+        <div className="relative bg-white rounded-3xl border border-slate-100/50 shadow-xl shadow-slate-200/50 overflow-hidden">
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-500/5 to-violet-500/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-emerald-500/5 to-teal-500/5 rounded-full blur-3xl" />
+
+          <div className="relative px-8 py-5 border-b border-slate-100/50 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+                <TrendingUp className="w-6 h-6 text-white" />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 opacity-0 group-hover:opacity-100 blur-xl transition-opacity" />
               </div>
               <div>
-                <h2 className="font-bold text-slate-800">Volume de Atividades</h2>
-                <p className="text-xs text-slate-400">Últimos {periodDays} dias</p>
+                <h2 className="text-lg font-bold text-slate-800">Volume de Atividades</h2>
+                <p className="text-sm text-slate-400">Últimos {periodDays} dias</p>
               </div>
             </div>
-            <div className="flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-indigo-500" />
-                <span className="text-slate-600">Mensagens</span>
+                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 shadow-sm" />
+                <span className="text-sm font-medium text-slate-600">Mensagens</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                <span className="text-slate-600">Tarefas Criadas</span>
+                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 shadow-sm" />
+                <span className="text-sm font-medium text-slate-600">Tarefas</span>
               </div>
             </div>
           </div>
-          <div className="p-6 h-72">
+          <div className="relative p-8 h-80">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={activityData}>
                 <defs>
                   <linearGradient id="colorMessages" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.4} />
+                    <stop offset="100%" stopColor="#6366f1" stopOpacity={0.05} />
                   </linearGradient>
                   <linearGradient id="colorTasks" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.4} />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.05} />
+                  </linearGradient>
+                  <linearGradient id="strokeMessages" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#6366f1" />
+                    <stop offset="100%" stopColor="#8b5cf6" />
+                  </linearGradient>
+                  <linearGradient id="strokeTasks" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#10b981" />
+                    <stop offset="100%" stopColor="#14b8a6" />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} />
-                <Tooltip
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)' }}
-                  labelStyle={{ fontWeight: 'bold', marginBottom: '8px' }}
+                <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e2e8f0" strokeOpacity={0.5} />
+                <XAxis
+                  dataKey="date"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 13, fill: '#64748b', fontWeight: 500 }}
+                  dy={10}
                 />
-                <Area type="monotone" dataKey="messages" name="Mensagens" stroke="#6366f1" strokeWidth={2} fill="url(#colorMessages)" />
-                <Area type="monotone" dataKey="tasks" name="Tarefas" stroke="#10b981" strokeWidth={2} fill="url(#colorTasks)" />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 13, fill: '#64748b', fontWeight: 500 }}
+                  dx={-10}
+                />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: '16px',
+                    border: 'none',
+                    boxShadow: '0 20px 40px -10px rgba(0,0,0,0.15)',
+                    backgroundColor: 'rgba(255,255,255,0.95)',
+                    backdropFilter: 'blur(10px)',
+                    padding: '12px 16px'
+                  }}
+                  labelStyle={{ fontWeight: 'bold', marginBottom: '8px', color: '#1e293b' }}
+                  itemStyle={{ padding: '4px 0' }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="messages"
+                  name="Mensagens"
+                  stroke="url(#strokeMessages)"
+                  strokeWidth={3}
+                  fill="url(#colorMessages)"
+                  dot={{ fill: '#6366f1', strokeWidth: 0, r: 4 }}
+                  activeDot={{ fill: '#6366f1', strokeWidth: 3, stroke: '#fff', r: 6 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="tasks"
+                  name="Tarefas"
+                  stroke="url(#strokeTasks)"
+                  strokeWidth={3}
+                  fill="url(#colorTasks)"
+                  dot={{ fill: '#10b981', strokeWidth: 0, r: 4 }}
+                  activeDot={{ fill: '#10b981', strokeWidth: 3, stroke: '#fff', r: 6 }}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -812,22 +870,30 @@ export const Dashboard: React.FC = () => {
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {/* Overdue Tasks */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5 text-white" />
+          {/* Overdue Tasks - Premium Design */}
+          <div className="lg:col-span-2 relative bg-white rounded-3xl border border-slate-100/50 shadow-xl shadow-slate-200/50 overflow-hidden">
+            {/* Background decoration */}
+            <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-red-500/5 to-rose-500/5 rounded-full blur-3xl" />
+
+            <div className="relative px-6 py-5 border-b border-slate-100/50 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-200">
+                  <AlertTriangle className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="font-bold text-slate-800">Tarefas Atrasadas</h2>
-                  <p className="text-xs text-slate-400">Requerem atenção imediata</p>
+                  <h2 className="text-lg font-bold text-slate-800">Tarefas Atrasadas</h2>
+                  <p className="text-sm text-slate-400">Requerem atenção imediata</p>
                 </div>
               </div>
+              {overdueTasks.length > 0 && (
+                <span className="px-3 py-1.5 rounded-full bg-red-100 text-red-700 text-xs font-bold">
+                  {overdueTasks.length} {overdueTasks.length === 1 ? 'tarefa' : 'tarefas'}
+                </span>
+              )}
             </div>
-            <div className="p-4">
+            <div className="relative p-5">
               {overdueTasks.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+                <div className="flex flex-col items-center justify-center py-10 text-slate-400">
                   <CheckCircle2 className="w-12 h-12 text-emerald-300 mb-2" />
                   <p className="text-sm font-medium">Nenhuma tarefa atrasada!</p>
                   <p className="text-xs">Excelente trabalho 🎉</p>
@@ -869,49 +935,73 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Status Distribution */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center">
-                  <Target className="w-5 h-5 text-white" />
+          {/* Status Distribution - Premium Design */}
+          <div className="relative bg-white rounded-3xl border border-slate-100/50 shadow-xl shadow-slate-200/50 overflow-hidden group">
+            {/* Background decoration */}
+            <div className="absolute -top-16 -right-16 w-32 h-32 bg-gradient-to-br from-violet-500/10 to-purple-500/10 rounded-full blur-2xl group-hover:opacity-100 opacity-50 transition-opacity" />
+
+            <div className="relative px-6 py-5 border-b border-slate-100/50">
+              <div className="flex items-center gap-4">
+                <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-200">
+                  <Target className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="font-bold text-slate-800">Distribuição</h2>
-                  <p className="text-xs text-slate-400">Status das tarefas</p>
+                  <h2 className="text-lg font-bold text-slate-800">Distribuição</h2>
+                  <p className="text-sm text-slate-400">Status das tarefas</p>
                 </div>
               </div>
             </div>
-            <div className="p-4">
-              <div className="h-48">
+            <div className="relative p-6">
+              <div className="h-52">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
+                    <defs>
+                      <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.15" />
+                      </filter>
+                    </defs>
                     <Pie
                       data={statusDistribution}
                       cx="50%"
                       cy="50%"
-                      innerRadius={50}
-                      outerRadius={70}
-                      paddingAngle={4}
+                      innerRadius={55}
+                      outerRadius={85}
+                      paddingAngle={3}
                       dataKey="value"
+                      style={{ filter: 'url(#shadow)' }}
                     >
                       {statusDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color}
+                          stroke="white"
+                          strokeWidth={2}
+                        />
                       ))}
                     </Pie>
                     <Tooltip
                       formatter={(value: number) => [`${value} tarefas`, '']}
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                      contentStyle={{
+                        borderRadius: '16px',
+                        border: 'none',
+                        boxShadow: '0 20px 40px -10px rgba(0,0,0,0.15)',
+                        backgroundColor: 'rgba(255,255,255,0.95)',
+                        backdropFilter: 'blur(10px)',
+                        padding: '10px 14px'
+                      }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="grid grid-cols-2 gap-2 mt-2">
+              <div className="grid grid-cols-2 gap-3 mt-4">
                 {statusDistribution.map(item => (
-                  <div key={item.name} className="flex items-center gap-2 text-xs">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="text-slate-600">{item.name}</span>
-                    <span className="font-bold text-slate-800 ml-auto">{item.value}</span>
+                  <div key={item.name} className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors cursor-default">
+                    <div
+                      className="w-3 h-3 rounded-full shadow-sm"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-sm text-slate-600 flex-1">{item.name}</span>
+                    <span className="text-sm font-bold text-slate-800">{item.value}</span>
                   </div>
                 ))}
               </div>
@@ -1022,19 +1112,31 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, subtitle, icon: Icon, gradient, highlight }) => (
-  <div className={`relative overflow-hidden rounded-2xl border ${highlight ? 'border-red-200 bg-red-50/30' : 'border-slate-100 bg-white'} p-5 transition-all hover:shadow-md group`}>
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-xs font-medium text-slate-500 mb-1">{title}</p>
-        <h3 className={`text-3xl font-black ${highlight ? 'text-red-600' : 'text-slate-800'}`}>{value}</h3>
-        {subtitle && <p className="text-[10px] text-slate-400 mt-0.5">{subtitle}</p>}
+  <div className={`relative overflow-hidden rounded-2xl ${highlight ? 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200' : 'bg-white border-slate-100/50'} border p-6 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 group`}>
+    {/* Background decoration */}
+    <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full bg-gradient-to-br ${gradient} opacity-10 group-hover:opacity-20 transition-opacity blur-2xl`} />
+
+    <div className="relative flex items-center justify-between">
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-slate-500">{title}</p>
+        <h3 className={`text-4xl font-black tracking-tight ${highlight ? 'text-red-600' : 'text-slate-800'}`}>
+          {value}
+        </h3>
+        {subtitle && <p className="text-xs text-slate-400">{subtitle}</p>}
       </div>
-      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-        <Icon className="w-6 h-6 text-white" />
+      <div className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+        <Icon className="w-7 h-7 text-white" />
+        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 blur-xl transition-opacity`} />
       </div>
     </div>
+
     {highlight && value > 0 && (
-      <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+      <div className="absolute top-3 right-3 flex items-center gap-1.5">
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+        </span>
+      </div>
     )}
   </div>
 );
@@ -1051,26 +1153,39 @@ interface MetricCardProps {
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ title, value, subtitle, icon: Icon, gradient, trend, highlight }) => (
-  <div className={`relative overflow-hidden rounded-2xl border ${highlight ? 'border-red-200 bg-red-50/30' : 'border-slate-100 bg-white'} p-5 transition-all hover:shadow-md group`}>
-    <div className="flex items-start justify-between">
-      <div className="flex-1">
-        <p className="text-xs font-medium text-slate-500 mb-2">{title}</p>
-        <div className="flex items-baseline gap-2">
-          <h3 className={`text-3xl font-black ${highlight ? 'text-red-600' : 'text-slate-800'}`}>{value}</h3>
+  <div className={`relative overflow-hidden rounded-2xl ${highlight ? 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200' : 'bg-white border-slate-100/50'} border p-6 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 group`}>
+    {/* Background decoration */}
+    <div className={`absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-gradient-to-br ${gradient} opacity-10 group-hover:opacity-20 transition-opacity blur-2xl`} />
+
+    <div className="relative flex items-start justify-between">
+      <div className="flex-1 space-y-2">
+        <p className="text-sm font-medium text-slate-500">{title}</p>
+        <div className="flex items-baseline gap-3">
+          <h3 className={`text-4xl font-black tracking-tight ${highlight ? 'text-red-600' : 'text-slate-800'}`}>
+            {value}
+          </h3>
           {trend && (
-            <div className={`flex items-center gap-0.5 ${trend === 'up' ? 'text-emerald-500' : 'text-red-500'}`}>
-              {trend === 'up' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${trend === 'up' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+              {trend === 'up' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+              {trend === 'up' ? 'Bom' : 'Baixo'}
             </div>
           )}
         </div>
-        <p className="text-[10px] text-slate-400 mt-1">{subtitle}</p>
+        <p className="text-xs text-slate-400">{subtitle}</p>
       </div>
-      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-        <Icon className="w-6 h-6 text-white" />
+      <div className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+        <Icon className="w-7 h-7 text-white" />
+        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 blur-xl transition-opacity`} />
       </div>
     </div>
+
     {highlight && (
-      <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+      <div className="absolute top-3 right-3 flex items-center gap-1.5">
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+        </span>
+      </div>
     )}
   </div>
 );

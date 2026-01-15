@@ -30,23 +30,52 @@ export const DistortionCanvas: React.FC<DistortionCanvasProps> = ({
     const canvasRef = useRef<HTMLDivElement>(null);
     const lastMousePos = useRef({ x: 0, y: 0 });
 
-    // Initial positions (spaced out grid)
+    // Track message counts per column for vertical stacking
+    const columnCounters = useRef({ client: 0, team: 0, me: 0 });
+
+    // Initial positions matching standard view layout (Client left, Team center, User right)
     useEffect(() => {
         const newPositions = { ...positions };
         let modified = false;
-        messages.forEach((msg, index) => {
+
+        // Reset counters when messages change significantly
+        const existingCount = Object.keys(positions).length;
+        if (existingCount === 0) {
+            columnCounters.current = { client: 0, team: 0, me: 0 };
+        }
+
+        messages.forEach((msg) => {
             if (!newPositions[msg.id]) {
-                const row = Math.floor(index / 3);
-                const col = index % 3;
+                const isMe = msg.senderId === currentUser?.id && !msg.isInternal;
+                const isClient = msg.senderType === 'CLIENT';
+                const isSystem = msg.isInternal || msg.text?.toLowerCase().includes('tarefa criada');
+
+                let col: number;
+                let rowIndex: number;
+
+                if (isClient) {
+                    // Client messages: Left column
+                    col = 0;
+                    rowIndex = columnCounters.current.client++;
+                } else if (isMe) {
+                    // Current user messages: Right column
+                    col = 2;
+                    rowIndex = columnCounters.current.me++;
+                } else {
+                    // Team/System messages: Center column
+                    col = 1;
+                    rowIndex = columnCounters.current.team++;
+                }
+
                 newPositions[msg.id] = {
                     x: col * 360 + 100,
-                    y: row * 220 + 100
+                    y: rowIndex * 180 + 100
                 };
                 modified = true;
             }
         });
         if (modified) setPositions(newPositions);
-    }, [messages]);
+    }, [messages, currentUser?.id]);
 
     // Global event listeners for zoom and panning
     useEffect(() => {

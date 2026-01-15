@@ -89,13 +89,13 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     }
 
     return (
-        <div className="flex flex-col h-full bg-[#fdfdff] relative overflow-hidden pt-2">
+        <div className="flex flex-col h-full bg-[#fdfdff] relative overflow-hidden">
             {/* Mesh Gradient Background Blobs */}
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-100/30 rounded-full blur-[120px] pointer-events-none animate-pulse" />
             <div className="absolute bottom-[-5%] right-[-5%] w-[35%] h-[35%] bg-emerald-50/40 rounded-full blur-[100px] pointer-events-none" />
 
-            {/* Header - Glassmorphism */}
-            <div className="bg-white/90 backdrop-blur-xl border-b border-slate-200/50 px-6 py-6 flex items-center justify-between relative z-20 shadow-lg shadow-slate-200/30 mx-2 rounded-t-3xl">
+            {/* Header - Glassmorphism - NOW STICKY */}
+            <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-xl border-b border-slate-200/50 px-6 py-4 flex items-center justify-between shadow-lg shadow-slate-200/20 mx-2 mt-2 rounded-t-3xl">
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-violet-600 rounded-full flex items-center justify-center text-white shadow-xl shadow-indigo-100 border-2 border-white">
                         <span className="text-[15px] font-black">{entity.name.slice(0, 1).toUpperCase()}</span>
@@ -146,9 +146,9 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             </div>
 
             {/* Messages Area - Conditional Rendering */}
-            <div className={`flex-1 overflow-hidden relative z-10 ${viewMode === 'standard' ? 'overflow-y-auto' : ''}`}>
+            <div className={`flex-1 min-h-0 overflow-hidden relative z-10 ${viewMode === 'standard' ? 'overflow-y-auto' : ''}`}>
                 {viewMode === 'standard' ? (
-                    <div className="p-4 md:p-8 pt-12 space-y-12 scroll-smooth custom-scrollbar">
+                    <div className="p-4 md:p-8 pt-6 space-y-12 scroll-smooth custom-scrollbar">
                         {/* Sticky Column Headers */}
                         <div className="sticky top-0 z-30 grid grid-cols-1 md:grid-cols-3 gap-4 py-3 items-center bg-white/60 backdrop-blur-md border-b border-slate-100/50">
                             <div className="hidden md:flex flex-col items-start px-2">

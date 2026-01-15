@@ -186,7 +186,7 @@ export const Workspace: React.FC = () => {
 
   return (
     <div className="flex h-full w-full">
-      <div className="w-[260px] flex-shrink-0">
+      <div className="w-[260px] flex-shrink-0 h-full overflow-hidden">
         <EntityList
           clients={clients}
           team={team}
@@ -195,7 +195,7 @@ export const Workspace: React.FC = () => {
         />
       </div>
 
-      <div className="flex-1 min-w-[350px]">
+      <div className="flex-1 min-w-[350px] h-full overflow-hidden">
         <ChatArea
           entity={selectedEntity}
           messages={clientFeedMessages}
@@ -216,7 +216,7 @@ export const Workspace: React.FC = () => {
 
       <div
         style={{ width: `${rightSidebarWidth}px` }}
-        className="flex-shrink-0 bg-slate-50"
+        className="flex-shrink-0 bg-slate-50 h-full overflow-hidden"
       >
         {selectedEntityId ? (
           <TaskManager

@@ -149,6 +149,18 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             <div className={`flex-1 overflow-hidden relative z-10 ${viewMode === 'standard' ? 'overflow-y-auto' : ''}`}>
                 {viewMode === 'standard' ? (
                     <div className="p-4 md:p-8 pt-12 space-y-12 scroll-smooth custom-scrollbar">
+                        {/* Sticky Column Headers */}
+                        <div className="sticky top-0 z-30 grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 bg-white/60 backdrop-blur-md -mt-4 border-b border-slate-100/50">
+                            <div className="hidden md:flex flex-col items-start px-2">
+                                <span className="text-[10px] font-black tracking-[0.2em] text-emerald-600 uppercase">CLIENTE</span>
+                            </div>
+                            <div className="hidden md:flex flex-col items-center px-2">
+                                <span className="text-[10px] font-black tracking-[0.2em] text-indigo-400 uppercase">EQUIPE</span>
+                            </div>
+                            <div className="hidden md:flex flex-col items-end px-2">
+                                <span className="text-[10px] font-black tracking-[0.2em] text-indigo-600 uppercase">EU</span>
+                            </div>
+                        </div>
                         {messages.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full opacity-40 grayscale mt-20">
                                 <MessageSquare className="w-12 h-12 mb-4 text-indigo-200" />

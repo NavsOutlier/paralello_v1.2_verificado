@@ -9,7 +9,7 @@ interface MessageBubbleProps {
   senderJobTitle?: string;
   onInitiateDiscussion?: (message: Message) => void;
   messageRef?: (el: HTMLDivElement | null) => void;
-  colorScheme?: 'green' | 'indigo' | 'violet'; // 'green' for client chat, 'indigo' for task chat, 'violet' for 'Me'
+  colorScheme?: 'green' | 'indigo'; // 'green' for client chat, 'indigo' for task chat
   onNavigateToLinked?: (id: string) => void;
   linkedTaskId?: string;
   linkedMessage?: Message;
@@ -43,11 +43,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       myBubble: 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-[0_4px_12px_rgba(16,185,129,0.2)] border-none',
       senderName: 'text-emerald-600',
       myTime: 'text-emerald-100',
-    },
-    violet: {
-      myBubble: 'bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-[0_4px_12px_rgba(139,92,246,0.2)] border-none',
-      senderName: 'text-violet-600',
-      myTime: 'text-violet-100',
     }
   };
 

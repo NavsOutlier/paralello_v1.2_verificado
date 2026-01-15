@@ -44,7 +44,21 @@ export const Workspace: React.FC = () => {
   const { tasks, refreshTasks } = useTasks(selectedEntityId); // Fetch tasks for selected client/member
   const { templates: checklistTemplates, createTemplate, deleteTemplate } = useChecklists();
   const { instances } = useWhatsApp();
-  const { notifications } = useNotifications();
+  const { notifications, markAsRead } = useNotifications();
+
+  // Mark notifications as read when selecting an entity
+  useEffect(() => {
+    if (!selectedEntityId || !notifications.length) return;
+
+    notifications.forEach(n => {
+      if (!n.read && n.link) {
+        const match = n.link.match(/chat=([^&]*)/);
+        if (match && match[1] === selectedEntityId) {
+          markAsRead(n.id);
+        }
+      }
+    });
+  }, [selectedEntityId, notifications, markAsRead]);
 
   // Latest Messages State for Preview
   const [latestMessagesMap, setLatestMessagesMap] = useState<Map<string, Message>>(new Map());

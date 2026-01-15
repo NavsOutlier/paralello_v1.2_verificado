@@ -122,12 +122,18 @@ const AppContent: React.FC = () => {
   );
 };
 
+import { NotificationProvider } from './contexts/NotificationContext';
+
+// ... (existing imports)
+
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <ToastProvider>
-        <AppContent />
-      </ToastProvider>
+      <NotificationProvider>
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 };

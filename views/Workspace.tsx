@@ -200,23 +200,38 @@ export const Workspace: React.FC = () => {
       });
 
       // 2. Create Context Message to link task to source message
+      // Only attempt to link if we have a valid source message ID (not 'manual')
       const messageText = comment?.trim() || "Discussão iniciada a partir desta mensagem";
-      await createContextMessage({
-        organization_id: organizationId,
-        task_id: taskData.id,
-        client_id: selectedEntityId, // Crucial for showing linkage in client feed
-        context_type: 'TASK_INTERNAL',
-        sender_id: currentUser?.id,
-        sender_type: 'MEMBER',
-        text: messageText,
-        is_internal: true,
-        linked_message_id: discussionDraft.sourceMessage.id
-      });
+      const validLinkedMessageId = discussionDraft.sourceMessage.id === 'manual'
+        ? undefined
+        : discussionDraft.sourceMessage.id;
 
-      // Refresh data (realtime will also catch it, but this is faster for same-user experience)
+      try {
+        await createContextMessage({
+          organization_id: organizationId,
+          task_id: taskData.id,
+          client_id: selectedEntityId, // Crucial for showing linkage in client feed
+          context_type: 'TASK_INTERNAL',
+          sender_id: currentUser?.id,
+          sender_type: 'MEMBER',
+          text: messageText,
+          is_internal: true,
+          linked_message_id: validLinkedMessageId
+        });
+      } catch (msgError) {
+        // Log warning but don't fail the whole operation if just the linking message fails
+        console.warn('Failed to create context message for new task:', msgError);
+      }
+
+      // Refresh data
       refreshTasks();
       refreshMessages();
+
+      // Update UI state to show the new task
       setDiscussionDraft(null);
+      if (taskData && taskData.id) {
+        setSelectedTaskId(taskData.id);
+      }
 
     } catch (error) {
       console.error('Error creating task from draft:', error);

@@ -5,7 +5,7 @@ import { TeamMemberFormModal } from './TeamMemberFormModal';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
-import { UserPlus, Search, Edit2, Trash2, Shield, User, Eye, Loader2 } from 'lucide-react';
+import { UserPlus, Search, Edit2, Trash2, Shield, User, Eye, Loader2, MailPlus } from 'lucide-react';
 
 export const TeamManagement: React.FC = () => {
     const { organizationId, isSuperAdmin, permissions } = useAuth();
@@ -200,6 +200,31 @@ export const TeamManagement: React.FC = () => {
         }
     };
 
+    const handleResendInvite = async (member: TeamMember) => {
+        if (!member.profile?.email) {
+            showToast('Email do membro não encontrado', 'error');
+            return;
+        }
+        setActionLoading(true);
+
+        try {
+            const { data: response, error } = await supabase.functions.invoke('resend-invite', {
+                body: { email: member.profile.email }
+            });
+
+            if (error || (response && response.error)) {
+                throw new Error(error?.message || response?.error || 'Erro ao reenviar convite');
+            }
+
+            showToast(response?.message || 'Convite reenviado com sucesso!');
+        } catch (error: any) {
+            console.error('Error resending invite:', error);
+            showToast(error.message || 'Erro ao reenviar convite', 'error');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     const filteredMembers = members.filter((member) => {
         const name = member.profile?.name?.toLowerCase() || '';
         const email = member.profile?.email?.toLowerCase() || '';
@@ -335,6 +360,16 @@ export const TeamManagement: React.FC = () => {
                                     </div>
                                     {canManage && (
                                         <div className="flex gap-1">
+                                            {member.status === 'pending' && (
+                                                <button
+                                                    onClick={() => handleResendInvite(member)}
+                                                    disabled={actionLoading}
+                                                    className="p-2 text-emerald-600 hover:bg-emerald-50 rounded transition-colors disabled:opacity-50"
+                                                    title="Reenviar Convite"
+                                                >
+                                                    <MailPlus className="w-4 h-4" />
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => {
                                                     setSelectedMember(member);

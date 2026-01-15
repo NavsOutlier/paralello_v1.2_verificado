@@ -350,7 +350,7 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
             )}
 
             {/* Ultra Compact Premium Header */}
-            <div className="flex-none bg-white border-b border-slate-100 z-10 shadow-sm relative">
+            <div className="flex-none bg-white border-b border-slate-100 z-30 shadow-sm relative">
                 <div className="h-[46px] flex items-center justify-between px-3">
                     <div className="flex items-center gap-3">
                         <button onClick={onBack} className="p-1 hover:bg-slate-50 rounded-lg transition-colors">
@@ -541,7 +541,7 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
                                     {isAssigneeDropdownOpen && (
                                         <>
                                             <div className="fixed inset-0 z-10" onClick={() => setIsAssigneeDropdownOpen(false)} />
-                                            <div className="absolute top-full right-0 mt-1 w-48 bg-white border border-slate-200 shadow-xl rounded-xl overflow-hidden z-20 animate-in fade-in zoom-in-95 duration-100">
+                                            <div className="absolute top-full right-0 mt-1 w-48 bg-white border border-slate-200 shadow-xl rounded-xl overflow-hidden z-40 animate-in fade-in zoom-in-95 duration-100">
                                                 <div className="max-h-48 overflow-y-auto py-1">
                                                     {teamMembers.map(member => {
                                                         const isSelected = currentAssigneeIds.includes(member.id);

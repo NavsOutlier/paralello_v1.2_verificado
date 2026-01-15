@@ -23,6 +23,9 @@ export const EntityList: React.FC<EntityListProps> = ({ clients, team, selectedI
           : 'border-transparent'
         }`}
     >
+      {user.unreadCount && user.unreadCount > 0 && (
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-300/40 to-transparent skew-x-12 animate-slide pointer-events-none" />
+      )}
       <div className="relative">
         <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
       </div>

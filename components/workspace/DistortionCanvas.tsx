@@ -22,7 +22,7 @@ export const DistortionCanvas: React.FC<DistortionCanvasProps> = ({
     onNavigateToTask
 }) => {
     const [positions, setPositions] = useState<Record<string, { x: number, y: number }>>({});
-    const [zoom, setZoom] = useState(1);
+    const zoom = 0.8; // Fixed 80% zoom for distortion mode
     const [cameraOffset, setCameraOffset] = useState({ x: 0, y: 0 });
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [selectionBox, setSelectionBox] = useState<{ start: { x: number, y: number }, end: { x: number, y: number } } | null>(null);
@@ -30,47 +30,31 @@ export const DistortionCanvas: React.FC<DistortionCanvasProps> = ({
     const canvasRef = useRef<HTMLDivElement>(null);
     const lastMousePos = useRef({ x: 0, y: 0 });
 
-    // Track message counts per column for vertical stacking
-    const columnCounters = useRef({ client: 0, team: 0, me: 0 });
-
-    // Initial positions matching standard view layout (Client left, Team center, User right)
+    // Initial positions matching standard view layout - sequential vertical stacking
     useEffect(() => {
         const newPositions = { ...positions };
         let modified = false;
-
-        // Reset counters when messages change significantly
-        const existingCount = Object.keys(positions).length;
-        if (existingCount === 0) {
-            columnCounters.current = { client: 0, team: 0, me: 0 };
-        }
+        let globalRowIndex = 0; // Global counter for vertical sequence
 
         messages.forEach((msg) => {
             if (!newPositions[msg.id]) {
                 const isMe = msg.senderId === currentUser?.id && !msg.isInternal;
                 const isClient = msg.senderType === 'CLIENT';
-                const isSystem = msg.isInternal || msg.text?.toLowerCase().includes('tarefa criada');
 
                 let col: number;
-                let rowIndex: number;
-
                 if (isClient) {
-                    // Client messages: Left column
-                    col = 0;
-                    rowIndex = columnCounters.current.client++;
+                    col = 0; // Left column
                 } else if (isMe) {
-                    // Current user messages: Right column
-                    col = 2;
-                    rowIndex = columnCounters.current.me++;
+                    col = 2; // Right column
                 } else {
-                    // Team/System messages: Center column
-                    col = 1;
-                    rowIndex = columnCounters.current.team++;
+                    col = 1; // Center column
                 }
 
                 newPositions[msg.id] = {
-                    x: col * 360 + 100,
-                    y: rowIndex * 180 + 100
+                    x: col * 380 + 60, // Adjusted for 80% zoom - more space between columns
+                    y: globalRowIndex * 140 + 40 // More top padding
                 };
+                globalRowIndex++;
                 modified = true;
             }
         });
@@ -81,18 +65,8 @@ export const DistortionCanvas: React.FC<DistortionCanvasProps> = ({
     useEffect(() => {
         const handleWheel = (e: WheelEvent) => {
             e.preventDefault(); // Prevent page scroll
-
-            if (e.ctrlKey) {
-                const scaleAmount = 0.1;
-                if (e.deltaY < 0) {
-                    setZoom(z => Math.min(z + scaleAmount, 3));
-                } else {
-                    setZoom(z => Math.max(z - scaleAmount, 0.2));
-                }
-            } else {
-                // Vertical Pan with Scroll Wheel
-                setCameraOffset(prev => ({ ...prev, y: prev.y - e.deltaY }));
-            }
+            // Only vertical pan with scroll wheel (zoom removed)
+            setCameraOffset(prev => ({ ...prev, y: prev.y - e.deltaY }));
         };
 
         const canvas = canvasRef.current;
@@ -160,11 +134,11 @@ export const DistortionCanvas: React.FC<DistortionCanvasProps> = ({
                 const pos = positions[msg.id];
                 if (!pos) return;
 
-                // Adjust for camera offset and zoom to check selection
+                // Adjust for camera offset and zoom to check selection - smaller hitbox
                 const vx = (pos.x * zoom) + cameraOffset.x;
                 const vy = (pos.y * zoom) + cameraOffset.y;
-                const vw = 300 * zoom;
-                const vh = 100 * zoom;
+                const vw = 250 * zoom; // Reduced from 300
+                const vh = 80 * zoom;  // Reduced from 100
 
                 if (vx < x2 && vx + vw > x1 && vy < y2 && vy + vh > y1) {
                     newSelected.add(msg.id);
@@ -263,32 +237,24 @@ export const DistortionCanvas: React.FC<DistortionCanvasProps> = ({
                                 dragMomentum={false}
                                 onDragStart={() => handleDragStart(message.id)}
                                 onDragEnd={(_, info) => handleDragEnd(message.id, info)}
-                                className="absolute w-[300px] message-bubble-container"
+                                className="absolute w-fit message-bubble-container"
                             >
-                                <div className="group relative">
-                                    {isSelected && (
-                                        <div className="absolute -inset-6 bg-indigo-500/10 rounded-[2rem] blur-2xl -z-10 animate-pulse" />
-                                    )}
-
-                                    <div className={`absolute -top-7 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1 bg-white border border-slate-100 shadow-xl rounded-full transition-all duration-300 ${isSelected ? 'opacity-100 -translate-y-1' : 'opacity-0 scale-90 pointer-events-none group-hover:opacity-100 group-hover:scale-100'}`}>
-                                        <Move className={`w-3 h-3 ${isSelected ? 'text-indigo-600 animate-bounce' : 'text-slate-400'}`} />
-                                        <span className={`text-[9px] font-black uppercase tracking-widest ${isSelected ? 'text-indigo-600' : 'text-slate-400'}`}>
-                                            {isSelected ? 'Agrupado' : 'Arrastar'}
-                                        </span>
-                                    </div>
-
-                                    <div className={`transition-all duration-300 ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-4 rounded-[1.25rem]' : ''}`}>
-                                        <MessageBubble
-                                            msg={message}
-                                            isMe={isMe}
-                                            senderName={senderName}
-                                            senderJobTitle={isClient ? 'Contratante' : senderMember?.jobTitle}
-                                            onInitiateDiscussion={onInitiateDiscussion}
-                                            onNavigateToLinked={(id) => onNavigateToTask?.(id)}
-                                            colorScheme={isClient ? 'green' : 'indigo'}
-                                        />
-                                    </div>
+                                {/* Selection Label */}
+                                <div className={`absolute -top-5 right-0 flex items-center gap-2 px-2 py-0.5 bg-white border border-slate-100 shadow-md rounded-md transition-all duration-300 z-10 ${isSelected ? 'opacity-100' : 'opacity-0 scale-90 pointer-events-none'}`}>
+                                    <Move className={`w-2.5 h-2.5 ${isSelected ? 'text-indigo-600' : 'text-slate-400'}`} />
+                                    <span className={`text-[8px] font-black uppercase tracking-wider ${isSelected ? 'text-indigo-600' : 'text-slate-400'}`}>
+                                        {isSelected ? 'Selecionado' : 'Arrastar'}
+                                    </span>
                                 </div>
+                                <MessageBubble
+                                    msg={message}
+                                    isMe={isMe}
+                                    senderName={senderName}
+                                    senderJobTitle={isClient ? 'Contratante' : senderMember?.jobTitle}
+                                    onInitiateDiscussion={onInitiateDiscussion}
+                                    onNavigateToLinked={(id) => onNavigateToTask?.(id)}
+                                    colorScheme={isClient ? 'green' : 'indigo'}
+                                />
                             </motion.div>
                         );
                     })}
@@ -319,17 +285,15 @@ export const DistortionCanvas: React.FC<DistortionCanvasProps> = ({
                     <div className="flex items-center gap-4 text-slate-400">
                         <div className="flex items-center gap-1.5">
                             <Hand className="w-3 h-3" />
-                            <span className="text-[9px] font-bold uppercase">Botão Direito / Scroll: Mover Vertical</span>
+                            <span className="text-[9px] font-bold uppercase">Scroll: Mover Vertical</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                             <MousePointer2 className="w-3 h-3" />
-                            <span className="text-[9px] font-bold uppercase whitespace-nowrap">Left-Click Lasso</span>
+                            <span className="text-[9px] font-bold uppercase whitespace-nowrap">Clique + Arraste: Selecionar</span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-[9px] font-bold text-slate-600">
-                                <span className="opacity-50">CTRL</span> + <span className="opacity-50">Wheel</span>
-                            </div>
-                            <span className="text-[9px] font-bold uppercase text-indigo-600">{Math.round(zoom * 100)}%</span>
+                            <Move className="w-3 h-3" />
+                            <span className="text-[9px] font-bold uppercase">Arraste Cards: Reorganizar</span>
                         </div>
                     </div>
                 </div>

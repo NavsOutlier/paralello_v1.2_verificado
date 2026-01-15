@@ -26,7 +26,7 @@ export const Workspace: React.FC = () => {
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [isCreatingTask, setIsCreatingTask] = useState(false);
-  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [highlightSignal, setHighlightSignal] = useState<{ id: string; ts: number } | null>(null);
   const [leftSidebarVisible, setLeftSidebarVisible] = useState(true);
   const [rightSidebarVisible, setRightSidebarVisible] = useState(true);
 
@@ -404,7 +404,7 @@ export const Workspace: React.FC = () => {
           teamMembers={allTeamMembers}
           onSendMessage={(text) => selectedEntity && sendMessage(text, selectedEntity)}
           onInitiateDiscussion={(msg) => setDiscussionDraft({ sourceMessage: msg, mode: 'new' })}
-          highlightedMessageId={highlightedMessageId}
+          highlightSignal={highlightSignal}
           onNavigateToTask={(taskId) => setSelectedTaskId(taskId)}
           linkedTaskMap={linkedTaskMap}
           distortionPositions={distortionPositions}
@@ -442,7 +442,9 @@ export const Workspace: React.FC = () => {
               onCancelDraft={() => setDiscussionDraft(null)}
               onCreateTaskFromDraft={handleCreateTaskFromDraft}
               onAttachTaskFromDraft={handleAttachTaskFromDraft}
-              onNavigateToMessage={(id) => setHighlightedMessageId(id)}
+              onNavigateToMessage={(id) => {
+                setHighlightSignal({ id, ts: Date.now() });
+              }}
               onAddTaskComment={addTaskComment}
               onUpdateTask={updateTask}
               onManualCreate={handleManualCreateTask}

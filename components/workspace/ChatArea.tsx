@@ -13,7 +13,7 @@ interface ChatAreaProps {
     teamMembers: User[];
     onSendMessage: (text: string) => void;
     onInitiateDiscussion?: (msg: Message) => void;
-    highlightedMessageId?: string | null;
+    highlightSignal?: { id: string; ts: number } | null;
     onNavigateToTask?: (taskId: string) => void;
     linkedTaskMap?: Record<string, string>;
     distortionPositions?: Record<string, { x: number, y: number }>;
@@ -29,7 +29,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     teamMembers,
     onSendMessage,
     onInitiateDiscussion,
-    highlightedMessageId,
+    highlightSignal,
     onNavigateToTask,
     linkedTaskMap = {},
     distortionPositions = {},
@@ -47,17 +47,17 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
-        if (!highlightedMessageId) {
+        if (!highlightSignal) {
             scrollToBottom();
         }
-    }, [messages, highlightedMessageId]);
+    }, [messages, highlightSignal]);
 
     // Scroll to highlighted message
     useEffect(() => {
-        if (highlightedMessageId && highlightedRef.current) {
+        if (highlightSignal && highlightedRef.current) {
             highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-    }, [highlightedMessageId]);
+    }, [highlightSignal]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -184,7 +184,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                                 const isSystem = message.isInternal || message.text?.toLowerCase().includes('tarefa criada');
                                 const isOtherMember = !isMe && !isClient && !isSystem;
 
-                                const isHighlighted = highlightedMessageId === message.id;
+                                const isHighlighted = highlightSignal?.id === message.id;
                                 const linkedTaskId = linkedTaskMap[message.id];
 
                                 const linkedMessage = message.linkedMessageId

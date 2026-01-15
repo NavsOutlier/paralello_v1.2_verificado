@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MoreHorizontal, Plus, Loader2, GripVertical, Clock, Flag, MessageSquare, Calendar, CheckCircle2, Circle, PlayCircle, Eye } from 'lucide-react';
+import { MoreHorizontal, Plus, Loader2, GripVertical, Clock, Flag, MessageSquare, Calendar, CheckCircle2, Circle, PlayCircle, Eye, Archive, ExternalLink } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Task } from '../types';
@@ -258,8 +258,8 @@ export const Kanban: React.FC = () => {
                 {/* Column Content */}
                 <div
                   className={`flex-1 p-3 border-x border-b rounded-b-2xl space-y-3 overflow-y-auto transition-all duration-200 ${isOver
-                      ? 'bg-indigo-50/80 border-indigo-200 ring-2 ring-indigo-200 ring-inset'
-                      : `${col.bg} ${col.border}`
+                    ? 'bg-indigo-50/80 border-indigo-200 ring-2 ring-indigo-200 ring-inset'
+                    : `${col.bg} ${col.border}`
                     }`}
                   style={{ maxHeight: 'calc(100vh - 280px)' }}
                 >
@@ -289,8 +289,8 @@ export const Kanban: React.FC = () => {
                         onDragStart={(e) => handleDragStart(e, task.id)}
                         onDragEnd={handleDragEnd}
                         className={`group transition-all duration-200 ${isDragging
-                            ? 'opacity-40 scale-95 rotate-2'
-                            : 'opacity-100 hover:scale-[1.02]'
+                          ? 'opacity-40 scale-95 rotate-2'
+                          : 'opacity-100 hover:scale-[1.02]'
                           }`}
                       >
                         <div className={`bg-white rounded-xl p-4 shadow-sm hover:shadow-md border border-slate-100 transition-all cursor-grab active:cursor-grabbing ${isDragging ? 'shadow-xl' : ''
@@ -303,9 +303,41 @@ export const Kanban: React.FC = () => {
                                 {task.clientName}
                               </span>
                             </div>
-                            <button className="p-1 hover:bg-slate-100 rounded-lg opacity-0 group-hover:opacity-100 transition-all">
-                              <MoreHorizontal className="w-4 h-4 text-slate-400" />
-                            </button>
+
+                            {/* Action Buttons */}
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Navigate to task details via deep link
+                                  window.location.href = `/?task=${task.id}`;
+                                }}
+                                className="p-1.5 hover:bg-indigo-50 rounded-lg transition-colors text-slate-400 hover:text-indigo-600"
+                                title="Ver detalhes"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  // Archive the task
+                                  try {
+                                    await supabase
+                                      .from('tasks')
+                                      .update({ archived_at: new Date().toISOString() })
+                                      .eq('id', task.id);
+                                    // Remove from local state
+                                    setTasks(prev => prev.filter(t => t.id !== task.id));
+                                  } catch (error) {
+                                    console.error('Error archiving task:', error);
+                                  }
+                                }}
+                                className="p-1.5 hover:bg-rose-50 rounded-lg transition-colors text-slate-400 hover:text-rose-600"
+                                title="Arquivar tarefa"
+                              >
+                                <Archive className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
 
                           {/* Title */}

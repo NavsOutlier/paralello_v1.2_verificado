@@ -16,6 +16,10 @@ interface ChatAreaProps {
     highlightedMessageId?: string | null;
     onNavigateToTask?: (taskId: string) => void;
     linkedTaskMap?: Record<string, string>;
+    distortionPositions?: Record<string, { x: number, y: number }>;
+    setDistortionPositions?: (positions: Record<string, { x: number, y: number }>) => void;
+    distortionLabels?: any[];
+    setDistortionLabels?: (labels: any[]) => void;
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({
@@ -26,7 +30,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     onInitiateDiscussion,
     highlightedMessageId,
     onNavigateToTask,
-    linkedTaskMap = {}
+    linkedTaskMap = {},
+    distortionPositions = {},
+    setDistortionPositions,
+    distortionLabels = [],
+    setDistortionLabels
 }) => {
     const [inputText, setInputText] = useState('');
     const [isSending, setIsSending] = useState(false);
@@ -285,6 +293,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                         entity={entity!}
                         onInitiateDiscussion={onInitiateDiscussion}
                         onNavigateToTask={onNavigateToTask}
+                        positions={distortionPositions}
+                        setPositions={setDistortionPositions}
+                        labels={distortionLabels}
+                        setLabels={setDistortionLabels}
                     />
                 )}
             </div>

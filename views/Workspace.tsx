@@ -13,6 +13,7 @@ import { useTasks } from '../hooks/useTasks';
 import { useChecklists } from '../hooks/useChecklists';
 import { useWorkspaceActions } from '../hooks/useWorkspaceActions';
 import { useResizableSidebar } from '../hooks/useResizableSidebar';
+import { distortionRepository } from '../lib/repositories/DistortionRepository';
 
 export const Workspace: React.FC = () => {
   const { organizationId, user: currentUser } = useAuth();
@@ -60,6 +61,51 @@ export const Workspace: React.FC = () => {
   // Derived state
   const selectedEntity = [...clients, ...team].find(e => e.id === selectedEntityId) || null;
   const selectedTask = (tasks || []).find(t => t.id === selectedTaskId) || null;
+
+  // Persistent Distortion Canvas State
+  const [distortionPositions, setDistortionPositions] = useState<Record<string, { x: number, y: number }>>({});
+  const [distortionLabels, setDistortionLabels] = useState<any[]>([]);
+  const [isSyncingLayout, setIsSyncingLayout] = useState(false);
+
+  // Load Layout from DB
+  useEffect(() => {
+    if (!organizationId || !selectedEntityId) return;
+
+    const loadLayout = async () => {
+      setIsSyncingLayout(true);
+      const layout = await distortionRepository.findByEntity(organizationId, selectedEntityId);
+      if (layout) {
+        setDistortionPositions(layout.positions || {});
+        setDistortionLabels(layout.labels || []);
+      } else {
+        // Reset if no saved layout
+        setDistortionPositions({});
+        setDistortionLabels([]);
+      }
+      setIsSyncingLayout(false);
+    };
+
+    loadLayout();
+  }, [organizationId, selectedEntityId]);
+
+  // Save Layout to DB (Debounced)
+  useEffect(() => {
+    if (!organizationId || !selectedEntityId || isSyncingLayout) return;
+
+    // Only save if there's actually something to save
+    if (Object.keys(distortionPositions).length === 0 && distortionLabels.length === 0) return;
+
+    const timer = setTimeout(async () => {
+      await distortionRepository.upsertLayout({
+        organization_id: organizationId,
+        entity_id: selectedEntityId,
+        positions: distortionPositions,
+        labels: distortionLabels
+      });
+    }, 2000); // 2 second debounce
+
+    return () => clearTimeout(timer);
+  }, [distortionPositions, distortionLabels, organizationId, selectedEntityId, isSyncingLayout]);
 
   // Memoized and Deduped messages for TaskManager
   const allWorkspaceMessages = useMemo(() => {
@@ -236,6 +282,10 @@ export const Workspace: React.FC = () => {
           highlightedMessageId={highlightedMessageId}
           onNavigateToTask={(taskId) => setSelectedTaskId(taskId)}
           linkedTaskMap={linkedTaskMap}
+          distortionPositions={distortionPositions}
+          setDistortionPositions={setDistortionPositions}
+          distortionLabels={distortionLabels}
+          setDistortionLabels={setDistortionLabels}
         />
       </div>
 

@@ -18,8 +18,9 @@ interface Task {
   deadline?: string;
   client_id: string;
   assignee_id?: string;
+  assignee_ids?: string[];
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 interface TeamMember {
@@ -339,7 +340,14 @@ export const Dashboard: React.FC = () => {
       // Member Ranking (with role filter)
       const filteredTeam = roleFilter !== 'all' ? team.filter(m => m.role === roleFilter) : team;
       const memberStats = filteredTeam.map(member => {
-        const memberTasks = tasks.filter(t => t.assignee_id === member.id);
+        // Use profile_id for matching as tasks table stores profile IDs
+        const targetId = member.profile_id || member.id;
+
+        const memberTasks = tasks.filter(t =>
+          t.assignee_id === targetId ||
+          (t.assignee_ids && Array.isArray(t.assignee_ids) && t.assignee_ids.includes(targetId))
+        );
+
         const completedMemberTasks = memberTasks.filter(t => t.status === 'done');
         const completed = completedMemberTasks.length;
         const active = memberTasks.filter(t => t.status !== 'done').length;
@@ -350,9 +358,11 @@ export const Dashboard: React.FC = () => {
         if (completed > 0) {
           const completionTimes = completedMemberTasks.map(t => {
             const created = new Date(t.created_at).getTime();
-            const updated = new Date(t.updated_at).getTime();
-            return Math.round((updated - created) / (1000 * 60 * 60)); // hours
-          }).filter(h => h > 0 && h < 720); // Filter reasonable times (< 30 days)
+            // Fallback to now if updated_at is missing (new tasks)
+            const updated = t.updated_at ? new Date(t.updated_at).getTime() : Date.now();
+            const diff = Math.round((updated - created) / (1000 * 60 * 60)); // hours
+            return diff;
+          }).filter(h => h >= 0 && h < 720); // Filter reasonable times (< 30 days)
 
           avgCompletionTime = completionTimes.length > 0
             ? Math.round(completionTimes.reduce((a, b) => a + b, 0) / completionTimes.length)

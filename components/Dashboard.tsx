@@ -598,7 +598,7 @@ export const Dashboard: React.FC = () => {
                 {reviewTasks.slice(0, 6).map(task => (
                   <div
                     key={task.id}
-                    className="group relative bg-white rounded-2xl p-4 border border-violet-200/50 shadow-sm hover:shadow-lg hover:shadow-violet-100 transition-all hover:-translate-y-1"
+                    className="group relative bg-gradient-to-br from-violet-200 to-purple-200 rounded-2xl p-4 border border-violet-300/50 shadow-sm hover:shadow-lg hover:shadow-violet-200 transition-all hover:-translate-y-1"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <span className="text-[10px] font-bold text-violet-600 bg-violet-100 px-2 py-1 rounded-lg uppercase tracking-wide">

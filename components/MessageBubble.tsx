@@ -59,7 +59,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           if (linkedTaskId) onNavigateToLinked?.(linkedTaskId);
           else if (msg.linkedMessageId) onNavigateToLinked?.(msg.linkedMessageId);
         }}
-        className={`relative w-full px-4 py-2.5 shadow-sm text-[14px] leading-relaxed tracking-tight ${msg.isInternal && colorScheme !== 'indigo'
+        className={`relative max-w-[80%] px-4 py-2.5 shadow-sm text-[14px] leading-relaxed tracking-tight ${msg.isInternal && colorScheme !== 'indigo'
           ? 'bg-amber-50/80 backdrop-blur-sm border border-amber-200 text-slate-800 rounded-2xl rounded-tr-none'
           : isMe
             ? `${scheme.myBubble} rounded-[1.25rem] rounded-tr-none`

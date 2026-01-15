@@ -98,12 +98,15 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         )}
 
         {/* Sender Info - High End Look */}
-        {!isMe && (
-          <div className={`text-[10px] font-black mb-1 ${msg.isInternal && colorScheme !== 'indigo' ? 'text-amber-700' : scheme.senderName} flex items-center gap-1 opacity-80 uppercase tracking-tighter`}>
-            <span>{senderName}</span>
-            {senderJobTitle && <span className="opacity-40 font-bold"> • {senderJobTitle}</span>}
-          </div>
-        )}
+        <div className={`text-[10px] font-black mb-1 flex items-center gap-1 uppercase tracking-tighter ${isMe ? 'justify-end' : 'justify-start'} ${msg.isInternal && colorScheme !== 'indigo'
+            ? 'text-amber-700 opacity-80'
+            : isMe
+              ? 'text-white opacity-100'
+              : `${scheme.senderName} opacity-80`
+          }`}>
+          <span>{senderName}</span>
+          {senderJobTitle && <span className={isMe ? 'opacity-70' : 'opacity-40'}>({senderJobTitle})</span>}
+        </div>
 
         <p className={`whitespace-pre-line font-medium ${isMe ? 'text-white' : 'text-slate-700'}`}>{msg.text}</p>
 

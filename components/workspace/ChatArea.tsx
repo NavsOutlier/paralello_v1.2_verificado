@@ -150,7 +150,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 {viewMode === 'standard' ? (
                     <div className="p-4 md:p-8 pt-12 space-y-12 scroll-smooth custom-scrollbar">
                         {/* Sticky Column Headers */}
-                        <div className="sticky top-0 z-30 grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 bg-white/60 backdrop-blur-md -mt-4 border-b border-slate-100/50">
+                        <div className="sticky top-0 z-30 grid grid-cols-1 md:grid-cols-3 gap-4 py-3 items-center bg-white/60 backdrop-blur-md border-b border-slate-100/50">
                             <div className="hidden md:flex flex-col items-start px-2">
                                 <span className="text-[10px] font-black tracking-[0.2em] text-emerald-600 uppercase">CLIENTE</span>
                             </div>

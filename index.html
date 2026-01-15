@@ -15,6 +15,15 @@
             secondary: '#4f46e5', // Indigo 600
             dark: '#1e293b',
             light: '#f8fafc',
+          },
+          keyframes: {
+            slide: {
+              '0%': { transform: 'translateX(-100%)' },
+              '100%': { transform: 'translateX(100%)' }
+            }
+          },
+          animation: {
+            slide: 'slide 3s linear infinite'
           }
         }
       }

@@ -16,9 +16,11 @@ export const EntityList: React.FC<EntityListProps> = ({ clients, team, selectedI
     <div
       key={user.id}
       onClick={() => onSelect(user.id)}
-      className={`flex items-center p-3 cursor-pointer border-l-4 transition-all hover:bg-slate-50 ${selectedId === user.id
+      className={`group flex items-center p-3 cursor-pointer border-l-4 transition-all hover:bg-slate-50 relative overflow-hidden ${selectedId === user.id
         ? 'border-indigo-600 bg-indigo-50/50'
-        : 'border-transparent'
+        : user.unreadCount && user.unreadCount > 0
+          ? 'border-emerald-500 bg-emerald-50'
+          : 'border-transparent'
         }`}
     >
       <div className="relative">
@@ -28,7 +30,7 @@ export const EntityList: React.FC<EntityListProps> = ({ clients, team, selectedI
         <div className="flex justify-between items-baseline">
           <h4 className="text-sm font-medium text-slate-800 truncate">{user.name}</h4>
           {user.unreadCount && user.unreadCount > 0 && (
-            <span className="bg-indigo-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+            <span className="bg-emerald-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
               {user.unreadCount}
             </span>
           )}

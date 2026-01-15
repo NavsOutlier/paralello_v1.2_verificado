@@ -16,6 +16,8 @@ import { useResizableSidebar } from '../hooks/useResizableSidebar';
 import { useWhatsApp } from '../hooks/useWhatsApp';
 import { distortionRepository } from '../lib/repositories/DistortionRepository';
 import { TaskRepository } from '../lib/repositories/TaskRepository';
+import { useNotifications } from '../hooks/useNotifications';
+import { MessageRepository } from '../lib/repositories/MessageRepository';
 
 export const Workspace: React.FC = () => {
   const { organizationId, user: currentUser } = useAuth();
@@ -42,6 +44,50 @@ export const Workspace: React.FC = () => {
   const { tasks, refreshTasks } = useTasks(selectedEntityId); // Fetch tasks for selected client/member
   const { templates: checklistTemplates, createTemplate, deleteTemplate } = useChecklists();
   const { instances } = useWhatsApp();
+  const { notifications } = useNotifications();
+
+  // Latest Messages State for Preview
+  const [latestMessagesMap, setLatestMessagesMap] = useState<Map<string, Message>>(new Map());
+
+  // Fetch Latest Messages
+  useEffect(() => {
+    if (!organizationId) return;
+    const fetchLatest = async () => {
+      const map = await MessageRepository.getLatestByClients(organizationId);
+      setLatestMessagesMap(map);
+    };
+    fetchLatest();
+  }, [organizationId, messages]);
+
+  // Calculate Unread Counts from Notifications
+  const unreadMap = useMemo(() => {
+    const map = new Map<string, number>();
+    notifications.forEach(n => {
+      if (!n.read && n.link) {
+        // Extract Entity ID from link (e.g. /workspace?chat=UUID) or n.title if needed
+        // For now relying on link convention we set in NotificationCenter logic
+        const match = n.link.match(/chat=([^&]*)/);
+        if (match && match[1]) {
+          const entityId = match[1];
+          map.set(entityId, (map.get(entityId) || 0) + 1);
+        }
+      }
+    });
+    return map;
+  }, [notifications]);
+
+  // Enriched Entities with Unread Counts and Last Messages
+  const enrichedClients = useMemo(() => clients.map(c => ({
+    ...c,
+    unreadCount: unreadMap.get(c.id) || 0,
+    lastMessage: latestMessagesMap.get(c.id)?.text || ''
+  })), [clients, unreadMap, latestMessagesMap]);
+
+  const enrichedTeam = useMemo(() => team.map(t => ({
+    ...t,
+    unreadCount: unreadMap.get(t.id) || 0,
+    lastMessage: latestMessagesMap.get(t.id)?.text || ''
+  })), [team, unreadMap, latestMessagesMap]);
 
   const activeWhatsappStatus = useMemo(() => {
     if (!instances || instances.length === 0) return 'desconectado';
@@ -109,7 +155,7 @@ export const Workspace: React.FC = () => {
   }, []);
 
   // Derived state
-  const selectedEntity = [...clients, ...team].find(e => e.id === selectedEntityId) || null;
+  const selectedEntity = [...enrichedClients, ...enrichedTeam].find(e => e.id === selectedEntityId) || null;
   const selectedTask = (tasks || []).find(t => t.id === selectedTaskId) || null;
 
   // Persistent Distortion Canvas State
@@ -328,8 +374,8 @@ export const Workspace: React.FC = () => {
         <div className={`w-[260px] h-full transition-transform duration-300 ${leftSidebarVisible ? 'translate-x-0' : '-translate-x-full'
           }`}>
           <EntityList
-            clients={clients}
-            team={team}
+            clients={enrichedClients}
+            team={enrichedTeam}
             selectedId={selectedEntityId}
             onSelect={setSelectedEntityId}
           />

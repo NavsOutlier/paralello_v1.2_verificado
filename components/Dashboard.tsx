@@ -42,7 +42,7 @@ interface Client {
 type PeriodFilter = '7d' | '15d' | '30d' | '90d';
 
 export const Dashboard: React.FC = () => {
-  const { organizationId } = useAuth();
+  const { organizationId, isManager, isSuperAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
 
   // Filters
@@ -366,6 +366,24 @@ export const Dashboard: React.FC = () => {
     );
   }
 
+  // Access control: Only managers and super admins can see the dashboard
+  if (!isManager && !isSuperAdmin) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+        <div className="flex flex-col items-center gap-4 text-center p-8">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+            <AlertTriangle className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-800">Acesso Restrito</h2>
+          <p className="text-sm text-slate-500 max-w-sm">
+            O Dashboard é uma ferramenta exclusiva para gestores.
+            Entre em contato com seu administrador se precisar de acesso.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 bg-gradient-to-br from-slate-50 via-white to-slate-50 overflow-y-auto h-full">
       {/* Header */}
@@ -391,8 +409,8 @@ export const Dashboard: React.FC = () => {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${showFilters
-                  ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
+                ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
                 }`}
             >
               {showFilters ? (
@@ -462,15 +480,15 @@ export const Dashboard: React.FC = () => {
                 </select>
               </div>
 
-              {/* Role Filter */}
+              {/* Role/Specialty Filter */}
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-2">Função</label>
+                <label className="block text-xs font-semibold text-slate-600 mb-2">Especialidade</label>
                 <select
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="all">Todas as funções</option>
+                  <option value="all">Todas as especialidades</option>
                   <option value="manager">Gestor</option>
                   <option value="member">Membro</option>
                   <option value="designer">Designer</option>

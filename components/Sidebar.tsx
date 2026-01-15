@@ -16,7 +16,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
     <button
       onClick={() => onViewChange(view)}
       className={`flex flex-col items-center justify-center w-full py-4 space-y-1 transition-colors ${currentView === view
-        ? 'text-indigo-600 bg-indigo-50 border-r-4 border-indigo-600'
+        ? 'text-indigo-600 bg-indigo-50 border-l-4 border-indigo-600'
         : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
         }`}
       title={label}
@@ -35,7 +35,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
       <div className="flex-1 w-full space-y-2">
         {!isSuperAdmin && (
           <>
-            <NavItem view={ViewState.DASHBOARD} icon={LayoutDashboard} label="Dash" />
+            {/* Dashboard - Only for managers */}
+            {isManager && (
+              <NavItem view={ViewState.DASHBOARD} icon={LayoutDashboard} label="Dash" />
+            )}
+
             <NavItem view={ViewState.WORKSPACE} icon={MessageSquare} label="Workspace" />
             <NavItem view={ViewState.KANBAN} icon={KanbanSquare} label="Tarefas" />
 

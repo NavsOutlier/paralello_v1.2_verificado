@@ -158,7 +158,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                                 <span className="text-[10px] font-black tracking-[0.2em] text-indigo-400 uppercase">EQUIPE</span>
                             </div>
                             <div className="hidden md:flex flex-col items-end px-2">
-                                <span className="text-[10px] font-black tracking-[0.2em] text-indigo-600 uppercase">EU</span>
+                                <span className="text-[10px] font-black tracking-[0.2em] text-violet-600 uppercase">EU</span>
                             </div>
                         </div>
                         {messages.length === 0 ? (
@@ -268,7 +268,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                                                     linkedTaskId={linkedTaskId}
                                                     linkedMessage={linkedMessage}
                                                     linkedMessageSenderName={linkedMessageSender}
-                                                    colorScheme="indigo"
+                                                    colorScheme="violet"
                                                 />
                                             )}
                                         </div>

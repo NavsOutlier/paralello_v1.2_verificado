@@ -9,7 +9,7 @@ interface MessageBubbleProps {
   senderJobTitle?: string;
   onInitiateDiscussion?: (message: Message) => void;
   messageRef?: (el: HTMLDivElement | null) => void;
-  colorScheme?: 'green' | 'indigo'; // 'green' for client chat, 'indigo' for task chat
+  colorScheme?: 'green' | 'indigo' | 'violet'; // 'green' for client chat, 'indigo' for task chat, 'violet' for 'Me'
   onNavigateToLinked?: (id: string) => void;
   linkedTaskId?: string;
   linkedMessage?: Message;
@@ -43,6 +43,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       myBubble: 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-[0_4px_12px_rgba(16,185,129,0.2)] border-none',
       senderName: 'text-emerald-600',
       myTime: 'text-emerald-100',
+    },
+    violet: {
+      myBubble: 'bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-[0_4px_12px_rgba(139,92,246,0.2)] border-none',
+      senderName: 'text-violet-600',
+      myTime: 'text-violet-100',
     }
   };
 
@@ -99,10 +104,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
         {/* Sender Info - High End Look */}
         <div className={`text-[10px] font-black mb-1 flex items-center gap-1 uppercase tracking-tighter ${isMe ? 'justify-end' : 'justify-start'} ${msg.isInternal && colorScheme !== 'indigo'
-            ? 'text-amber-700 opacity-80'
-            : isMe
-              ? 'text-white opacity-100'
-              : `${scheme.senderName} opacity-80`
+          ? 'text-amber-700 opacity-80'
+          : isMe
+            ? 'text-white opacity-100'
+            : `${scheme.senderName} opacity-80`
           }`}>
           <span>{senderName}</span>
           {senderJobTitle && <span className={isMe ? 'opacity-70' : 'opacity-40'}>({senderJobTitle})</span>}

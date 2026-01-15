@@ -13,6 +13,7 @@ interface NotificationCenterProps {
 
 export const NotificationCenter: React.FC<NotificationCenterProps> = ({ currentView, onViewChange }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState<'all' | 'dm' | 'feed' | 'task'>('all');
     const { notifications, unreadCount, markAsRead, markAllAsRead, loading } = useNotifications();
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -29,13 +30,29 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ currentV
 
     const getIcon = (type: string) => {
         switch (type) {
-            case 'message': return <MessageSquare className="w-4 h-4 text-blue-500" />;
-            case 'task': return <ListTodo className="w-4 h-4 text-emerald-500" />;
+            case 'dm': return <MessageSquare className="w-4 h-4 text-blue-500" />;
+            case 'client_message': return <MessageSquare className="w-4 h-4 text-green-500" />;
+            case 'task': return <ListTodo className="w-4 h-4 text-purple-500" />;
             case 'warning': return <AlertTriangle className="w-4 h-4 text-amber-500" />;
             case 'error': return <AlertTriangle className="w-4 h-4 text-red-500" />;
-            default: return <Info className="w-4 h-4 text-indigo-500" />;
+            default: return <Info className="w-4 h-4 text-slate-500" />;
         }
     };
+
+    const filteredNotifications = notifications.filter(n => {
+        if (activeTab === 'all') return true;
+        if (activeTab === 'dm') return n.type === 'dm' || n.type === 'message'; // Backwards compatibility
+        if (activeTab === 'feed') return n.type === 'client_message';
+        if (activeTab === 'task') return n.type === 'task';
+        return true;
+    });
+
+    const tabs = [
+        { id: 'all', label: 'Todas' },
+        { id: 'dm', label: 'DMs' },
+        { id: 'feed', label: 'Feed' },
+        { id: 'task', label: 'Tarefas' },
+    ];
 
     return (
         <div className="relative" ref={containerRef}>
@@ -74,7 +91,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ currentV
                         initial={{ opacity: 0, scale: 0.95, x: -20 }}
                         animate={{ opacity: 1, scale: 1, x: 0 }}
                         exit={{ opacity: 0, scale: 0.95, x: -20 }}
-                        className="absolute right-auto bottom-full left-16 mb-2 w-[350px] bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-[100] origin-bottom-left"
+                        className="absolute right-auto bottom-full left-16 mb-2 w-[400px] bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-[100] origin-bottom-left"
                     >
                         {/* Header */}
                         <div className="px-5 py-4 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
@@ -93,24 +110,45 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ currentV
                             )}
                         </div>
 
+                        {/* Tabs */}
+                        <div className="flex border-b border-slate-50 px-2 pt-2">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id as any)}
+                                    className={`flex-1 pb-2 text-xs font-bold uppercase tracking-wide transition-colors relative ${activeTab === tab.id
+                                        ? 'text-indigo-600'
+                                        : 'text-slate-400 hover:text-slate-600'
+                                        }`}
+                                >
+                                    {tab.label}
+                                    {activeTab === tab.id && (
+                                        <motion.div
+                                            layoutId="activeTab"
+                                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-t-full"
+                                        />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+
                         {/* Notifications List */}
-                        <div className="max-h-[450px] overflow-y-auto custom-scrollbar">
+                        <div className="h-[400px] overflow-y-auto custom-scrollbar bg-slate-50/10">
                             {loading && notifications.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center py-12 text-slate-400 gap-3">
                                     <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
                                     <span className="text-xs font-medium italic">Buscando atualizações...</span>
                                 </div>
-                            ) : notifications.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-12 text-slate-400 opacity-60">
+                            ) : filteredNotifications.length === 0 ? (
+                                <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
                                     <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
                                         <Bell className="w-6 h-6" />
                                     </div>
-                                    <p className="text-sm font-medium">Tudo limpo por aqui!</p>
-                                    <p className="text-xs">Nenhuma notificação nova no momento.</p>
+                                    <p className="text-sm font-medium">Nenhuma notificação nesta aba.</p>
                                 </div>
                             ) : (
                                 <div className="divide-y divide-slate-50">
-                                    {notifications.map((n) => (
+                                    {filteredNotifications.map((n) => (
                                         <div
                                             key={n.id}
                                             onClick={() => {
@@ -140,7 +178,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ currentV
                                                     setIsOpen(false);
                                                 }
                                             }}
-                                            className={`p-4 flex gap-3 transition-colors cursor-pointer group hover:bg-slate-50 relative ${!n.read ? 'bg-indigo-50/30' : ''
+                                            className={`p-4 flex gap-3 transition-colors cursor-pointer group hover:bg-white relative ${!n.read ? 'bg-indigo-50/40' : 'bg-white'
                                                 }`}
                                         >
                                             <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-white shadow-sm border border-slate-100 transition-transform group-hover:scale-110`}>
@@ -156,7 +194,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ currentV
                                                         {formatDistanceToNow(n.created_at, { addSuffix: true, locale: ptBR })}
                                                     </div>
                                                 </div>
-                                                <p className={`text-xs leading-relaxed mt-0.5 ${!n.read ? 'text-slate-600 font-medium' : 'text-slate-400'}`}>
+                                                <p className={`text-xs leading-relaxed mt-0.5 line-clamp-2 ${!n.read ? 'text-slate-700' : 'text-slate-400'}`}>
                                                     {n.message}
                                                 </p>
                                                 {n.link && (
@@ -167,7 +205,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ currentV
                                                 )}
                                             </div>
                                             {!n.read && (
-                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-indigo-500 rounded-full shadow-sm" />
                                             )}
                                         </div>
                                     ))}
@@ -175,11 +213,11 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ currentV
                             )}
                         </div>
 
-                        {/* View All Button */}
-                        <div className="p-3 bg-slate-50/30 border-t border-slate-50 text-center">
-                            <button className="text-[10px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-colors">
-                                Ver Hitórico Completo
-                            </button>
+                        {/* Footer */}
+                        <div className="p-3 bg-slate-50/50 border-t border-slate-100 text-center">
+                            <span className="text-[9px] uppercase tracking-widest text-slate-400">
+                                Paralello AgencyOS
+                            </span>
                         </div>
                     </motion.div>
                 )}

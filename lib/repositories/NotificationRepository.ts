@@ -6,7 +6,7 @@ export interface Notification {
     user_id: string;
     title: string;
     message: string;
-    type: 'info' | 'success' | 'warning' | 'error' | 'task' | 'message';
+    type: 'info' | 'success' | 'warning' | 'error' | 'task' | 'message' | 'dm' | 'client_message';
     link?: string;
     read: boolean;
     created_at: Date;

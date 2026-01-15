@@ -53,7 +53,7 @@ export const useWorkspaceActions = () => {
                         user_id: selectedEntity.id,
                         title: 'Nova Mensagem',
                         message: `${currentUserMember?.name || 'Um membro'} enviou uma mensagem direta.`,
-                        type: 'message',
+                        type: 'dm',
                         link: `/workspace?chat=${currentUser.id}`
                     });
                 } catch (err) {
@@ -95,7 +95,7 @@ export const useWorkspaceActions = () => {
                         user_id: recipientId,
                         title: 'Novo Comentário',
                         message: `${currentUserMember?.name || 'Alguém'} comentou na tarefa: ${task.title}`,
-                        type: 'message',
+                        type: 'task',
                         link: `/workspace?task=${taskId}`
                     });
                 }

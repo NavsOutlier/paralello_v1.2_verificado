@@ -47,13 +47,18 @@ export const useWorkspaceActions = () => {
                 });
 
                 // Trigger Notification for the recipient
-                await notificationRepository.createNotification({
-                    organization_id: organizationId,
-                    user_id: selectedEntity.id,
-                    title: 'Nova Mensagem',
-                    message: `${currentUserMember?.name || 'Um membro'} enviou uma mensagem direta.`,
-                    type: 'message'
-                });
+                try {
+                    await notificationRepository.createNotification({
+                        organization_id: organizationId,
+                        user_id: selectedEntity.id,
+                        title: 'Nova Mensagem',
+                        message: `${currentUserMember?.name || 'Um membro'} enviou uma mensagem direta.`,
+                        type: 'message',
+                        link: `/workspace?chat=${currentUser.id}`
+                    });
+                } catch (err) {
+                    console.warn('Failed to send notification for DM', err);
+                }
             }
         } catch (error) {
             console.error('Error in sendMessage action:', error);
@@ -78,7 +83,27 @@ export const useWorkspaceActions = () => {
             text,
             isInternal: true
         });
-    }, [organizationId, currentUser]);
+
+        // Notify relevant users about the comment
+        try {
+            const task = await TaskRepository.findById(taskId);
+            if (task && task.assignee_ids) {
+                const recipients = task.assignee_ids.filter(id => id !== currentUser.id);
+                for (const recipientId of recipients) {
+                    await notificationRepository.createNotification({
+                        organization_id: organizationId,
+                        user_id: recipientId,
+                        title: 'Novo Comentário',
+                        message: `${currentUserMember?.name || 'Alguém'} comentou na tarefa: ${task.title}`,
+                        type: 'message',
+                        link: `/workspace?task=${taskId}`
+                    });
+                }
+            }
+        } catch (err) {
+            console.warn('Failed to send comment notifications', err);
+        }
+    }, [organizationId, currentUser, currentUserMember]);
 
     const createTask = useCallback(async (payload: any) => {
         const newTask = await TaskRepository.createNewTask(payload);
@@ -87,17 +112,21 @@ export const useWorkspaceActions = () => {
         if (newTask && organizationId && payload.assignee_ids) {
             const assigneeIds = Array.isArray(payload.assignee_ids) ? payload.assignee_ids : [payload.assignee_id];
 
-            for (const assigneeId of assigneeIds) {
-                if (assigneeId && assigneeId !== currentUser?.id) {
-                    await notificationRepository.createNotification({
-                        organization_id: organizationId,
-                        user_id: assigneeId,
-                        title: 'Nova Tarefa Atribuída',
-                        message: `Você foi atribuído à tarefa: ${newTask.title}`,
-                        type: 'task',
-                        link: `/workspace?task=${newTask.id}`
-                    });
+            try {
+                for (const assigneeId of assigneeIds) {
+                    if (assigneeId && assigneeId !== currentUser?.id) {
+                        await notificationRepository.createNotification({
+                            organization_id: organizationId,
+                            user_id: assigneeId,
+                            title: 'Nova Tarefa Atribuída',
+                            message: `Você foi atribuído à tarefa: ${newTask.title}`,
+                            type: 'task',
+                            link: `/workspace?task=${newTask.id}`
+                        });
+                    }
                 }
+            } catch (err) {
+                console.warn('Failed to send task notifications', err);
             }
         }
 

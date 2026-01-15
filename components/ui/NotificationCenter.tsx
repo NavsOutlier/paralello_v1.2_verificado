@@ -1,11 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, CheckCheck, Inbox, MessageSquare, ListTodo, AlertTriangle, Info, Clock, ExternalLink } from 'lucide-react';
+import { ViewState } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotifications } from '../../hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-export const NotificationCenter: React.FC = () => {
+interface NotificationCenterProps {
+    currentView?: ViewState;
+    onViewChange?: (view: ViewState) => void;
+}
+
+export const NotificationCenter: React.FC<NotificationCenterProps> = ({ currentView, onViewChange }) => {
     const [isOpen, setIsOpen] = useState(false);
     const { notifications, unreadCount, markAsRead, markAllAsRead, loading } = useNotifications();
     const containerRef = useRef<HTMLDivElement>(null);
@@ -65,10 +71,10 @@ export const NotificationCenter: React.FC = () => {
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute right-0 bottom-14 md:bottom-auto md:top-0 md:left-20 w-[350px] bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-[100]"
+                        initial={{ opacity: 0, scale: 0.95, x: -20 }}
+                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, x: -20 }}
+                        className="absolute right-auto bottom-full left-16 mb-2 w-[350px] bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-[100] origin-bottom-left"
                     >
                         {/* Header */}
                         <div className="px-5 py-4 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
@@ -107,7 +113,33 @@ export const NotificationCenter: React.FC = () => {
                                     {notifications.map((n) => (
                                         <div
                                             key={n.id}
-                                            onClick={() => !n.read && markAsRead(n.id)}
+                                            onClick={() => {
+                                                if (!n.read) markAsRead(n.id);
+                                                if (n.link) {
+                                                    // Smart Navigation
+
+                                                    // 1. If we are NOT in the workspace, we must switch first
+                                                    if (currentView !== ViewState.WORKSPACE && onViewChange) {
+                                                        onViewChange(ViewState.WORKSPACE);
+
+                                                        // Brief delay to allow view transition before pushing state
+                                                        setTimeout(() => {
+                                                            window.history.pushState({}, '', n.link);
+                                                            window.dispatchEvent(new Event('pushstate'));
+                                                        }, 100);
+                                                    }
+                                                    // 2. If we are ALREADY in workspace, just update internal state via URL
+                                                    else if (window.location.pathname === '/workspace' || currentView === ViewState.WORKSPACE) {
+                                                        window.history.pushState({}, '', n.link);
+                                                        window.dispatchEvent(new Event('pushstate'));
+                                                    }
+                                                    // 3. Fallback for external links or hard reloads
+                                                    else {
+                                                        window.location.href = n.link;
+                                                    }
+                                                    setIsOpen(false);
+                                                }
+                                            }}
                                             className={`p-4 flex gap-3 transition-colors cursor-pointer group hover:bg-slate-50 relative ${!n.read ? 'bg-indigo-50/30' : ''
                                                 }`}
                                         >
@@ -128,13 +160,10 @@ export const NotificationCenter: React.FC = () => {
                                                     {n.message}
                                                 </p>
                                                 {n.link && (
-                                                    <a
-                                                        href={n.link}
-                                                        className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:underline"
-                                                    >
+                                                    <div className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 group-hover:underline">
                                                         Ver detalhes
                                                         <ExternalLink className="w-2.5 h-2.5" />
-                                                    </a>
+                                                    </div>
                                                 )}
                                             </div>
                                             {!n.read && (

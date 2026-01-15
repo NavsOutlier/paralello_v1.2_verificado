@@ -53,7 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
       </div>
 
       <div className="mt-auto mb-4 flex flex-col items-center space-y-4">
-        <NotificationCenter />
+        <NotificationCenter currentView={currentView} onViewChange={onViewChange} />
 
         <button
           onClick={() => signOut()}

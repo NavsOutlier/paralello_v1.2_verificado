@@ -65,7 +65,20 @@ export class NotificationRepository extends BaseRepository<Notification> {
     }
 
     async createNotification(notification: Partial<Notification>): Promise<Notification | null> {
-        return this.create(notification);
+        // We override the default create to avoid RLS failures.
+        // The sender often cannot SELECT the notification they just created for another user
+        // (due to the "Users can view their own notifications" policy).
+        // So we strictly INSERT without trying to return the data.
+        const { error } = await this.supabase
+            .from(this.tableName)
+            .insert(notification);
+
+        if (error) {
+            console.error('Error creating notification:', error);
+            return null;
+        }
+
+        return null;
     }
 }
 

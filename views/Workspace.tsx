@@ -14,6 +14,7 @@ import { useChecklists } from '../hooks/useChecklists';
 import { useWorkspaceActions } from '../hooks/useWorkspaceActions';
 import { useResizableSidebar } from '../hooks/useResizableSidebar';
 import { distortionRepository } from '../lib/repositories/DistortionRepository';
+import { TaskRepository } from '../lib/repositories/TaskRepository';
 
 export const Workspace: React.FC = () => {
   const { organizationId, user: currentUser } = useAuth();
@@ -57,6 +58,45 @@ export const Workspace: React.FC = () => {
       setSelectedEntityId(clients[0].id);
     }
   }, [clients, selectedEntityId, loadingClients]);
+
+  // Deep Linking Handler
+  useEffect(() => {
+    const handleUrlChange = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const taskId = params.get('task');
+      const chatId = params.get('chat');
+
+      if (chatId) {
+        setSelectedEntityId(chatId);
+      }
+
+      if (taskId) {
+        // Fetch task to find out which entity (client) logic context we should be in
+        try {
+          const task = await TaskRepository.findById(taskId);
+          if (task && task.client_id) {
+            // IMPORTANT: Change the workspace context to the client who owns this task
+            setSelectedEntityId(task.client_id);
+            setSelectedTaskId(taskId);
+            setRightSidebarVisible(true);
+          }
+        } catch (err) {
+          console.error('Failed to resolve deep link task', err);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('pushstate', handleUrlChange); // Custom event
+
+    // Check on mount
+    handleUrlChange();
+
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('pushstate', handleUrlChange);
+    };
+  }, []);
 
   // Derived state
   const selectedEntity = [...clients, ...team].find(e => e.id === selectedEntityId) || null;

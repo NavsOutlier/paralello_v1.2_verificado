@@ -19,8 +19,20 @@ const AppContent: React.FC = () => {
   // Initial Role-Based Redirection
   React.useEffect(() => {
     if (!loading && user) {
+      // Check for deep links first
+      const params = new URLSearchParams(window.location.search);
+      const hasDeepLink = params.has('task') || params.has('chat');
+
       if (!hasRouted) {
-        // First placement attempt
+        // Deep Link Override
+        if (hasDeepLink) {
+          setCurrentView(ViewState.WORKSPACE);
+          setHasRouted(true);
+          setPerformedRoleRedirection(true); // Treat as redirected so we don't override it below
+          return;
+        }
+
+        // Standard Role Logic
         if (isSuperAdmin) {
           setCurrentView(ViewState.SUPERADMIN);
           setPerformedRoleRedirection(true);
@@ -31,7 +43,7 @@ const AppContent: React.FC = () => {
           setCurrentView(ViewState.WORKSPACE);
         }
         setHasRouted(true);
-      } else if (!performedRoleRedirection) {
+      } else if (!performedRoleRedirection && !hasDeepLink) {
         // Initial placement was WORKSPACE (likely because roles were still loading)
         // Now that we confirmed a role, move to the correct dashboard ONCE
         if (isSuperAdmin) {

@@ -2,7 +2,7 @@ import React from 'react';
 import { LayoutDashboard, MessageSquare, KanbanSquare, Users, LogOut, Shield } from 'lucide-react';
 import { ViewState } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { Avatar } from './ui';
+import { Avatar, NotificationCenter } from './ui';
 
 interface SidebarProps {
   currentView: ViewState;
@@ -53,6 +53,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
       </div>
 
       <div className="mt-auto mb-4 flex flex-col items-center space-y-4">
+        <NotificationCenter />
+
         <button
           onClick={() => signOut()}
           className="text-slate-400 hover:text-red-500 transition-colors"

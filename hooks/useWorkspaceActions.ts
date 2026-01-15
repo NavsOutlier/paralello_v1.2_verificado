@@ -4,6 +4,7 @@ import { useTeam } from './useTeam';
 import { TaskRepository } from '../lib/repositories/TaskRepository';
 import { MessageRepository } from '../lib/repositories/MessageRepository';
 import { sendWhatsAppText } from '../lib/api/whatsapp-api';
+import { notificationRepository } from '../lib/repositories/NotificationRepository';
 import { Task, ChecklistItem, User as UIUser } from '../types';
 
 /**
@@ -44,6 +45,15 @@ export const useWorkspaceActions = () => {
                     senderType: 'MEMBER',
                     text: text.trim()
                 });
+
+                // Trigger Notification for the recipient
+                await notificationRepository.createNotification({
+                    organization_id: organizationId,
+                    user_id: selectedEntity.id,
+                    title: 'Nova Mensagem',
+                    message: `${currentUserMember?.name || 'Um membro'} enviou uma mensagem direta.`,
+                    type: 'message'
+                });
             }
         } catch (error) {
             console.error('Error in sendMessage action:', error);
@@ -71,8 +81,28 @@ export const useWorkspaceActions = () => {
     }, [organizationId, currentUser]);
 
     const createTask = useCallback(async (payload: any) => {
-        return await TaskRepository.createNewTask(payload);
-    }, []);
+        const newTask = await TaskRepository.createNewTask(payload);
+
+        // Notify assignees
+        if (newTask && organizationId && payload.assignee_ids) {
+            const assigneeIds = Array.isArray(payload.assignee_ids) ? payload.assignee_ids : [payload.assignee_id];
+
+            for (const assigneeId of assigneeIds) {
+                if (assigneeId && assigneeId !== currentUser?.id) {
+                    await notificationRepository.createNotification({
+                        organization_id: organizationId,
+                        user_id: assigneeId,
+                        title: 'Nova Tarefa Atribuída',
+                        message: `Você foi atribuído à tarefa: ${newTask.title}`,
+                        type: 'task',
+                        link: `/workspace?task=${newTask.id}`
+                    });
+                }
+            }
+        }
+
+        return newTask;
+    }, [organizationId, currentUser?.id]);
 
     const createContextMessage = useCallback(async (payload: any) => {
         // This is used for linking tasks to messages

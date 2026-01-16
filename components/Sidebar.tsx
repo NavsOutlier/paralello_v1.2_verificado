@@ -27,7 +27,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
   );
 
   return (
-    <nav className="w-[80px] flex-shrink-0 bg-white border-r border-slate-200 flex flex-col items-center py-6 z-20 shadow-sm">
+    <nav className="w-[80px] flex-shrink-0 bg-white border-r border-slate-200 flex flex-col items-center py-6 z-20 shadow-sm overflow-y-auto overflow-x-hidden custom-scrollbar">
       <div className="mb-8 w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg flex items-center justify-center text-white font-bold text-xl">
         P
       </div>

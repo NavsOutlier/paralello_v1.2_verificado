@@ -73,8 +73,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     };
 
     return (
-        <div className="flex-1 overflow-x-auto overflow-y-hidden bg-slate-50/50 p-4">
-            <div className="flex h-full gap-4 min-w-[1000px]">
+        <div className="flex-1 overflow-x-auto overflow-y-hidden bg-slate-50/50 p-2 sm:p-4 min-h-0">
+            <div className="flex h-full gap-4 w-max min-w-full">
                 {COLUMNS.map(column => {
                     const columnTasks = tasks.filter(t => t.status === column.id);
                     const isOver = dragOverColumn === column.id;
@@ -82,7 +82,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     return (
                         <div
                             key={column.id}
-                            className={`flex flex-col flex-1 h-full rounded-2xl transition-colors duration-200 ${isOver ? 'bg-indigo-50/80 ring-2 ring-indigo-200 ring-inset' : 'bg-slate-100/50'
+                            className={`flex flex-col w-[85vw] sm:w-[300px] flex-shrink-0 h-full rounded-2xl transition-colors duration-200 ${isOver ? 'bg-indigo-50/80 ring-2 ring-indigo-200 ring-inset' : 'bg-slate-100/50'
                                 }`}
                             onDragOver={(e) => handleDragOver(e, column.id)}
                             onDragLeave={handleDragLeave}

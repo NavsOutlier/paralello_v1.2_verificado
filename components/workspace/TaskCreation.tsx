@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Plus, Link2, Check, CheckSquare, ChevronDown } from 'lucide-react';
+import { X, Plus, Link2, Check, CheckSquare, ChevronDown, Briefcase } from 'lucide-react';
 import { Task, DiscussionDraft, User as UIUser, ChecklistTemplate, ChecklistItem } from '../../types';
 import { Button } from '../ui';
 import { MentionInput } from './MentionInput';
@@ -12,6 +12,7 @@ interface TaskCreationProps {
     onCreate: (data: {
         title: string;
         priority: 'low' | 'medium' | 'high';
+        clientId?: string; // Add clientId to onCreate data definition
         assigneeId?: string;
         assigneeIds?: string[];
         status: 'todo' | 'in-progress' | 'review' | 'done';
@@ -22,6 +23,8 @@ interface TaskCreationProps {
     }, comment?: string) => void;
     onAttach: (taskId: string, comment?: string) => void;
     checklistTemplates: ChecklistTemplate[];
+    clients?: { id: string; name: string }[]; // New Prop
+    initialClientId?: string; // New Prop
 }
 
 const TAG_COLORS = [
@@ -45,10 +48,13 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
     onCancel,
     onCreate,
     onAttach,
-    checklistTemplates
+    checklistTemplates,
+    clients = [], // Default to empty array
+    initialClientId
 }) => {
     const [mode, setMode] = useState<'select' | 'create' | 'attach'>(draft.sourceMessage.id === 'manual' ? 'create' : 'select');
     const [title, setTitle] = useState('');
+    const [selectedClientId, setSelectedClientId] = useState<string>(initialClientId || ''); // Client State
     const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
     const [status, setStatus] = useState<'todo' | 'in-progress' | 'review' | 'done'>('todo');
     const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
@@ -101,7 +107,8 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
             status,
             deadline: deadline || undefined,
             tags: selectedTags.length > 0 ? selectedTags : undefined,
-            checklist: currentChecklist.length > 0 ? currentChecklist : undefined
+            checklist: currentChecklist.length > 0 ? currentChecklist : undefined,
+            clientId: selectedClientId || undefined // Include Client ID
         }, comment.trim() || undefined);
     };
 
@@ -161,6 +168,30 @@ export const TaskCreation: React.FC<TaskCreationProps> = ({
                 {/* Create Mode */}
                 {mode === 'create' && (
                     <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+
+                        {/* Selected Client (If clients are available) */}
+                        {clients && clients.length > 0 && (
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+                                    Cliente Vinculado
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        value={selectedClientId}
+                                        onChange={(e) => setSelectedClientId(e.target.value)}
+                                        className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white h-[36px]"
+                                    >
+                                        <option value="">Sem Cliente (Interno)</option>
+                                        {clients.map(client => (
+                                            <option key={client.id} value={client.id}>{client.name}</option>
+                                        ))}
+                                    </select>
+                                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                                </div>
+                            </div>
+                        )}
+
                         {/* Título */}
                         <div>
                             <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">

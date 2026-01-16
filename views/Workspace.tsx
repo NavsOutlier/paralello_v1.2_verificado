@@ -248,8 +248,15 @@ export const Workspace: React.FC = () => {
     tags?: string[];
     description?: string;
     checklist?: ChecklistItem[];
+    clientId?: string; // New override
   }, comment?: string) => {
-    if (!organizationId || !discussionDraft || !selectedEntityId || !currentUser || isCreatingTask) return;
+    if (!organizationId || !discussionDraft || !currentUser || isCreatingTask) return; // Note: !selectedEntityId removed to allow cross-client task creation if clientId is provided
+
+    const targetClientId = data.clientId || selectedEntityId;
+    if (!targetClientId) {
+      console.error("No client selected for task creation");
+      return;
+    }
 
     try {
       setIsCreatingTask(true);
@@ -260,7 +267,7 @@ export const Workspace: React.FC = () => {
         title: data.title,
         status: data.status,
         priority: data.priority,
-        client_id: selectedEntityId,
+        client_id: targetClientId, // Use resolved client ID
         assignee_id: data.assigneeId,
         assignee_ids: data.assigneeIds,
         deadline: data.deadline,
@@ -439,6 +446,8 @@ export const Workspace: React.FC = () => {
               allMessages={allWorkspaceMessages}
               teamMembers={allTeamMembers}
               discussionDraft={discussionDraft}
+              clients={clients} // Enable client selection
+              initialClientId={selectedEntityId || undefined} // Pre-select current client if available
               onCancelDraft={() => setDiscussionDraft(null)}
               onCreateTaskFromDraft={handleCreateTaskFromDraft}
               onAttachTaskFromDraft={handleAttachTaskFromDraft}

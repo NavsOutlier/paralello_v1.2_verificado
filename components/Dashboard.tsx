@@ -458,11 +458,11 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="flex-1 bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 overflow-y-auto h-full">
       {/* Header - Premium Design */}
-      <div className="relative px-8 py-8 border-b border-slate-100/50 bg-white/60 backdrop-blur-xl sticky top-0 z-10">
+      <div className="relative px-4 md:px-8 py-6 md:py-8 border-b border-slate-100/50 bg-white/60 backdrop-blur-xl sticky top-0 z-10">
         {/* Background decoration */}
         <div className="absolute top-0 right-0 w-96 h-32 bg-gradient-to-bl from-indigo-500/5 to-transparent rounded-bl-full" />
 
-        <div className="relative flex justify-between items-center">
+        <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-200">
@@ -474,7 +474,7 @@ export const Dashboard: React.FC = () => {
           </div>
 
           {/* Filter Controls */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}

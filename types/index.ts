@@ -18,3 +18,6 @@ export * from './messaging';
 
 // Task domain
 export * from './task';
+
+// Kanban domain
+export * from './kanban';

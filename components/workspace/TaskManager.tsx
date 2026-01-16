@@ -21,6 +21,7 @@ interface TaskManagerProps {
         deadline?: string;
         tags?: string[];
         description?: string;
+        clientId?: string; // Support override
     }) => void;
     onAttachTaskFromDraft: (taskId: string, comment?: string) => void;
     onNavigateToMessage: (id: string) => void;
@@ -33,6 +34,8 @@ interface TaskManagerProps {
     onDeleteChecklistTemplate: (templateId: string) => void;
     selectedTask?: Task | null;
     onSelectTask?: (task: Task | null) => void;
+    clients?: { id: string; name: string }[]; // New Prop
+    initialClientId?: string; // New Prop
 }
 
 type StatusFilter = 'all' | 'todo' | 'in-progress' | 'review' | 'done' | 'archived';
@@ -82,6 +85,8 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
             onCreate={props.onCreateTaskFromDraft}
             onAttach={handleAttachTask}
             checklistTemplates={props.checklistTemplates}
+            clients={props.clients}
+            initialClientId={props.initialClientId}
         />;
     }
 
@@ -151,7 +156,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
     return (
         <div className="flex flex-col h-full bg-slate-50/20">
             {/* Header */}
-            <div className="h-[56px] flex items-center justify-between px-5 bg-white border-b border-slate-100 flex-shrink-0">
+            <div className="flex flex-wrap items-center justify-between px-5 py-2.1 bg-white border-b border-slate-100 flex-none gap-4 min-w-0">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 border border-slate-100">

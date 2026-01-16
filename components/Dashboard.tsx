@@ -13,7 +13,8 @@ import { supabase } from '../lib/supabase';
 interface Task {
   id: string;
   title: string;
-  status: 'todo' | 'in-progress' | 'review' | 'done';
+  stage_id?: string; // New: Dynamic Stage ID
+  status: 'todo' | 'in-progress' | 'review' | 'done'; // Deprecated but kept for type compat
   priority: 'low' | 'medium' | 'high';
   deadline?: string;
   client_id: string;
@@ -105,6 +106,7 @@ export const Dashboard: React.FC = () => {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `organization_id=eq.${organizationId}` }, () => fetchDashboardData())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'clients', filter: `organization_id=eq.${organizationId}` }, () => fetchDashboardData())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `organization_id=eq.${organizationId}` }, () => fetchDashboardData())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'kanban_stages', filter: `organization_id=eq.${organizationId}` }, () => fetchDashboardData())
         .subscribe();
 
       return () => {
@@ -129,7 +131,8 @@ export const Dashboard: React.FC = () => {
         teamRes,
         messagesRes,
         clientMessagesRes,
-        allMessagesForResponseTime
+        allMessagesForResponseTime,
+        stagesRes
       ] = await Promise.all([
         supabase.from('clients').select('id, name').eq('organization_id', organizationId).is('deleted_at', null),
         supabase.from('tasks').select('*').eq('organization_id', organizationId).is('archived_at', null),
@@ -142,7 +145,8 @@ export const Dashboard: React.FC = () => {
           .select('id, client_id, sender_type, created_at')
           .eq('organization_id', organizationId)
           .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-          .order('created_at', { ascending: true })
+          .order('created_at', { ascending: true }),
+        supabase.from('kanban_stages').select('*').eq('organization_id', organizationId).order('order_index')
       ]);
 
       const clients = clientsRes.data || [];
@@ -151,6 +155,15 @@ export const Dashboard: React.FC = () => {
       const messages = messagesRes.data || [];
       const clientMessages = clientMessagesRes.data || [];
       const responseTimeMessages = allMessagesForResponseTime.data || [];
+      const stages = stagesRes.data || [];
+
+      // Determine 'Done' stage ID (assume last stage or stage named 'Done'/'Concluído')
+      // If no stages, fallback to status
+      let doneStageIds: string[] = [];
+      if (stages.length > 0) {
+        const doneStage = stages.find(s => ['done', 'concluido', 'concluído', 'finalizado'].includes(s.name.toLowerCase())) || stages[stages.length - 1];
+        if (doneStage) doneStageIds.push(doneStage.id);
+      }
 
       // Store for filters
       setAllMembers(team);
@@ -194,9 +207,15 @@ export const Dashboard: React.FC = () => {
       setInactiveClients(inactiveClientsList.slice(0, 10));
 
       // Calculate stats
-      const activeTasks = tasks.filter(t => t.status !== 'done').length;
-      const completedTasks = tasks.filter(t => t.status === 'done').length;
-      const overdueList = tasks.filter(t => t.deadline && new Date(t.deadline) < new Date() && t.status !== 'done');
+      // Calculate stats
+      const isTaskDone = (t: Task) => {
+        if (t.stage_id && doneStageIds.length > 0) return doneStageIds.includes(t.stage_id);
+        return t.status === 'done'; // Fallback
+      };
+
+      const activeTasks = tasks.filter(t => !isTaskDone(t)).length;
+      const completedTasks = tasks.filter(t => isTaskDone(t)).length;
+      const overdueList = tasks.filter(t => t.deadline && new Date(t.deadline) < new Date() && !isTaskDone(t));
 
       const totalTasks = tasks.length;
       const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
@@ -276,10 +295,17 @@ export const Dashboard: React.FC = () => {
 
       // Review tasks (awaiting approval)
       const memberMap = new Map(team.map(m => [m.id, m.profile?.name || 'Sem nome']));
-      const reviewList = tasks.filter(t => t.status === 'review');
+
+      const reviewList = tasks.filter(t => {
+        if (t.stage_id && stages.length > 0) {
+          const stage = stages.find(s => s.id === t.stage_id);
+          return stage && ['review', 'revisão', 'revisao', 'validação', 'validacao', 'aprovação', 'aprovacao'].some(term => stage.name.toLowerCase().includes(term));
+        }
+        return t.status === 'review';
+      });
       setReviewTasks(
         reviewList
-          .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+          .sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime())
           .map(t => ({
             ...t,
             clientName: clientMap.get(t.client_id) || 'Sem Cliente',
@@ -287,20 +313,28 @@ export const Dashboard: React.FC = () => {
           }))
       );
 
-      // Status distribution
-      const statusCounts = {
-        todo: tasks.filter(t => t.status === 'todo').length,
-        'in-progress': tasks.filter(t => t.status === 'in-progress').length,
-        review: tasks.filter(t => t.status === 'review').length,
-        done: tasks.filter(t => t.status === 'done').length
-      };
-
-      setStatusDistribution([
-        { name: 'Pendente', value: statusCounts.todo, color: '#f59e0b' },
-        { name: 'Em Progresso', value: statusCounts['in-progress'], color: '#3b82f6' },
-        { name: 'Revisão', value: statusCounts.review, color: '#8b5cf6' },
-        { name: 'Concluído', value: statusCounts.done, color: '#10b981' }
-      ]);
+      // Status distribution (Dynamic)
+      if (stages.length > 0) {
+        setStatusDistribution(stages.map(stage => ({
+          name: stage.name,
+          value: tasks.filter(t => t.stage_id === stage.id).length,
+          color: stage.color || '#cbd5e1'
+        })));
+      } else {
+        // Fallback for legacy
+        const statusCounts = {
+          todo: tasks.filter(t => t.status === 'todo').length,
+          'in-progress': tasks.filter(t => t.status === 'in-progress').length,
+          review: tasks.filter(t => t.status === 'review').length,
+          done: tasks.filter(t => t.status === 'done').length
+        };
+        setStatusDistribution([
+          { name: 'Pendente', value: statusCounts.todo, color: '#f59e0b' },
+          { name: 'Em Progresso', value: statusCounts['in-progress'], color: '#3b82f6' },
+          { name: 'Revisão', value: statusCounts.review, color: '#8b5cf6' },
+          { name: 'Concluído', value: statusCounts.done, color: '#10b981' }
+        ]);
+      }
 
       // Activity Chart - grouped by day
       const activityByDay: Record<string, { tasks: number; messages: number }> = {};

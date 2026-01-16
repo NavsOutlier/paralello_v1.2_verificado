@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { LoginView } from './views/LoginView';
 import { UpdatePasswordView } from './views/UpdatePasswordView';
+import { MarketingDashboard } from './components/MarketingDashboard';
 const AppContent: React.FC = () => {
   const { user, loading, isSuperAdmin, isManager } = useAuth();
   const [currentView, setCurrentView] = useState<ViewState | null>(null);
@@ -109,6 +110,7 @@ const AppContent: React.FC = () => {
         {currentView === ViewState.KANBAN && <Kanban />}
         {currentView === ViewState.MANAGER && <ManagerDashboard />}
         {currentView === ViewState.SUPERADMIN && <SuperAdminDashboard />}
+        {currentView === ViewState.MARKETING && <MarketingDashboard />}
         {isUpdatingPassword && (
           <div className="absolute inset-0 z-[100] bg-white">
             <UpdatePasswordView onSuccess={() => {

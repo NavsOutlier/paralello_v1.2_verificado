@@ -13,7 +13,8 @@ export enum ViewState {
     KANBAN = 'kanban',
     MANAGER = 'manager',
     SUPERADMIN = 'superadmin',
-    UPDATE_PASSWORD = 'update_password'
+    UPDATE_PASSWORD = 'update_password',
+    MARKETING = 'marketing'
 }
 
 /**

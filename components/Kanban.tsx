@@ -18,8 +18,43 @@ const priorityConfig = {
 };
 
 const STAGE_COLORS = [
-  '#cbd5e1', '#f87171', '#fbbf24', '#34d399', '#60a5fa', '#818cf8', '#a78bfa', '#f472b6'
+  '#cbd5e1', '#f87171', '#fbbf24', '#34d399', '#60a5fa', '#818cf8', '#a78bfa', '#f472b6',
+  '#22d3ee', '#a3e635', '#fb923c'
 ];
+
+// Helper Component for Delete Confirmation
+const DeleteStageButton = ({ onDelete }: { onDelete: () => void }) => {
+  const [confirming, setConfirming] = useState(false);
+
+  useEffect(() => {
+    if (confirming) {
+      const timer = setTimeout(() => setConfirming(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [confirming]);
+
+  if (confirming) {
+    return (
+      <button
+        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+        className="ml-2 px-3 py-1.5 bg-red-100 text-red-600 rounded-lg text-xs font-bold animate-in fade-in slide-in-from-right-2 hover:bg-red-200 transition-colors flex items-center gap-1.5"
+      >
+        <Trash2 className="w-3.5 h-3.5" />
+        Confirmar?
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); setConfirming(true); }}
+      className="ml-2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+      title="Excluir Coluna"
+    >
+      <Trash2 className="w-4 h-4" />
+    </button>
+  );
+};
 
 export const Kanban: React.FC = () => {
   const { organizationId, isSuperAdmin, permissions, user, isManager } = useAuth();
@@ -188,7 +223,7 @@ export const Kanban: React.FC = () => {
   };
 
   const handleDeleteStage = async (id: string) => {
-    if (!confirm('Tem certeza? Tarefas nesta etapa ficarão sem coluna.')) return;
+    // Confirmation already handled by UI
     const { error } = await supabase.from('kanban_stages').delete().eq('id', id);
     if (error) console.error('Error deleting stage:', error);
     else setStages(stages.filter(s => s.id !== id));
@@ -225,48 +260,7 @@ export const Kanban: React.FC = () => {
     }
   };
 
-  // Column Drag and Drop Handlers
-  const handleColumnDragStart = (e: React.DragEvent, stageId: string) => {
-    e.stopPropagation(); // Stop board drag
-    e.dataTransfer.setData('columnId', stageId);
-  };
 
-  const handleColumnDrop = async (e: React.DragEvent, targetStageId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const draggedStageId = e.dataTransfer.getData('columnId');
-
-    if (!draggedStageId || draggedStageId === targetStageId) return;
-
-    // Reorder local state
-    const currentStages = [...stages];
-    const draggedIndex = currentStages.findIndex(s => s.id === draggedStageId);
-    const targetIndex = currentStages.findIndex(s => s.id === targetStageId);
-
-    if (draggedIndex === -1 || targetIndex === -1) return;
-
-    const [draggedStage] = currentStages.splice(draggedIndex, 1);
-    currentStages.splice(targetIndex, 0, draggedStage);
-
-    // Update indexes locally
-    const updatedStages = currentStages.map((s, index) => ({ ...s, order_index: index }));
-    setStages(updatedStages);
-
-    // Persist to database
-    try {
-      const updates = updatedStages.map(s => ({
-        id: s.id,
-        order_index: s.order_index,
-        updated_at: new Date().toISOString()
-      }));
-
-      // Upsert all changed stages
-      const { error } = await supabase.from('kanban_stages').upsert(updates);
-      if (error) console.error('Error updating stage order:', error);
-    } catch (err) {
-      console.error('Failed to reorder stages:', err);
-    }
-  };
 
   const formatDate = (date: string | Date) => {
     const d = new Date(date);
@@ -409,7 +403,6 @@ export const Kanban: React.FC = () => {
             const stageTasks = tasks.filter(t => t.stage_id === stage.id);
             const isOver = dragOverColumnId === stage.id;
             const isEditing = editingStageId === stage.id;
-            const isColumnDragging = isEditingStages; // Enable column drag only in edit mode
 
             return (
               <div
@@ -472,17 +465,7 @@ export const Kanban: React.FC = () => {
                         )}
 
                         {/* Delete Button */}
-                        <button
-                          onClick={() => {
-                            if (window.confirm('Tem certeza que deseja excluir esta etapa e todas as tarefas nela?')) {
-                              handleDeleteStage(stage.id);
-                            }
-                          }}
-                          className="ml-2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                          title="Excluir Coluna"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <DeleteStageButton onDelete={() => handleDeleteStage(stage.id)} />
                       </div>
                     ) : (
                       <div className="min-w-0 flex items-center gap-2">
@@ -530,26 +513,29 @@ export const Kanban: React.FC = () => {
                 </div>
 
                 {isEditingStages && isEditing && (
-                  <div className="flex items-center gap-1">
-                    <div className="flex items-center gap-0.5 px-1 py-1 mr-2">
+                  <div className="flex items-center gap-1 justify-center mt-2 pb-2">
+                    <div className="flex items-center gap-1.5 px-2 py-1.5 bg-white/50 rounded-full border border-slate-100">
                       {STAGE_COLORS.map(c => (
                         <button
                           key={c}
+                          onMouseDown={(e) => e.preventDefault()} // Prevent blur of input
                           onClick={async () => {
-                            await supabase.from('kanban_stages').update({ color: c }).eq('id', stage.id);
+                            setStageEditColor(c); // Sync edit state
+
+                            // Optimistic update
                             setStages(stages.map(s => s.id === stage.id ? { ...s, color: c } : s));
+
+                            const { error } = await supabase.from('kanban_stages').update({ color: c }).eq('id', stage.id);
+                            if (error) {
+                              console.error('Error updating color:', error);
+                            }
                           }}
-                          className="w-2.5 h-2.5 rounded-full border border-white hover:scale-125 transition-transform"
+                          className={`w-4 h-4 rounded-full border-2 transition-transform hover:scale-125 ${stage.color === c ? 'border-indigo-400 scale-110' : 'border-white'}`}
                           style={{ backgroundColor: c }}
+                          title="Mudar cor"
                         />
                       ))}
                     </div>
-                    <button
-                      onClick={() => handleDeleteStage(stage.id)}
-                      className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
                   </div>
                 )}
 
@@ -617,12 +603,12 @@ export const Kanban: React.FC = () => {
           {isEditingStages && (
             <button
               onClick={handleAddStage}
-              className="w-[85vw] sm:w-80 h-[200px] flex-shrink-0 flex flex-col items-center justify-center border-3 border-dashed border-indigo-200 rounded-3xl group hover:border-indigo-400 hover:bg-indigo-50/30 transition-all"
+              className="w-[85vw] sm:w-80 flex-shrink-0 flex flex-col items-center justify-center border-4 border-dashed border-slate-200 rounded-[2rem] group hover:border-indigo-400 hover:bg-indigo-50/30 transition-all min-h-[200px] mb-4"
             >
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <Plus className="w-6 h-6" />
+              <div className="w-14 h-14 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:rotate-90 transition-all duration-300">
+                <Plus className="w-6 h-6 text-indigo-500" />
               </div>
-              <p className="text-sm font-black text-indigo-400 group-hover:text-indigo-600">ADICIONAR COLUNA</p>
+              <p className="text-sm font-black text-slate-400 group-hover:text-indigo-600 transition-colors uppercase tracking-wider">Adicionar Coluna</p>
             </button>
           )}
         </div>

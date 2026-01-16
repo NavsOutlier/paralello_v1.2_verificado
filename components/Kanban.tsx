@@ -389,7 +389,7 @@ export const Kanban: React.FC = () => {
       {/* Kanban Board */}
       <div
         ref={scrollContainerRef}
-        className={`flex-1 overflow-x-auto overflow-y-hidden bg-[#f8fafc] ${isDraggingBoard ? 'cursor-grabbing' : 'cursor-grab'}
+        className={`flex-1 overflow-x-auto overflow-y-hidden bg-[#f8fafc] ${isEditingStages ? 'cursor-default' : (isDraggingBoard ? 'cursor-grabbing' : 'cursor-grab')}
           [&::-webkit-scrollbar]:h-4
           [&::-webkit-scrollbar-track]:bg-slate-200
           [&::-webkit-scrollbar-thumb]:bg-slate-400
@@ -414,14 +414,17 @@ export const Kanban: React.FC = () => {
             return (
               <div
                 key={stage.id}
-                className="w-[85vw] sm:w-80 flex-shrink-0 flex flex-col group/stage"
+                className={`w-[85vw] sm:w-80 flex-shrink-0 flex flex-col group/stage rounded-b-2xl transition-colors ${isOver ? 'bg-indigo-50/50' : ''}`}
+                style={{
+                  backgroundColor: isOver ? undefined : `${stage.color}08`, // 5% opacity tint
+                  borderTop: `4px solid ${stage.color}`
+                }}
                 onDragOver={(e) => handleDragOver(e, stage.id)}
                 onDrop={(e) => handleDrop(e, stage.id)}
               >
                 {/* Stage Header */}
-                <div className="mb-4 flex items-center justify-between px-2">
+                <div className="mb-3 mt-3 flex items-center justify-between px-3">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: stage.color }} />
 
                     {isEditingStages ? (
                       <div className="flex items-center gap-1 w-full">
@@ -467,13 +470,31 @@ export const Kanban: React.FC = () => {
                             {stage.name}
                           </h3>
                         )}
+
+                        {/* Delete Button */}
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Tem certeza que deseja excluir esta etapa e todas as tarefas nela?')) {
+                              handleDeleteStage(stage.id);
+                            }
+                          }}
+                          className="ml-2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                          title="Excluir Coluna"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     ) : (
-                      <div className="min-w-0">
-                        <h3 className="font-black text-slate-800 text-sm uppercase tracking-wider truncate">
+                      <div className="min-w-0 flex items-center gap-2">
+                        <h3 className="font-extrabold text-slate-700 text-sm uppercase tracking-tight truncate" style={{ color: stage.color }}>
                           {stage.name}
                         </h3>
-                        <p className="text-[10px] text-slate-400 font-bold">{stageTasks.length} TAREFAS</p>
+                        <span
+                          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/60 border border-black/5"
+                          style={{ color: stage.color }}
+                        >
+                          {stageTasks.length}
+                        </span>
                       </div>
                     )}
                   </div>

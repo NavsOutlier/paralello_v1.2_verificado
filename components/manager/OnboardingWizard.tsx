@@ -16,13 +16,15 @@ import {
     UserPlus,
     UserCog,
     Trash2,
-    Info
+    Info,
+    Activity
 } from 'lucide-react';
 import { useWhatsApp } from '../../hooks/useWhatsApp';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Button, Card, Badge } from '../ui';
+import { TintimIntegrationForm, TintimConfig } from './TintimIntegrationForm';
 
 interface OnboardingWizardProps {
     onComplete: () => void;
@@ -55,9 +57,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         jobTitle: '',
         role: 'member',
         permissions: {
-            can_manage_clients: true,
             can_manage_tasks: true,
-            can_manage_team: false
+            can_manage_clients: false,
+            can_manage_team: false,
+            can_manage_marketing: false
         }
     }]);
 
@@ -76,6 +79,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     // Step 4: Assignment State
     const [allTeamMembers, setAllTeamMembers] = useState<any[]>([]);
     const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+    const [hasTintim, setHasTintim] = useState(false);
+    const [tintimConfig, setTintimConfig] = useState<TintimConfig>({});
 
     // Safety: Reset global loading state whenever switching steps
     useEffect(() => {
@@ -195,6 +200,31 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         };
     }, [isCreatingGroup, newClientId, showToast]);
 
+    const handleSaveTintim = async () => {
+        if (!newClientId) {
+            setStep(5);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const { error } = await supabase
+                .from('clients')
+                .update({
+                    tintim_config: hasTintim ? tintimConfig : null
+                })
+                .eq('id', newClientId);
+
+            if (error) throw error;
+            showToast(hasTintim ? 'Integração Tintim configurada!' : 'Integração ignorada');
+            setStep(5);
+        } catch (err: any) {
+            showToast(err.message || 'Erro ao salvar configuração', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleInviteMembers = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!organizationId) return;
@@ -266,14 +296,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     };
 
     useEffect(() => {
-        if (step === 4) {
+        if (step === 5) {
             fetchAllTeamMembers();
         }
     }, [step]);
 
     const handleAssignMembers = async () => {
         if (!organizationId || !newClientId || selectedMemberIds.length === 0) {
-            setStep(5); // Skip if nothing selected
+            setStep(6); // Skip if nothing selected
             return;
         }
 
@@ -292,7 +322,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
             if (error) throw error;
             showToast('Equipe vinculada ao cliente com sucesso!');
-            setStep(5);
+            setStep(6);
         } catch (error: any) {
             showToast(error.message || 'Erro ao vincular equipe', 'error');
         } finally {
@@ -307,9 +337,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             jobTitle: '',
             role: 'member',
             permissions: {
-                can_manage_clients: true,
                 can_manage_tasks: true,
-                can_manage_team: false
+                can_manage_clients: false,
+                can_manage_team: false,
+                can_manage_marketing: false
             }
         }]);
     };
@@ -512,18 +543,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
                             <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
                                 <label className="text-[10px] font-black text-slate-400 uppercase block mb-3 ml-1">Permissões de Acesso</label>
-                                <div className="flex flex-wrap gap-4">
-                                    <label className="flex items-center gap-2 cursor-pointer group">
-                                        <div className="relative flex items-center">
-                                            <input
-                                                type="checkbox"
-                                                checked={member.permissions.can_manage_clients}
-                                                onChange={(e) => updateMemberRow(idx, 'permissions.can_manage_clients', e.target.checked)}
-                                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
-                                            />
-                                        </div>
-                                        <span className="text-xs font-bold text-slate-600 group-hover:text-slate-800 transition-colors">Clientes</span>
-                                    </label>
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
                                     <label className="flex items-center gap-2 cursor-pointer group">
                                         <div className="relative flex items-center">
                                             <input
@@ -539,12 +559,34 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                                         <div className="relative flex items-center">
                                             <input
                                                 type="checkbox"
+                                                checked={member.permissions.can_manage_clients}
+                                                onChange={(e) => updateMemberRow(idx, 'permissions.can_manage_clients', e.target.checked)}
+                                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                                            />
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-600 group-hover:text-slate-800 transition-colors">Clientes</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="checkbox"
                                                 checked={member.permissions.can_manage_team}
                                                 onChange={(e) => updateMemberRow(idx, 'permissions.can_manage_team', e.target.checked)}
                                                 className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
                                             />
                                         </div>
                                         <span className="text-xs font-bold text-slate-600 group-hover:text-slate-800 transition-colors">Equipe</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={member.permissions.can_manage_marketing}
+                                                onChange={(e) => updateMemberRow(idx, 'permissions.can_manage_marketing', e.target.checked)}
+                                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                                            />
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-600 group-hover:text-slate-800 transition-colors">Marketing</span>
                                     </label>
                                 </div>
                             </div>
@@ -734,6 +776,71 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     );
 
     const renderStep4 = () => (
+        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+            <div className="text-center space-y-2">
+                <div className="inline-flex p-3 bg-indigo-100 text-indigo-600 rounded-2xl mb-2">
+                    <Activity className="w-8 h-8" />
+                </div>
+                <h2 className="text-3xl font-black text-slate-800">Integração Tintim</h2>
+                <p className="text-slate-500 max-w-sm mx-auto text-sm">
+                    Deseja integrar o Tintim para automatizar os dados de marketing deste cliente?
+                </p>
+            </div>
+
+            <div className="max-w-md mx-auto space-y-6">
+                <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${hasTintim ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
+                                <Activity className="w-5 h-5" />
+                            </div>
+                            <span className="font-bold text-slate-700">Deseja integrar agora?</span>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={hasTintim}
+                                onChange={(e) => setHasTintim(e.target.checked)}
+                            />
+                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+
+                    {hasTintim && (
+                        <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+                            <TintimIntegrationForm
+                                clientId={newClientId}
+                                clientName={clientName}
+                                config={tintimConfig}
+                                onChange={setTintimConfig}
+                                showWebhook={true}
+                            />
+                        </div>
+                    )}
+                </div>
+
+                <div className="pt-2 flex flex-col gap-3">
+                    <Button
+                        onClick={handleSaveTintim}
+                        disabled={loading || (hasTintim && (!tintimConfig.customer_code || !tintimConfig.security_token))}
+                        className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-100 transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                        {loading ? (
+                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                        ) : (
+                            <>
+                                {hasTintim ? 'Finalizar Integração' : 'Continuar sem Integração'}
+                                <ArrowRight className="ml-2 w-5 h-5" />
+                            </>
+                        )}
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderStep5 = () => (
         <div className="animate-in slide-in-from-right-8 fade-in duration-500">
             <div className="mb-10 flex flex-col items-center">
                 <div className="w-16 h-16 bg-blue-100 rounded-3xl flex items-center justify-center text-blue-600 mb-6 shadow-xl shadow-blue-50">
@@ -842,7 +949,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         </div>
     );
 
-    const renderStep5 = () => (
+    const renderStep6 = () => (
         <div className="text-center space-y-10 py-4 animate-in zoom-in-95 fade-in duration-700">
             {/* Header com Brilho */}
             <div className="relative inline-block group">
@@ -871,6 +978,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     'WhatsApp Conectado',
                     'Equipe Convidada e Roles Atribuídos',
                     'Primeiro Cliente Cadastrado',
+                    hasTintim ? 'Integração Tintim Concluída' : 'Setup do Cliente Concluído',
                     'Acesso da Equipe Vinculado'
                 ].map((item, idx) => (
                     <div
@@ -933,7 +1041,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         </div>
                         {window.innerWidth > 768 && (
                             <div className="flex gap-2">
-                                {[1, 2, 3, 4, 5].map((s) => (
+                                {[1, 2, 3, 4, 5, 6].map((s) => (
                                     <div
                                         key={s}
                                         className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${step === s ? 'w-8 bg-indigo-600' : s < step ? 'bg-emerald-500' : 'bg-slate-200'
@@ -955,6 +1063,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                                 {step === 3 && renderStep3()}
                                 {step === 4 && renderStep4()}
                                 {step === 5 && renderStep5()}
+                                {step === 6 && renderStep6()}
                             </>
                         )}
                     </main>
@@ -962,7 +1071,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     {/* Footer Info */}
                     <footer className="mt-12 text-center">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">
-                            {!isConfirmed ? 'Preparação do Setup' : `Onboarding Paralello • Passo ${step} de 5`}
+                            {!isConfirmed ? 'Preparação do Setup' : `Onboarding Paralello • Passo ${step} de 6`}
                         </p>
                     </footer>
                 </div>

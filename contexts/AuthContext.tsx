@@ -12,6 +12,7 @@ interface AuthContextType {
         can_manage_clients: boolean;
         can_manage_tasks: boolean;
         can_manage_team: boolean;
+        can_manage_marketing: boolean;
     } | null;
     loading: boolean;
     signOut: () => Promise<void>;
@@ -73,11 +74,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             if (teamData) {
-                setIsManager(teamData.role === 'manager');
+                const isManagerRole = teamData.role === 'manager';
+                setIsManager(isManagerRole);
                 if (teamData.organization_id) {
                     setOrganizationId(teamData.organization_id);
                 }
-                setPermissions(teamData.permissions);
+
+                // Managers always have all permissions, others use what's in the DB
+                const perms = teamData.permissions || {
+                    can_manage_clients: false,
+                    can_manage_tasks: false,
+                    can_manage_team: false,
+                    can_manage_marketing: false
+                };
+
+                setPermissions({
+                    can_manage_clients: isManagerRole || !!perms.can_manage_clients,
+                    can_manage_tasks: isManagerRole || !!perms.can_manage_tasks,
+                    can_manage_team: isManagerRole || !!perms.can_manage_team,
+                    can_manage_marketing: isManagerRole || !!perms.can_manage_marketing
+                });
             } else {
                 setIsManager(false);
                 setPermissions(null);

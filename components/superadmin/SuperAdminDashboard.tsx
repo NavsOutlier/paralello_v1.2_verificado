@@ -10,6 +10,7 @@ import { OrganizationModal } from './OrganizationModal';
 import { AdminOrgSetupModal } from './AdminOrgSetupModal';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { useToast } from '../../contexts/ToastContext';
+import { SystemSettings } from './SystemSettings';
 import {
     fetchOrganizations,
     createOrganization,
@@ -31,6 +32,7 @@ export const SuperAdminDashboard: React.FC = () => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [deletingOrg, setDeletingOrg] = useState<Organization | null>(null);
+    const [activeTab, setActiveTab] = useState<'organizations' | 'settings'>('organizations');
     const { showToast } = useToast();
 
     // Load organizations on mount
@@ -241,72 +243,94 @@ export const SuperAdminDashboard: React.FC = () => {
                 </div>
             </div>
 
-            {/* Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <MetricsCard
-                    title="Total de Organizações"
-                    value={totalOrgs}
-                    icon={Building2}
-                    color="bg-blue-500"
-                />
-                <MetricsCard
-                    title="Organizações Ativas"
-                    value={activeOrgs}
-                    icon={TrendingUp}
-                    color="bg-green-500"
-                    subtitle={`${((activeOrgs / totalOrgs) * 100).toFixed(0)}% do total`}
-                />
-                <MetricsCard
-                    title="MRR Total"
-                    value={`$${mrr.toLocaleString()}`}
-                    icon={DollarSign}
-                    color="bg-indigo-500"
-                    subtitle="Monthly Recurring Revenue"
-                />
-                <MetricsCard
-                    title="Membros da Equipe"
-                    value={organizations.reduce((sum, o) => sum + o.stats.users, 0)}
-                    icon={Users}
-                    color="bg-purple-500"
-                />
+            {/* Tabs */}
+            <div className="flex border-b border-slate-200 mb-8">
+                <button
+                    onClick={() => setActiveTab('organizations')}
+                    className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'organizations' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                >
+                    Organizações
+                </button>
+                <button
+                    onClick={() => setActiveTab('settings')}
+                    className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'settings' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                >
+                    Configurações Globais
+                </button>
             </div>
 
-            {/* Plan Distribution */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                    <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-semibold text-slate-600">BASIC</h3>
-                        <span className="text-2xl font-bold text-slate-800">{getPlanCount(PlanType.BASIC)}</span>
+            {activeTab === 'organizations' ? (
+                <>
+                    {/* Metrics */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <MetricsCard
+                            title="Total de Organizações"
+                            value={totalOrgs}
+                            icon={Building2}
+                            color="bg-blue-500"
+                        />
+                        <MetricsCard
+                            title="Organizações Ativas"
+                            value={activeOrgs}
+                            icon={TrendingUp}
+                            color="bg-green-500"
+                            subtitle={`${((activeOrgs / totalOrgs) * 100).toFixed(0)}% do total`}
+                        />
+                        <MetricsCard
+                            title="MRR Total"
+                            value={`$${mrr.toLocaleString()}`}
+                            icon={DollarSign}
+                            color="bg-indigo-500"
+                            subtitle="Monthly Recurring Revenue"
+                        />
+                        <MetricsCard
+                            title="Membros da Equipe"
+                            value={organizations.reduce((sum, o) => sum + o.stats.users, 0)}
+                            icon={Users}
+                            color="bg-purple-500"
+                        />
                     </div>
-                    <div className="text-sm text-slate-500">$49/mês • {PLANS[PlanType.BASIC].maxUsers} usuários</div>
-                </div>
 
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-indigo-100 border-2">
-                    <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-semibold text-indigo-600">PRO</h3>
-                        <span className="text-2xl font-bold text-indigo-600">{getPlanCount(PlanType.PRO)}</span>
+                    {/* Plan Distribution */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-sm font-semibold text-slate-600">BASIC</h3>
+                                <span className="text-2xl font-bold text-slate-800">{getPlanCount(PlanType.BASIC)}</span>
+                            </div>
+                            <div className="text-sm text-slate-500">$49/mês • {PLANS[PlanType.BASIC].maxUsers} usuários</div>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-indigo-100 border-2">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-sm font-semibold text-indigo-600">PRO</h3>
+                                <span className="text-2xl font-bold text-indigo-600">{getPlanCount(PlanType.PRO)}</span>
+                            </div>
+                            <div className="text-sm text-slate-500">$149/mês • {PLANS[PlanType.PRO].maxUsers} usuários</div>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-purple-100 border-2">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-sm font-semibold text-purple-600">ENTERPRISE</h3>
+                                <span className="text-2xl font-bold text-purple-600">{getPlanCount(PlanType.ENTERPRISE)}</span>
+                            </div>
+                            <div className="text-sm text-slate-500">$499/mês • Ilimitado</div>
+                        </div>
                     </div>
-                    <div className="text-sm text-slate-500">$149/mês • {PLANS[PlanType.PRO].maxUsers} usuários</div>
-                </div>
 
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-purple-100 border-2">
-                    <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-semibold text-purple-600">ENTERPRISE</h3>
-                        <span className="text-2xl font-bold text-purple-600">{getPlanCount(PlanType.ENTERPRISE)}</span>
-                    </div>
-                    <div className="text-sm text-slate-500">$499/mês • Ilimitado</div>
-                </div>
-            </div>
-
-            {/* Organizations Table */}
-            <OrganizationTable
-                organizations={organizations}
-                onEdit={handleEdit}
-                onToggleStatus={handleToggleStatus}
-                onChangePlan={handleChangePlan}
-                onOpenSetup={handleOpenSetup}
-                onDelete={handleDelete}
-            />
+                    {/* Organizations Table */}
+                    <OrganizationTable
+                        organizations={organizations}
+                        onEdit={handleEdit}
+                        onToggleStatus={handleToggleStatus}
+                        onChangePlan={handleChangePlan}
+                        onOpenSetup={handleOpenSetup}
+                        onDelete={handleDelete}
+                    />
+                </>
+            ) : (
+                <SystemSettings />
+            )}
 
             {/* Modal */}
             <OrganizationModal

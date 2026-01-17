@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { HelpCircle, X, Info } from 'lucide-react';
+import { HelpCircle, X, Info, Activity } from 'lucide-react';
 import { Client } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
+import { TintimIntegrationForm, TintimConfig } from './TintimIntegrationForm';
 
 interface ClientFormModalProps {
     isOpen: boolean;
@@ -31,8 +32,10 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
     const [groupMode, setGroupMode] = useState<'create' | 'link' | 'none'>('none');
     const [showHelp, setShowHelp] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [showTintim, setShowTintim] = useState(false);
+    const [tintimConfig, setTintimConfig] = useState<TintimConfig>({});
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (isOpen) {
             setFormData({
                 name: client?.name || '',
@@ -46,6 +49,8 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
                 groupName: client?.name ? `Atendimento: ${client.name}` : ''
             });
             setGroupMode(client?.whatsappGroupId ? 'link' : 'none');
+            setShowTintim(!!client?.tintim_config?.customer_code);
+            setTintimConfig(client?.tintim_config || {});
         }
     }, [isOpen, client]);
 
@@ -70,7 +75,8 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
                 email: formData.email?.trim() || '',
                 autoCreateGroup: groupMode === 'create',
                 groupName: groupMode === 'create' ? formData.groupName : undefined,
-                whatsappGroupId: groupMode === 'link' ? formData.whatsappGroupId : ''
+                whatsappGroupId: groupMode === 'link' ? formData.whatsappGroupId : '',
+                tintim_config: showTintim ? tintimConfig : null
             };
 
             await onSave(finalPayload);
@@ -85,257 +91,262 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                <div className="p-6 border-b border-slate-200">
-                    <h2 className="text-xl font-semibold text-slate-800">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+                <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-slate-800">
                         {client ? 'Editar Cliente' : 'Novo Cliente'}
                     </h2>
+                    <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                        <X className="w-5 h-5 text-slate-400" />
+                    </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
-                            Nome *
-                        </label>
-                        <input
-                            type="text"
-                            required
-                            value={formData.name}
-                            onChange={(e) => {
-                                const newName = e.target.value;
-                                setFormData(prev => {
-                                    const newData = { ...prev, name: newName };
-                                    // Auto-populate group name if it was empty or followed the default pattern
-                                    if (!prev.groupName || prev.groupName === `Atendimento: ${prev.name}`) {
-                                        newData.groupName = `Atendimento: ${newName}`;
-                                    }
-                                    return newData;
-                                });
-                            }}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                    </div>
+                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="md:col-span-2">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                Nome do Cliente *
+                            </label>
+                            <input
+                                type="text"
+                                required
+                                value={formData.name}
+                                onChange={(e) => {
+                                    const newName = e.target.value;
+                                    setFormData(prev => {
+                                        const newData = { ...prev, name: newName };
+                                        if (!prev.groupName || prev.groupName === `Atendimento: ${prev.name}`) {
+                                            newData.groupName = `Atendimento: ${newName}`;
+                                        }
+                                        return newData;
+                                    });
+                                }}
+                                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                            />
+                        </div>
 
-                    <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                                 Email
                             </label>
                             <input
                                 type="email"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                                 Telefone
                             </label>
                             <input
                                 type="tel"
                                 value={formData.phone}
                                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                                 placeholder="(00) 00000-0000"
                             />
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
-                            WhatsApp
-                        </label>
-                        <input
-                            type="tel"
-                            value={formData.whatsapp}
-                            onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="(00) 00000-0000"
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                WhatsApp
+                            </label>
+                            <input
+                                type="tel"
+                                value={formData.whatsapp}
+                                onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                                placeholder="(00) 00000-0000"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                                Status
+                            </label>
+                            <select
+                                value={formData.status}
+                                onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })}
+                                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                            >
+                                <option value="active">Ativo</option>
+                                <option value="inactive">Inativo</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
-                            Status
-                        </label>
-                        <select
-                            value={formData.status}
-                            onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="active">Ativo</option>
-                            <option value="inactive">Inativo</option>
-                        </select>
-                    </div>
-
+                    {/* WHATSAPP GROUP SECTION */}
                     {!client && (
-                        <div className="space-y-3 p-3 bg-emerald-50 border border-emerald-100 rounded-lg">
-                            <label className="block text-sm font-semibold text-emerald-800 mb-2">
-                                Grupo do WhatsApp
+                        <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl space-y-4">
+                            <label className="block text-sm font-bold text-emerald-800">
+                                Configuração de Grupo Atendimento
                             </label>
 
-                            <div className="flex flex-col gap-2">
-                                <label className="flex items-center gap-2 cursor-pointer">
+                            <div className="flex flex-col gap-2.5">
+                                <label className="flex items-center gap-2.5 cursor-pointer group">
                                     <input
                                         type="radio"
                                         name="groupMode"
                                         checked={groupMode === 'none'}
                                         onChange={() => setGroupMode('none')}
-                                        className="text-emerald-600 focus:ring-emerald-500"
+                                        className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-emerald-300"
                                     />
-                                    <span className="text-sm text-emerald-700">Sem grupo no momento</span>
+                                    <span className="text-sm text-emerald-700 group-hover:text-emerald-900 transition-colors">Sem grupo no momento</span>
                                 </label>
 
-                                <label className="flex items-center gap-2 cursor-pointer">
+                                <label className="flex items-center gap-2.5 cursor-pointer group">
                                     <input
                                         type="radio"
                                         name="groupMode"
                                         checked={groupMode === 'create'}
                                         onChange={() => setGroupMode('create')}
-                                        className="text-emerald-600 focus:ring-emerald-500"
+                                        className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-emerald-300"
                                     />
-                                    <span className="text-sm text-emerald-700">Criar NOVO grupo automaticamente</span>
+                                    <span className="text-sm text-emerald-700 group-hover:text-emerald-900 transition-colors">Criar NOVO grupo automaticamente</span>
                                 </label>
 
-                                <label className="flex items-center gap-2 cursor-pointer">
+                                <label className="flex items-center gap-2.5 cursor-pointer group">
                                     <input
                                         type="radio"
                                         name="groupMode"
                                         checked={groupMode === 'link'}
                                         onChange={() => setGroupMode('link')}
-                                        className="text-emerald-600 focus:ring-emerald-500"
+                                        className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-emerald-300"
                                     />
-                                    <span className="text-sm text-emerald-700">Vincular grupo EXISTENTE (colar ID)</span>
+                                    <span className="text-sm text-emerald-700 group-hover:text-emerald-900 transition-colors">Vincular grupo EXISTENTE (ID)</span>
                                 </label>
                             </div>
 
                             {groupMode === 'create' && (
-                                <div className="mt-4 animate-in fade-in slide-in-from-top-1 duration-200">
-                                    <label className="block text-xs font-bold text-emerald-700 uppercase mb-1.5 ml-1">
-                                        Nome do Grupo a ser criado
-                                    </label>
+                                <div className="mt-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <label className="block text-[10px] font-bold text-emerald-600 uppercase mb-1 ml-1">Nome do Novo Grupo</label>
                                     <input
                                         type="text"
                                         required
                                         value={formData.groupName}
                                         onChange={(e) => setFormData({ ...formData, groupName: e.target.value })}
-                                        className="w-full px-3 py-2 border border-emerald-200 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
-                                        placeholder="Ex: Suporte VIP - Cliente"
+                                        className="w-full px-4 py-2 border border-emerald-200 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                                    />
+                                </div>
+                            )}
+
+                            {groupMode === 'link' && (
+                                <div className="mt-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <div className="flex items-center justify-between mb-1.5 px-1">
+                                        <label className="text-[10px] font-bold text-emerald-600 uppercase">ID do Grupo (@g.us)</label>
+                                        <button type="button" onClick={() => setShowHelp(true)} className="text-[10px] font-bold text-blue-600 hover:underline">COMO ACHAR?</button>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.whatsappGroupId}
+                                        onChange={(e) => setFormData({ ...formData, whatsappGroupId: e.target.value })}
+                                        className="w-full px-4 py-2 border border-emerald-200 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                                        placeholder="12345678@g.us"
                                     />
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {groupMode === 'link' && (
-                        <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="block text-sm font-medium text-slate-700">
-                                    ID do Grupo WhatsApp *
-                                </label>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowHelp(true)}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg text-xs font-bold transition-all shadow-sm"
-                                >
-                                    <HelpCircle className="w-3.5 h-3.5" />
-                                    COMO ACHAR O ID?
-                                </button>
-                            </div>
-                            <input
-                                type="text"
-                                required={groupMode === 'link'}
-                                value={formData.whatsappGroupId}
-                                onChange={(e) => setFormData({ ...formData, whatsappGroupId: e.target.value })}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                placeholder="1234567890@g.us"
-                            />
-                        </div>
-                    )}
-
-                    {showHelp && (
-                        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
-                            <div className="bg-slate-900 text-white rounded-xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-700">
-                                <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-800/50">
-                                    <div className="flex items-center gap-2">
-                                        <Info className="w-5 h-5 text-blue-400" />
-                                        <h3 className="font-semibold">Como encontrar o ID do Grupo</h3>
-                                    </div>
-                                    <button
-                                        onClick={() => setShowHelp(false)}
-                                        className="p-1 hover:bg-slate-700 rounded-lg transition-colors"
-                                    >
-                                        <X className="w-5 h-5" />
-                                    </button>
+                    {/* TINTIM INTEGRATION SECTION */}
+                    <div className="pt-6 border-t border-slate-100">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                                    <Activity className="w-5 h-5" />
                                 </div>
-                                <div className="p-6 space-y-4">
-                                    <div className="bg-slate-800/80 p-6 rounded-xl space-y-5 text-sm leading-relaxed border border-slate-700">
-                                        <h4 className="text-blue-400 text-base font-extrabold mb-4 tracking-tight">Método 1: Usando as Ferramentas de Desenvolvedor</h4>
-
-                                        <div className="space-y-4 text-slate-100">
-                                            <p><span className="text-white font-bold mr-2">1. Abra o WhatsApp Web:</span>Vá para <code className="bg-slate-700 px-1.5 py-0.5 rounded text-blue-300">web.whatsapp.com</code> e faça login.</p>
-
-                                            <p><span className="text-white font-bold mr-2">2. Acesse o Grupo:</span>Abra a conversa do grupo desejado.</p>
-
-                                            <p><span className="text-white font-bold mr-2">3. Abra as Ferramentas de Desenvolvedor:</span>Clique com o botão direito na página e selecione <span className="text-yellow-400">"Inspecionar"</span> (ou use as teclas <code className="bg-slate-700 px-1.5 py-0.5 rounded text-yellow-200">Ctrl+Shift+I</code> / <code className="bg-slate-700 px-1.5 py-0.5 rounded text-yellow-200">Cmd+Option+I</code>).</p>
-
-                                            <p><span className="text-white font-bold mr-2">4. Procure por <code className="text-emerald-400 font-bold">@g.us</code>:</span>No painel de elementos, use <code className="bg-slate-700 px-1.5 py-0.5 rounded text-emerald-200">Ctrl+F</code> para buscar por <code className="text-emerald-400">@g.us</code>. Você verá uma linha com <code className="text-emerald-300">data-id="... @g.us"</code>.</p>
-
-                                            <p><span className="text-white font-bold mr-2">5. Copie o ID:</span>O código que termina em <code className="text-emerald-400 font-bold">@g.us</code> é o ID único do seu grupo.</p>
-                                        </div>
-
-                                        <div className="pt-2 border-t border-slate-700">
-                                            <p className="text-[11px] text-slate-400 italic">Dica: O ID sempre começa com números e termina em @g.us</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="p-4 bg-slate-800/50 flex justify-end">
-                                    <button
-                                        onClick={() => setShowHelp(false)}
-                                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-                                    >
-                                        Entendi
-                                    </button>
+                                <div>
+                                    <h3 className="font-bold text-slate-800">Integração Tintim</h3>
+                                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">Marketing & Conversão</p>
                                 </div>
                             </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={showTintim}
+                                    onChange={(e) => setShowTintim(e.target.checked)}
+                                />
+                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
                         </div>
-                    )}
+
+                        {showTintim && (
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <TintimIntegrationForm
+                                    clientId={client?.id}
+                                    clientName={formData.name}
+                                    config={tintimConfig}
+                                    onChange={setTintimConfig}
+                                    showWebhook={true}
+                                />
+                            </div>
+                        )}
+                    </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                             Observações
                         </label>
                         <textarea
                             rows={3}
                             value={formData.notes}
                             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Notas sobre o cliente..."
+                            className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                            placeholder="Notas internas sobre o cliente..."
                         />
                     </div>
 
-                    <div className="flex gap-3 justify-end pt-4 border-t border-slate-200">
+                    <div className="flex gap-3 justify-end pt-6 border-t border-slate-100">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                            className="px-6 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
                             disabled={loading}
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
-                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                            className="px-8 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all disabled:opacity-50"
                             disabled={loading}
                         >
-                            {loading ? 'Salvando...' : 'Salvar'}
+                            {loading ? 'Salvando...' : 'Salvar Cliente'}
                         </button>
                     </div>
                 </form>
             </div>
+
+            {/* Help Modal for Group ID */}
+            {showHelp && (
+                <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="font-bold text-slate-800">Como encontrar o ID do Grupo</h3>
+                            <button onClick={() => setShowHelp(false)} className="p-1.5 hover:bg-slate-100 rounded-full transition-colors">
+                                <X className="w-5 h-5 text-slate-400" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4 text-sm text-slate-600">
+                            <p>1. Abra o <b>WhatsApp Web</b> no seu computador.</p>
+                            <p>2. Entre na conversa do grupo desejado.</p>
+                            <p>3. Clique com o botão direito e selecione <b>"Inspecionar"</b>.</p>
+                            <p>4. Procure no código por algo que termine em <b>@g.us</b>.</p>
+                            <p>5. O ID será algo como <code className="bg-slate-100 px-1.5 py-0.5 rounded text-blue-600 font-mono">1234567890@g.us</code>.</p>
+                        </div>
+                        <div className="p-4 bg-slate-50 flex justify-end">
+                            <button onClick={() => setShowHelp(false)} className="px-6 py-2 bg-slate-900 text-white rounded-lg font-bold">Entendi</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

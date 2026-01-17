@@ -2,8 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
-    Users, Calendar, Filter, Download, ArrowRight, Table, BarChart3, GripHorizontal, Pencil, CheckCircle2, LayoutDashboard
+    Users, Calendar, Filter, Download, ArrowRight, Table, BarChart3, GripHorizontal, Pencil, CheckCircle2, LayoutDashboard,
+    Settings, ShieldCheck, Link, Activity, Check, X, Copy, ExternalLink
 } from 'lucide-react';
+import { TintimIntegrationForm, TintimConfig } from './manager/TintimIntegrationForm';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
     BarChart, Bar
@@ -20,14 +22,15 @@ type Granularity = 'day' | 'week' | 'month';
 interface PeriodData {
     label: string;
     dateKey: string;
-    meta: { leads: number; investment: number; conversions: number };
-    google: { leads: number; investment: number; conversions: number };
-    direct: { leads: number; investment: number; conversions: number };
-    total: { leads: number; investment: number; conversions: number; cpl: number; rate: number };
+    meta: { leads: number; investment: number; conversions: number; revenue: number };
+    google: { leads: number; investment: number; conversions: number; revenue: number };
+    direct: { leads: number; investment: number; conversions: number; revenue: number };
+    total: { leads: number; investment: number; conversions: number; revenue: number; cpl: number; rate: number };
 }
 
 export const MarketingDashboard: React.FC = () => {
-    const { organizationId } = useAuth();
+    const { organizationId, isSuperAdmin, permissions } = useAuth();
+    const canManageMarketing = isSuperAdmin || permissions?.can_manage_marketing;
     const [clients, setClients] = useState<Client[]>([]);
     const [selectedClient, setSelectedClient] = useState<string>('');
 
@@ -51,6 +54,46 @@ export const MarketingDashboard: React.FC = () => {
 
     // View Mode State
     const [viewMode, setViewMode] = useState<'table' | 'dashboard'>('dashboard');
+
+    // Tintim Integration State
+    const [isTintimModalOpen, setIsTintimModalOpen] = useState(false);
+    const [tintimConfig, setTintimConfig] = useState<TintimConfig>({
+        customer_code: '',
+        security_token: '',
+        lead_mapped_events: [],
+        conversion_mapped_events: []
+    });
+
+    // Load and Save Tintim Config
+    useEffect(() => {
+        if (isTintimModalOpen && selectedClient) {
+            const loadConfig = async () => {
+                const { data, error } = await supabase
+                    .from('clients')
+                    .select('tintim_config')
+                    .eq('id', selectedClient)
+                    .single();
+
+                if (data?.tintim_config) {
+                    setTintimConfig(data.tintim_config);
+                } else {
+                    setTintimConfig({
+                        customer_code: '',
+                        security_token: '',
+                        lead_mapped_events: [],
+                        conversion_mapped_events: []
+                    });
+                }
+            };
+            loadConfig();
+        }
+    }, [isTintimModalOpen, selectedClient]);
+
+    const handleSaveTintimConfig = async () => {
+        if (!selectedClient) return;
+        await supabase.from('clients').update({ tintim_config: tintimConfig }).eq('id', selectedClient);
+        setIsTintimModalOpen(false);
+    };
 
     const handleMouseDown = (e: React.MouseEvent) => {
         if (isEditing || !scrollContainerRef.current) return; // Disable drag when editing to allow text selection
@@ -93,11 +136,11 @@ export const MarketingDashboard: React.FC = () => {
     }, [organizationId]);
 
     // Cell Save Handler
-    const handleSaveCell = async (dateKey: string, channel: string, metric: 'leads' | 'investment' | 'conversions', value: string) => {
+    const handleSaveCell = async (dateKey: string, channel: string, metric: 'leads' | 'investment' | 'conversions' | 'revenue', value: string) => {
         if (!organizationId || !selectedClient) return;
 
         // Parse value
-        const numValue = metric === 'investment'
+        const numValue = (metric === 'investment' || metric === 'revenue')
             ? parseFloat(value.replace(/[R$\s.]/g, '').replace(',', '.')) || 0
             : parseInt(value.replace(/\D/g, '')) || 0;
 
@@ -118,11 +161,6 @@ export const MarketingDashboard: React.FC = () => {
                 }];
             }
         });
-
-        // Database Update (Upsert)
-        // Note: We need to handle the case where the row might not exist.
-        // We'll verify/fetch existing row ID first or use upsert constraint if we had one.
-        // For simplicity/robustness without unique constraint knowledge:
 
         const { data: existing } = await supabase.from('marketing_performance')
             .select('id')
@@ -154,7 +192,7 @@ export const MarketingDashboard: React.FC = () => {
         channel,
         metric,
         isMoney = false
-    }: { value: number, dateKey: string, channel: string, metric: 'leads' | 'investment' | 'conversions', isMoney?: boolean }) => {
+    }: { value: number, dateKey: string, channel: string, metric: 'leads' | 'investment' | 'conversions' | 'revenue', isMoney?: boolean }) => {
         const [localValue, setLocalValue] = useState(isMoney ? value.toFixed(2).replace('.', ',') : value.toString());
 
         useEffect(() => {
@@ -293,13 +331,14 @@ export const MarketingDashboard: React.FC = () => {
             });
 
             // Aggregate helpers
-            const sumStart = { leads: 0, investment: 0, conversions: 0 };
+            const sumStart = { leads: 0, investment: 0, conversions: 0, revenue: 0 };
             const groupByChannel = (channel: string) => {
                 const rows = periodRows.filter(r => r.channel === channel);
                 return rows.reduce((acc, curr) => ({
                     leads: acc.leads + (curr.leads || 0),
                     investment: acc.investment + (curr.investment || 0),
-                    conversions: acc.conversions + (curr.conversions || 0)
+                    conversions: acc.conversions + (curr.conversions || 0),
+                    revenue: acc.revenue + (curr.revenue || 0)
                 }), { ...sumStart });
             };
 
@@ -310,6 +349,7 @@ export const MarketingDashboard: React.FC = () => {
             const totalLeads = meta.leads + google.leads + direct.leads;
             const totalInvest = meta.investment + google.investment + direct.investment;
             const totalConv = meta.conversions + google.conversions + direct.conversions;
+            const totalRevenue = meta.revenue + google.revenue + direct.revenue;
 
             return {
                 label: p.label,
@@ -321,6 +361,7 @@ export const MarketingDashboard: React.FC = () => {
                     leads: totalLeads,
                     investment: totalInvest,
                     conversions: totalConv,
+                    revenue: totalRevenue,
                     cpl: totalLeads > 0 ? totalInvest / totalLeads : 0,
                     rate: totalLeads > 0 ? totalConv / totalLeads : 0
                 }
@@ -517,6 +558,16 @@ export const MarketingDashboard: React.FC = () => {
                                 </button>
                             ))}
                         </div>
+
+                        {canManageMarketing && (
+                            <button
+                                onClick={() => setIsTintimModalOpen(true)}
+                                className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-bold hover:bg-indigo-100 transition-all border border-indigo-200"
+                            >
+                                <Link className="w-4 h-4" />
+                                Integração Tintim
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -540,67 +591,122 @@ export const MarketingDashboard: React.FC = () => {
                 }
             `}</style>
 
-            {viewMode === 'dashboard' ? renderDashboardView() : (
-                /* Scrollable Table Area */
-                <div className="flex-1 overflow-hidden p-4 flex flex-col relative w-full">
-                    {/* Scroll Hint overlay if needed, or just the container */}
-                    <div
-                        ref={scrollContainerRef}
-                        onMouseDown={handleMouseDown}
-                        onMouseLeave={handleMouseLeave}
-                        onMouseUp={handleMouseUp}
-                        onMouseMove={handleMouseMove}
-                        className="horizontal-scroll-container bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto w-full pb-2"
-                        style={{ cursor: isEditing ? 'default' : (isDragging ? 'grabbing' : 'grab') }}
-                    >
-                        <table className="w-full border-collapse select-none" style={{ minWidth: '100%' }}>
-                            <thead>
-                                <tr className="bg-slate-900 text-white">
-                                    <th className="sticky left-0 z-20 bg-slate-900 py-4 px-4 text-left font-bold text-sm min-w-[200px] border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] pointer-events-none">
-                                        Métrica / Período
-                                    </th>
-                                    {tableData.map(d => (
-                                        <th key={d.dateKey} className="py-4 px-4 text-center font-bold text-sm min-w-[180px] border-l border-slate-800 pointer-events-none">
-                                            {d.label}
+            {
+                viewMode === 'dashboard' ? renderDashboardView() : (
+                    /* Scrollable Table Area */
+                    <div className="flex-1 overflow-hidden p-4 flex flex-col relative w-full">
+                        {/* Scroll Hint overlay if needed, or just the container */}
+                        <div
+                            ref={scrollContainerRef}
+                            onMouseDown={handleMouseDown}
+                            onMouseLeave={handleMouseLeave}
+                            onMouseUp={handleMouseUp}
+                            onMouseMove={handleMouseMove}
+                            className="horizontal-scroll-container bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto w-full pb-2"
+                            style={{ cursor: isEditing ? 'default' : (isDragging ? 'grabbing' : 'grab') }}
+                        >
+                            <table className="w-full border-collapse select-none" style={{ minWidth: '100%' }}>
+                                <thead>
+                                    <tr className="bg-slate-900 text-white">
+                                        <th className="sticky left-0 z-20 bg-slate-900 py-4 px-4 text-left font-bold text-sm min-w-[200px] border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] pointer-events-none">
+                                            Métrica / Período
                                         </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {/* META ADS */}
-                                <SectionHeader title="Meta Ads" color="bg-blue-50" />
-                                <DataRow label="Leads Gerados" getter={d => d.meta.leads} editable channel="meta" metric="leads" />
-                                <DataRow label="Custo por Lead" getter={d => d.meta.leads > 0 ? d.meta.investment / d.meta.leads : 0} format={formatCurrency} />
-                                <DataRow label="Investimento" getter={d => d.meta.investment} format={formatCurrency} editable channel="meta" metric="investment" />
-                                <DataRow label="Conversões" getter={d => d.meta.conversions} editable channel="meta" metric="conversions" />
-                                <DataRow label="Taxa de Conversão" getter={d => d.meta.leads > 0 ? d.meta.conversions / d.meta.leads : 0} format={formatPercent} />
+                                        {tableData.map(d => (
+                                            <th key={d.dateKey} className="py-4 px-4 text-center font-bold text-sm min-w-[180px] border-l border-slate-800 pointer-events-none">
+                                                {d.label}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {/* META ADS */}
+                                    <SectionHeader title="Meta Ads" color="bg-blue-50" />
+                                    <DataRow label="Leads Gerados" getter={d => d.meta.leads} editable channel="meta" metric="leads" />
+                                    <DataRow label="Custo por Lead" getter={d => d.meta.leads > 0 ? d.meta.investment / d.meta.leads : 0} format={formatCurrency} />
+                                    <DataRow label="Investimento" getter={d => d.meta.investment} format={formatCurrency} editable channel="meta" metric="investment" />
+                                    <DataRow label="Conversões" getter={d => d.meta.conversions} editable channel="meta" metric="conversions" />
+                                    <DataRow label="Valor de Conversões" getter={d => d.meta.revenue} format={formatCurrency} editable channel="meta" metric="revenue" />
+                                    <DataRow label="Taxa de Conversão" getter={d => d.meta.leads > 0 ? d.meta.conversions / d.meta.leads : 0} format={formatPercent} />
 
-                                {/* GOOGLE ADS */}
-                                <SectionHeader title="Google Ads" color="bg-emerald-50" />
-                                <DataRow label="Leads Gerados" getter={d => d.google.leads} editable channel="google" metric="leads" />
-                                <DataRow label="Custo por Lead" getter={d => d.google.leads > 0 ? d.google.investment / d.google.leads : 0} format={formatCurrency} />
-                                <DataRow label="Investimento" getter={d => d.google.investment} format={formatCurrency} editable channel="google" metric="investment" />
-                                <DataRow label="Conversões" getter={d => d.google.conversions} editable channel="google" metric="conversions" />
-                                <DataRow label="Taxa de Conversão" getter={d => d.google.leads > 0 ? d.google.conversions / d.google.leads : 0} format={formatPercent} />
+                                    {/* GOOGLE ADS */}
+                                    <SectionHeader title="Google Ads" color="bg-emerald-50" />
+                                    <DataRow label="Leads Gerados" getter={d => d.google.leads} editable channel="google" metric="leads" />
+                                    <DataRow label="Custo por Lead" getter={d => d.google.leads > 0 ? d.google.investment / d.google.leads : 0} format={formatCurrency} />
+                                    <DataRow label="Investimento" getter={d => d.google.investment} format={formatCurrency} editable channel="google" metric="investment" />
+                                    <DataRow label="Conversões" getter={d => d.google.conversions} editable channel="google" metric="conversions" />
+                                    <DataRow label="Valor de Conversões" getter={d => d.google.revenue} format={formatCurrency} editable channel="google" metric="revenue" />
+                                    <DataRow label="Taxa de Conversão" getter={d => d.google.leads > 0 ? d.google.conversions / d.google.leads : 0} format={formatPercent} />
 
-                                {/* SEM RASTREIO */}
-                                <SectionHeader title="Sem Rastreio" color="bg-purple-50" />
-                                <DataRow label="Leads Gerados" getter={d => d.direct.leads} editable channel="direct" metric="leads" />
-                                <DataRow label="Conversões" getter={d => d.direct.conversions} editable channel="direct" metric="conversions" />
-                                <DataRow label="Taxa de Conversão" getter={d => d.direct.leads > 0 ? d.direct.conversions / d.direct.leads : 0} format={formatPercent} />
+                                    {/* SEM RASTREIO */}
+                                    <SectionHeader title="Sem Rastreio" color="bg-purple-50" />
+                                    <DataRow label="Leads Gerados" getter={d => d.direct.leads} editable channel="direct" metric="leads" />
+                                    <DataRow label="Conversões" getter={d => d.direct.conversions} editable channel="direct" metric="conversions" />
+                                    <DataRow label="Taxa de Conversão" getter={d => d.direct.leads > 0 ? d.direct.conversions / d.direct.leads : 0} format={formatPercent} />
 
-                                {/* GERAL */}
-                                <SectionHeader title="Resumo Geral" color="bg-slate-100" />
-                                <DataRow label="Total Leads" getter={d => d.total.leads} bg="bg-slate-50 font-bold" />
-                                <DataRow label="Inv. Total" getter={d => d.total.investment} format={formatCurrency} bg="bg-slate-50 font-bold" />
-                                <DataRow label="CPL Médio" getter={d => d.total.cpl} format={formatCurrency} bg="bg-slate-50" />
-                                <DataRow label="Total Conversões" getter={d => d.total.conversions} bg="bg-slate-50" />
-                                <DataRow label="Taxa Global" getter={d => d.total.rate} format={formatPercent} bg="bg-slate-50" />
-                            </tbody>
-                        </table>
+                                    {/* GERAL */}
+                                    <SectionHeader title="Resumo Geral" color="bg-slate-100" />
+                                    <DataRow label="Total Leads" getter={d => d.total.leads} bg="bg-slate-50 font-bold" />
+                                    <DataRow label="Inv. Total" getter={d => d.total.investment} format={formatCurrency} bg="bg-slate-50 font-bold" />
+                                    <DataRow label="CPL Médio" getter={d => d.total.cpl} format={formatCurrency} bg="bg-slate-50" />
+                                    <DataRow label="Total Conversões" getter={d => d.total.conversions} bg="bg-slate-50" />
+                                    <DataRow label="Valor de Conversões" getter={d => d.total.revenue} format={formatCurrency} bg="bg-slate-50 font-bold" />
+                                    <DataRow label="Taxa Global" getter={d => d.total.rate} format={formatPercent} bg="bg-slate-50" />
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+            {/* Tintim Integration Modal */}
+            {
+                isTintimModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+                            {/* Modal Header */}
+                            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
+                                        <Settings className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-slate-900">Configurar Integração Tintim</h3>
+                                        <p className="text-xs text-slate-500">Conecte sua conta para automatizar os dados</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setIsTintimModalOpen(false)} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                                    <X className="w-5 h-5 text-slate-400" />
+                                </button>
+                            </div>
+
+                            {/* Modal Body */}
+                            <div className="flex-1 overflow-y-auto p-6">
+                                <TintimIntegrationForm
+                                    clientId={selectedClient}
+                                    clientName={clients.find(c => c.id === selectedClient)?.name}
+                                    config={tintimConfig}
+                                    onChange={setTintimConfig}
+                                />
+                            </div>
+                            {/* Modal Footer */}
+                            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+                                <button
+                                    onClick={() => setIsTintimModalOpen(false)}
+                                    className="px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-800 transition-all font-sans"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleSaveTintimConfig}
+                                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all flex items-center gap-2"
+                                >
+                                    <Check className="w-4 h-4" />
+                                    Salvar Configurações
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 };

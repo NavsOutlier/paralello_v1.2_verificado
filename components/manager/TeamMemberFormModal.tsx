@@ -21,9 +21,10 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
         name: '',
         jobTitle: '',
         role: 'member',
-        canManageClients: true,
         canManageTasks: true,
-        canManageTeam: false
+        canManageClients: false,
+        canManageTeam: false,
+        canManageMarketing: false
     });
     const [loading, setLoading] = useState(false);
     const [isCreatingSpecialty, setIsCreatingSpecialty] = useState(false);
@@ -37,7 +38,8 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                 role: member?.role || 'member',
                 canManageClients: member?.permissions?.canManageClients ?? true,
                 canManageTasks: member?.permissions?.canManageTasks ?? true,
-                canManageTeam: member?.permissions?.canManageTeam ?? false
+                canManageTeam: member?.permissions?.canManageTeam ?? false,
+                canManageMarketing: member?.permissions?.canManageMarketing ?? false
             });
         }
     }, [isOpen, member]);
@@ -56,7 +58,8 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                 permissions: {
                     canManageClients: formData.canManageClients,
                     canManageTasks: formData.canManageTasks,
-                    canManageTeam: formData.canManageTeam
+                    canManageTeam: formData.canManageTeam,
+                    canManageMarketing: formData.canManageMarketing
                 }
             });
             onClose();
@@ -188,17 +191,6 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input
                                 type="checkbox"
-                                checked={formData.canManageClients}
-                                onChange={(e) => setFormData({ ...formData, canManageClients: e.target.checked })}
-                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                disabled={formData.role === 'manager'}
-                            />
-                            <span className="text-sm text-slate-700">Gerenciar clientes</span>
-                        </label>
-
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="checkbox"
                                 checked={formData.canManageTasks}
                                 onChange={(e) => setFormData({ ...formData, canManageTasks: e.target.checked })}
                                 className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
@@ -210,12 +202,34 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input
                                 type="checkbox"
+                                checked={formData.canManageClients}
+                                onChange={(e) => setFormData({ ...formData, canManageClients: e.target.checked })}
+                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                disabled={formData.role === 'manager'}
+                            />
+                            <span className="text-sm text-slate-700">Gerenciar clientes</span>
+                        </label>
+
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
                                 checked={formData.canManageTeam}
                                 onChange={(e) => setFormData({ ...formData, canManageTeam: e.target.checked })}
                                 className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                                 disabled={formData.role === 'manager'}
                             />
                             <span className="text-sm text-slate-700">Gerenciar equipe</span>
+                        </label>
+
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={formData.canManageMarketing}
+                                onChange={(e) => setFormData({ ...formData, canManageMarketing: e.target.checked })}
+                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                disabled={formData.role === 'manager'}
+                            />
+                            <span className="text-sm text-slate-700">Gerenciar marketing</span>
                         </label>
                     </div>
 

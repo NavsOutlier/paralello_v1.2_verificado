@@ -90,7 +90,8 @@ export const TeamManagement: React.FC = () => {
                     permissions: {
                         canManageClients: m.permissions?.can_manage_clients ?? true,
                         canManageTasks: m.permissions?.can_manage_tasks ?? true,
-                        canManageTeam: m.permissions?.can_manage_team ?? false
+                        canManageTeam: m.permissions?.can_manage_team ?? false,
+                        canManageMarketing: m.permissions?.can_manage_marketing ?? false
                     },
                     jobTitle: m.job_title,
                     status: m.status,
@@ -120,7 +121,8 @@ export const TeamManagement: React.FC = () => {
                         permissions: {
                             can_manage_clients: memberData.permissions?.canManageClients ?? true,
                             can_manage_tasks: memberData.permissions?.canManageTasks ?? true,
-                            can_manage_team: memberData.permissions?.canManageTeam ?? false
+                            can_manage_team: memberData.permissions?.canManageTeam ?? false,
+                            can_manage_marketing: memberData.permissions?.canManageMarketing ?? false
                         }
                     })
                     .eq('id', selectedMember.id);
@@ -153,7 +155,8 @@ export const TeamManagement: React.FC = () => {
                         permissions: {
                             can_manage_clients: memberData.permissions?.canManageClients ?? true,
                             can_manage_tasks: memberData.permissions?.canManageTasks ?? true,
-                            can_manage_team: memberData.permissions?.canManageTeam ?? false
+                            can_manage_team: memberData.permissions?.canManageTeam ?? false,
+                            can_manage_marketing: memberData.permissions?.canManageMarketing ?? false
                         }
                     }
                 });
@@ -354,6 +357,9 @@ export const TeamManagement: React.FC = () => {
                                                 )}
                                                 {member.permissions.canManageTeam && (
                                                     <span>✓ Gerenciar equipe</span>
+                                                )}
+                                                {member.permissions.canManageMarketing && (
+                                                    <span>✓ Gerenciar marketing</span>
                                                 )}
                                             </div>
                                         </div>

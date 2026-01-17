@@ -19,7 +19,8 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
     config = {
         customer_code: '',
         security_token: '',
-        conversion_event: ''
+        conversion_event: '',
+        conversion_event_id: undefined
     },
     onChange,
     showWebhook = true
@@ -27,8 +28,9 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
     const [customerCode, setCustomerCode] = useState(config.customer_code || '');
     const [securityToken, setSecurityToken] = useState(config.security_token || '');
     const [conversionEvent, setConversionEvent] = useState(config.conversion_event || '');
+    const [conversionEventId, setConversionEventId] = useState<number | undefined>(config.conversion_event_id);
     const [isDiscovering, setIsDiscovering] = useState(false);
-    const [discoveredEvents, setDiscoveredEvents] = useState<string[]>([]);
+    const [discoveredEvents, setDiscoveredEvents] = useState<{ id: number; name: string }[]>([]);
     const [webhookBaseUrl, setWebhookBaseUrl] = useState('');
     const [discoveryUrl, setDiscoveryUrl] = useState('');
 
@@ -57,9 +59,10 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
         onChange({
             customer_code: customerCode,
             security_token: securityToken,
-            conversion_event: conversionEvent
+            conversion_event: conversionEvent,
+            conversion_event_id: conversionEventId
         });
-    }, [customerCode, securityToken, conversionEvent]);
+    }, [customerCode, securityToken, conversionEvent, conversionEventId]);
 
     const handleDiscoverEvents = async () => {
         if (!customerCode || !securityToken) return;
@@ -80,24 +83,26 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
 
             console.log('Tintim Discovery Response:', data);
 
-            // Try to extract event names from various possible formats
-            let events: string[] = [];
+            // Try to extract events with id and name from various possible formats
+            let events: { id: number; name: string }[] = [];
 
             if (data?.data && Array.isArray(data.data)) {
-                // Format: { data: [{ event_name: "..." }] }
-                events = data.data.map((c: any) => c.event_name || c.name).filter(Boolean);
+                // Format: { data: [{ id: 123, name: "..." }] }
+                events = data.data
+                    .filter((c: any) => c.id && (c.name || c.event_name))
+                    .map((c: any) => ({ id: c.id, name: c.name || c.event_name }));
             } else if (Array.isArray(data)) {
-                // Format: [{ event_name: "..." }]
-                events = data.map((c: any) => c.event_name || c.name).filter(Boolean);
-            } else if (data?.event_name) {
-                // Format: { event_name: "..." }
-                events = [data.event_name];
-            } else if (data?.name) {
-                // Format: { name: "..." }
-                events = [data.name];
+                // Format: [{ id: 123, name: "..." }]
+                events = data
+                    .filter((c: any) => c.id && (c.name || c.event_name))
+                    .map((c: any) => ({ id: c.id, name: c.name || c.event_name }));
             }
 
-            const uniqueEvents = Array.from(new Set(events)) as string[];
+            // Remove duplicates by id
+            const uniqueEvents = events.filter((event, index, self) =>
+                index === self.findIndex(e => e.id === event.id)
+            );
+
             console.log('Parsed Events:', uniqueEvents);
             setDiscoveredEvents(uniqueEvents);
         } catch (err) {
@@ -158,7 +163,7 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
                     className="w-full py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:bg-slate-400"
                 >
                     <Activity className={`w-4 h-4 ${isDiscovering ? 'animate-spin' : ''}`} />
-                    {isDiscovering ? 'Buscando...' : 'Descobrir Eventos de Conversão'}
+                    {isDiscovering ? 'Buscando...' : 'Selecionar evento de conversão (venda)'}
                 </button>
             </div>
 
@@ -209,10 +214,10 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
                     </p>
 
                     <div className="space-y-2">
-                        {discoveredEvents.map((eventName) => (
+                        {discoveredEvents.map((event) => (
                             <label
-                                key={eventName}
-                                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${conversionEvent === eventName
+                                key={event.id}
+                                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${conversionEventId === event.id
                                     ? 'border-emerald-500 bg-emerald-50'
                                     : 'border-slate-200 hover:border-slate-300 bg-white'
                                     }`}
@@ -220,22 +225,25 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
                                 <input
                                     type="radio"
                                     name="conversionEvent"
-                                    value={eventName}
-                                    checked={conversionEvent === eventName}
-                                    onChange={() => setConversionEvent(eventName)}
+                                    value={event.id}
+                                    checked={conversionEventId === event.id}
+                                    onChange={() => {
+                                        setConversionEvent(event.name);
+                                        setConversionEventId(event.id);
+                                    }}
                                     className="sr-only"
                                 />
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${conversionEvent === eventName
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${conversionEventId === event.id
                                     ? 'border-emerald-500 bg-emerald-500'
                                     : 'border-slate-300'
                                     }`}>
-                                    {conversionEvent === eventName && (
+                                    {conversionEventId === event.id && (
                                         <CheckCircle2 className="w-4 h-4 text-white" />
                                     )}
                                 </div>
-                                <span className={`text-sm font-medium ${conversionEvent === eventName ? 'text-emerald-700' : 'text-slate-700'
+                                <span className={`text-sm font-medium ${conversionEventId === event.id ? 'text-emerald-700' : 'text-slate-700'
                                     }`}>
-                                    {eventName}
+                                    {event.name}
                                 </span>
                             </label>
                         ))}

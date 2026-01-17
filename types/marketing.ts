@@ -10,6 +10,7 @@ export interface ClientIntegration {
     customer_code?: string;
     security_token?: string;
     conversion_event?: string;
+    conversion_event_id?: number;
     config?: Record<string, any>;
     is_active: boolean;
     created_at: string;
@@ -47,4 +48,5 @@ export interface TintimConfig {
     customer_code?: string;
     security_token?: string;
     conversion_event?: string;
+    conversion_event_id?: number;
 }

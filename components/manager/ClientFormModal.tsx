@@ -85,7 +85,8 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
                 setTintimConfig({
                     customer_code: data.customer_code || '',
                     security_token: data.security_token || '',
-                    conversion_event: data.conversion_event || ''
+                    conversion_event: data.conversion_event || '',
+                    conversion_event_id: data.conversion_event_id || undefined
                 });
             } else {
                 setShowTintim(false);
@@ -147,6 +148,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
             customer_code: tintimConfig.customer_code || null,
             security_token: tintimConfig.security_token || null,
             conversion_event: tintimConfig.conversion_event || null,
+            conversion_event_id: tintimConfig.conversion_event_id || null,
             is_active: true,
             updated_at: new Date().toISOString()
         };

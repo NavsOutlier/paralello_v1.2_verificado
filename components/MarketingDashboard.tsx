@@ -73,7 +73,7 @@ export const MarketingDashboard: React.FC = () => {
                     .select('*')
                     .eq('client_id', selectedClient)
                     .eq('provider', 'tintim')
-                    .single();
+                    .maybeSingle();
 
                 if (data) {
                     setTintimConfig({

@@ -78,10 +78,28 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
 
             if (error) throw error;
 
-            if (data?.data) {
-                const names = Array.from(new Set(data.data.map((c: any) => c.event_name))) as string[];
-                setDiscoveredEvents(names);
+            console.log('Tintim Discovery Response:', data);
+
+            // Try to extract event names from various possible formats
+            let events: string[] = [];
+
+            if (data?.data && Array.isArray(data.data)) {
+                // Format: { data: [{ event_name: "..." }] }
+                events = data.data.map((c: any) => c.event_name || c.name).filter(Boolean);
+            } else if (Array.isArray(data)) {
+                // Format: [{ event_name: "..." }]
+                events = data.map((c: any) => c.event_name || c.name).filter(Boolean);
+            } else if (data?.event_name) {
+                // Format: { event_name: "..." }
+                events = [data.event_name];
+            } else if (data?.name) {
+                // Format: { name: "..." }
+                events = [data.name];
             }
+
+            const uniqueEvents = Array.from(new Set(events)) as string[];
+            console.log('Parsed Events:', uniqueEvents);
+            setDiscoveredEvents(uniqueEvents);
         } catch (err) {
             console.error('Error discovering events:', err);
         } finally {
@@ -195,8 +213,8 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
                             <label
                                 key={eventName}
                                 className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${conversionEvent === eventName
-                                        ? 'border-emerald-500 bg-emerald-50'
-                                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                                    ? 'border-emerald-500 bg-emerald-50'
+                                    : 'border-slate-200 hover:border-slate-300 bg-white'
                                     }`}
                             >
                                 <input
@@ -208,8 +226,8 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
                                     className="sr-only"
                                 />
                                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${conversionEvent === eventName
-                                        ? 'border-emerald-500 bg-emerald-500'
-                                        : 'border-slate-300'
+                                    ? 'border-emerald-500 bg-emerald-500'
+                                    : 'border-slate-300'
                                     }`}>
                                     {conversionEvent === eventName && (
                                         <CheckCircle2 className="w-4 h-4 text-white" />

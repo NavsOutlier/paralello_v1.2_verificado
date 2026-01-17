@@ -66,12 +66,19 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
 
     const loadTintimIntegration = async (clientId: string) => {
         try {
-            const { data } = await supabase
+            const { data, error } = await supabase
                 .from('client_integrations')
                 .select('*')
                 .eq('client_id', clientId)
                 .eq('provider', 'tintim')
-                .single();
+                .maybeSingle(); // Use maybeSingle to avoid error when no record exists
+
+            if (error) {
+                console.error('Error loading Tintim integration:', error);
+                setShowTintim(false);
+                setTintimConfig({});
+                return;
+            }
 
             if (data) {
                 setShowTintim(true);
@@ -84,7 +91,8 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
                 setShowTintim(false);
                 setTintimConfig({});
             }
-        } catch {
+        } catch (err) {
+            console.error('Error loading Tintim integration:', err);
             setShowTintim(false);
             setTintimConfig({});
         }

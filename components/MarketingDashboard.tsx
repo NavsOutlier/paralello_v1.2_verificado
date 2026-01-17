@@ -341,7 +341,7 @@ export const MarketingDashboard: React.FC = () => {
         const avgRate = grandTotal.leads > 0 ? grandTotal.conversions / grandTotal.leads : 0;
 
         return (
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8">
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
                 {/* Overview Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
@@ -429,9 +429,9 @@ export const MarketingDashboard: React.FC = () => {
     );
 
     return (
-        <div className="h-full flex flex-col bg-slate-50">
+        <div className="flex-1 w-full h-full flex flex-col bg-slate-50">
             {/* Header Controls */}
-            <div className="bg-white border-b border-slate-200 px-8 py-6 shadow-sm z-20">
+            <div className="bg-white border-b border-slate-200 px-6 py-4 shadow-sm z-20">
                 <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
@@ -542,7 +542,7 @@ export const MarketingDashboard: React.FC = () => {
 
             {viewMode === 'dashboard' ? renderDashboardView() : (
                 /* Scrollable Table Area */
-                <div className="flex-1 overflow-hidden p-4 md:p-8 flex flex-col relative w-full">
+                <div className="flex-1 overflow-hidden p-4 flex flex-col relative w-full">
                     {/* Scroll Hint overlay if needed, or just the container */}
                     <div
                         ref={scrollContainerRef}

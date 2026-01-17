@@ -2,8 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
-    Users, Calendar, Filter, Download, ArrowRight, Table, BarChart3, GripHorizontal, Pencil, CheckCircle2
+    Users, Calendar, Filter, Download, ArrowRight, Table, BarChart3, GripHorizontal, Pencil, CheckCircle2, LayoutDashboard
 } from 'lucide-react';
+import {
+    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
+    BarChart, Bar
+} from 'recharts';
 
 interface Client {
     id: string;
@@ -45,6 +49,9 @@ export const MarketingDashboard: React.FC = () => {
     // Edit Mode State
     const [isEditing, setIsEditing] = useState(false);
 
+    // View Mode State
+    const [viewMode, setViewMode] = useState<'table' | 'dashboard'>('dashboard');
+
     const handleMouseDown = (e: React.MouseEvent) => {
         if (isEditing || !scrollContainerRef.current) return; // Disable drag when editing to allow text selection
         setIsDragging(true);
@@ -62,9 +69,28 @@ export const MarketingDashboard: React.FC = () => {
         scrollContainerRef.current.scrollLeft = scrollLeft - walk;
     };
 
-    // Load Clients... (omitted for brevity, assume same)
+    // Load Clients
+    useEffect(() => {
+        if (organizationId) {
+            const fetchClients = async () => {
+                const { data, error } = await supabase
+                    .from('clients')
+                    .select('id, name')
+                    .eq('organization_id', organizationId)
+                    .order('name');
 
-    // ... (UseEffects for Fetching Data and Periods Generation remain same) ...
+                if (error) {
+                    console.error('Error fetching clients:', error);
+                } else if (data) {
+                    setClients(data);
+                    if (data.length > 0 && !selectedClient) {
+                        setSelectedClient(data[0].id);
+                    }
+                }
+            };
+            fetchClients();
+        }
+    }, [organizationId]);
 
     // Cell Save Handler
     const handleSaveCell = async (dateKey: string, channel: string, metric: 'leads' | 'investment' | 'conversions', value: string) => {
@@ -302,6 +328,94 @@ export const MarketingDashboard: React.FC = () => {
         });
     }, [periods, rawData, granularity]);
 
+    // Dashboard View Render Logic
+    const renderDashboardView = () => {
+        // Calculate Totals for Cards
+        const grandTotal = tableData.reduce((acc, curr) => ({
+            leads: acc.leads + curr.total.leads,
+            investment: acc.investment + curr.total.investment,
+            conversions: acc.conversions + curr.total.conversions,
+        }), { leads: 0, investment: 0, conversions: 0 });
+
+        const avgCpl = grandTotal.leads > 0 ? grandTotal.investment / grandTotal.leads : 0;
+        const avgRate = grandTotal.leads > 0 ? grandTotal.conversions / grandTotal.leads : 0;
+
+        return (
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8">
+                {/* Overview Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Total Leads</p>
+                        <h3 className="text-3xl font-bold text-slate-900 mt-2">{grandTotal.leads}</h3>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Investimento Total</p>
+                        <h3 className="text-3xl font-bold text-slate-900 mt-2">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(grandTotal.investment)}</h3>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Custo por Lead (Médio)</p>
+                        <h3 className="text-3xl font-bold text-slate-900 mt-2">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(avgCpl)}</h3>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                        <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Taxa de Conversão</p>
+                        <h3 className="text-3xl font-bold text-emerald-600 mt-2">{new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 2 }).format(avgRate)}</h3>
+                    </div>
+                </div>
+
+                {/* Charts Area */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 h-auto xl:h-[400px]">
+                    {/* Line Chart: Leads over Time */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col h-[400px] xl:h-full">
+                        <h4 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                            <BarChart3 className="w-5 h-5 text-indigo-500" />
+                            Evolução de Leads
+                        </h4>
+                        <div className="flex-1 w-full min-h-0">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={tableData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                    <XAxis dataKey="label" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                                    <RechartsTooltip
+                                        contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    />
+                                    <Legend />
+                                    <Line type="monotone" dataKey="meta.leads" name="Meta Ads" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                                    <Line type="monotone" dataKey="google.leads" name="Google Ads" stroke="#10b981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                                    <Line type="monotone" dataKey="direct.leads" name="Sem Rastreio" stroke="#a855f7" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Bar Chart: Investment vs Conversions */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col h-[400px] xl:h-full">
+                        <h4 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                            <BarChart3 className="w-5 h-5 text-emerald-500" />
+                            Investimento x Conversões
+                        </h4>
+                        <div className="flex-1 w-full min-h-0">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={tableData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                    <XAxis dataKey="label" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis yAxisId="left" orientation="left" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                                    <RechartsTooltip
+                                        contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    />
+                                    <Legend />
+                                    <Bar yAxisId="left" dataKey="total.investment" name="Investimento (R$)" fill="#0f172a" radius={[4, 4, 0, 0]} />
+                                    <Bar yAxisId="right" dataKey="total.conversions" name="Conversões" fill="#fbbf24" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
     const formatPercent = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 2 }).format(val);
 
@@ -324,21 +438,42 @@ export const MarketingDashboard: React.FC = () => {
                             <BarChart3 className="w-6 h-6 text-indigo-600" />
                             Painel Tintim
                         </h1>
-                        <p className="text-slate-500 text-sm mt-1">Análise comparativa horizontal</p>
+                        <p className="text-slate-500 text-sm mt-1">
+                            {viewMode === 'table' ? 'Análise comparativa horizontal' : 'Visualização gráfica de performance'}
+                        </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
-                        {/* Edit Mode Toggle */}
-                        <button
-                            onClick={() => setIsEditing(!isEditing)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all border ${isEditing
-                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-200'
-                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                                }`}
-                        >
-                            {isEditing ? <CheckCircle2 className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
-                            {isEditing ? 'Concluir Edição' : 'Editar Dados'}
-                        </button>
+                        {/* View Mode Toggle */}
+                        <div className="bg-slate-100 p-1 rounded-lg flex items-center mr-2">
+                            <button
+                                onClick={() => setViewMode('table')}
+                                className={`p-2 rounded-md transition-all ${viewMode === 'table' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                title="Tabela"
+                            >
+                                <Table className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('dashboard')}
+                                className={`p-2 rounded-md transition-all ${viewMode === 'dashboard' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                title="Dashboard Gráfico"
+                            >
+                                <LayoutDashboard className="w-4 h-4" />
+                            </button>
+                        </div>
+                        {/* Edit Mode Toggle (Only viewable in Table mode) */}
+                        {viewMode === 'table' && (
+                            <button
+                                onClick={() => setIsEditing(!isEditing)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all border ${isEditing
+                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-200'
+                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                    }`}
+                            >
+                                {isEditing ? <CheckCircle2 className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                                {isEditing ? 'Concluir Edição' : 'Editar Dados'}
+                            </button>
+                        )}
 
                         <div className="w-px h-8 bg-slate-200 mx-2 hidden md:block"></div>
 
@@ -349,6 +484,7 @@ export const MarketingDashboard: React.FC = () => {
                                 onChange={(e) => setSelectedClient(e.target.value)}
                                 className="bg-transparent border-none text-sm font-semibold text-slate-700 py-1.5 pl-2 pr-8 w-40 focus:ring-0 cursor-pointer"
                             >
+                                {clients.length === 0 && <option value="">Cadastre um cliente</option>}
                                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                         </div>
@@ -404,65 +540,67 @@ export const MarketingDashboard: React.FC = () => {
                 }
             `}</style>
 
-            {/* Scrollable Table Area */}
-            <div className="flex-1 overflow-hidden p-4 md:p-8 flex flex-col relative w-full">
-                {/* Scroll Hint overlay if needed, or just the container */}
-                <div
-                    ref={scrollContainerRef}
-                    onMouseDown={handleMouseDown}
-                    onMouseLeave={handleMouseLeave}
-                    onMouseUp={handleMouseUp}
-                    onMouseMove={handleMouseMove}
-                    className="horizontal-scroll-container bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto w-full pb-2"
-                    style={{ cursor: isEditing ? 'default' : (isDragging ? 'grabbing' : 'grab') }}
-                >
-                    <table className="w-full border-collapse select-none" style={{ minWidth: '100%' }}>
-                        <thead>
-                            <tr className="bg-slate-900 text-white">
-                                <th className="sticky left-0 z-20 bg-slate-900 py-4 px-4 text-left font-bold text-sm min-w-[200px] border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] pointer-events-none">
-                                    Métrica / Período
-                                </th>
-                                {tableData.map(d => (
-                                    <th key={d.dateKey} className="py-4 px-4 text-center font-bold text-sm min-w-[180px] border-l border-slate-800 pointer-events-none">
-                                        {d.label}
+            {viewMode === 'dashboard' ? renderDashboardView() : (
+                /* Scrollable Table Area */
+                <div className="flex-1 overflow-hidden p-4 md:p-8 flex flex-col relative w-full">
+                    {/* Scroll Hint overlay if needed, or just the container */}
+                    <div
+                        ref={scrollContainerRef}
+                        onMouseDown={handleMouseDown}
+                        onMouseLeave={handleMouseLeave}
+                        onMouseUp={handleMouseUp}
+                        onMouseMove={handleMouseMove}
+                        className="horizontal-scroll-container bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto w-full pb-2"
+                        style={{ cursor: isEditing ? 'default' : (isDragging ? 'grabbing' : 'grab') }}
+                    >
+                        <table className="w-full border-collapse select-none" style={{ minWidth: '100%' }}>
+                            <thead>
+                                <tr className="bg-slate-900 text-white">
+                                    <th className="sticky left-0 z-20 bg-slate-900 py-4 px-4 text-left font-bold text-sm min-w-[200px] border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] pointer-events-none">
+                                        Métrica / Período
                                     </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {/* META ADS */}
-                            <SectionHeader title="Meta Ads" color="bg-blue-50" />
-                            <DataRow label="Leads Gerados" getter={d => d.meta.leads} editable channel="meta" metric="leads" />
-                            <DataRow label="Custo por Lead" getter={d => d.meta.leads > 0 ? d.meta.investment / d.meta.leads : 0} format={formatCurrency} />
-                            <DataRow label="Investimento" getter={d => d.meta.investment} format={formatCurrency} editable channel="meta" metric="investment" />
-                            <DataRow label="Conversões" getter={d => d.meta.conversions} editable channel="meta" metric="conversions" />
-                            <DataRow label="Taxa de Conversão" getter={d => d.meta.leads > 0 ? d.meta.conversions / d.meta.leads : 0} format={formatPercent} />
+                                    {tableData.map(d => (
+                                        <th key={d.dateKey} className="py-4 px-4 text-center font-bold text-sm min-w-[180px] border-l border-slate-800 pointer-events-none">
+                                            {d.label}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {/* META ADS */}
+                                <SectionHeader title="Meta Ads" color="bg-blue-50" />
+                                <DataRow label="Leads Gerados" getter={d => d.meta.leads} editable channel="meta" metric="leads" />
+                                <DataRow label="Custo por Lead" getter={d => d.meta.leads > 0 ? d.meta.investment / d.meta.leads : 0} format={formatCurrency} />
+                                <DataRow label="Investimento" getter={d => d.meta.investment} format={formatCurrency} editable channel="meta" metric="investment" />
+                                <DataRow label="Conversões" getter={d => d.meta.conversions} editable channel="meta" metric="conversions" />
+                                <DataRow label="Taxa de Conversão" getter={d => d.meta.leads > 0 ? d.meta.conversions / d.meta.leads : 0} format={formatPercent} />
 
-                            {/* GOOGLE ADS */}
-                            <SectionHeader title="Google Ads" color="bg-emerald-50" />
-                            <DataRow label="Leads Gerados" getter={d => d.google.leads} editable channel="google" metric="leads" />
-                            <DataRow label="Custo por Lead" getter={d => d.google.leads > 0 ? d.google.investment / d.google.leads : 0} format={formatCurrency} />
-                            <DataRow label="Investimento" getter={d => d.google.investment} format={formatCurrency} editable channel="google" metric="investment" />
-                            <DataRow label="Conversões" getter={d => d.google.conversions} editable channel="google" metric="conversions" />
-                            <DataRow label="Taxa de Conversão" getter={d => d.google.leads > 0 ? d.google.conversions / d.google.leads : 0} format={formatPercent} />
+                                {/* GOOGLE ADS */}
+                                <SectionHeader title="Google Ads" color="bg-emerald-50" />
+                                <DataRow label="Leads Gerados" getter={d => d.google.leads} editable channel="google" metric="leads" />
+                                <DataRow label="Custo por Lead" getter={d => d.google.leads > 0 ? d.google.investment / d.google.leads : 0} format={formatCurrency} />
+                                <DataRow label="Investimento" getter={d => d.google.investment} format={formatCurrency} editable channel="google" metric="investment" />
+                                <DataRow label="Conversões" getter={d => d.google.conversions} editable channel="google" metric="conversions" />
+                                <DataRow label="Taxa de Conversão" getter={d => d.google.leads > 0 ? d.google.conversions / d.google.leads : 0} format={formatPercent} />
 
-                            {/* SEM RASTREIO */}
-                            <SectionHeader title="Sem Rastreio" color="bg-purple-50" />
-                            <DataRow label="Leads Gerados" getter={d => d.direct.leads} editable channel="direct" metric="leads" />
-                            <DataRow label="Conversões" getter={d => d.direct.conversions} editable channel="direct" metric="conversions" />
-                            <DataRow label="Taxa de Conversão" getter={d => d.direct.leads > 0 ? d.direct.conversions / d.direct.leads : 0} format={formatPercent} />
+                                {/* SEM RASTREIO */}
+                                <SectionHeader title="Sem Rastreio" color="bg-purple-50" />
+                                <DataRow label="Leads Gerados" getter={d => d.direct.leads} editable channel="direct" metric="leads" />
+                                <DataRow label="Conversões" getter={d => d.direct.conversions} editable channel="direct" metric="conversions" />
+                                <DataRow label="Taxa de Conversão" getter={d => d.direct.leads > 0 ? d.direct.conversions / d.direct.leads : 0} format={formatPercent} />
 
-                            {/* GERAL */}
-                            <SectionHeader title="Resumo Geral" color="bg-slate-100" />
-                            <DataRow label="Total Leads" getter={d => d.total.leads} bg="bg-slate-50 font-bold" />
-                            <DataRow label="Inv. Total" getter={d => d.total.investment} format={formatCurrency} bg="bg-slate-50 font-bold" />
-                            <DataRow label="CPL Médio" getter={d => d.total.cpl} format={formatCurrency} bg="bg-slate-50" />
-                            <DataRow label="Total Conversões" getter={d => d.total.conversions} bg="bg-slate-50" />
-                            <DataRow label="Taxa Global" getter={d => d.total.rate} format={formatPercent} bg="bg-slate-50" />
-                        </tbody>
-                    </table>
+                                {/* GERAL */}
+                                <SectionHeader title="Resumo Geral" color="bg-slate-100" />
+                                <DataRow label="Total Leads" getter={d => d.total.leads} bg="bg-slate-50 font-bold" />
+                                <DataRow label="Inv. Total" getter={d => d.total.investment} format={formatCurrency} bg="bg-slate-50 font-bold" />
+                                <DataRow label="CPL Médio" getter={d => d.total.cpl} format={formatCurrency} bg="bg-slate-50" />
+                                <DataRow label="Total Conversões" getter={d => d.total.conversions} bg="bg-slate-50" />
+                                <DataRow label="Taxa Global" getter={d => d.total.rate} format={formatPercent} bg="bg-slate-50" />
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };

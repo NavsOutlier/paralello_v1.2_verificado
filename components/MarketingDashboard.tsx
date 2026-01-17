@@ -5,7 +5,8 @@ import {
     Users, Calendar, Filter, Download, ArrowRight, Table, BarChart3, GripHorizontal, Pencil, CheckCircle2, LayoutDashboard,
     Settings, ShieldCheck, Link, Activity, Check, X, Copy, ExternalLink
 } from 'lucide-react';
-import { TintimIntegrationForm, TintimConfig } from './manager/TintimIntegrationForm';
+import { TintimIntegrationForm } from './manager/TintimIntegrationForm';
+import { TintimConfig } from '../types/marketing';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
     BarChart, Bar
@@ -60,8 +61,7 @@ export const MarketingDashboard: React.FC = () => {
     const [tintimConfig, setTintimConfig] = useState<TintimConfig>({
         customer_code: '',
         security_token: '',
-        lead_mapped_events: [],
-        conversion_mapped_events: []
+        conversion_event: ''
     });
 
     // Load and Save Tintim Config
@@ -69,19 +69,23 @@ export const MarketingDashboard: React.FC = () => {
         if (isTintimModalOpen && selectedClient) {
             const loadConfig = async () => {
                 const { data, error } = await supabase
-                    .from('clients')
-                    .select('tintim_config')
-                    .eq('id', selectedClient)
+                    .from('client_integrations')
+                    .select('*')
+                    .eq('client_id', selectedClient)
+                    .eq('provider', 'tintim')
                     .single();
 
-                if (data?.tintim_config) {
-                    setTintimConfig(data.tintim_config);
+                if (data) {
+                    setTintimConfig({
+                        customer_code: data.customer_code || '',
+                        security_token: data.security_token || '',
+                        conversion_event: data.conversion_event || ''
+                    });
                 } else {
                     setTintimConfig({
                         customer_code: '',
                         security_token: '',
-                        lead_mapped_events: [],
-                        conversion_mapped_events: []
+                        conversion_event: ''
                     });
                 }
             };
@@ -90,8 +94,26 @@ export const MarketingDashboard: React.FC = () => {
     }, [isTintimModalOpen, selectedClient]);
 
     const handleSaveTintimConfig = async () => {
-        if (!selectedClient) return;
-        await supabase.from('clients').update({ tintim_config: tintimConfig }).eq('id', selectedClient);
+        if (!selectedClient || !organizationId) return;
+
+        const integrationData = {
+            organization_id: organizationId,
+            client_id: selectedClient,
+            provider: 'tintim',
+            customer_code: tintimConfig.customer_code || null,
+            security_token: tintimConfig.security_token || null,
+            conversion_event: tintimConfig.conversion_event || null,
+            is_active: true,
+            updated_at: new Date().toISOString()
+        };
+
+        await supabase
+            .from('client_integrations')
+            .upsert(integrationData, {
+                onConflict: 'client_id,provider',
+                ignoreDuplicates: false
+            });
+
         setIsTintimModalOpen(false);
     };
 

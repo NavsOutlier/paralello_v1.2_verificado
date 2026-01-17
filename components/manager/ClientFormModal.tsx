@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { HelpCircle, X, Info, Activity } from 'lucide-react';
 import { Client } from '../../types';
 import { useToast } from '../../contexts/ToastContext';
-import { TintimIntegrationForm, TintimConfig } from './TintimIntegrationForm';
+import { TintimIntegrationForm } from './TintimIntegrationForm';
+import { TintimConfig, ClientIntegration } from '../../types/marketing';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ClientFormModalProps {
     isOpen: boolean;
@@ -18,6 +21,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
     onSave
 }) => {
     const { showToast } = useToast();
+    const { organizationId } = useAuth();
     const [formData, setFormData] = useState<Partial<Client> & { autoCreateGroup: boolean; groupName: string }>({
         name: '',
         email: '',
@@ -49,10 +53,42 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
                 groupName: client?.name ? `Atendimento: ${client.name}` : ''
             });
             setGroupMode(client?.whatsappGroupId ? 'link' : 'none');
-            setShowTintim(!!client?.tintim_config?.customer_code);
-            setTintimConfig(client?.tintim_config || {});
+
+            // Load existing Tintim integration if editing
+            if (client?.id) {
+                loadTintimIntegration(client.id);
+            } else {
+                setShowTintim(false);
+                setTintimConfig({});
+            }
         }
     }, [isOpen, client]);
+
+    const loadTintimIntegration = async (clientId: string) => {
+        try {
+            const { data } = await supabase
+                .from('client_integrations')
+                .select('*')
+                .eq('client_id', clientId)
+                .eq('provider', 'tintim')
+                .single();
+
+            if (data) {
+                setShowTintim(true);
+                setTintimConfig({
+                    customer_code: data.customer_code || '',
+                    security_token: data.security_token || '',
+                    conversion_event: data.conversion_event || ''
+                });
+            } else {
+                setShowTintim(false);
+                setTintimConfig({});
+            }
+        } catch {
+            setShowTintim(false);
+            setTintimConfig({});
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -75,17 +111,45 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({
                 email: formData.email?.trim() || '',
                 autoCreateGroup: groupMode === 'create',
                 groupName: groupMode === 'create' ? formData.groupName : undefined,
-                whatsappGroupId: groupMode === 'link' ? formData.whatsappGroupId : '',
-                tintim_config: showTintim ? tintimConfig : null
+                whatsappGroupId: groupMode === 'link' ? formData.whatsappGroupId : ''
             };
 
             await onSave(finalPayload);
+
+            // Save Tintim integration separately if enabled
+            if (showTintim && client?.id && organizationId) {
+                await saveTintimIntegration(client.id);
+            }
+
             onClose();
         } catch (error) {
             console.error('Error saving client:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const saveTintimIntegration = async (clientId: string) => {
+        if (!organizationId) return;
+
+        const integrationData = {
+            organization_id: organizationId,
+            client_id: clientId,
+            provider: 'tintim',
+            customer_code: tintimConfig.customer_code || null,
+            security_token: tintimConfig.security_token || null,
+            conversion_event: tintimConfig.conversion_event || null,
+            is_active: true,
+            updated_at: new Date().toISOString()
+        };
+
+        // Upsert: insert or update if exists
+        await supabase
+            .from('client_integrations')
+            .upsert(integrationData, {
+                onConflict: 'client_id,provider',
+                ignoreDuplicates: false
+            });
     };
 
     if (!isOpen) return null;

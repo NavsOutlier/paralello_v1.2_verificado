@@ -1,15 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Settings, ShieldCheck, Link, Activity, Check, X, Copy, RefreshCw, AlertCircle, Filter
+    ShieldCheck, Link, Activity, Copy, Filter, CheckCircle2
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-
-export interface TintimConfig {
-    customer_code?: string;
-    security_token?: string;
-    lead_mapped_events?: string[];
-    conversion_mapped_events?: string[];
-}
+import { TintimConfig } from '../../types/marketing';
 
 interface TintimIntegrationFormProps {
     clientId?: string | null;
@@ -25,20 +19,16 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
     config = {
         customer_code: '',
         security_token: '',
-        lead_mapped_events: [],
-        conversion_mapped_events: []
+        conversion_event: ''
     },
     onChange,
     showWebhook = true
 }) => {
     const [customerCode, setCustomerCode] = useState(config.customer_code || '');
     const [securityToken, setSecurityToken] = useState(config.security_token || '');
+    const [conversionEvent, setConversionEvent] = useState(config.conversion_event || '');
     const [isDiscovering, setIsDiscovering] = useState(false);
     const [discoveredEvents, setDiscoveredEvents] = useState<string[]>([]);
-    const [eventMappings, setEventMappings] = useState<{ leads: string[], conversions: string[] }>({
-        leads: config.lead_mapped_events || [],
-        conversions: config.conversion_mapped_events || []
-    });
     const [webhookBaseUrl, setWebhookBaseUrl] = useState('');
     const [discoveryUrl, setDiscoveryUrl] = useState('');
 
@@ -67,10 +57,9 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
         onChange({
             customer_code: customerCode,
             security_token: securityToken,
-            lead_mapped_events: eventMappings.leads,
-            conversion_mapped_events: eventMappings.conversions
+            conversion_event: conversionEvent
         });
-    }, [customerCode, securityToken, eventMappings]);
+    }, [customerCode, securityToken, conversionEvent]);
 
     const handleDiscoverEvents = async () => {
         if (!customerCode || !securityToken) return;
@@ -98,17 +87,6 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
         } finally {
             setIsDiscovering(false);
         }
-    };
-
-    const toggleMapping = (event: string, type: 'leads' | 'conversions') => {
-        setEventMappings(prev => {
-            const current = [...prev[type]];
-            if (current.includes(event)) {
-                return { ...prev, [type]: current.filter(e => e !== event) };
-            } else {
-                return { ...prev, [type]: [...current, event] };
-            }
-        });
     };
 
     const webhookUrl = webhookBaseUrl || 'https://n8n.seusistema.com/webhook/tintim-events';
@@ -197,50 +175,52 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
                 </div>
             )}
 
-            {/* Event Mapping Section */}
+            {/* Event Selection Section - Simplified to single selection */}
             {discoveredEvents.length > 0 && (
                 <div className="space-y-4 pt-4 border-t border-slate-100">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-slate-800">
-                            <Filter className="w-5 h-5 text-indigo-600" />
-                            <h3 className="font-bold text-sm uppercase tracking-wider">Mapeamento</h3>
+                            <Filter className="w-5 h-5 text-emerald-600" />
+                            <h3 className="font-bold text-sm uppercase tracking-wider">Evento de Conversão</h3>
                         </div>
                         <Badge variant="blue" className="text-[10px]">{discoveredEvents.length} Eventos</Badge>
                     </div>
 
-                    <div className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-sm">
-                        <table className="w-full text-left text-xs">
-                            <thead className="bg-slate-50 border-b border-slate-200">
-                                <tr>
-                                    <th className="px-4 py-2 font-bold text-slate-500 uppercase">Evento</th>
-                                    <th className="px-4 py-2 font-bold text-slate-500 uppercase text-center">Lead?</th>
-                                    <th className="px-4 py-2 font-bold text-slate-500 uppercase text-center">Venda?</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {discoveredEvents.map((eventName) => (
-                                    <tr key={eventName} className="hover:bg-slate-50/50">
-                                        <td className="px-4 py-2.5 font-medium text-slate-700">{eventName}</td>
-                                        <td className="px-4 py-2.5 text-center">
-                                            <input
-                                                type="checkbox"
-                                                checked={eventMappings.leads.includes(eventName)}
-                                                onChange={() => toggleMapping(eventName, 'leads')}
-                                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
-                                            />
-                                        </td>
-                                        <td className="px-4 py-2.5 text-center">
-                                            <input
-                                                type="checkbox"
-                                                checked={eventMappings.conversions.includes(eventName)}
-                                                onChange={() => toggleMapping(eventName, 'conversions')}
-                                                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300"
-                                            />
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <p className="text-xs text-slate-500">
+                        Selecione qual evento representa uma <strong>venda/conversão</strong> para este cliente:
+                    </p>
+
+                    <div className="space-y-2">
+                        {discoveredEvents.map((eventName) => (
+                            <label
+                                key={eventName}
+                                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${conversionEvent === eventName
+                                        ? 'border-emerald-500 bg-emerald-50'
+                                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                                    }`}
+                            >
+                                <input
+                                    type="radio"
+                                    name="conversionEvent"
+                                    value={eventName}
+                                    checked={conversionEvent === eventName}
+                                    onChange={() => setConversionEvent(eventName)}
+                                    className="sr-only"
+                                />
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${conversionEvent === eventName
+                                        ? 'border-emerald-500 bg-emerald-500'
+                                        : 'border-slate-300'
+                                    }`}>
+                                    {conversionEvent === eventName && (
+                                        <CheckCircle2 className="w-4 h-4 text-white" />
+                                    )}
+                                </div>
+                                <span className={`text-sm font-medium ${conversionEvent === eventName ? 'text-emerald-700' : 'text-slate-700'
+                                    }`}>
+                                    {eventName}
+                                </span>
+                            </label>
+                        ))}
                     </div>
                 </div>
             )}
@@ -259,3 +239,6 @@ const Badge: React.FC<{ children: React.ReactNode, variant?: 'blue' | 'indigo', 
         </span>
     );
 };
+
+// Re-export for backwards compatibility
+export type { TintimConfig };

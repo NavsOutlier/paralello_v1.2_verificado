@@ -877,7 +877,7 @@ export const MarketingDashboard: React.FC = () => {
                                 {showPresetDropdown && (
                                     <>
                                         <div className="fixed inset-0 z-40" onClick={() => setShowPresetDropdown(false)} />
-                                        <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-50 grid grid-cols-1 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-50 grid grid-cols-1 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                                             {datePresets.map(preset => (
                                                 <button
                                                     key={preset.key}

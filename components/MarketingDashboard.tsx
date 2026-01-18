@@ -63,10 +63,12 @@ export const MarketingDashboard: React.FC = () => {
     const [granularity, setGranularity] = useState<Granularity>('day');
 
     // Preset Date Filter
+    // Preset Date Filter
     const [selectedPreset, setSelectedPreset] = useState('last7');
+    const [viewMode, setViewMode] = useState<'table' | 'dashboard'>('dashboard');
     const [showPresetDropdown, setShowPresetDropdown] = useState(false);
-
-    // Manual Lead Modal
+    const [showClientDropdown, setShowClientDropdown] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
     const [isManualLeadModalOpen, setIsManualLeadModalOpen] = useState(false);
     const [isManualConversionModalOpen, setIsManualConversionModalOpen] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -183,12 +185,6 @@ export const MarketingDashboard: React.FC = () => {
     // New Marketing Data State (from new tables)
     const [leadsData, setLeadsData] = useState<any[]>([]);
     const [conversionsData, setConversionsData] = useState<any[]>([]);
-
-    // Edit Mode State
-    const [isEditing, setIsEditing] = useState(false);
-
-    // View Mode State
-    const [viewMode, setViewMode] = useState<'table' | 'dashboard'>('dashboard');
 
     // Tintim Integration State
     const [isTintimModalOpen, setIsTintimModalOpen] = useState(false);
@@ -789,157 +785,188 @@ export const MarketingDashboard: React.FC = () => {
         <div className="flex-1 w-full h-full flex flex-col bg-slate-50">
             {/* Header Controls */}
             <div className="bg-white border-b border-slate-200 px-6 py-4 shadow-sm z-20">
-                <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
-                    <div>
-                        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                            <BarChart3 className="w-6 h-6 text-indigo-600" />
-                            MetricFlow
-                        </h1>
-                        <p className="text-slate-500 text-sm mt-1">
-                            {viewMode === 'table' ? 'Análise comparativa horizontal' : 'Visualização gráfica de performance'}
-                        </p>
-                    </div>
+                <div className="flex flex-col xl:flex-row items-center justify-between gap-4">
+                    {/* 1. Title & View Mode */}
+                    <div className="flex items-center gap-6 w-full xl:w-auto justify-between xl:justify-start">
+                        <div>
+                            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                                <BarChart3 className="w-6 h-6 text-indigo-600" />
+                                MetricFlow
+                            </h1>
+                        </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
-                        {/* View Mode Toggle - Larger and more prominent */}
-                        <div className="bg-slate-100 p-1.5 rounded-xl flex items-center gap-1">
+                        {/* View Mode Toggle */}
+                        <div className="bg-slate-100 p-1 rounded-lg flex items-center">
                             <button
                                 onClick={() => setViewMode('dashboard')}
-                                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${viewMode === 'dashboard'
-                                    ? 'bg-white text-indigo-600 shadow-md ring-2 ring-indigo-100'
-                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-bold transition-all ${viewMode === 'dashboard'
+                                    ? 'bg-white text-indigo-600 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700'
                                     }`}
                             >
-                                <LayoutDashboard className="w-5 h-5" />
-                                Dashboard
+                                <LayoutDashboard className="w-4 h-4" />
+                                Dash
                             </button>
                             <button
                                 onClick={() => setViewMode('table')}
-                                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${viewMode === 'table'
-                                    ? 'bg-white text-indigo-600 shadow-md ring-2 ring-indigo-100'
-                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-bold transition-all ${viewMode === 'table'
+                                    ? 'bg-white text-indigo-600 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700'
                                     }`}
                             >
-                                <Table className="w-5 h-5" />
+                                <Table className="w-4 h-4" />
                                 Tabela
                             </button>
                         </div>
-                        {/* Edit Mode Toggle (Only viewable in Table mode) */}
-                        {viewMode === 'table' && (
-                            <button
-                                onClick={() => setIsEditing(!isEditing)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all border ${isEditing
-                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-200'
-                                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                                    }`}
-                            >
-                                {isEditing ? <CheckCircle2 className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
-                                {isEditing ? 'Concluir Edição' : 'Editar Dados'}
-                            </button>
+                    </div>
+
+                    {/* 2. Controls & Filters */}
+                    <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto justify-end">
+
+                        {/* Client & Date Group */}
+                        <div className="flex items-center gap-1 bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowClientDropdown(!showClientDropdown)}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-100 rounded-lg hover:bg-indigo-100 transition-colors text-sm text-indigo-700 font-bold shadow-sm"
+                                >
+                                    <Users className="w-4 h-4 text-indigo-500" />
+                                    <span className="text-left">
+                                        {clients.find(c => c.id === selectedClient)?.name || (clients.length === 0 ? 'Cadastre um cliente' : 'Selecione um cliente')}
+                                    </span>
+                                    <ChevronDown className="w-3 h-3 opacity-70" />
+                                </button>
+
+                                {showClientDropdown && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setShowClientDropdown(false)} />
+                                        <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-200">
+                                            {clients.length === 0 ? (
+                                                <div className="px-4 py-2 text-sm text-slate-400 italic">Nenhum cliente cadastrado</div>
+                                            ) : (
+                                                clients.map(client => (
+                                                    <button
+                                                        key={client.id}
+                                                        onClick={() => {
+                                                            setSelectedClient(client.id);
+                                                            setShowClientDropdown(false);
+                                                        }}
+                                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-600 transition-colors ${selectedClient === client.id ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-600'}`}
+                                                    >
+                                                        {client.name}
+                                                    </button>
+                                                ))
+                                            )}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="w-px h-4 bg-slate-200" />
+
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowPresetDropdown(!showPresetDropdown)}
+                                    className="flex items-center gap-2 px-3 py-1 hover:bg-white rounded-lg transition-colors text-sm text-slate-600 font-medium"
+                                >
+                                    <Calendar className="w-4 h-4 text-slate-400" />
+                                    <span>{selectedPresetLabel}</span>
+                                    <ChevronDown className="w-3 h-3 opacity-50" />
+                                </button>
+
+                                {showPresetDropdown && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setShowPresetDropdown(false)} />
+                                        <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-50 grid grid-cols-1 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                            {datePresets.map(preset => (
+                                                <button
+                                                    key={preset.key}
+                                                    onClick={() => handlePresetChange(preset.key)}
+                                                    className={`text-left px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-600 transition-colors ${selectedPreset === preset.key ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-600'}`}
+                                                >
+                                                    {preset.label}
+                                                </button>
+                                            ))}
+                                            <div className="border-t border-slate-100 mt-2 pt-2 px-4 pb-2">
+                                                <p className="text-[10px] uppercase font-bold text-slate-400 mb-2">Personalizado</p>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="date"
+                                                        value={startDate}
+                                                        onChange={(e) => { setStartDate(e.target.value); setSelectedPreset(''); }}
+                                                        className="w-full text-xs border-slate-200 rounded px-2 py-1"
+                                                    />
+                                                    <input
+                                                        type="date"
+                                                        value={endDate}
+                                                        onChange={(e) => { setEndDate(e.target.value); setSelectedPreset(''); }}
+                                                        className="w-full text-xs border-slate-200 rounded px-2 py-1"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Granularity (Dashboard Only) */}
+                        {viewMode === 'dashboard' && (
+                            <div className="flex bg-slate-100 p-1 rounded-lg">
+                                {(['day', 'week', 'month'] as Granularity[]).map(g => (
+                                    <button
+                                        key={g}
+                                        onClick={() => setGranularity(g)}
+                                        className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${granularity === g ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                    >
+                                        {g === 'day' ? 'Dia' : g === 'week' ? 'Sem' : 'Mês'}
+                                    </button>
+                                ))}
+                            </div>
                         )}
 
-                        <div className="w-px h-8 bg-slate-200 mx-2 hidden md:block"></div>
-
-                        <div className="bg-slate-100 p-1 rounded-lg flex items-center">
-                            <Users className="w-4 h-4 text-slate-400 ml-2" />
-                            <select
-                                value={selectedClient}
-                                onChange={(e) => setSelectedClient(e.target.value)}
-                                className="bg-transparent border-none text-sm font-semibold text-slate-700 py-1.5 pl-2 pr-8 w-40 focus:ring-0 cursor-pointer"
-                            >
-                                {clients.length === 0 && <option value="">Cadastre um cliente</option>}
-                                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-                        </div>
-                        {/* Preset Date Filter Dropdown */}
-                        <div className="relative">
-                            <button
-                                onClick={() => setShowPresetDropdown(!showPresetDropdown)}
-                                className="bg-slate-100 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition-all"
-                            >
-                                <Calendar className="w-4 h-4 text-slate-500" />
-                                {selectedPresetLabel}
-                                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${showPresetDropdown ? 'rotate-180' : ''}`} />
-                            </button>
-                            {showPresetDropdown && (
-                                <div className="absolute top-full mt-2 right-0 bg-white border border-slate-200 rounded-xl shadow-xl z-50 min-w-[200px] py-2 max-h-[400px] overflow-y-auto">
-                                    {datePresets.map(preset => (
-                                        <button
-                                            key={preset.key}
-                                            onClick={() => handlePresetChange(preset.key)}
-                                            className={`w-full text-left px-4 py-2 text-sm flex items-center gap-3 hover:bg-slate-50 transition-all ${selectedPreset === preset.key ? 'text-indigo-600 font-semibold bg-indigo-50' : 'text-slate-700'
-                                                }`}
-                                        >
-                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedPreset === preset.key ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'
-                                                }`}>
-                                                {selectedPreset === preset.key && (
-                                                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
-                                                )}
-                                            </div>
-                                            {preset.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Custom Date Range (collapsed by default) */}
-                        <div className="bg-slate-100 p-1 rounded-lg flex items-center gap-2 px-3">
-                            <span className="text-xs font-bold text-slate-400 uppercase">De</span>
-                            <input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => { setStartDate(e.target.value); setSelectedPreset(''); }}
-                                className="bg-transparent border-none text-sm font-medium text-slate-700 py-1 focus:ring-0 p-0 w-28"
-                            />
-                            <span className="text-xs font-bold text-slate-400 uppercase">Até</span>
-                            <input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => { setEndDate(e.target.value); setSelectedPreset(''); }}
-                                className="bg-transparent border-none text-sm font-medium text-slate-700 py-1 focus:ring-0 p-0 w-28"
-                            />
-                        </div>
-
+                        {/* Data Actions (Table Only) */}
                         {viewMode === 'table' && (
-                            <>
+                            <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
                                 <button
                                     onClick={() => setIsManualLeadModalOpen(true)}
-                                    className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors text-xs font-semibold"
+                                    className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors border border-indigo-100"
+                                    title="Novo Lead Manual"
                                 >
-                                    <Users className="w-3 h-3" />
-                                    Novo Lead
+                                    <Users className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={() => setIsManualConversionModalOpen(true)}
-                                    className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors text-xs font-semibold ml-2"
+                                    className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors border border-emerald-100"
+                                    title="Nova Venda Manual"
                                 >
-                                    <Activity className="w-3 h-3" />
-                                    Nova Venda
+                                    <Activity className="w-4 h-4" />
                                 </button>
-                            </>
-                        )}                    <div className="h-6 w-px bg-slate-200 mx-2" />
-                        <div className="flex bg-slate-100 p-1 rounded-lg">
-                            {(['day', 'week', 'month'] as Granularity[]).map(g => (
+                                <div className="w-px h-6 bg-slate-200 mx-1" />
                                 <button
-                                    key={g}
-                                    onClick={() => setGranularity(g)}
-                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${granularity === g ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                    onClick={() => setIsEditing(!isEditing)}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${isEditing
+                                        ? 'bg-slate-800 text-white border-slate-800'
+                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                        }`}
                                 >
-                                    {g === 'day' ? 'Dia' : g === 'week' ? 'Semana' : 'Mês'}
+                                    {isEditing ? <CheckCircle2 className="w-3 h-3" /> : <Pencil className="w-3 h-3" />}
+                                    {isEditing ? 'Pronto' : 'Editar'}
                                 </button>
-                            ))}
-                        </div>
-
-                        {canManageMarketing && (
-                            <button
-                                onClick={() => setIsTintimModalOpen(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-bold hover:bg-indigo-100 transition-all border border-indigo-200"
-                            >
-                                <Link className="w-4 h-4" />
-                                Integração Tintim
-                            </button>
+                            </div>
                         )}
+
+                        {/* Integration Settings */}
+                        <button
+                            onClick={() => setIsTintimModalOpen(true)}
+                            className={`p-2 rounded-lg transition-colors border ${isIntegrated
+                                ? 'bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100'
+                                : 'bg-white text-slate-400 border-slate-200 hover:text-slate-600'
+                                }`}
+                            title="Configurar Integração"
+                        >
+                            <Link className="w-4 h-4" />
+                        </button>
                     </div>
                 </div>
             </div>

@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
     Users, Calendar, Filter, Download, ArrowRight, Table, BarChart3, GripHorizontal, Pencil, CheckCircle2, LayoutDashboard,
-    Settings, ShieldCheck, Link, Activity, Check, X, Copy, ExternalLink
+    Settings, ShieldCheck, Link, Activity, Check, X, Copy, ExternalLink, ChevronDown
 } from 'lucide-react';
 import { TintimIntegrationForm } from './manager/TintimIntegrationForm';
 import { TintimConfig } from '../types/marketing';
@@ -53,6 +53,113 @@ export const MarketingDashboard: React.FC = () => {
         return date.toISOString().split('T')[0];
     });
     const [granularity, setGranularity] = useState<Granularity>('day');
+
+    // Preset Date Filter
+    const [selectedPreset, setSelectedPreset] = useState('last7');
+    const [showPresetDropdown, setShowPresetDropdown] = useState(false);
+
+    // Preset date filter options
+    const datePresets = [
+        {
+            key: 'today', label: 'Hoje', getDates: () => {
+                const today = new Date().toISOString().split('T')[0];
+                return { start: today, end: today };
+            }
+        },
+        {
+            key: 'yesterday', label: 'Ontem', getDates: () => {
+                const d = new Date(); d.setDate(d.getDate() - 1);
+                const yesterday = d.toISOString().split('T')[0];
+                return { start: yesterday, end: yesterday };
+            }
+        },
+        {
+            key: 'todayYesterday', label: 'Hoje e ontem', getDates: () => {
+                const today = new Date().toISOString().split('T')[0];
+                const d = new Date(); d.setDate(d.getDate() - 1);
+                return { start: d.toISOString().split('T')[0], end: today };
+            }
+        },
+        {
+            key: 'last7', label: 'Últimos 7 dias', getDates: () => {
+                const end = new Date(); end.setDate(end.getDate() - 1);
+                const start = new Date(); start.setDate(start.getDate() - 7);
+                return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+            }
+        },
+        {
+            key: 'last14', label: 'Últimos 14 dias', getDates: () => {
+                const end = new Date(); end.setDate(end.getDate() - 1);
+                const start = new Date(); start.setDate(start.getDate() - 14);
+                return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+            }
+        },
+        {
+            key: 'last28', label: 'Últimos 28 dias', getDates: () => {
+                const end = new Date(); end.setDate(end.getDate() - 1);
+                const start = new Date(); start.setDate(start.getDate() - 28);
+                return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+            }
+        },
+        {
+            key: 'last30', label: 'Últimos 30 dias', getDates: () => {
+                const end = new Date(); end.setDate(end.getDate() - 1);
+                const start = new Date(); start.setDate(start.getDate() - 30);
+                return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+            }
+        },
+        {
+            key: 'thisWeek', label: 'Esta semana', getDates: () => {
+                const today = new Date();
+                const dayOfWeek = today.getDay();
+                const start = new Date(today); start.setDate(today.getDate() - dayOfWeek);
+                return { start: start.toISOString().split('T')[0], end: today.toISOString().split('T')[0] };
+            }
+        },
+        {
+            key: 'lastWeek', label: 'Semana passada', getDates: () => {
+                const today = new Date();
+                const dayOfWeek = today.getDay();
+                const endOfLastWeek = new Date(today); endOfLastWeek.setDate(today.getDate() - dayOfWeek - 1);
+                const startOfLastWeek = new Date(endOfLastWeek); startOfLastWeek.setDate(endOfLastWeek.getDate() - 6);
+                return { start: startOfLastWeek.toISOString().split('T')[0], end: endOfLastWeek.toISOString().split('T')[0] };
+            }
+        },
+        {
+            key: 'thisMonth', label: 'Este mês', getDates: () => {
+                const today = new Date();
+                const start = new Date(today.getFullYear(), today.getMonth(), 1);
+                return { start: start.toISOString().split('T')[0], end: today.toISOString().split('T')[0] };
+            }
+        },
+        {
+            key: 'lastMonth', label: 'Mês passado', getDates: () => {
+                const today = new Date();
+                const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                const end = new Date(today.getFullYear(), today.getMonth(), 0);
+                return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+            }
+        },
+        {
+            key: 'max', label: 'Máximo', getDates: () => {
+                const start = new Date(); start.setFullYear(start.getFullYear() - 1);
+                return { start: start.toISOString().split('T')[0], end: new Date().toISOString().split('T')[0] };
+            }
+        },
+    ];
+
+    const handlePresetChange = (presetKey: string) => {
+        const preset = datePresets.find(p => p.key === presetKey);
+        if (preset) {
+            const { start, end } = preset.getDates();
+            setStartDate(start);
+            setEndDate(end);
+            setSelectedPreset(presetKey);
+            setShowPresetDropdown(false);
+        }
+    };
+
+    const selectedPresetLabel = datePresets.find(p => p.key === selectedPreset)?.label || 'Selecionar período';
 
     // Real Data State
     const [rawData, setRawData] = useState<any[]>([]);
@@ -648,21 +755,53 @@ export const MarketingDashboard: React.FC = () => {
                                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                         </div>
+                        {/* Preset Date Filter Dropdown */}
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowPresetDropdown(!showPresetDropdown)}
+                                className="bg-slate-100 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 transition-all"
+                            >
+                                <Calendar className="w-4 h-4 text-slate-500" />
+                                {selectedPresetLabel}
+                                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${showPresetDropdown ? 'rotate-180' : ''}`} />
+                            </button>
+                            {showPresetDropdown && (
+                                <div className="absolute top-full mt-2 right-0 bg-white border border-slate-200 rounded-xl shadow-xl z-50 min-w-[200px] py-2 max-h-[400px] overflow-y-auto">
+                                    {datePresets.map(preset => (
+                                        <button
+                                            key={preset.key}
+                                            onClick={() => handlePresetChange(preset.key)}
+                                            className={`w-full text-left px-4 py-2 text-sm flex items-center gap-3 hover:bg-slate-50 transition-all ${selectedPreset === preset.key ? 'text-indigo-600 font-semibold bg-indigo-50' : 'text-slate-700'
+                                                }`}
+                                        >
+                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedPreset === preset.key ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'
+                                                }`}>
+                                                {selectedPreset === preset.key && (
+                                                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                                                )}
+                                            </div>
+                                            {preset.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
 
+                        {/* Custom Date Range (collapsed by default) */}
                         <div className="bg-slate-100 p-1 rounded-lg flex items-center gap-2 px-3">
                             <span className="text-xs font-bold text-slate-400 uppercase">De</span>
                             <input
                                 type="date"
                                 value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="bg-transparent border-none text-sm font-medium text-slate-700 py-1 focus:ring-0 p-0"
+                                onChange={(e) => { setStartDate(e.target.value); setSelectedPreset(''); }}
+                                className="bg-transparent border-none text-sm font-medium text-slate-700 py-1 focus:ring-0 p-0 w-28"
                             />
                             <span className="text-xs font-bold text-slate-400 uppercase">Até</span>
                             <input
                                 type="date"
                                 value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="bg-transparent border-none text-sm font-medium text-slate-700 py-1 focus:ring-0 p-0"
+                                onChange={(e) => { setEndDate(e.target.value); setSelectedPreset(''); }}
+                                className="bg-transparent border-none text-sm font-medium text-slate-700 py-1 focus:ring-0 p-0 w-28"
                             />
                         </div>
 

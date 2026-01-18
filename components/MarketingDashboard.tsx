@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { TintimIntegrationForm } from './manager/TintimIntegrationForm';
 import { ManualLeadModal } from './ManualLeadModal';
+import { ManualConversionModal } from './ManualConversionModal';
 import { TintimConfig } from '../types/marketing';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
@@ -67,6 +68,7 @@ export const MarketingDashboard: React.FC = () => {
 
     // Manual Lead Modal
     const [isManualLeadModalOpen, setIsManualLeadModalOpen] = useState(false);
+    const [isManualConversionModalOpen, setIsManualConversionModalOpen] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
 
@@ -900,15 +902,23 @@ export const MarketingDashboard: React.FC = () => {
                         </div>
 
                         {viewMode === 'table' && (
-                            <button
-                                onClick={() => setIsManualLeadModalOpen(true)}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors text-xs font-semibold"
-                            >
-                                <Users className="w-3 h-3" />
-                                Novo Lead Manual
-                            </button>
-                        )}
-                        <div className="h-6 w-px bg-slate-200 mx-2" />
+                            <>
+                                <button
+                                    onClick={() => setIsManualLeadModalOpen(true)}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors text-xs font-semibold"
+                                >
+                                    <Users className="w-3 h-3" />
+                                    Novo Lead
+                                </button>
+                                <button
+                                    onClick={() => setIsManualConversionModalOpen(true)}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors text-xs font-semibold ml-2"
+                                >
+                                    <Activity className="w-3 h-3" />
+                                    Nova Venda
+                                </button>
+                            </>
+                        )}                    <div className="h-6 w-px bg-slate-200 mx-2" />
                         <div className="flex bg-slate-100 p-1 rounded-lg">
                             {(['day', 'week', 'month'] as Granularity[]).map(g => (
                                 <button
@@ -1023,6 +1033,15 @@ export const MarketingDashboard: React.FC = () => {
             <ManualLeadModal
                 isOpen={isManualLeadModalOpen}
                 onClose={() => setIsManualLeadModalOpen(false)}
+                organizationId={organizationId || ''}
+                clientId={selectedClient}
+                onSuccess={() => setRefreshTrigger(prev => prev + 1)}
+            />
+
+            {/* Manual Conversion Modal */}
+            <ManualConversionModal
+                isOpen={isManualConversionModalOpen}
+                onClose={() => setIsManualConversionModalOpen(false)}
                 organizationId={organizationId || ''}
                 clientId={selectedClient}
                 onSuccess={() => setRefreshTrigger(prev => prev + 1)}

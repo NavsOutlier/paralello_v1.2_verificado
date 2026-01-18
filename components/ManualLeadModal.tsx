@@ -24,10 +24,16 @@ export const ManualLeadModal: React.FC<ManualLeadModalProps> = ({ isOpen, onClos
         setLoading(true);
 
         try {
-            // Validate Phone (Basic check)
-            const cleanPhone = phone.replace(/\D/g, '');
-            if (cleanPhone.length < 10) {
-                alert('Telefone inválido. Digite DDD + Número.');
+            // Validate Phone and Enforce '55' prefix
+            let cleanPhone = phone.replace(/\D/g, '');
+
+            // If phone starts with 10-11 digits (no country code), add 55
+            if (cleanPhone.length >= 10 && cleanPhone.length <= 11) {
+                cleanPhone = '55' + cleanPhone;
+            }
+
+            if (cleanPhone.length < 12) { // 55 + 2 (DDD) + 8-9 (Number) = minimum 12
+                alert('Telefone inválido. Digite DDD + Número (ex: 11999999999).');
                 setLoading(false);
                 return;
             }

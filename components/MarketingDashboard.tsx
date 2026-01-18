@@ -6,6 +6,7 @@ import {
     Settings, ShieldCheck, Link, Activity, Check, X, Copy, ExternalLink, ChevronDown
 } from 'lucide-react';
 import { TintimIntegrationForm } from './manager/TintimIntegrationForm';
+import { ManualLeadModal } from './ManualLeadModal';
 import { TintimConfig } from '../types/marketing';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
@@ -63,6 +64,12 @@ export const MarketingDashboard: React.FC = () => {
     // Preset Date Filter
     const [selectedPreset, setSelectedPreset] = useState('last7');
     const [showPresetDropdown, setShowPresetDropdown] = useState(false);
+
+    // Manual Lead Modal
+    const [isManualLeadModalOpen, setIsManualLeadModalOpen] = useState(false);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+
 
     // Preset date filter options
     const datePresets = [
@@ -188,6 +195,9 @@ export const MarketingDashboard: React.FC = () => {
         security_token: '',
         conversion_event: ''
     });
+
+    // Integration Check (Must be after state declaration)
+    const isIntegrated = !!tintimConfig.customer_code;
 
     // Load and Save Tintim Config
     useEffect(() => {
@@ -357,6 +367,18 @@ export const MarketingDashboard: React.FC = () => {
             );
         }
 
+        // Lock cells for integrated clients (except investment)
+        const isLocked = isIntegrated && metric !== 'investment';
+
+        if (isLocked) {
+            return (
+                <span className="text-slate-400 italic text-xs" title="Gerenciado pela Integração">
+                    {isMoney ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) : value}
+                    <ShieldCheck className="w-3 h-3 inline ml-1 opacity-50" />
+                </span>
+            );
+        }
+
         return (
             <input
                 type="text"
@@ -422,7 +444,8 @@ export const MarketingDashboard: React.FC = () => {
         };
 
         fetchData();
-    }, [organizationId, selectedClient, startDate, endDate]);
+        fetchData();
+    }, [organizationId, selectedClient, startDate, endDate, refreshTrigger]);
 
     // Fetch data from new tables (marketing_leads and marketing_conversions)
     useEffect(() => {
@@ -467,7 +490,8 @@ export const MarketingDashboard: React.FC = () => {
         };
 
         fetchNewData();
-    }, [organizationId, selectedClient, startDate, endDate]);
+        fetchNewData();
+    }, [organizationId, selectedClient, startDate, endDate, refreshTrigger]);
 
     // Generate Period Columns based on Range & Granularity
     const periods = useMemo(() => {
@@ -767,7 +791,7 @@ export const MarketingDashboard: React.FC = () => {
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
                             <BarChart3 className="w-6 h-6 text-indigo-600" />
-                            Performance Board
+                            MetricFlow
                         </h1>
                         <p className="text-slate-500 text-sm mt-1">
                             {viewMode === 'table' ? 'Análise comparativa horizontal' : 'Visualização gráfica de performance'}
@@ -875,6 +899,16 @@ export const MarketingDashboard: React.FC = () => {
                             />
                         </div>
 
+                        {viewMode === 'table' && (
+                            <button
+                                onClick={() => setIsManualLeadModalOpen(true)}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors text-xs font-semibold"
+                            >
+                                <Users className="w-3 h-3" />
+                                Novo Lead Manual
+                            </button>
+                        )}
+                        <div className="h-6 w-px bg-slate-200 mx-2" />
                         <div className="flex bg-slate-100 p-1 rounded-lg">
                             {(['day', 'week', 'month'] as Granularity[]).map(g => (
                                 <button
@@ -985,6 +1019,15 @@ export const MarketingDashboard: React.FC = () => {
                     </div>
                 )
             }
+            {/* Manual Lead Modal */}
+            <ManualLeadModal
+                isOpen={isManualLeadModalOpen}
+                onClose={() => setIsManualLeadModalOpen(false)}
+                organizationId={organizationId || ''}
+                clientId={selectedClient}
+                onSuccess={() => setRefreshTrigger(prev => prev + 1)}
+            />
+
             {/* Tintim Integration Modal */}
             {
                 isTintimModalOpen && (

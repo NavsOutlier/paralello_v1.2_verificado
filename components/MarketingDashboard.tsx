@@ -40,7 +40,7 @@ const toLocalDateString = (date: Date) => {
 };
 
 export const MarketingDashboard: React.FC = () => {
-    const { organizationId, isSuperAdmin, permissions } = useAuth();
+    const { organizationId, isSuperAdmin, permissions, user } = useAuth();
     const canManageMarketing = isSuperAdmin || permissions?.can_manage_marketing;
     const [clients, setClients] = useState<Client[]>([]);
     const [selectedClient, setSelectedClient] = useState<string>('');
@@ -210,6 +210,7 @@ export const MarketingDashboard: React.FC = () => {
     // New Marketing Data State (from new tables)
     const [leadsData, setLeadsData] = useState<any[]>([]);
     const [conversionsData, setConversionsData] = useState<any[]>([]);
+    const [manualData, setManualData] = useState<any[]>([]);
 
     // Tintim Integration State
     const [isTintimModalOpen, setIsTintimModalOpen] = useState(false);
@@ -318,10 +319,35 @@ export const MarketingDashboard: React.FC = () => {
         }
     }, [organizationId]);
 
-    // Cell Save Handler [REMOVED - marketing_performance deleted]
-    const handleSaveCell = async (dateKey: string, channel: string, metric: 'leads' | 'investment' | 'conversions' | 'revenue', value: string) => {
-        console.warn("Manual editing disabled: marketing_performance table removed.");
-        // TODO: Implement new table for 'investment' if needed. 
+    // Cell Save Handler [RESTORED]
+    const handleSaveCell = async (dateKey: string, channel: string, metric: 'leads' | 'investment' | 'conversions' | 'revenue' | 'impressions' | 'clicks', value: string) => {
+        if (!organizationId || !selectedClient) return;
+
+        // Convert string formatted value back to number
+        const numValue = parseFloat(value.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+
+        try {
+            const { error } = await supabase
+                .from('marketing_daily_performance')
+                .upsert({
+                    organization_id: organizationId,
+                    client_id: selectedClient,
+                    date: dateKey,
+                    channel: channel,
+                    [metric]: numValue,
+                    created_by: user?.id
+                }, {
+                    onConflict: 'client_id,date,channel'
+                });
+
+            if (error) throw error;
+
+            // Trigger refresh
+            setRefreshTrigger(prev => prev + 1);
+        } catch (error) {
+            console.error('Error saving manual data:', error);
+            alert('Erro ao salvar dados manuais.');
+        }
     };
 
     // ... (Table Data Generation remains same) ...
@@ -445,8 +471,24 @@ export const MarketingDashboard: React.FC = () => {
             }
         };
 
+        const fetchManual = async () => {
+            const { data, error } = await supabase
+                .from('marketing_daily_performance')
+                .select('*')
+                .eq('organization_id', organizationId)
+                .eq('client_id', selectedClient)
+                .gte('date', startDate)
+                .lte('date', endDate);
+
+            if (error) {
+                console.error('Error fetching manual data:', error);
+            } else {
+                setManualData(data || []);
+            }
+        };
+
         fetchNewData();
-        fetchNewData();
+        fetchManual();
     }, [organizationId, selectedClient, startDate, endDate, refreshTrigger]);
 
     // Generate Period Columns based on Range & Granularity
@@ -527,8 +569,13 @@ export const MarketingDashboard: React.FC = () => {
 
         return periods.map(p => {
             // A. Filter Manual Rows
-            // Legacy manual data support removed ("nao quero historico")
-            const manualRows: any[] = [];
+            // A. Filter Manual Rows
+            const manualRows = manualData.filter(r => {
+                const rowDate = r.date;
+                if (granularity === 'day') return rowDate === p.key;
+                if (granularity === 'month') return rowDate.startsWith(p.key.slice(0, 7));
+                return rowDate >= p.key && (p.endKey ? rowDate <= p.endKey : true);
+            });
 
 
             // B. Filter Real-time Data

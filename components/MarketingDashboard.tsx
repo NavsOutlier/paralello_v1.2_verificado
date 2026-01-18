@@ -41,14 +41,26 @@ export const MarketingDashboard: React.FC = () => {
     const [startX, setStartX] = useState(0);
     const [scrollLeft, setScrollLeft] = useState(0);
 
-    // Filters
-    const [startDate, setStartDate] = useState(new Date(new Date().setMonth(new Date().getMonth() - 2)).toISOString().split('T')[0]);
-    const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
-    const [granularity, setGranularity] = useState<Granularity>('month');
+    // Filters - Default: last 7 days (not counting today)
+    const [startDate, setStartDate] = useState(() => {
+        const date = new Date();
+        date.setDate(date.getDate() - 8); // 8 days ago to get 7 full days before yesterday
+        return date.toISOString().split('T')[0];
+    });
+    const [endDate, setEndDate] = useState(() => {
+        const date = new Date();
+        date.setDate(date.getDate() - 1); // Yesterday
+        return date.toISOString().split('T')[0];
+    });
+    const [granularity, setGranularity] = useState<Granularity>('day');
 
     // Real Data State
     const [rawData, setRawData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+
+    // New Marketing Data State (from new tables)
+    const [leadsData, setLeadsData] = useState<any[]>([]);
+    const [conversionsData, setConversionsData] = useState<any[]>([]);
 
     // Edit Mode State
     const [isEditing, setIsEditing] = useState(false);
@@ -299,6 +311,51 @@ export const MarketingDashboard: React.FC = () => {
         fetchData();
     }, [organizationId, selectedClient, startDate, endDate]);
 
+    // Fetch data from new tables (marketing_leads and marketing_conversions)
+    useEffect(() => {
+        if (!organizationId || !selectedClient) return;
+
+        const fetchNewData = async () => {
+            console.log('Fetching new data for:', { organizationId, selectedClient, startDate, endDate });
+
+            // Fetch leads
+            const { data: leads, error: leadsError } = await supabase
+                .from('marketing_leads')
+                .select('*')
+                .eq('organization_id', organizationId)
+                .eq('client_id', selectedClient)
+                .gte('created_at', startDate)
+                .lte('created_at', endDate + 'T23:59:59');
+
+            console.log('Leads result:', { leads, leadsError });
+
+            if (leadsError) {
+                console.error('Error fetching leads:', leadsError);
+            } else {
+                setLeadsData(leads || []);
+            }
+
+            // Fetch conversions
+            const { data: conversions, error: conversionsError } = await supabase
+                .from('marketing_conversions')
+                .select('*')
+                .eq('organization_id', organizationId)
+                .eq('client_id', selectedClient)
+                .gte('converted_at', startDate)
+                .lte('converted_at', endDate + 'T23:59:59');
+
+            console.log('Conversions result:', { conversions, conversionsError });
+
+            if (conversionsError) {
+                console.error('Error fetching conversions:', conversionsError);
+            } else {
+                setConversionsData(conversions || []);
+            }
+        };
+
+        fetchNewData();
+    }, [organizationId, selectedClient, startDate, endDate]);
+
     // Generate Period Columns based on Range & Granularity
     const periods = useMemo(() => {
         const start = new Date(startDate);
@@ -396,7 +453,13 @@ export const MarketingDashboard: React.FC = () => {
 
     // Dashboard View Render Logic
     const renderDashboardView = () => {
-        // Calculate Totals for Cards
+        // Calculate Totals from NEW tables (marketing_leads and marketing_conversions)
+        const totalLeadsNew = leadsData.length;
+        const totalConversionsNew = conversionsData.length;
+        const totalRevenueNew = conversionsData.reduce((acc, c) => acc + (parseFloat(c.revenue) || 0), 0);
+        const conversionRateNew = totalLeadsNew > 0 ? totalConversionsNew / totalLeadsNew : 0;
+
+        // Calculate Totals for Cards (from old table for backwards compatibility)
         const grandTotal = tableData.reduce((acc, curr) => ({
             leads: acc.leads + curr.total.leads,
             investment: acc.investment + curr.total.investment,
@@ -404,14 +467,45 @@ export const MarketingDashboard: React.FC = () => {
         }), { leads: 0, investment: 0, conversions: 0 });
 
         const avgCpl = grandTotal.leads > 0 ? grandTotal.investment / grandTotal.leads : 0;
-        const avgRate = grandTotal.leads > 0 ? grandTotal.conversions / grandTotal.leads : 0;
 
         return (
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                {/* Overview Cards */}
+                {/* New Metrics from Integration */}
+                {(totalLeadsNew > 0 || totalConversionsNew > 0) && (
+                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-200">
+                        <h4 className="text-sm font-bold text-indigo-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <Activity className="w-4 h-4" />
+                            Dados da Integração (Tempo Real)
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="bg-white p-4 rounded-lg shadow-sm">
+                                <p className="text-xs font-semibold text-slate-500 uppercase">Leads (Integração)</p>
+                                <h3 className="text-2xl font-bold text-indigo-600 mt-1">{totalLeadsNew}</h3>
+                            </div>
+                            <div className="bg-white p-4 rounded-lg shadow-sm">
+                                <p className="text-xs font-semibold text-slate-500 uppercase">Vendas (Conversões)</p>
+                                <h3 className="text-2xl font-bold text-emerald-600 mt-1">{totalConversionsNew}</h3>
+                            </div>
+                            <div className="bg-white p-4 rounded-lg shadow-sm">
+                                <p className="text-xs font-semibold text-slate-500 uppercase">Receita Total</p>
+                                <h3 className="text-2xl font-bold text-green-600 mt-1">
+                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalRevenueNew)}
+                                </h3>
+                            </div>
+                            <div className="bg-white p-4 rounded-lg shadow-sm">
+                                <p className="text-xs font-semibold text-slate-500 uppercase">Taxa de Conversão</p>
+                                <h3 className="text-2xl font-bold text-purple-600 mt-1">
+                                    {new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1 }).format(conversionRateNew)}
+                                </h3>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Overview Cards (from manual data) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                        <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Total Leads</p>
+                        <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Total Leads (Manual)</p>
                         <h3 className="text-3xl font-bold text-slate-900 mt-2">{grandTotal.leads}</h3>
                     </div>
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
@@ -423,8 +517,8 @@ export const MarketingDashboard: React.FC = () => {
                         <h3 className="text-3xl font-bold text-slate-900 mt-2">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(avgCpl)}</h3>
                     </div>
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                        <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Taxa de Conversão</p>
-                        <h3 className="text-3xl font-bold text-emerald-600 mt-2">{new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 2 }).format(avgRate)}</h3>
+                        <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Conversões (Manual)</p>
+                        <h3 className="text-3xl font-bold text-emerald-600 mt-2">{grandTotal.conversions}</h3>
                     </div>
                 </div>
 

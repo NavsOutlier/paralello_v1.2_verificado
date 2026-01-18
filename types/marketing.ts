@@ -24,6 +24,7 @@ export interface MarketingLead {
     name?: string;
     phone: string;
     source?: string;
+    first_interaction_at?: string;
     created_at: string;
 }
 

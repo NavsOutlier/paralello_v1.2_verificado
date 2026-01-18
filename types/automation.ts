@@ -6,7 +6,7 @@ export interface ScheduledReport {
     organization_id: string;
     client_id: string;
     name: string;
-    frequency: 'weekly' | 'monthly' | 'custom';
+    frequency: 'daily' | 'weekly' | 'monthly' | 'custom';
     weekday?: number; // 0-6 (Sunday-Saturday)
     day_of_month?: number; // 1-31
     time_of_day: string; // HH:mm format

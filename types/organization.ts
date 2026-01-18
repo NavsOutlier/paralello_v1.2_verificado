@@ -91,10 +91,4 @@ export interface Client {
     createdAt: Date;
     updatedAt: Date;
     whatsappGroupId?: string;
-    tintim_config?: {
-        customer_code?: string;
-        security_token?: string;
-        lead_mapped_events?: string[];
-        conversion_mapped_events?: string[];
-    };
 }

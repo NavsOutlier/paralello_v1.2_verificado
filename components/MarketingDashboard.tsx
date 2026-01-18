@@ -318,52 +318,10 @@ export const MarketingDashboard: React.FC = () => {
         }
     }, [organizationId]);
 
-    // Cell Save Handler
+    // Cell Save Handler [REMOVED - marketing_performance deleted]
     const handleSaveCell = async (dateKey: string, channel: string, metric: 'leads' | 'investment' | 'conversions' | 'revenue', value: string) => {
-        if (!organizationId || !selectedClient) return;
-
-        // Parse value
-        const numValue = (metric === 'investment' || metric === 'revenue')
-            ? parseFloat(value.replace(/[R$\s.]/g, '').replace(',', '.')) || 0
-            : parseInt(value.replace(/\D/g, '')) || 0;
-
-        // Optimistic Update (Local State)
-        setRawData(prev => {
-            const existingIndex = prev.findIndex(r => r.report_date === dateKey && r.channel === channel);
-            if (existingIndex >= 0) {
-                const updated = [...prev];
-                updated[existingIndex] = { ...updated[existingIndex], [metric]: numValue };
-                return updated;
-            } else {
-                return [...prev, {
-                    organization_id: organizationId,
-                    client_id: selectedClient,
-                    report_date: dateKey,
-                    channel,
-                    [metric]: numValue
-                }];
-            }
-        });
-
-        const { data: existing } = await supabase.from('marketing_performance')
-            .select('id')
-            .eq('organization_id', organizationId)
-            .eq('client_id', selectedClient)
-            .eq('report_date', dateKey)
-            .eq('channel', channel)
-            .single();
-
-        if (existing) {
-            await supabase.from('marketing_performance').update({ [metric]: numValue }).eq('id', existing.id);
-        } else {
-            await supabase.from('marketing_performance').insert({
-                organization_id: organizationId,
-                client_id: selectedClient,
-                report_date: dateKey,
-                channel,
-                [metric]: numValue
-            });
-        }
+        console.warn("Manual editing disabled: marketing_performance table removed.");
+        // TODO: Implement new table for 'investment' if needed. 
     };
 
     // ... (Table Data Generation remains same) ...
@@ -444,31 +402,6 @@ export const MarketingDashboard: React.FC = () => {
 
 
 
-    // Fetch Metrics from Supabase
-    useEffect(() => {
-        if (!organizationId || !selectedClient) return;
-
-        const fetchData = async () => {
-            setLoading(true);
-            const { data, error } = await supabase
-                .from('marketing_performance')
-                .select('*')
-                .eq('organization_id', organizationId)
-                .eq('client_id', selectedClient)
-                .gte('report_date', startDate)
-                .lte('report_date', endDate);
-
-            if (error) {
-                console.error('Error fetching marketing metrics:', error);
-            } else {
-                setRawData(data || []);
-            }
-            setLoading(false);
-        };
-
-        fetchData();
-        fetchData();
-    }, [organizationId, selectedClient, startDate, endDate, refreshTrigger]);
 
     // Fetch data from new tables (marketing_leads and marketing_conversions)
     useEffect(() => {
@@ -594,12 +527,9 @@ export const MarketingDashboard: React.FC = () => {
 
         return periods.map(p => {
             // A. Filter Manual Rows
-            const manualRows = rawData.filter(row => {
-                const rowDate = row.report_date;
-                if (granularity === 'day') return rowDate === p.key;
-                if (granularity === 'month') return rowDate.startsWith(p.key.slice(0, 7));
-                return rowDate >= p.key && (p.endKey ? rowDate <= p.endKey : true);
-            });
+            // Legacy manual data support removed ("nao quero historico")
+            const manualRows: any[] = [];
+
 
             // B. Filter Real-time Data
             const periodLeads = realTimeLeads.filter(l => {

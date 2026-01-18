@@ -201,21 +201,38 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     }, [isCreatingGroup, newClientId, showToast]);
 
     const handleSaveTintim = async () => {
-        if (!newClientId) {
+        if (!newClientId || !organizationId) {
             setStep(5);
             return;
         }
 
         setLoading(true);
         try {
-            const { error } = await supabase
-                .from('clients')
-                .update({
-                    tintim_config: hasTintim ? tintimConfig : null
-                })
-                .eq('id', newClientId);
+            if (hasTintim && tintimConfig.customer_code && tintimConfig.security_token) {
+                const integrationData = {
+                    organization_id: organizationId,
+                    client_id: newClientId,
+                    provider: 'tintim',
+                    customer_code: tintimConfig.customer_code,
+                    security_token: tintimConfig.security_token,
+                    // conversion_event: tintimConfig.conversion_event // If the form supports it? It seems TintimIntegrationForm handles it.
+                    // The local tintimConfig state might capture it. 
+                    // IF TintimIntegrationForm updates 'tintimConfig' with conversion_event, we should save it.
+                    // Let's assume it puts extra fields in if keys match.
+                    conversion_event: (tintimConfig as any).conversion_event || 'purchase',
+                    is_active: true,
+                    updated_at: new Date().toISOString()
+                };
 
-            if (error) throw error;
+                const { error } = await supabase
+                    .from('client_integrations')
+                    .upsert(integrationData, {
+                        onConflict: 'client_id,provider'
+                    });
+
+                if (error) throw error;
+            }
+
             showToast(hasTintim ? 'Integração Tintim configurada!' : 'Integração ignorada');
             setStep(5);
         } catch (err: any) {

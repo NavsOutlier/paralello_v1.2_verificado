@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useOrganization } from '../../contexts/OrganizationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     Calendar, Clock, Send, X, MessageSquare, Video, CreditCard, Bell, CalendarDays
 } from 'lucide-react';
@@ -21,7 +21,7 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
     onSuccess,
     editingMessage
 }) => {
-    const { organizationId, profile } = useOrganization();
+    const { organizationId, user } = useAuth();
     const [loading, setLoading] = useState(false);
 
     // Form state
@@ -81,7 +81,7 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
                         scheduled_at: scheduledAt,
                         message: message.trim(),
                         category,
-                        created_by: profile?.id
+                        created_by: user?.id
                     });
 
                 if (error) throw error;

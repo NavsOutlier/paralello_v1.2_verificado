@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useOrganization } from '../../contexts/OrganizationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     CheckCircle2, Plus, ArrowRight, Send, X, Loader2, ListChecks
 } from 'lucide-react';
@@ -31,7 +31,7 @@ export const TaskStatusReportModal: React.FC<TaskStatusReportModalProps> = ({
     onConfirm,
     onCancel
 }) => {
-    const { profile } = useOrganization();
+    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [checklist, setChecklist] = useState<ChecklistItem[]>(existingChecklist);
     const [nextStep, setNextStep] = useState('');
@@ -84,7 +84,7 @@ export const TaskStatusReportModal: React.FC<TaskStatusReportModalProps> = ({
                     new_status: newStatus,
                     completed_items: completedItems,
                     next_step: nextStep.trim(),
-                    created_by: profile?.id
+                    created_by: user?.id
                 });
 
             if (error) throw error;
@@ -154,8 +154,8 @@ export const TaskStatusReportModal: React.FC<TaskStatusReportModalProps> = ({
                                 <label
                                     key={item.id}
                                     className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${item.completed
-                                            ? 'border-blue-500 bg-blue-50'
-                                            : 'border-slate-200 hover:border-slate-300 bg-white'
+                                        ? 'border-blue-500 bg-blue-50'
+                                        : 'border-slate-200 hover:border-slate-300 bg-white'
                                         }`}
                                 >
                                     <input
@@ -165,8 +165,8 @@ export const TaskStatusReportModal: React.FC<TaskStatusReportModalProps> = ({
                                         className="sr-only"
                                     />
                                     <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center ${item.completed
-                                            ? 'border-blue-500 bg-blue-500'
-                                            : 'border-slate-300'
+                                        ? 'border-blue-500 bg-blue-500'
+                                        : 'border-slate-300'
                                         }`}>
                                         {item.completed && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
                                     </div>

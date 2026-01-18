@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useOrganization } from '../../contexts/OrganizationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     BarChart3, Plus, Trash2, Edit2, Play, Pause, Clock, Calendar, CheckCircle
 } from 'lucide-react';
@@ -16,7 +16,7 @@ export const ReportList: React.FC<ReportListProps> = ({
     clientId,
     clientName
 }) => {
-    const { organizationId } = useOrganization();
+    const { organizationId } = useAuth();
     const [reports, setReports] = useState<ScheduledReport[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -166,8 +166,8 @@ export const ReportList: React.FC<ReportListProps> = ({
                                     <div className="flex items-center gap-2 mb-1">
                                         <h4 className="font-bold text-slate-800">{report.name}</h4>
                                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${report.is_active
-                                                ? 'bg-emerald-100 text-emerald-700'
-                                                : 'bg-slate-100 text-slate-500'
+                                            ? 'bg-emerald-100 text-emerald-700'
+                                            : 'bg-slate-100 text-slate-500'
                                             }`}>
                                             {report.is_active ? 'Ativo' : 'Pausado'}
                                         </span>
@@ -196,8 +196,8 @@ export const ReportList: React.FC<ReportListProps> = ({
                                     <button
                                         onClick={() => handleToggleActive(report)}
                                         className={`p-2 rounded-lg transition-colors ${report.is_active
-                                                ? 'hover:bg-orange-50 text-slate-400 hover:text-orange-600'
-                                                : 'hover:bg-emerald-50 text-slate-400 hover:text-emerald-600'
+                                            ? 'hover:bg-orange-50 text-slate-400 hover:text-orange-600'
+                                            : 'hover:bg-emerald-50 text-slate-400 hover:text-emerald-600'
                                             }`}
                                         title={report.is_active ? 'Pausar' : 'Ativar'}
                                     >

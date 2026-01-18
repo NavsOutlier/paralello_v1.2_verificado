@@ -14,7 +14,8 @@ export enum ViewState {
     MANAGER = 'manager',
     SUPERADMIN = 'superadmin',
     UPDATE_PASSWORD = 'update_password',
-    MARKETING = 'marketing'
+    MARKETING = 'marketing',
+    AUTOMATION = 'automation'
 }
 
 /**

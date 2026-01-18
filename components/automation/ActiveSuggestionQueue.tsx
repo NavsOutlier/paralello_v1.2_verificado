@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useOrganization } from '../../contexts/OrganizationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     Sparkles, Check, X, Send, Clock, Eye, Trash2, ChevronDown, ChevronUp
 } from 'lucide-react';
@@ -13,7 +13,7 @@ interface ActiveSuggestionQueueProps {
 export const ActiveSuggestionQueue: React.FC<ActiveSuggestionQueueProps> = ({
     clientId
 }) => {
-    const { organizationId, profile } = useOrganization();
+    const { organizationId, user } = useAuth();
     const [suggestions, setSuggestions] = useState<(ActiveSuggestion & { client?: { name: string } })[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -57,7 +57,7 @@ export const ActiveSuggestionQueue: React.FC<ActiveSuggestionQueueProps> = ({
                 .from('active_suggestions')
                 .update({
                     status: 'approved',
-                    approved_by: profile?.id,
+                    approved_by: user?.id,
                     approved_at: new Date().toISOString()
                 })
                 .eq('id', id);

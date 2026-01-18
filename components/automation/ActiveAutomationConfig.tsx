@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useOrganization } from '../../contexts/OrganizationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     Sparkles, Clock, X, Save, Calendar, Users, CheckCircle2
 } from 'lucide-react';
@@ -21,8 +21,9 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
     onSuccess,
     editingAutomation
 }) => {
-    const { organizationId, teamMembers } = useOrganization();
+    const { organizationId } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [teamMembers, setTeamMembers] = useState<{ id: string, profile_id: string, profile?: { name?: string, email?: string } }[]>([]);
 
     // Form state
     const [name, setName] = useState('Atualização Semanal');
@@ -30,6 +31,20 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
     const [timeOfDay, setTimeOfDay] = useState('09:00');
     const [contextDays, setContextDays] = useState(7);
     const [assignedApprover, setAssignedApprover] = useState<string>('');
+
+    // Fetch team members
+    useEffect(() => {
+        const fetchTeamMembers = async () => {
+            if (!organizationId) return;
+            const { data } = await supabase
+                .from('team_members')
+                .select('id, profile_id, profile:profiles(name, email)')
+                .eq('organization_id', organizationId)
+                .eq('status', 'active');
+            if (data) setTeamMembers(data as any);
+        };
+        fetchTeamMembers();
+    }, [organizationId]);
 
     // Initialize from editing automation if provided
     useEffect(() => {
@@ -141,8 +156,8 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                                     type="button"
                                     onClick={() => toggleWeekday(day.value)}
                                     className={`p-2 rounded-lg text-center transition-all ${selectedWeekdays.includes(day.value)
-                                            ? 'bg-purple-100 border-2 border-purple-500 text-purple-700'
-                                            : 'bg-slate-50 border-2 border-transparent text-slate-600 hover:bg-slate-100'
+                                        ? 'bg-purple-100 border-2 border-purple-500 text-purple-700'
+                                        : 'bg-slate-50 border-2 border-transparent text-slate-600 hover:bg-slate-100'
                                         }`}
                                 >
                                     <span className="text-[10px] font-bold uppercase">

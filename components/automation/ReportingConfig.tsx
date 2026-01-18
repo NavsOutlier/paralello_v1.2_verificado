@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useOrganization } from '../../contexts/OrganizationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     BarChart3, Clock, X, Save, Calendar, CheckCircle2
 } from 'lucide-react';
@@ -21,7 +21,7 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
     onSuccess,
     editingReport
 }) => {
-    const { organizationId, profile } = useOrganization();
+    const { organizationId, user } = useAuth();
     const [loading, setLoading] = useState(false);
 
     // Form state
@@ -94,7 +94,7 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
                 template,
                 is_active: true,
                 next_run: calculateNextRun(),
-                created_by: profile?.id
+                created_by: user?.id
             };
 
             if (editingReport) {

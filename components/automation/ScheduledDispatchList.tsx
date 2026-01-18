@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { useOrganization } from '../../contexts/OrganizationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     Calendar, Clock, Send, Plus, Trash2, Edit2, CheckCircle, XCircle,
     AlertCircle, CalendarDays, Video, CreditCard, Bell, MessageSquare
@@ -17,7 +17,7 @@ export const ScheduledDispatchList: React.FC<ScheduledDispatchListProps> = ({
     clientId,
     clientName
 }) => {
-    const { organizationId } = useOrganization();
+    const { organizationId } = useAuth();
     const [messages, setMessages] = useState<ScheduledMessage[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);

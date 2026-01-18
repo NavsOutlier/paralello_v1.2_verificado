@@ -199,7 +199,7 @@ export const MarketingDashboard: React.FC = () => {
 
     // Load and Save Tintim Config
     useEffect(() => {
-        if (isTintimModalOpen && selectedClient) {
+        if (selectedClient) {
             const loadConfig = async () => {
                 const { data, error } = await supabase
                     .from('client_integrations')
@@ -226,7 +226,7 @@ export const MarketingDashboard: React.FC = () => {
             };
             loadConfig();
         }
-    }, [isTintimModalOpen, selectedClient]);
+    }, [selectedClient]);
 
     const handleSaveTintimConfig = async () => {
         if (!selectedClient || !organizationId) return;

@@ -13,7 +13,10 @@ import { UpdatePasswordView } from './views/UpdatePasswordView';
 import { MarketingDashboard } from './components/MarketingDashboard';
 const AppContent: React.FC = () => {
   const { user, loading, isSuperAdmin, isManager } = useAuth();
-  const [currentView, setCurrentView] = useState<ViewState | null>(null);
+  const [currentView, setCurrentView] = useState<ViewState | null>(() => {
+    const saved = localStorage.getItem('app_current_view');
+    return saved ? (saved as ViewState) : null;
+  });
   const [hasRouted, setHasRouted] = useState(false);
   const [performedRoleRedirection, setPerformedRoleRedirection] = useState(false);
 
@@ -25,6 +28,13 @@ const AppContent: React.FC = () => {
       const hasDeepLink = params.has('task') || params.has('chat');
 
       if (!hasRouted) {
+        // If restored from storage, respect it
+        if (currentView) {
+          setHasRouted(true);
+          setPerformedRoleRedirection(true);
+          return;
+        }
+
         // Deep Link Override
         if (hasDeepLink) {
           setCurrentView(ViewState.WORKSPACE);
@@ -69,6 +79,13 @@ const AppContent: React.FC = () => {
       }
     }
   }, [loading, user, isManager, isSuperAdmin, currentView]);
+
+  // Persistence
+  React.useEffect(() => {
+    if (currentView) {
+      localStorage.setItem('app_current_view', currentView);
+    }
+  }, [currentView]);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   // Detect invitation or recovery link
@@ -83,6 +100,7 @@ const AppContent: React.FC = () => {
     if (!user && !loading) {
       setHasRouted(false);
       setCurrentView(null);
+      localStorage.removeItem('app_current_view');
     }
   }, [user, loading]);
 

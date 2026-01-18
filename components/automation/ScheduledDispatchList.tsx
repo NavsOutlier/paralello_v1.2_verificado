@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
     Calendar, Clock, Send, Plus, Trash2, Edit2, CheckCircle, XCircle,
-    AlertCircle, CalendarDays, Video, CreditCard, Bell, MessageSquare
+    AlertCircle, CalendarDays, Video, CreditCard, Bell, MessageSquare, Copy
 } from 'lucide-react';
 import { ScheduledMessage } from '../../types/automation';
 import { ScheduledDispatchForm } from './ScheduledDispatchForm';
@@ -22,6 +22,7 @@ export const ScheduledDispatchList: React.FC<ScheduledDispatchListProps> = ({
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingMessage, setEditingMessage] = useState<ScheduledMessage | undefined>();
+    const [duplicatingMessage, setDuplicatingMessage] = useState<ScheduledMessage | undefined>();
 
     const fetchMessages = async () => {
         if (!organizationId || !clientId) return;
@@ -119,12 +120,20 @@ export const ScheduledDispatchList: React.FC<ScheduledDispatchListProps> = ({
 
     const handleEdit = (msg: ScheduledMessage) => {
         setEditingMessage(msg);
+        setDuplicatingMessage(undefined);
+        setShowForm(true);
+    };
+
+    const handleDuplicate = (msg: ScheduledMessage) => {
+        setDuplicatingMessage(msg);
+        setEditingMessage(msg);
         setShowForm(true);
     };
 
     const handleFormClose = () => {
         setShowForm(false);
         setEditingMessage(undefined);
+        setDuplicatingMessage(undefined);
     };
 
     return (
@@ -193,33 +202,46 @@ export const ScheduledDispatchList: React.FC<ScheduledDispatchListProps> = ({
                                 </div>
 
                                 {/* Actions */}
-                                {isPending && !isPast && (
-                                    <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1">
+                                    {/* Duplicate Button - Always visible for pending/sent */}
+                                    {(msg.status === 'pending' || msg.status === 'sent') && (
                                         <button
-                                            onClick={() => handleEdit(msg)}
-                                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-600"
-                                            title="Editar"
+                                            onClick={() => handleDuplicate(msg)}
+                                            className="p-2 hover:bg-orange-50 rounded-lg transition-colors text-slate-400 hover:text-orange-600"
+                                            title="Duplicar para outros clientes"
                                         >
-                                            <Edit2 className="w-4 h-4" />
+                                            <Copy className="w-4 h-4" />
                                         </button>
+                                    )}
+
+                                    {isPending && !isPast && (
+                                        <>
+                                            <button
+                                                onClick={() => handleEdit(msg)}
+                                                className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-400 hover:text-slate-600"
+                                                title="Editar"
+                                            >
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleCancel(msg.id)}
+                                                className="p-2 hover:bg-red-50 rounded-lg transition-colors text-slate-400 hover:text-red-600"
+                                                title="Cancelar"
+                                            >
+                                                <XCircle className="w-4 h-4" />
+                                            </button>
+                                        </>
+                                    )}
+                                    {(msg.status === 'sent' || msg.status === 'cancelled' || msg.status === 'failed') && (
                                         <button
-                                            onClick={() => handleCancel(msg.id)}
+                                            onClick={() => handleDelete(msg.id)}
                                             className="p-2 hover:bg-red-50 rounded-lg transition-colors text-slate-400 hover:text-red-600"
-                                            title="Cancelar"
+                                            title="Excluir"
                                         >
-                                            <XCircle className="w-4 h-4" />
+                                            <Trash2 className="w-4 h-4" />
                                         </button>
-                                    </div>
-                                )}
-                                {(msg.status === 'sent' || msg.status === 'cancelled' || msg.status === 'failed') && (
-                                    <button
-                                        onClick={() => handleDelete(msg.id)}
-                                        className="p-2 hover:bg-red-50 rounded-lg transition-colors text-slate-400 hover:text-red-600"
-                                        title="Excluir"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                )}
+                                    )}
+                                </div>
                             </div>
                         );
                     })}
@@ -234,6 +256,7 @@ export const ScheduledDispatchList: React.FC<ScheduledDispatchListProps> = ({
                     onClose={handleFormClose}
                     onSuccess={fetchMessages}
                     editingMessage={editingMessage}
+                    duplicateMode={!!duplicatingMessage}
                 />
             )}
         </div>

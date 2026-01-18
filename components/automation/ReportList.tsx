@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-    BarChart3, Plus, Trash2, Edit2, Play, Pause, Clock, Calendar, CheckCircle
+    BarChart3, Plus, Trash2, Edit2, Play, Pause, Clock, Calendar, CheckCircle, Copy
 } from 'lucide-react';
 import { ScheduledReport, AVAILABLE_METRICS, WEEKDAYS } from '../../types/automation';
 import { ReportingConfig } from './ReportingConfig';
@@ -21,6 +21,7 @@ export const ReportList: React.FC<ReportListProps> = ({
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingReport, setEditingReport] = useState<ScheduledReport | undefined>();
+    const [duplicatingReport, setDuplicatingReport] = useState<ScheduledReport | undefined>();
 
     const fetchReports = async () => {
         if (!organizationId || !clientId) return;
@@ -76,12 +77,20 @@ export const ReportList: React.FC<ReportListProps> = ({
 
     const handleEdit = (report: ScheduledReport) => {
         setEditingReport(report);
+        setDuplicatingReport(undefined);
+        setShowForm(true);
+    };
+
+    const handleDuplicate = (report: ScheduledReport) => {
+        setDuplicatingReport(report);
+        setEditingReport(report);
         setShowForm(true);
     };
 
     const handleFormClose = () => {
         setShowForm(false);
         setEditingReport(undefined);
+        setDuplicatingReport(undefined);
     };
 
     const getFrequencyLabel = (report: ScheduledReport) => {
@@ -194,6 +203,13 @@ export const ReportList: React.FC<ReportListProps> = ({
                                 {/* Actions */}
                                 <div className="flex items-center gap-1">
                                     <button
+                                        onClick={() => handleDuplicate(report)}
+                                        className="p-2 hover:bg-orange-50 rounded-lg transition-colors text-slate-400 hover:text-orange-600"
+                                        title="Duplicar para outros clientes"
+                                    >
+                                        <Copy className="w-4 h-4" />
+                                    </button>
+                                    <button
                                         onClick={() => handleToggleActive(report)}
                                         className={`p-2 rounded-lg transition-colors ${report.is_active
                                             ? 'hover:bg-orange-50 text-slate-400 hover:text-orange-600'
@@ -232,6 +248,7 @@ export const ReportList: React.FC<ReportListProps> = ({
                     onClose={handleFormClose}
                     onSuccess={fetchReports}
                     editingReport={editingReport}
+                    duplicateMode={!!duplicatingReport}
                 />
             )}
         </div>

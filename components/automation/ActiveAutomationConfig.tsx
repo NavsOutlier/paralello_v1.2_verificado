@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-    Sparkles, Clock, X, Save, Calendar, Users, CheckCircle2
+    Sparkles, Clock, X, Save, Calendar, Users, CheckCircle2, Copy
 } from 'lucide-react';
 import { ActiveAutomation, WEEKDAYS } from '../../types/automation';
+import { ClientSelector } from './ClientSelector';
 
 interface ActiveAutomationConfigProps {
-    clientId: string;
-    clientName: string;
+    clientId?: string;
+    clientName?: string;
     onClose: () => void;
     onSuccess?: () => void;
     editingAutomation?: ActiveAutomation;
+    duplicateMode?: boolean;
 }
 
 export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
@@ -19,11 +21,17 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
     clientName,
     onClose,
     onSuccess,
-    editingAutomation
+    editingAutomation,
+    duplicateMode = false
 }) => {
     const { organizationId } = useAuth();
     const [loading, setLoading] = useState(false);
     const [teamMembers, setTeamMembers] = useState<{ id: string, profile_id: string, profile?: { name?: string, email?: string } }[]>([]);
+
+    // Client selection
+    const [selectedClientIds, setSelectedClientIds] = useState<string[]>(
+        clientId ? [clientId] : []
+    );
 
     // Form state
     const [name, setName] = useState('Atualização Semanal');
@@ -54,8 +62,12 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
             setTimeOfDay(editingAutomation.time_of_day);
             setContextDays(editingAutomation.context_days);
             setAssignedApprover(editingAutomation.assigned_approver || '');
+
+            if (!duplicateMode) {
+                setSelectedClientIds([editingAutomation.client_id]);
+            }
         }
-    }, [editingAutomation]);
+    }, [editingAutomation, duplicateMode]);
 
     const toggleWeekday = (day: number) => {
         setSelectedWeekdays(prev =>
@@ -67,13 +79,12 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!organizationId || selectedWeekdays.length === 0) return;
+        if (!organizationId || selectedWeekdays.length === 0 || selectedClientIds.length === 0) return;
 
         setLoading(true);
         try {
-            const automationData = {
+            const baseAutomationData = {
                 organization_id: organizationId,
-                client_id: clientId,
                 name,
                 weekdays: selectedWeekdays,
                 time_of_day: timeOfDay,
@@ -82,16 +93,24 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                 is_active: true
             };
 
-            if (editingAutomation) {
+            if (editingAutomation && !duplicateMode) {
                 const { error } = await supabase
                     .from('active_automations')
-                    .update(automationData)
+                    .update({
+                        ...baseAutomationData,
+                        client_id: editingAutomation.client_id
+                    })
                     .eq('id', editingAutomation.id);
                 if (error) throw error;
             } else {
+                const inserts = selectedClientIds.map(cId => ({
+                    ...baseAutomationData,
+                    client_id: cId
+                }));
+
                 const { error } = await supabase
                     .from('active_automations')
-                    .insert(automationData);
+                    .insert(inserts);
                 if (error) throw error;
             }
 
@@ -105,20 +124,31 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
         }
     };
 
+    const isEditing = editingAutomation && !duplicateMode;
+    const title = duplicateMode
+        ? 'Duplicar Automação Active'
+        : editingAutomation
+            ? 'Editar Active'
+            : 'Nova Automação Active';
+
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-in zoom-in-95 duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-slate-100">
+                <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-purple-100 rounded-xl">
-                            <Sparkles className="w-5 h-5 text-purple-600" />
+                        <div className={`p-2 rounded-xl ${duplicateMode ? 'bg-orange-100' : 'bg-purple-100'}`}>
+                            {duplicateMode ? (
+                                <Copy className="w-5 h-5 text-orange-600" />
+                            ) : (
+                                <Sparkles className="w-5 h-5 text-purple-600" />
+                            )}
                         </div>
                         <div>
-                            <h2 className="font-bold text-slate-800">
-                                {editingAutomation ? 'Editar Active' : 'Nova Automação Active'}
-                            </h2>
-                            <p className="text-xs text-slate-500">Cliente: {clientName}</p>
+                            <h2 className="font-bold text-slate-800">{title}</h2>
+                            {isEditing && clientName && (
+                                <p className="text-xs text-slate-500">Cliente: {clientName}</p>
+                            )}
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
@@ -128,6 +158,25 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                    {/* Client Selection */}
+                    {!isEditing && (
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                Cliente(s)
+                                {duplicateMode && (
+                                    <span className="text-orange-500">(selecione destino)</span>
+                                )}
+                            </label>
+                            <ClientSelector
+                                selectedClientIds={selectedClientIds}
+                                onChange={setSelectedClientIds}
+                                mode="multiple"
+                                currentClientId={clientId}
+                                excludeClientIds={duplicateMode && editingAutomation ? [editingAutomation.client_id] : []}
+                            />
+                        </div>
+                    )}
+
                     {/* Name */}
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -228,6 +277,15 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                         </p>
                     </div>
 
+                    {/* Info for multiple selection */}
+                    {selectedClientIds.length > 1 && (
+                        <div className="bg-purple-50 border border-purple-100 rounded-xl p-3">
+                            <p className="text-xs text-purple-700">
+                                <strong>Nota:</strong> Será criada uma automação separada para cada um dos {selectedClientIds.length} clientes selecionados.
+                            </p>
+                        </div>
+                    )}
+
                     {/* Actions */}
                     <div className="flex gap-3 pt-2">
                         <button
@@ -239,11 +297,21 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                         </button>
                         <button
                             type="submit"
-                            disabled={loading || selectedWeekdays.length === 0}
-                            className="flex-1 py-3 bg-purple-600 text-white rounded-xl font-bold text-sm hover:bg-purple-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            disabled={loading || selectedWeekdays.length === 0 || selectedClientIds.length === 0}
+                            className={`flex-1 py-3 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 ${duplicateMode ? 'bg-orange-600 hover:bg-orange-700' : 'bg-purple-600 hover:bg-purple-700'
+                                }`}
                         >
-                            <Save className="w-4 h-4" />
-                            {loading ? 'Salvando...' : editingAutomation ? 'Atualizar' : 'Criar Automação'}
+                            {duplicateMode ? <Copy className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                            {loading
+                                ? 'Salvando...'
+                                : duplicateMode
+                                    ? `Duplicar (${selectedClientIds.length})`
+                                    : isEditing
+                                        ? 'Atualizar'
+                                        : selectedClientIds.length > 1
+                                            ? `Criar (${selectedClientIds.length})`
+                                            : 'Criar Automação'
+                            }
                         </button>
                     </div>
                 </form>

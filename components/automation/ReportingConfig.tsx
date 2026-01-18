@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-    BarChart3, Clock, X, Save, Calendar, CheckCircle2
+    BarChart3, Clock, X, Save, Calendar, CheckCircle2, Copy
 } from 'lucide-react';
 import { ScheduledReport, AVAILABLE_METRICS, WEEKDAYS } from '../../types/automation';
+import { ClientSelector } from './ClientSelector';
 
 interface ReportingConfigProps {
-    clientId: string;
-    clientName: string;
+    clientId?: string;
+    clientName?: string;
     onClose: () => void;
     onSuccess?: () => void;
     editingReport?: ScheduledReport;
+    duplicateMode?: boolean;
 }
 
 export const ReportingConfig: React.FC<ReportingConfigProps> = ({
@@ -19,10 +21,16 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
     clientName,
     onClose,
     onSuccess,
-    editingReport
+    editingReport,
+    duplicateMode = false
 }) => {
     const { organizationId, user } = useAuth();
     const [loading, setLoading] = useState(false);
+
+    // Client selection
+    const [selectedClientIds, setSelectedClientIds] = useState<string[]>(
+        clientId ? [clientId] : []
+    );
 
     // Form state
     const [name, setName] = useState('Resumo Semanal');
@@ -47,8 +55,12 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
             setTimeOfDay(editingReport.time_of_day);
             setSelectedMetrics(editingReport.metrics || []);
             setTemplate(editingReport.template || '');
+
+            if (!duplicateMode) {
+                setSelectedClientIds([editingReport.client_id]);
+            }
         }
-    }, [editingReport]);
+    }, [editingReport, duplicateMode]);
 
     const toggleMetric = (key: string) => {
         setSelectedMetrics(prev =>
@@ -78,13 +90,12 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!organizationId || selectedMetrics.length === 0) return;
+        if (!organizationId || selectedMetrics.length === 0 || selectedClientIds.length === 0) return;
 
         setLoading(true);
         try {
-            const reportData = {
+            const baseReportData = {
                 organization_id: organizationId,
-                client_id: clientId,
                 name,
                 frequency,
                 weekday: frequency === 'weekly' ? weekday : null,
@@ -97,16 +108,24 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
                 created_by: user?.id
             };
 
-            if (editingReport) {
+            if (editingReport && !duplicateMode) {
                 const { error } = await supabase
                     .from('scheduled_reports')
-                    .update(reportData)
+                    .update({
+                        ...baseReportData,
+                        client_id: editingReport.client_id
+                    })
                     .eq('id', editingReport.id);
                 if (error) throw error;
             } else {
+                const inserts = selectedClientIds.map(cId => ({
+                    ...baseReportData,
+                    client_id: cId
+                }));
+
                 const { error } = await supabase
                     .from('scheduled_reports')
-                    .insert(reportData);
+                    .insert(inserts);
                 if (error) throw error;
             }
 
@@ -120,20 +139,31 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
         }
     };
 
+    const isEditing = editingReport && !duplicateMode;
+    const title = duplicateMode
+        ? 'Duplicar Relatório'
+        : editingReport
+            ? 'Editar Relatório'
+            : 'Novo Relatório Automático';
+
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-emerald-100 rounded-xl">
-                            <BarChart3 className="w-5 h-5 text-emerald-600" />
+                        <div className={`p-2 rounded-xl ${duplicateMode ? 'bg-orange-100' : 'bg-emerald-100'}`}>
+                            {duplicateMode ? (
+                                <Copy className="w-5 h-5 text-orange-600" />
+                            ) : (
+                                <BarChart3 className="w-5 h-5 text-emerald-600" />
+                            )}
                         </div>
                         <div>
-                            <h2 className="font-bold text-slate-800">
-                                {editingReport ? 'Editar Relatório' : 'Novo Relatório Automático'}
-                            </h2>
-                            <p className="text-xs text-slate-500">Cliente: {clientName}</p>
+                            <h2 className="font-bold text-slate-800">{title}</h2>
+                            {isEditing && clientName && (
+                                <p className="text-xs text-slate-500">Cliente: {clientName}</p>
+                            )}
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
@@ -143,6 +173,25 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                    {/* Client Selection */}
+                    {!isEditing && (
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                Cliente(s)
+                                {duplicateMode && (
+                                    <span className="text-orange-500">(selecione destino)</span>
+                                )}
+                            </label>
+                            <ClientSelector
+                                selectedClientIds={selectedClientIds}
+                                onChange={setSelectedClientIds}
+                                mode="multiple"
+                                currentClientId={clientId}
+                                excludeClientIds={duplicateMode && editingReport ? [editingReport.client_id] : []}
+                            />
+                        </div>
+                    )}
+
                     {/* Name */}
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -277,6 +326,15 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
                         </p>
                     </div>
 
+                    {/* Info for multiple selection */}
+                    {selectedClientIds.length > 1 && (
+                        <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+                            <p className="text-xs text-emerald-700">
+                                <strong>Nota:</strong> Será criado um relatório separado para cada um dos {selectedClientIds.length} clientes selecionados.
+                            </p>
+                        </div>
+                    )}
+
                     {/* Actions */}
                     <div className="flex gap-3 pt-2">
                         <button
@@ -288,11 +346,21 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
                         </button>
                         <button
                             type="submit"
-                            disabled={loading || selectedMetrics.length === 0}
-                            className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            disabled={loading || selectedMetrics.length === 0 || selectedClientIds.length === 0}
+                            className={`flex-1 py-3 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 ${duplicateMode ? 'bg-orange-600 hover:bg-orange-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                                }`}
                         >
-                            <Save className="w-4 h-4" />
-                            {loading ? 'Salvando...' : editingReport ? 'Atualizar' : 'Criar Relatório'}
+                            {duplicateMode ? <Copy className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                            {loading
+                                ? 'Salvando...'
+                                : duplicateMode
+                                    ? `Duplicar (${selectedClientIds.length})`
+                                    : isEditing
+                                        ? 'Atualizar'
+                                        : selectedClientIds.length > 1
+                                            ? `Criar (${selectedClientIds.length})`
+                                            : 'Criar Relatório'
+                            }
                         </button>
                     </div>
                 </form>

@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-    Calendar, Clock, Send, X, MessageSquare, Video, CreditCard, Bell, CalendarDays
+    Calendar, Clock, Send, X, MessageSquare, Video, CreditCard, Bell, CalendarDays, Copy
 } from 'lucide-react';
 import { ScheduledMessage, MESSAGE_CATEGORIES } from '../../types/automation';
+import { ClientSelector } from './ClientSelector';
 
 interface ScheduledDispatchFormProps {
-    clientId: string;
-    clientName: string;
+    clientId?: string; // Optional - if provided, pre-select this client
+    clientName?: string;
     onClose: () => void;
     onSuccess?: () => void;
     editingMessage?: ScheduledMessage;
+    duplicateMode?: boolean; // When duplicating to other clients
 }
 
 export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
@@ -19,10 +21,16 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
     clientName,
     onClose,
     onSuccess,
-    editingMessage
+    editingMessage,
+    duplicateMode = false
 }) => {
     const { organizationId, user } = useAuth();
     const [loading, setLoading] = useState(false);
+
+    // Client selection
+    const [selectedClientIds, setSelectedClientIds] = useState<string[]>(
+        clientId ? [clientId] : []
+    );
 
     // Form state
     const [scheduledDate, setScheduledDate] = useState('');
@@ -30,7 +38,7 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
     const [message, setMessage] = useState('');
     const [category, setCategory] = useState<ScheduledMessage['category']>('reminder');
 
-    // Initialize from editing message if provided
+    // Initialize from editing/duplicating message if provided
     useEffect(() => {
         if (editingMessage) {
             const dt = new Date(editingMessage.scheduled_at);
@@ -38,8 +46,13 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
             setScheduledTime(dt.toTimeString().slice(0, 5));
             setMessage(editingMessage.message);
             setCategory(editingMessage.category);
+
+            // If not duplicate mode, keep the original client
+            if (!duplicateMode) {
+                setSelectedClientIds([editingMessage.client_id]);
+            }
         }
-    }, [editingMessage]);
+    }, [editingMessage, duplicateMode]);
 
     const getCategoryIcon = (cat: string) => {
         switch (cat) {
@@ -53,14 +66,14 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!organizationId || !message.trim() || !scheduledDate) return;
+        if (!organizationId || !message.trim() || !scheduledDate || selectedClientIds.length === 0) return;
 
         setLoading(true);
         try {
             const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}:00`).toISOString();
 
-            if (editingMessage) {
-                // Update existing
+            if (editingMessage && !duplicateMode) {
+                // Update existing (single client)
                 const { error } = await supabase
                     .from('scheduled_messages')
                     .update({
@@ -72,17 +85,19 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
 
                 if (error) throw error;
             } else {
-                // Create new
+                // Create new for each selected client
+                const inserts = selectedClientIds.map(cId => ({
+                    organization_id: organizationId,
+                    client_id: cId,
+                    scheduled_at: scheduledAt,
+                    message: message.trim(),
+                    category,
+                    created_by: user?.id
+                }));
+
                 const { error } = await supabase
                     .from('scheduled_messages')
-                    .insert({
-                        organization_id: organizationId,
-                        client_id: clientId,
-                        scheduled_at: scheduledAt,
-                        message: message.trim(),
-                        category,
-                        created_by: user?.id
-                    });
+                    .insert(inserts);
 
                 if (error) throw error;
             }
@@ -97,20 +112,31 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
         }
     };
 
+    const isEditing = editingMessage && !duplicateMode;
+    const title = duplicateMode
+        ? 'Duplicar Disparo'
+        : editingMessage
+            ? 'Editar Disparo'
+            : 'Novo Disparo Agendado';
+
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-in zoom-in-95 duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-slate-100">
+                <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-indigo-100 rounded-xl">
-                            <Send className="w-5 h-5 text-indigo-600" />
+                        <div className={`p-2 rounded-xl ${duplicateMode ? 'bg-orange-100' : 'bg-indigo-100'}`}>
+                            {duplicateMode ? (
+                                <Copy className="w-5 h-5 text-orange-600" />
+                            ) : (
+                                <Send className="w-5 h-5 text-indigo-600" />
+                            )}
                         </div>
                         <div>
-                            <h2 className="font-bold text-slate-800">
-                                {editingMessage ? 'Editar Disparo' : 'Novo Disparo Agendado'}
-                            </h2>
-                            <p className="text-xs text-slate-500">Cliente: {clientName}</p>
+                            <h2 className="font-bold text-slate-800">{title}</h2>
+                            {isEditing && clientName && (
+                                <p className="text-xs text-slate-500">Cliente: {clientName}</p>
+                            )}
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
@@ -120,6 +146,25 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                    {/* Client Selection - Show when NOT editing single item */}
+                    {!isEditing && (
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                Cliente(s)
+                                {duplicateMode && (
+                                    <span className="text-orange-500">(selecione destino)</span>
+                                )}
+                            </label>
+                            <ClientSelector
+                                selectedClientIds={selectedClientIds}
+                                onChange={setSelectedClientIds}
+                                mode="multiple"
+                                currentClientId={clientId}
+                                excludeClientIds={duplicateMode && editingMessage ? [editingMessage.client_id] : []}
+                            />
+                        </div>
+                    )}
+
                     {/* Category */}
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -191,6 +236,15 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
                         />
                     </div>
 
+                    {/* Info for multiple selection */}
+                    {selectedClientIds.length > 1 && (
+                        <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3">
+                            <p className="text-xs text-indigo-700">
+                                <strong>Nota:</strong> Será criado um disparo separado para cada um dos {selectedClientIds.length} clientes selecionados.
+                            </p>
+                        </div>
+                    )}
+
                     {/* Actions */}
                     <div className="flex gap-3 pt-2">
                         <button
@@ -202,11 +256,21 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
                         </button>
                         <button
                             type="submit"
-                            disabled={loading || !message.trim() || !scheduledDate}
-                            className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            disabled={loading || !message.trim() || !scheduledDate || selectedClientIds.length === 0}
+                            className={`flex-1 py-3 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 ${duplicateMode ? 'bg-orange-600 hover:bg-orange-700' : 'bg-indigo-600 hover:bg-indigo-700'
+                                }`}
                         >
-                            <Send className="w-4 h-4" />
-                            {loading ? 'Salvando...' : editingMessage ? 'Atualizar' : 'Agendar'}
+                            {duplicateMode ? <Copy className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                            {loading
+                                ? 'Salvando...'
+                                : duplicateMode
+                                    ? `Duplicar (${selectedClientIds.length})`
+                                    : isEditing
+                                        ? 'Atualizar'
+                                        : selectedClientIds.length > 1
+                                            ? `Agendar (${selectedClientIds.length})`
+                                            : 'Agendar'
+                            }
                         </button>
                     </div>
                 </form>

@@ -29,6 +29,14 @@ interface PeriodData {
     total: { leads: number; investment: number; conversions: number; revenue: number; cpl: number; rate: number };
 }
 
+// Helper to get local date string YYYY-MM-DD
+const toLocalDateString = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 export const MarketingDashboard: React.FC = () => {
     const { organizationId, isSuperAdmin, permissions } = useAuth();
     const canManageMarketing = isSuperAdmin || permissions?.can_manage_marketing;
@@ -41,16 +49,14 @@ export const MarketingDashboard: React.FC = () => {
     const [startX, setStartX] = useState(0);
     const [scrollLeft, setScrollLeft] = useState(0);
 
-    // Filters - Default: last 7 days (not counting today)
+    // Filters - Default: last 7 days (including today)
     const [startDate, setStartDate] = useState(() => {
         const date = new Date();
-        date.setDate(date.getDate() - 8); // 8 days ago to get 7 full days before yesterday
-        return date.toISOString().split('T')[0];
+        date.setDate(date.getDate() - 6); // 6 days ago + today = 7 days
+        return toLocalDateString(date);
     });
     const [endDate, setEndDate] = useState(() => {
-        const date = new Date();
-        date.setDate(date.getDate() - 1); // Yesterday
-        return date.toISOString().split('T')[0];
+        return toLocalDateString(new Date()); // Today
     });
     const [granularity, setGranularity] = useState<Granularity>('day');
 
@@ -62,50 +68,50 @@ export const MarketingDashboard: React.FC = () => {
     const datePresets = [
         {
             key: 'today', label: 'Hoje', getDates: () => {
-                const today = new Date().toISOString().split('T')[0];
+                const today = toLocalDateString(new Date());
                 return { start: today, end: today };
             }
         },
         {
             key: 'yesterday', label: 'Ontem', getDates: () => {
                 const d = new Date(); d.setDate(d.getDate() - 1);
-                const yesterday = d.toISOString().split('T')[0];
+                const yesterday = toLocalDateString(d);
                 return { start: yesterday, end: yesterday };
             }
         },
         {
             key: 'todayYesterday', label: 'Hoje e ontem', getDates: () => {
-                const today = new Date().toISOString().split('T')[0];
+                const today = toLocalDateString(new Date());
                 const d = new Date(); d.setDate(d.getDate() - 1);
-                return { start: d.toISOString().split('T')[0], end: today };
+                return { start: toLocalDateString(d), end: today };
             }
         },
         {
             key: 'last7', label: 'Últimos 7 dias', getDates: () => {
-                const end = new Date(); end.setDate(end.getDate() - 1);
-                const start = new Date(); start.setDate(start.getDate() - 7);
-                return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+                const end = new Date();
+                const start = new Date(); start.setDate(start.getDate() - 6);
+                return { start: toLocalDateString(start), end: toLocalDateString(end) };
             }
         },
         {
             key: 'last14', label: 'Últimos 14 dias', getDates: () => {
-                const end = new Date(); end.setDate(end.getDate() - 1);
-                const start = new Date(); start.setDate(start.getDate() - 14);
-                return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+                const end = new Date();
+                const start = new Date(); start.setDate(start.getDate() - 13);
+                return { start: toLocalDateString(start), end: toLocalDateString(end) };
             }
         },
         {
             key: 'last28', label: 'Últimos 28 dias', getDates: () => {
-                const end = new Date(); end.setDate(end.getDate() - 1);
-                const start = new Date(); start.setDate(start.getDate() - 28);
-                return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+                const end = new Date();
+                const start = new Date(); start.setDate(start.getDate() - 27);
+                return { start: toLocalDateString(start), end: toLocalDateString(end) };
             }
         },
         {
             key: 'last30', label: 'Últimos 30 dias', getDates: () => {
-                const end = new Date(); end.setDate(end.getDate() - 1);
-                const start = new Date(); start.setDate(start.getDate() - 30);
-                return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+                const end = new Date();
+                const start = new Date(); start.setDate(start.getDate() - 29);
+                return { start: toLocalDateString(start), end: toLocalDateString(end) };
             }
         },
         {
@@ -113,7 +119,7 @@ export const MarketingDashboard: React.FC = () => {
                 const today = new Date();
                 const dayOfWeek = today.getDay();
                 const start = new Date(today); start.setDate(today.getDate() - dayOfWeek);
-                return { start: start.toISOString().split('T')[0], end: today.toISOString().split('T')[0] };
+                return { start: toLocalDateString(start), end: toLocalDateString(today) };
             }
         },
         {
@@ -122,14 +128,14 @@ export const MarketingDashboard: React.FC = () => {
                 const dayOfWeek = today.getDay();
                 const endOfLastWeek = new Date(today); endOfLastWeek.setDate(today.getDate() - dayOfWeek - 1);
                 const startOfLastWeek = new Date(endOfLastWeek); startOfLastWeek.setDate(endOfLastWeek.getDate() - 6);
-                return { start: startOfLastWeek.toISOString().split('T')[0], end: endOfLastWeek.toISOString().split('T')[0] };
+                return { start: toLocalDateString(startOfLastWeek), end: toLocalDateString(endOfLastWeek) };
             }
         },
         {
             key: 'thisMonth', label: 'Este mês', getDates: () => {
                 const today = new Date();
                 const start = new Date(today.getFullYear(), today.getMonth(), 1);
-                return { start: start.toISOString().split('T')[0], end: today.toISOString().split('T')[0] };
+                return { start: toLocalDateString(start), end: toLocalDateString(today) };
             }
         },
         {
@@ -137,13 +143,13 @@ export const MarketingDashboard: React.FC = () => {
                 const today = new Date();
                 const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
                 const end = new Date(today.getFullYear(), today.getMonth(), 0);
-                return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+                return { start: toLocalDateString(start), end: toLocalDateString(end) };
             }
         },
         {
             key: 'max', label: 'Máximo', getDates: () => {
                 const start = new Date(); start.setFullYear(start.getFullYear() - 1);
-                return { start: start.toISOString().split('T')[0], end: new Date().toISOString().split('T')[0] };
+                return { start: toLocalDateString(start), end: toLocalDateString(new Date()) };
             }
         },
     ];
@@ -425,14 +431,14 @@ export const MarketingDashboard: React.FC = () => {
         const fetchNewData = async () => {
             console.log('Fetching new data for:', { organizationId, selectedClient, startDate, endDate });
 
-            // Fetch leads
+            // Fetch leads - filter by first_interaction_at (actual lead date)
             const { data: leads, error: leadsError } = await supabase
                 .from('marketing_leads')
                 .select('*')
                 .eq('organization_id', organizationId)
                 .eq('client_id', selectedClient)
-                .gte('created_at', startDate)
-                .lte('created_at', endDate + 'T23:59:59');
+                .gte('first_interaction_at', startDate)
+                .lte('first_interaction_at', endDate + 'T23:59:59');
 
             console.log('Leads result:', { leads, leadsError });
 
@@ -509,31 +515,89 @@ export const MarketingDashboard: React.FC = () => {
 
     // Process Data into Table Format (Pivot)
     const tableData = useMemo(() => {
+        // 1. Process Real-time Leads into aggregations
+        const realTimeLeads = leadsData.map(l => {
+            const date = l.first_interaction_at.split('T')[0];
+            let channel = 'direct';
+            if (l.source?.toLowerCase().includes('meta') || l.source?.toLowerCase().includes('facebook') || l.source?.toLowerCase().includes('instagram')) channel = 'meta';
+            else if (l.source?.toLowerCase().includes('google')) channel = 'google';
+
+            return { date, channel, type: 'lead', phone: l.phone };
+        });
+
+        // 2. Process Real-time Conversions into aggregations
+        // Try to match conversion to a lead to get source
+        const realTimeConversions = conversionsData.map(c => {
+            const date = c.converted_at.split('T')[0];
+            const revenue = parseFloat(c.revenue) || 0;
+            // Find specific lead source if possible (naive matching by phone)
+            const matchedLead = leadsData.find(l => l.phone === c.phone); // This searches across all fetched leads
+            let channel = 'direct';
+            if (matchedLead) {
+                if (matchedLead.source?.toLowerCase().includes('meta') || matchedLead.source?.toLowerCase().includes('facebook') || matchedLead.source?.toLowerCase().includes('instagram')) channel = 'meta';
+                else if (matchedLead.source?.toLowerCase().includes('google')) channel = 'google';
+            }
+
+            return { date, channel, revenue, type: 'conversion' };
+        });
+
+        // 3. Merge Real-time data with Manual Raw Data
+        // We create a combined list of "data points" to aggregate
+        // Manual data has { report_date, channel, leads, conversions, revenue, investment }
+
         return periods.map(p => {
-            // Filter raw data belonging to this period
-            const periodRows = rawData.filter(row => {
+            // A. Filter Manual Rows
+            const manualRows = rawData.filter(row => {
                 const rowDate = row.report_date;
                 if (granularity === 'day') return rowDate === p.key;
-                if (granularity === 'month') return rowDate.startsWith(p.key.slice(0, 7)); // 'YYYY-MM'
-                // Week logic approximation check
+                if (granularity === 'month') return rowDate.startsWith(p.key.slice(0, 7));
+                return rowDate >= p.key && (p.endKey ? rowDate <= p.endKey : true);
+            });
+
+            // B. Filter Real-time Data
+            const periodLeads = realTimeLeads.filter(l => {
+                const rowDate = l.date;
+                if (granularity === 'day') return rowDate === p.key;
+                if (granularity === 'month') return rowDate.startsWith(p.key.slice(0, 7));
+                return rowDate >= p.key && (p.endKey ? rowDate <= p.endKey : true);
+            });
+
+            const periodConversions = realTimeConversions.filter(c => {
+                const rowDate = c.date;
+                if (granularity === 'day') return rowDate === p.key;
+                if (granularity === 'month') return rowDate.startsWith(p.key.slice(0, 7));
                 return rowDate >= p.key && (p.endKey ? rowDate <= p.endKey : true);
             });
 
             // Aggregate helpers
             const sumStart = { leads: 0, investment: 0, conversions: 0, revenue: 0 };
             const groupByChannel = (channel: string) => {
-                const rows = periodRows.filter(r => r.channel === channel);
-                return rows.reduce((acc, curr) => ({
+                // Manual Aggregate
+                const manual = manualRows.filter(r => r.channel === channel).reduce((acc, curr) => ({
                     leads: acc.leads + (curr.leads || 0),
                     investment: acc.investment + (curr.investment || 0),
                     conversions: acc.conversions + (curr.conversions || 0),
                     revenue: acc.revenue + (curr.revenue || 0)
                 }), { ...sumStart });
+
+                // Real-time Aggregate
+                const rtLeadsCount = periodLeads.filter(l => l.channel === channel).length;
+                const rtConversions = periodConversions.filter(c => c.channel === channel);
+                const rtConversionsCount = rtConversions.length;
+                const rtRevenue = rtConversions.reduce((acc, c) => acc + c.revenue, 0);
+
+                // Combine (Integration ADDs to manual, usually you use one or other, but summing ensures no data loss if hybrid)
+                return {
+                    leads: manual.leads + rtLeadsCount,
+                    investment: manual.investment, // Investment currently only manual
+                    conversions: manual.conversions + rtConversionsCount,
+                    revenue: manual.revenue + rtRevenue
+                };
             };
 
             const meta = groupByChannel('meta');
             const google = groupByChannel('google');
-            const direct = groupByChannel('direct'); // includes 'direct' or no channel
+            const direct = groupByChannel('direct');
 
             const totalLeads = meta.leads + google.leads + direct.leads;
             const totalInvest = meta.investment + google.investment + direct.investment;
@@ -556,7 +620,7 @@ export const MarketingDashboard: React.FC = () => {
                 }
             } as PeriodData;
         });
-    }, [periods, rawData, granularity]);
+    }, [periods, rawData, leadsData, conversionsData, granularity]);
 
     // Dashboard View Render Logic
     const renderDashboardView = () => {
@@ -703,7 +767,7 @@ export const MarketingDashboard: React.FC = () => {
                     <div>
                         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
                             <BarChart3 className="w-6 h-6 text-indigo-600" />
-                            Painel Tintim
+                            Performance Board
                         </h1>
                         <p className="text-slate-500 text-sm mt-1">
                             {viewMode === 'table' ? 'Análise comparativa horizontal' : 'Visualização gráfica de performance'}
@@ -711,21 +775,27 @@ export const MarketingDashboard: React.FC = () => {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
-                        {/* View Mode Toggle */}
-                        <div className="bg-slate-100 p-1 rounded-lg flex items-center mr-2">
-                            <button
-                                onClick={() => setViewMode('table')}
-                                className={`p-2 rounded-md transition-all ${viewMode === 'table' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                                title="Tabela"
-                            >
-                                <Table className="w-4 h-4" />
-                            </button>
+                        {/* View Mode Toggle - Larger and more prominent */}
+                        <div className="bg-slate-100 p-1.5 rounded-xl flex items-center gap-1">
                             <button
                                 onClick={() => setViewMode('dashboard')}
-                                className={`p-2 rounded-md transition-all ${viewMode === 'dashboard' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                                title="Dashboard Gráfico"
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${viewMode === 'dashboard'
+                                    ? 'bg-white text-indigo-600 shadow-md ring-2 ring-indigo-100'
+                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                    }`}
                             >
-                                <LayoutDashboard className="w-4 h-4" />
+                                <LayoutDashboard className="w-5 h-5" />
+                                Dashboard
+                            </button>
+                            <button
+                                onClick={() => setViewMode('table')}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all ${viewMode === 'table'
+                                    ? 'bg-white text-indigo-600 shadow-md ring-2 ring-indigo-100'
+                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                    }`}
+                            >
+                                <Table className="w-5 h-5" />
+                                Tabela
                             </button>
                         </div>
                         {/* Edit Mode Toggle (Only viewable in Table mode) */}

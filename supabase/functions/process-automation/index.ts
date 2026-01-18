@@ -15,6 +15,12 @@ serve(async (req) => {
         // Create Supabase Client with Service Role (Admin)
         const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
         const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        const n8nWebhookUrl = Deno.env.get('AUTOMATION_DISPATCH_WEBHOOK') ?? ''
+
+        if (!n8nWebhookUrl) {
+            throw new Error('AUTOMATION_DISPATCH_WEBHOOK is not defined in environment variables')
+        }
+
         const supabase = createClient(supabaseUrl, supabaseKey)
 
         const now = new Date()
@@ -33,41 +39,32 @@ serve(async (req) => {
 
         for (const msg of messages || []) {
             try {
-                // Get connection instance
-                const { data: instance } = await supabase
-                    .from('instances')
-                    .select('*')
-                    .eq('organization_id', msg.organization_id)
-                    .eq('is_active', true)
-                    .single()
-
-                if (!instance) throw new Error('No active WhatsApp instance found')
-
                 // Determine target (Group or Individual)
                 const target = msg.client.whatsapp_group_id || msg.client.whatsapp
                 if (!target) throw new Error('Client has no WhatsApp number or Group ID')
 
-                // Send via Evolution API
-                const response = await fetch(`${instance.api_url}/message/sendText/${instance.name}`, {
+                // Send to n8n Webhook
+                const response = await fetch(n8nWebhookUrl, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': instance.api_token
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        number: target,
-                        options: {
-                            delay: 1200,
-                            presence: "composing",
-                            linkPreview: false
-                        },
-                        textMessage: {
-                            text: msg.message
+                        source: 'paralello_automation',
+                        type: 'message',
+                        payload: {
+                            message_id: msg.id,
+                            client_id: msg.client_id,
+                            organization_id: msg.organization_id,
+                            client_name: msg.client.name,
+                            target_number: target,
+                            content: msg.message,
+                            scheduled_at: msg.scheduled_at
                         }
                     })
                 })
 
-                if (!response.ok) throw new Error(`API Error: ${response.statusText}`)
+                if (!response.ok) throw new Error(`n8n Webhook Error: ${response.statusText}`)
 
                 // Update Status
                 await supabase
@@ -75,15 +72,15 @@ serve(async (req) => {
                     .update({ status: 'sent', sent_at: new Date().toISOString() })
                     .eq('id', msg.id)
 
-                logs.push(`Message sent to ${msg.client.name}`)
+                logs.push(`Message sent to n8n for ${msg.client.name}`)
 
             } catch (err: any) {
-                console.error(`Failed to send message ${msg.id}:`, err)
+                console.error(`Failed to send message ${msg.id} to n8n:`, err)
                 await supabase
                     .from('scheduled_messages')
-                    .update({ status: 'failed' }) // Optionally add error column
+                    .update({ status: 'failed' })
                     .eq('id', msg.id)
-                logs.push(`Failed to send message to ${msg.client.name}: ${err.message}`)
+                logs.push(`Failed to send message to n8n for ${msg.client.name}: ${err.message}`)
             }
         }
 
@@ -190,28 +187,39 @@ serve(async (req) => {
                     content = content.replace(new RegExp(key, 'g'), value)
                 }
 
-                // 2.5 Send Content
-                const { data: instance } = await supabase
-                    .from('instances')
-                    .select('*')
-                    .eq('organization_id', report.organization_id)
-                    .eq('is_active', true)
-                    .single()
-
-                if (!instance) throw new Error('No active WhatsApp instance')
-
+                // 2.5 Send to n8n Webhook
                 const target = report.client.whatsapp_group_id || report.client.whatsapp
                 if (!target) throw new Error('No WhatsApp target')
 
-                await fetch(`${instance.api_url}/message/sendText/${instance.name}`, {
+                const response = await fetch(n8nWebhookUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'apikey': instance.api_token },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify({
-                        number: target,
-                        options: { delay: 1200, linkPreview: false },
-                        textMessage: { text: content }
+                        source: 'paralello_automation',
+                        type: 'report',
+                        payload: {
+                            report_id: report.id,
+                            client_id: report.client_id,
+                            organization_id: report.organization_id,
+                            client_name: report.client.name,
+                            target_number: target,
+                            content: content,
+                            metrics: {
+                                leads: leadsCount,
+                                investment,
+                                revenue,
+                                conversions: conversionsCount,
+                                cpl,
+                                roas
+                            },
+                            period: periodText
+                        }
                     })
                 })
+
+                if (!response.ok) throw new Error(`n8n Webhook Error: ${response.statusText}`)
 
                 // 2.6 Update Next Run
                 const nextRun = new Date(report.next_run)
@@ -232,7 +240,7 @@ serve(async (req) => {
                     sent_at: new Date().toISOString()
                 })
 
-                logs.push(`Report sent to ${report.client.name}`)
+                logs.push(`Report sent to n8n for ${report.client.name}`)
 
             } catch (err: any) {
                 console.error(`Report failed for ${report.id}:`, err)

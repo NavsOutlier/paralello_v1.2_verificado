@@ -176,7 +176,32 @@ export const MarketingDashboard: React.FC = () => {
         }
     };
 
-    const selectedPresetLabel = datePresets.find(p => p.key === selectedPreset)?.label || 'Selecionar período';
+    const formatDateDisplay = (dateStr: string) => {
+        if (!dateStr) return '';
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const date = new Date(y, m - 1, d);
+        return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
+
+    const selectedPresetLabel = useMemo(() => {
+        const preset = datePresets.find(p => p.key === selectedPreset);
+        // Special case for 'today' or 'yesterday' to avoid redundancy if label already implies it? 
+        // User asked: "when date is a single day let it appear only it". 
+        // Example: "Hoje: 18 de jan." or just "18 de jan."? User said "deixe aparecer somente ele".
+        // If it's a preset like "Hoje", maybe separate logic? 
+        // Default behavior: "Label: Date".
+
+        const label = preset?.label || 'Personalizado';
+        if (!startDate || !endDate) return label;
+
+        const startStr = formatDateDisplay(startDate);
+        const endStr = formatDateDisplay(endDate);
+
+        if (startDate === endDate) {
+            return `${label}: ${startStr}`;
+        }
+        return `${label}: ${startStr} a ${endStr}`;
+    }, [selectedPreset, startDate, endDate]);
 
     // Real Data State
     const [rawData, setRawData] = useState<any[]>([]);

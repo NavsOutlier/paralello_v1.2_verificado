@@ -165,6 +165,18 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
                     <Activity className={`w-4 h-4 ${isDiscovering ? 'animate-spin' : ''}`} />
                     {isDiscovering ? 'Buscando...' : 'Selecionar evento de conversão (venda)'}
                 </button>
+
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-2">
+                    <h4 className="text-[10px] uppercase tracking-widest font-black text-slate-700 flex items-center gap-1.5">
+                        <ShieldCheck className="w-3 h-3" />
+                        Onde encontrar as credenciais:
+                    </h4>
+                    <ol className="list-decimal list-inside text-[11px] text-slate-500 space-y-1">
+                        <li>No painel Tintim, acesse <strong>Informações do Cliente</strong>.</li>
+                        <li>Role para baixo até a sessão <strong>Dados para Integração</strong>.</li>
+                        <li>Copie o <strong>Código do Cliente</strong> e o <strong>Token de Segurança</strong> exibidos na tela.</li>
+                    </ol>
+                </div>
             </div>
 
             {/* Webhook Section */}
@@ -175,24 +187,36 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
                         <h3 className="font-bold text-sm uppercase tracking-wider">Webhook (Real-time)</h3>
                     </div>
 
-                    <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 space-y-3">
-                        <p className="text-[11px] text-orange-800 leading-tight">
-                            Copie a URL abaixo e cole nas configurações de Webhook do seu painel Tintim (Configurações {'>'} Webhooks).
-                        </p>
+                    <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 space-y-4">
                         <div className="flex gap-2">
-                            <div className="flex-1 bg-white border border-orange-200 rounded-lg px-3 py-1.5 text-[10px] font-mono text-slate-600 truncate">
+                            <div className="flex-1 bg-white border border-orange-200 rounded-lg px-3 py-2 text-[11px] font-mono text-slate-600 truncate flex items-center">
                                 {webhookUrl}
                             </div>
                             <button
                                 type="button"
                                 onClick={() => {
                                     navigator.clipboard.writeText(webhookUrl);
-                                    alert('URL copiada!');
+                                    // You can add a toast trigger here if available, or keep alert/logic
+                                    alert('URL copiada para a área de transferência!');
                                 }}
-                                className="p-1.5 bg-white border border-orange-200 rounded-lg hover:bg-orange-100 transition-all text-orange-600"
+                                className="px-3 bg-white border border-orange-200 rounded-lg hover:bg-orange-100 transition-all text-orange-600 font-bold text-xs uppercase tracking-wider flex items-center gap-2"
                             >
-                                <Copy className="w-4 h-4" />
+                                <Copy className="w-3.5 h-3.5" />
+                                Copiar
                             </button>
+                        </div>
+
+                        <div className="space-y-2">
+                            <h4 className="text-[10px] uppercase tracking-widest font-black text-orange-800 flex items-center gap-1.5">
+                                <Activity className="w-3 h-3" />
+                                Configurar no Tintim:
+                            </h4>
+                            <ol className="list-decimal list-inside text-[11px] text-slate-600 space-y-1.5 marker:font-bold marker:text-orange-400">
+                                <li>No painel do cliente, acesse <strong>Informações do Cliente</strong>.</li>
+                                <li>Em <strong>Endereço de Webhooks</strong>, clique em <strong>Editar</strong>.</li>
+                                <li>Cole a URL em dois campos: <strong>Criação de Conversa</strong> e <strong>Alteração de Conversa</strong>.</li>
+                                <li>Clique em <strong>Salvar</strong>.</li>
+                            </ol>
                         </div>
                     </div>
                 </div>

@@ -928,21 +928,25 @@ export const MarketingDashboard: React.FC = () => {
                         {/* Data Actions (Table Only) */}
                         {viewMode === 'table' && (
                             <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-                                <button
-                                    onClick={() => setIsManualLeadModalOpen(true)}
-                                    className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors border border-indigo-100"
-                                    title="Novo Lead Manual"
-                                >
-                                    <Users className="w-4 h-4" />
-                                </button>
-                                <button
-                                    onClick={() => setIsManualConversionModalOpen(true)}
-                                    className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors border border-emerald-100"
-                                    title="Nova Venda Manual"
-                                >
-                                    <Activity className="w-4 h-4" />
-                                </button>
-                                <div className="w-px h-6 bg-slate-200 mx-1" />
+                                {isIntegrated && (
+                                    <>
+                                        <button
+                                            onClick={() => setIsManualLeadModalOpen(true)}
+                                            className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors border border-indigo-100"
+                                            title="Novo Lead Manual"
+                                        >
+                                            <Users className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => setIsManualConversionModalOpen(true)}
+                                            className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors border border-emerald-100"
+                                            title="Nova Venda Manual"
+                                        >
+                                            <Activity className="w-4 h-4" />
+                                        </button>
+                                        <div className="w-px h-6 bg-slate-200 mx-1" />
+                                    </>
+                                )}
                                 <button
                                     onClick={() => setIsEditing(!isEditing)}
                                     className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${isEditing
@@ -959,13 +963,14 @@ export const MarketingDashboard: React.FC = () => {
                         {/* Integration Settings */}
                         <button
                             onClick={() => setIsTintimModalOpen(true)}
-                            className={`p-2 rounded-lg transition-colors border ${isIntegrated
-                                ? 'bg-indigo-50 text-indigo-600 border-indigo-100 hover:bg-indigo-100'
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all text-xs font-bold ${isIntegrated
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                                 : 'bg-white text-slate-400 border-slate-200 hover:text-slate-600'
                                 }`}
                             title="Configurar Integração"
                         >
-                            <Link className="w-4 h-4" />
+                            <Link className="w-3 h-3" />
+                            {isIntegrated ? 'Tintim Ativo' : 'Conectar Tintim'}
                         </button>
                     </div>
                 </div>

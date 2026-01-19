@@ -9,6 +9,7 @@ import {
 import { ScheduledDispatchList } from './ScheduledDispatchList';
 import { ReportList } from './ReportList';
 import { ActiveSuggestionQueue } from './ActiveSuggestionQueue';
+import { ActiveAutomationConfig } from './ActiveAutomationConfig';
 
 type AutomationSection = 'dispatches' | 'reports' | 'active' | 'task-reports';
 
@@ -30,6 +31,8 @@ export const AutomationTab: React.FC = () => {
         active: 0,
         taskReports: 0
     });
+    const [showConfigModal, setShowConfigModal] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     // Fetch clients
     useEffect(() => {
@@ -245,12 +248,30 @@ export const AutomationTab: React.FC = () => {
                             )}
                             {activeSection === 'active' && (
                                 <div className="space-y-6">
-                                    <ActiveSuggestionQueue clientId={selectedClient.id} />
-                                    <div className="bg-purple-50 border border-purple-100 rounded-xl p-4 text-center">
-                                        <p className="text-xs text-purple-700">
-                                            Configure automações Active no painel de configurações do cliente.
-                                        </p>
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-lg font-bold text-slate-800">Sugestões de IA</h3>
+                                        <button
+                                            onClick={() => setShowConfigModal(true)}
+                                            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+                                        >
+                                            <Sparkles className="w-4 h-4" />
+                                            Configurar Automação
+                                        </button>
                                     </div>
+                                    <ActiveSuggestionQueue clientId={selectedClient.id} key={refreshKey} />
+
+                                    {/* Config Modal */}
+                                    {showConfigModal && (
+                                        <ActiveAutomationConfig
+                                            clientId={selectedClient.id}
+                                            clientName={selectedClient.name}
+                                            onClose={() => setShowConfigModal(false)}
+                                            onSuccess={() => {
+                                                setShowConfigModal(false);
+                                                setRefreshKey(prev => prev + 1);
+                                            }}
+                                        />
+                                    )}
                                 </div>
                             )}
                             {activeSection === 'task-reports' && (

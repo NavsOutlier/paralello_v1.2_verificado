@@ -47,7 +47,7 @@ serve(async (req) => {
         // It's safer to fetch active ones and filter in memory for weekdays array.
         const { data: automations, error: autoError } = await supabase
             .from('active_automations')
-            .select`*, client:clients(name, whatsapp, whatsapp_group_id)`
+            .select('*, client:clients(name, whatsapp, whatsapp_group_id)')
             .eq('is_active', true)
 
         if (autoError) throw autoError
@@ -82,33 +82,71 @@ serve(async (req) => {
                 dateLimit.setDate(dateLimit.getDate() - daysAgo)
                 const dateLimitIso = dateLimit.toISOString()
 
-                // 2.1 Last Messages (Sent context)
+                // 2.1 Last Messages from WhatsApp (client context)
                 const { data: messages } = await supabase
                     .from('messages')
-                    .select('content, sender_type, created_at')
+                    .select('text, sender_type, created_at')
                     .eq('client_id', auto.client_id)
+                    .is('task_id', null) // Client messages, not task discussions
                     .gte('created_at', dateLimitIso)
-                    .order('created_at', { ascending: true })
-                    .limit(20)
+                    .order('created_at', { ascending: false })
+                    .limit(15)
 
-                // 2.2 Tasks (Completed or Pending)
+                // 2.2 Tasks with checklists
                 const { data: tasks } = await supabase
                     .from('tasks')
-                    .select('title, status, created_at')
+                    .select('id, title, status, checklist, updated_at')
                     .eq('client_id', auto.client_id)
-                    .gte('created_at', dateLimitIso)
-                    .order('created_at', { ascending: true })
+                    .gte('updated_at', dateLimitIso)
+                    .order('updated_at', { ascending: false })
                     .limit(10)
 
-                // 3. Build Prompt
+                // 2.3 Task discussions (internal messages linked to tasks)
+                const taskIds = tasks?.map(t => t.id) || []
+                let taskDiscussions: any[] = []
+                if (taskIds.length > 0) {
+                    const { data: discussions } = await supabase
+                        .from('messages')
+                        .select('text, task_id, created_at')
+                        .in('task_id', taskIds)
+                        .gte('created_at', dateLimitIso)
+                        .order('created_at', { ascending: false })
+                        .limit(20)
+                    taskDiscussions = discussions || []
+                }
+
+                // Format checklist items for context
+                const formatChecklist = (checklist: any[]) => {
+                    if (!checklist || !Array.isArray(checklist) || checklist.length === 0) return ''
+                    return checklist.map((item: any) =>
+                        `  ${item.completed ? '✓' : '○'} ${item.text || item.title || item.name || 'Item'}`
+                    ).join('\n')
+                }
+
+                // 3. Build Prompt with expanded context
                 const contextSummary = `
                 Cliente: ${auto.client.name}
                 
-                Últimas Mensagens:
-                ${messages?.map(m => `[${m.sender_type}]: ${m.content}`).join('\n') || 'Nenhuma mensagem recente.'}
+                Últimas Mensagens do WhatsApp:
+                ${messages?.map(m => `[${m.sender_type}]: ${m.text || '(sem texto)'}`).join('\n') || 'Nenhuma mensagem recente.'}
                 
-                Tarefas Recentes:
-                ${tasks?.map(t => `- ${t.title} (${t.status})`).join('\n') || 'Nenhuma tarefa recente.'}
+                Tarefas e Checklists:
+                ${tasks?.map(t => {
+                    let taskInfo = `- ${t.title} (${t.status})`
+                    const checklistStr = formatChecklist(t.checklist)
+                    if (checklistStr) {
+                        taskInfo += `\n  Checklist:\n${checklistStr}`
+                    }
+                    return taskInfo
+                }).join('\n') || 'Nenhuma tarefa recente.'}
+                
+                Discussões Internas das Tarefas:
+                ${taskDiscussions.length > 0
+                        ? taskDiscussions.map(d => {
+                            const task = tasks?.find(t => t.id === d.task_id)
+                            return `[${task?.title || 'Tarefa'}]: ${d.text || '(sem texto)'}`
+                        }).join('\n')
+                        : 'Nenhuma discussão recente.'}
                 `
 
                 const prompt = `
@@ -124,7 +162,7 @@ serve(async (req) => {
                 - NÃO use saudações genéricas como "Prezado". Use "Olá ${auto.client.name}" ou similar.
                 - A mensagem deve parecer escrita por um humano, sem formatação excessiva.
                 - Cada opção deve ter um tom ligeiramente diferente (mais formal, mais casual, mais direto).
-                
+                ${auto.custom_prompt ? `\n                INSTRUÇÕES ESPECIAIS DO USUÁRIO:\n                ${auto.custom_prompt}\n                ` : ''}
                 CONTEXTO:
                 ${contextSummary}
                 
@@ -160,9 +198,19 @@ serve(async (req) => {
                 if (!rawContent) throw new Error('Empty response from AI')
 
                 // Parse the JSON array of options
+                // First, strip markdown code blocks if present (```json ... ```)
+                let cleanContent = rawContent.trim()
+                if (cleanContent.startsWith('```')) {
+                    // Remove opening ```json or ``` and closing ```
+                    cleanContent = cleanContent
+                        .replace(/^```(?:json)?\s*\n?/i, '')
+                        .replace(/\n?```\s*$/i, '')
+                        .trim()
+                }
+
                 let options: string[] = []
                 try {
-                    options = JSON.parse(rawContent)
+                    options = JSON.parse(cleanContent)
                     if (!Array.isArray(options) || options.length === 0) {
                         throw new Error('Invalid response format')
                     }

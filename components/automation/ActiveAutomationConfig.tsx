@@ -39,6 +39,7 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
     const [timeOfDay, setTimeOfDay] = useState('09:00');
     const [contextDays, setContextDays] = useState(7);
     const [assignedApprover, setAssignedApprover] = useState<string>('');
+    const [customPrompt, setCustomPrompt] = useState<string>('');
 
     // Fetch team members
     useEffect(() => {
@@ -68,6 +69,7 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
             setTimeOfDay(editingAutomation.time_of_day);
             setContextDays(editingAutomation.context_days);
             setAssignedApprover(editingAutomation.assigned_approver || '');
+            setCustomPrompt(editingAutomation.custom_prompt || '');
 
             if (!duplicateMode) {
                 setSelectedClientIds([editingAutomation.client_id]);
@@ -96,6 +98,7 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                 time_of_day: timeOfDay,
                 context_days: contextDays,
                 assigned_approver: assignedApprover || null,
+                custom_prompt: customPrompt,
                 is_active: true
             };
 
@@ -272,6 +275,24 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                                 </option>
                             ))}
                         </select>
+                    </div>
+
+                    {/* Custom AI Guidance */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-600 flex items-center gap-1">
+                            <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                            Direcionamento para IA (opcional)
+                        </label>
+                        <textarea
+                            value={customPrompt}
+                            onChange={(e) => setCustomPrompt(e.target.value)}
+                            placeholder="Ex: Mencione a nova campanha de marketing. Seja mais formal. Pergunte sobre o projeto X..."
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none"
+                            rows={3}
+                        />
+                        <p className="text-[10px] text-slate-400">
+                            Instruções extras para a IA usar ao gerar as sugestões de mensagem.
+                        </p>
                     </div>
 
                     {/* Info Box */}

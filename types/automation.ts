@@ -51,6 +51,7 @@ export interface ActiveAutomation {
     time_of_day: string;
     context_days: number;
     assigned_approver?: string;
+    custom_prompt?: string; // Custom guidance for AI
     is_active: boolean;
     created_at: string;
     updated_at: string;

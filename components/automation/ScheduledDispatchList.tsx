@@ -91,7 +91,7 @@ export const ScheduledDispatchList: React.FC<ScheduledDispatchListProps> = ({
         switch (status) {
             case 'pending':
                 return <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-[10px] font-bold flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> Pendente
+                    <Clock className="w-3 h-3" /> Programada
                 </span>;
             case 'sent':
                 return <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[10px] font-bold flex items-center gap-1">

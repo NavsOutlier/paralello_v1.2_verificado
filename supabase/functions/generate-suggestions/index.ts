@@ -200,23 +200,36 @@ serve(async (req) => {
                 // Parse the JSON array of options
                 // First, strip markdown code blocks if present (```json ... ```)
                 let cleanContent = rawContent.trim()
-                if (cleanContent.startsWith('```')) {
-                    // Remove opening ```json or ``` and closing ```
-                    cleanContent = cleanContent
-                        .replace(/^```(?:json)?\s*\n?/i, '')
-                        .replace(/\n?```\s*$/i, '')
-                        .trim()
-                }
+
+                // Remove markdown code block wrappers
+                cleanContent = cleanContent
+                    .replace(/^```(?:json)?\s*\n?/i, '')
+                    .replace(/\n?```\s*$/i, '')
+                    .trim()
+
+                // Fix common JSON issues: trailing commas before ] or }
+                cleanContent = cleanContent
+                    .replace(/,\s*\]/g, ']')
+                    .replace(/,\s*\}/g, '}')
 
                 let options: string[] = []
                 try {
-                    options = JSON.parse(cleanContent)
-                    if (!Array.isArray(options) || options.length === 0) {
+                    const parsed = JSON.parse(cleanContent)
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        options = parsed.map((item: any) => String(item).trim())
+                    } else {
                         throw new Error('Invalid response format')
                     }
-                } catch {
-                    // Fallback: if not valid JSON, treat as single option
-                    options = [rawContent]
+                } catch (parseErr) {
+                    console.error('JSON parse error:', parseErr, 'Content:', cleanContent.substring(0, 200))
+                    // Fallback: try to extract strings manually
+                    const matches = cleanContent.match(/"([^"]+)"/g)
+                    if (matches && matches.length >= 1) {
+                        options = matches.map(m => m.replace(/^"|"$/g, ''))
+                    } else {
+                        // Last resort: use the raw content as single option
+                        options = [rawContent.replace(/```json|```|\[|\]/g, '').trim()]
+                    }
                 }
 
                 // 5. Save Suggestion with options

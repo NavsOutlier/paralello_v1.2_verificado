@@ -226,20 +226,8 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                         </div>
                     </div>
 
-                    {/* Time & Context Days */}
+                    {/* Context Days & Approver */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5" />
-                                Horário
-                            </label>
-                            <input
-                                type="time"
-                                value={timeOfDay}
-                                onChange={(e) => setTimeOfDay(e.target.value)}
-                                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                            />
-                        </div>
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                                 Dias de Contexto
@@ -255,26 +243,23 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                                 <option value={30}>Últimos 30 dias</option>
                             </select>
                         </div>
-                    </div>
-
-                    {/* Approver */}
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                            <Users className="w-3.5 h-3.5" />
-                            Responsável pela Aprovação
-                        </label>
-                        <select
-                            value={assignedApprover}
-                            onChange={(e) => setAssignedApprover(e.target.value)}
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                        >
-                            <option value="">Selecione um membro...</option>
-                            {teamMembers?.map(member => (
-                                <option key={member.id} value={member.profile_id}>
-                                    {member.profile?.name || member.profile?.email}
-                                </option>
-                            ))}
-                        </select>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                Responsável
+                            </label>
+                            <select
+                                value={assignedApprover}
+                                onChange={(e) => setAssignedApprover(e.target.value)}
+                                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                            >
+                                <option value="">Selecione...</option>
+                                {teamMembers?.map(member => (
+                                    <option key={member.id} value={member.profile_id}>
+                                        {member.profile?.name || member.profile?.email}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
                     {/* Custom AI Guidance */}

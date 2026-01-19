@@ -24,7 +24,8 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
         canManageTasks: true,
         canManageClients: false,
         canManageTeam: false,
-        canManageMarketing: false
+        canManageMarketing: false,
+        canManageAutomation: false
     });
     const [loading, setLoading] = useState(false);
     const [isCreatingSpecialty, setIsCreatingSpecialty] = useState(false);
@@ -39,7 +40,8 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                 canManageClients: member?.permissions?.canManageClients ?? true,
                 canManageTasks: member?.permissions?.canManageTasks ?? true,
                 canManageTeam: member?.permissions?.canManageTeam ?? false,
-                canManageMarketing: member?.permissions?.canManageMarketing ?? false
+                canManageMarketing: member?.permissions?.canManageMarketing ?? false,
+                canManageAutomation: member?.permissions?.canManageAutomation ?? false
             });
         }
     }, [isOpen, member]);
@@ -59,7 +61,8 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                     canManageClients: formData.canManageClients,
                     canManageTasks: formData.canManageTasks,
                     canManageTeam: formData.canManageTeam,
-                    canManageMarketing: formData.canManageMarketing
+                    canManageMarketing: formData.canManageMarketing,
+                    canManageAutomation: formData.canManageAutomation
                 }
             });
             onClose();
@@ -230,6 +233,17 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                                 disabled={formData.role === 'manager'}
                             />
                             <span className="text-sm text-slate-700">Gerenciar marketing</span>
+                        </label>
+
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={formData.canManageAutomation}
+                                onChange={(e) => setFormData({ ...formData, canManageAutomation: e.target.checked })}
+                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                disabled={formData.role === 'manager'}
+                            />
+                            <span className="text-sm text-slate-700">Gerenciar automações</span>
                         </label>
                     </div>
 

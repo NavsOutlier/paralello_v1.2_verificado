@@ -43,12 +43,18 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
     // Fetch team members
     useEffect(() => {
         const fetchTeamMembers = async () => {
-            if (!organizationId) return;
-            const { data } = await supabase
+            if (!organizationId) {
+                console.log('[ActiveAutomationConfig] No organizationId, skipping fetch');
+                return;
+            }
+            console.log('[ActiveAutomationConfig] Fetching team members for org:', organizationId);
+            const { data, error } = await supabase
                 .from('team_members')
-                .select('id, profile_id, profile:profiles(name, email)')
+                .select('id, profile_id, profile:profiles!team_members_profile_id_fkey(name, email)')
                 .eq('organization_id', organizationId)
                 .eq('status', 'active');
+
+            console.log('[ActiveAutomationConfig] Team members result:', { data, error });
             if (data) setTeamMembers(data as any);
         };
         fetchTeamMembers();

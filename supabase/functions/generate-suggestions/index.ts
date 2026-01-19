@@ -115,18 +115,21 @@ serve(async (req) => {
                 Você é um Gerente de Sucesso do Cliente (CS). Seu objetivo é manter o cliente engajado.
                 
                 Analise o contexto abaixo dos últimos ${daysAgo} dias.
-                Escreva uma mensagem de WhatsApp CURTA e AMIGÁVEL para enviar a este cliente hoje.
+                Escreva 3 OPÇÕES DIFERENTES de mensagens de WhatsApp CURTAS e AMIGÁVEIS para enviar a este cliente hoje.
                 
+                Regras para CADA mensagem:
                 - Se houve tarefas concluídas, mencione brevemente.
                 - Se o cliente falou algo importante, mostre que você lembra.
                 - Se está silêncio, apenas pergunte como estão as coisas.
                 - NÃO use saudações genéricas como "Prezado". Use "Olá ${auto.client.name}" ou similar.
                 - A mensagem deve parecer escrita por um humano, sem formatação excessiva.
+                - Cada opção deve ter um tom ligeiramente diferente (mais formal, mais casual, mais direto).
                 
                 CONTEXTO:
                 ${contextSummary}
                 
-                Responda APENAS com o texto da mensagem sugerida.
+                Responda APENAS com um JSON array contendo 3 strings, exemplo:
+                ["Mensagem 1...", "Mensagem 2...", "Mensagem 3..."]
                 `
 
                 // 4. Call OpenAI
@@ -139,10 +142,10 @@ serve(async (req) => {
                     body: JSON.stringify({
                         model: 'gpt-4o-mini',
                         messages: [
-                            { role: 'system', content: 'Você é um assistente útil e direto.' },
+                            { role: 'system', content: 'Você é um assistente útil. Sempre responda em JSON válido quando solicitado.' },
                             { role: 'user', content: prompt }
                         ],
-                        max_tokens: 300
+                        max_tokens: 600
                     })
                 })
 
@@ -152,24 +155,37 @@ serve(async (req) => {
                 }
 
                 const aiData = await aiResponse.json()
-                const suggestionText = aiData.choices[0]?.message?.content?.trim()
+                const rawContent = aiData.choices[0]?.message?.content?.trim()
 
-                if (!suggestionText) throw new Error('Empty response from AI')
+                if (!rawContent) throw new Error('Empty response from AI')
 
-                // 5. Save Suggestion
+                // Parse the JSON array of options
+                let options: string[] = []
+                try {
+                    options = JSON.parse(rawContent)
+                    if (!Array.isArray(options) || options.length === 0) {
+                        throw new Error('Invalid response format')
+                    }
+                } catch {
+                    // Fallback: if not valid JSON, treat as single option
+                    options = [rawContent]
+                }
+
+                // 5. Save Suggestion with options
                 const { error: insertError } = await supabase
                     .from('active_suggestions')
                     .insert({
                         automation_id: auto.id,
                         client_id: auto.client_id,
-                        suggested_message: suggestionText,
+                        suggested_options: options,
+                        suggested_message: options[0], // Default to first option
                         context_summary: `Analisadas ${messages?.length || 0} mensagens e ${tasks?.length || 0} tarefas.`,
                         status: 'pending'
                     })
 
                 if (insertError) throw insertError
 
-                logs.push(`Generated suggestion for ${auto.client.name}`)
+                logs.push(`Generated ${options.length} suggestion(s) for ${auto.client.name}`)
 
             } catch (err: any) {
                 console.error(`Error processing automation ${auto.id}:`, err)

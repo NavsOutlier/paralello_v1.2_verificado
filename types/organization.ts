@@ -67,6 +67,7 @@ export interface TeamMember {
         canManageTasks: boolean;
         canManageTeam: boolean;
         canManageMarketing: boolean;
+        canManageAutomation: boolean;
     };
     jobTitle?: string;
     status: 'active' | 'inactive' | 'pending';

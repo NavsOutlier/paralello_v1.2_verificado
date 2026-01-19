@@ -61,6 +61,7 @@ export interface ActiveSuggestion {
     automation_id: string;
     client_id: string;
     suggested_message: string;
+    suggested_options?: string[]; // Array of AI-generated options
     context_summary?: string;
     status: 'pending' | 'approved' | 'rejected' | 'sent';
     approved_by?: string;

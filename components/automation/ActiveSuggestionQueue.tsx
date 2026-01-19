@@ -130,15 +130,24 @@ export const ActiveSuggestionQueue: React.FC<ActiveSuggestionQueueProps> = ({
                     <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
                 </div>
             ) : suggestions.length === 0 ? (
-                <div className="bg-slate-50 rounded-xl p-8 text-center">
-                    <Sparkles className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-500 text-sm">Nenhuma sugestão pendente de aprovação.</p>
-                    <p className="text-slate-400 text-xs mt-1">
-                        Sugestões geradas pela IA aparecerão aqui.
+                <div className="bg-white border-2 border-dashed border-slate-200 rounded-xl p-8 text-center">
+                    <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Sparkles className="w-8 h-8 text-purple-400" />
+                    </div>
+                    <h4 className="text-slate-700 font-bold mb-1">Tudo em dia!</h4>
+                    <p className="text-slate-500 text-sm max-w-xs mx-auto">
+                        Nenhuma sugestão pendente no momento. As próximas sugestões aparecerão aqui conforme agendado.
                     </p>
+                    <button
+                        onClick={fetchSuggestions}
+                        className="mt-4 text-xs font-bold text-purple-600 hover:text-purple-700 flex items-center justify-center gap-1 mx-auto"
+                    >
+                        <Clock className="w-3 h-3" />
+                        Verificar novamente
+                    </button>
                 </div>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                     {suggestions.map((suggestion) => {
                         const isExpanded = expandedId === suggestion.id;
                         const isProcessing = processingId === suggestion.id;
@@ -146,122 +155,144 @@ export const ActiveSuggestionQueue: React.FC<ActiveSuggestionQueueProps> = ({
                         return (
                             <div
                                 key={suggestion.id}
-                                className="bg-white border border-slate-200 rounded-xl overflow-hidden transition-all"
+                                className={`bg-white border rounded-xl overflow-hidden transition-all duration-200 shadow-sm
+                                    ${isExpanded ? 'border-purple-200 ring-2 ring-purple-100' : 'border-slate-200 hover:border-purple-200 hover:shadow-md'}
+                                `}
                             >
                                 {/* Header Row */}
                                 <div
-                                    className="p-4 flex items-center gap-4 cursor-pointer hover:bg-slate-50"
+                                    className="p-4 flex items-center gap-4 cursor-pointer hover:bg-slate-50/50 transition-colors"
                                     onClick={() => toggleExpand(suggestion.id)}
                                 >
-                                    <div className="p-2 bg-purple-100 rounded-lg">
-                                        <Sparkles className="w-4 h-4 text-purple-600" />
+                                    <div className={`p-2.5 rounded-xl transition-colors ${isExpanded ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-600'
+                                        }`}>
+                                        <Sparkles className="w-5 h-5" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-bold text-slate-800 text-sm">
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                            <span className="font-bold text-slate-800">
                                                 {suggestion.client?.name || 'Cliente'}
                                             </span>
-                                            <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-[10px] font-bold flex items-center gap-1">
-                                                <Clock className="w-3 h-3" />
+                                            <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-[10px] font-bold uppercase tracking-wide">
                                                 Pendente
                                             </span>
                                         </div>
-                                        <p className="text-xs text-slate-500 truncate">
-                                            {suggestion.suggested_message.substring(0, 100)}...
+                                        <p className="text-xs text-slate-500 truncate font-medium">
+                                            {suggestion.suggested_message.substring(0, 80)}...
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[10px] text-slate-400">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-[10px] font-medium text-slate-400">
                                             {formatDate(suggestion.created_at)}
                                         </span>
-                                        {isExpanded ? (
-                                            <ChevronUp className="w-4 h-4 text-slate-400" />
-                                        ) : (
-                                            <ChevronDown className="w-4 h-4 text-slate-400" />
-                                        )}
+                                        <div className={`p-1 rounded-full transition-transform duration-200 ${isExpanded ? 'bg-purple-100 rotate-180' : 'bg-slate-100'}`}>
+                                            <ChevronDown className={`w-4 h-4 ${isExpanded ? 'text-purple-600' : 'text-slate-400'}`} />
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* Expanded Content */}
                                 {isExpanded && (
-                                    <div className="border-t border-slate-100 p-4 space-y-4 bg-slate-50/50">
+                                    <div className="border-t border-slate-100 p-5 space-y-6 bg-slate-50/30">
                                         {/* Context Summary */}
                                         {suggestion.context_summary && (
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                                    Contexto Analisado
-                                                </label>
-                                                <p className="text-xs text-slate-600 bg-white rounded-lg p-3 border border-slate-200">
-                                                    {suggestion.context_summary}
-                                                </p>
+                                            <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 flex gap-3">
+                                                <div className="mt-0.5">
+                                                    <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center">
+                                                        <Eye className="w-3 h-3 text-blue-600" />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <h5 className="text-xs font-bold text-blue-700 uppercase">Contexto Analisado</h5>
+                                                    <p className="text-sm text-slate-700 leading-relaxed">
+                                                        {suggestion.context_summary}
+                                                    </p>
+                                                </div>
                                             </div>
                                         )}
 
                                         {/* Suggested Message Options */}
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                                Escolha uma Opção
-                                            </label>
-                                            {(suggestion.suggested_options && suggestion.suggested_options.length > 0) ? (
-                                                <div className="space-y-2">
-                                                    {suggestion.suggested_options.map((option: string, index: number) => (
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                                    Escolha a melhor opção
+                                                </label>
+                                                <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+                                                    {suggestion.suggested_options?.length || 1} opções geradas
+                                                </span>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                {(suggestion.suggested_options && suggestion.suggested_options.length > 0) ? (
+                                                    suggestion.suggested_options.map((option: string, index: number) => (
                                                         <button
                                                             key={index}
-                                                            onClick={() => {
-                                                                // Update selected message
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
                                                                 supabase
                                                                     .from('active_suggestions')
                                                                     .update({ suggested_message: option })
                                                                     .eq('id', suggestion.id)
                                                                     .then(() => fetchSuggestions());
                                                             }}
-                                                            className={`w-full text-left p-4 rounded-lg border-2 transition-all ${suggestion.suggested_message === option
-                                                                    ? 'border-purple-500 bg-purple-50'
-                                                                    : 'border-slate-200 bg-white hover:border-purple-300'
+                                                            className={`w-full text-left p-4 rounded-xl border-2 transition-all relative group ${suggestion.suggested_message === option
+                                                                    ? 'border-purple-500 bg-white shadow-md ring-4 ring-purple-500/10 z-10'
+                                                                    : 'border-slate-200 bg-white hover:border-purple-300 hover:shadow-sm'
                                                                 }`}
                                                         >
-                                                            <div className="flex items-start gap-3">
-                                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${suggestion.suggested_message === option
+                                                            <div className="flex gap-4">
+                                                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors ${suggestion.suggested_message === option
                                                                         ? 'border-purple-500 bg-purple-500'
-                                                                        : 'border-slate-300'
+                                                                        : 'border-slate-300 group-hover:border-purple-300'
                                                                     }`}>
                                                                     {suggestion.suggested_message === option && (
-                                                                        <Check className="w-3 h-3 text-white" />
+                                                                        <Check className="w-3.5 h-3.5 text-white" />
                                                                     )}
                                                                 </div>
-                                                                <p className="text-sm text-slate-700 whitespace-pre-wrap flex-1">
+                                                                <p className={`text-sm leading-relaxed ${suggestion.suggested_message === option ? 'text-slate-800 font-medium' : 'text-slate-600'
+                                                                    }`}>
                                                                     {option}
                                                                 </p>
                                                             </div>
                                                         </button>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <div className="bg-white rounded-lg p-4 border border-slate-200">
-                                                    <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                                                        {suggestion.suggested_message}
-                                                    </p>
-                                                </div>
-                                            )}
+                                                    ))
+                                                ) : (
+                                                    <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                                                        <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                                                            {suggestion.suggested_message}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {/* Actions */}
-                                        <div className="flex gap-2 pt-2">
+                                        <div className="flex gap-3 pt-2 border-t border-slate-200/50 mt-4">
                                             <button
-                                                onClick={() => handleReject(suggestion.id)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleReject(suggestion.id);
+                                                }}
                                                 disabled={isProcessing}
-                                                className="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                                className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-sm hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50 flex items-center gap-2"
                                             >
                                                 <X className="w-4 h-4" />
                                                 Rejeitar
                                             </button>
                                             <button
-                                                onClick={() => handleApprove(suggestion.id)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleApprove(suggestion.id);
+                                                }}
                                                 disabled={isProcessing}
-                                                className="flex-1 py-2.5 bg-purple-600 text-white rounded-xl font-bold text-sm hover:bg-purple-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                                className="flex-1 py-2.5 bg-purple-600 text-white rounded-xl font-bold text-sm hover:bg-purple-700 hover:shadow-lg hover:shadow-purple-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                                             >
-                                                <Check className="w-4 h-4" />
-                                                Aprovar e Enviar
+                                                {isProcessing ? (
+                                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                ) : (
+                                                    <Check className="w-4 h-4" />
+                                                )}
+                                                {isProcessing ? 'Enviando...' : 'Aprovar e Enviar Agora'}
                                             </button>
                                         </div>
                                     </div>

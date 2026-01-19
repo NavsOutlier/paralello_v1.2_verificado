@@ -113,41 +113,46 @@ export const ActiveAutomationsList: React.FC<ActiveAutomationsListProps> = ({
             {automations.map(auto => (
                 <div
                     key={auto.id}
-                    className={`bg-white border rounded-xl p-4 transition-all ${auto.is_active ? 'border-purple-200 hover:border-purple-300' : 'border-slate-200 opacity-75'
+                    className={`group relative bg-white border rounded-xl p-5 transition-all duration-200 
+                        ${auto.is_active
+                            ? 'border-slate-200 shadow-sm hover:shadow-md hover:border-purple-200 bg-gradient-to-br from-white to-slate-50/30'
+                            : 'border-slate-100 bg-slate-50 opacity-80'
                         }`}
                 >
-                    <div className="flex justify-between items-start gap-3">
-                        <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                                <h4 className={`font-bold text-sm ${auto.is_active ? 'text-slate-800' : 'text-slate-500'}`}>
-                                    {auto.name}
-                                </h4>
-                                {!auto.is_active && (
-                                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-full">
-                                        Pausado
-                                    </span>
-                                )}
-                            </div>
-
-                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                                <div className="flex items-center gap-1">
-                                    <Calendar className="w-3 h-3" />
-                                    <span>{getWeekdaysLabel(auto.weekdays)}</span>
+                    <div className="flex justify-between items-start gap-4">
+                        <div className="flex-1 space-y-3">
+                            <div>
+                                <div className="flex items-center gap-2 mb-1.5">
+                                    <h4 className={`font-bold text-base ${auto.is_active ? 'text-slate-800' : 'text-slate-500'}`}>
+                                        {auto.name}
+                                    </h4>
+                                    {!auto.is_active && (
+                                        <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-200 text-slate-500 rounded-full">
+                                            PAUSADO
+                                        </span>
+                                    )}
                                 </div>
-                                <div className="flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />
-                                    <span>{auto.context_days} dias de contexto</span>
+                                <div className="flex items-center gap-3 text-xs text-slate-500">
+                                    <div className="flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-md">
+                                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                                        <span>{getWeekdaysLabel(auto.weekdays)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-md">
+                                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                        <span>Contexto: <strong>{auto.context_days} dias</strong></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-1">
+                        {/* Actions */}
+                        <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                             <button
                                 onClick={() => toggleStatus(auto)}
-                                title={auto.is_active ? "Pausar" : "Ativar"}
-                                className={`p-1.5 rounded-lg transition-colors ${auto.is_active
-                                        ? 'text-green-600 hover:bg-green-50'
-                                        : 'text-slate-400 hover:bg-slate-100 hover:text-green-600'
+                                title={auto.is_active ? "Pausar Automação" : "Ativar Automação"}
+                                className={`p-2 rounded-lg transition-colors ${auto.is_active
+                                        ? 'text-green-600 hover:bg-green-50 bg-green-50/50'
+                                        : 'text-slate-400 hover:bg-slate-200 hover:text-green-600'
                                     }`}
                             >
                                 {auto.is_active ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
@@ -155,21 +160,26 @@ export const ActiveAutomationsList: React.FC<ActiveAutomationsListProps> = ({
 
                             <button
                                 onClick={() => onEdit(auto)}
-                                title="Editar"
-                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Editar Configurações"
+                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                             >
                                 <Pencil className="w-4 h-4" />
                             </button>
 
                             <button
                                 onClick={() => handleDelete(auto.id)}
-                                title="Excluir"
-                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Excluir Permanentemente"
+                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             >
                                 <Trash2 className="w-4 h-4" />
                             </button>
                         </div>
                     </div>
+
+                    {/* Active Indicator Strip */}
+                    {auto.is_active && (
+                        <div className="absolute left-0 top-3 bottom-3 w-1 bg-purple-500 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
                 </div>
             ))}
         </div>

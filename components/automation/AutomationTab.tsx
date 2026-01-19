@@ -242,7 +242,7 @@ export const AutomationTab: React.FC = () => {
                         </div>
 
                         {/* Content */}
-                        <div className={`flex-1 p-6 ${activeSection === 'active' ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'}`}>
+                        <div className="flex-1 overflow-y-auto p-6">
                             {activeSection === 'dispatches' && (
                                 <ScheduledDispatchList clientId={selectedClient.id} clientName={selectedClient.name} />
                             )}
@@ -250,8 +250,8 @@ export const AutomationTab: React.FC = () => {
                                 <ReportList clientId={selectedClient.id} clientName={selectedClient.name} />
                             )}
                             {activeSection === 'active' && (
-                                <div className="flex-1 flex flex-col min-h-0 space-y-4">
-                                    <div className="flex justify-between items-center shrink-0">
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center">
                                         <h3 className="text-lg font-bold text-slate-800">Sugestões e Automações</h3>
                                         <button
                                             onClick={() => {
@@ -265,41 +265,34 @@ export const AutomationTab: React.FC = () => {
                                         </button>
                                     </div>
 
-                                    <div className="flex-1 grid grid-cols-2 gap-6 min-h-0">
-                                        {/* Left Column: Suggestions Feed */}
-                                        <div className="flex flex-col h-full min-h-0 bg-purple-50/50 rounded-xl p-4 border border-purple-100">
-                                            <div className="flex items-center gap-2 mb-3 shrink-0">
-                                                <div className="p-1.5 bg-purple-100 rounded-lg">
-                                                    <Sparkles className="w-4 h-4 text-purple-600" />
-                                                </div>
-                                                <h4 className="font-bold text-slate-700">Fila de Sugestões</h4>
-                                                <span className="text-xs font-medium text-slate-500 bg-white px-2 py-0.5 rounded-full border border-purple-100">
-                                                    Arraste para ver mais
-                                                </span>
-                                            </div>
-                                            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                                                <ActiveSuggestionQueue clientId={selectedClient.id} key={`queue-${refreshKey}`} />
-                                            </div>
-                                        </div>
-
-                                        {/* Right Column: Active Automations List */}
-                                        <div className="flex flex-col h-full min-h-0 bg-slate-50 rounded-xl p-4 border border-slate-200">
-                                            <div className="flex items-center gap-2 mb-3 shrink-0">
-                                                <div className="p-1.5 bg-white border border-slate-200 rounded-lg">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        {/* Left Column: Active Automations List */}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="p-1.5 bg-slate-100 rounded-lg">
                                                     <Zap className="w-4 h-4 text-slate-600" />
                                                 </div>
                                                 <h4 className="font-bold text-slate-700">Automações Ativas</h4>
                                             </div>
-                                            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                                                <ActiveAutomationsList
-                                                    clientId={selectedClient.id}
-                                                    refreshTrigger={refreshKey}
-                                                    onEdit={(auto) => {
-                                                        setEditingAutomation(auto);
-                                                        setShowConfigModal(true);
-                                                    }}
-                                                />
+                                            <ActiveAutomationsList
+                                                clientId={selectedClient.id}
+                                                refreshTrigger={refreshKey}
+                                                onEdit={(auto) => {
+                                                    setEditingAutomation(auto);
+                                                    setShowConfigModal(true);
+                                                }}
+                                            />
+                                        </div>
+
+                                        {/* Right Column: Suggestions Feed */}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="p-1.5 bg-purple-100 rounded-lg">
+                                                    <Sparkles className="w-4 h-4 text-purple-600" />
+                                                </div>
+                                                <h4 className="font-bold text-slate-700">Fila de Sugestões</h4>
                                             </div>
+                                            <ActiveSuggestionQueue clientId={selectedClient.id} key={`queue-${refreshKey}`} />
                                         </div>
                                     </div>
 

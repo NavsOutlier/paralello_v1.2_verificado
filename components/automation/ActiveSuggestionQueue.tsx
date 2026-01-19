@@ -63,6 +63,10 @@ export const ActiveSuggestionQueue: React.FC<ActiveSuggestionQueueProps> = ({
                 .eq('id', id);
 
             if (error) throw error;
+
+            // Trigger automation immediately to send the message
+            await supabase.functions.invoke('process-automation');
+
             fetchSuggestions();
         } catch (err) {
             console.error('Error approving suggestion:', err);

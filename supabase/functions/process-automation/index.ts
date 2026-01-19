@@ -255,6 +255,56 @@ serve(async (req) => {
             }
         }
 
+        // ============================================
+        // 3. Process Active Suggestions (AI)
+        // ============================================
+        const { data: suggestions, error: suggError } = await supabase
+            .from('active_suggestions')
+            .select('*, client:clients(name, whatsapp, whatsapp_group_id)')
+            .eq('status', 'approved')
+            .is('sent_at', null)
+
+        if (suggError) throw suggError
+
+        for (const sugg of suggestions || []) {
+            try {
+                // Determine target
+                const target = sugg.client.whatsapp_group_id || sugg.client.whatsapp
+                if (!target) throw new Error('Client has no WhatsApp or Group ID')
+
+                // Send to n8n Webhook
+                const response = await fetch(n8nWebhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        source: 'paralello_automation',
+                        type: 'suggestion',
+                        payload: {
+                            suggestion_id: sugg.id,
+                            client_id: sugg.client_id,
+                            client_name: sugg.client.name,
+                            target_number: target,
+                            content: sugg.suggested_message
+                        }
+                    })
+                })
+
+                if (!response.ok) throw new Error(`n8n Webhook Error: ${response.statusText}`)
+
+                // Update Status
+                await supabase
+                    .from('active_suggestions')
+                    .update({ sent_at: new Date().toISOString() })
+                    .eq('id', sugg.id)
+
+                logs.push(`Suggestion sent to n8n for ${sugg.client.name}`)
+
+            } catch (err: any) {
+                console.error(`Suggestion dispatch failed for ${sugg.id}:`, err)
+                logs.push(`Suggestion failed for ${sugg.client.name}: ${err.message}`)
+            }
+        }
+
         return new Response(JSON.stringify({ success: true, processed: logs }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })

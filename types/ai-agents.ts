@@ -195,6 +195,7 @@ export interface AgentKPIs {
     escalationRate: number;
     abandonRate: number;
     tokensUsed: number;
+    avgMessagesPerConversation: number;
 }
 
 export interface AgentTrend {

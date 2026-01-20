@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import {
     TrendingUp, MessageSquare, Clock, DollarSign, CheckCircle,
-    AlertTriangle, Users, Zap, ArrowUp, ArrowDown, Minus
+    AlertTriangle, Users, Zap, ArrowUp, ArrowDown, Minus, MessagesSquare
 } from 'lucide-react';
 import { AIAgentMetrics, AgentKPIs } from '../../types/ai-agents';
 
@@ -89,7 +89,8 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
                         activeConversations: 0,
                         escalationRate: 0,
                         abandonRate: 0,
-                        tokensUsed: 0
+                        tokensUsed: 0,
+                        avgMessagesPerConversation: 0
                     };
                 }
 
@@ -104,7 +105,8 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
                     tokensInput: acc.tokensInput + m.tokens_input,
                     tokensOutput: acc.tokensOutput + m.tokens_output,
                     cost: acc.cost + Number(m.estimated_cost_brl),
-                    active: m.active_conversations // Last value
+                    active: m.active_conversations, // Last value
+                    totalMessages: acc.totalMessages + m.total_messages
                 }), {
                     totalConversations: 0,
                     resolved: 0,
@@ -116,7 +118,8 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
                     tokensInput: 0,
                     tokensOutput: 0,
                     cost: 0,
-                    active: 0
+                    active: 0,
+                    totalMessages: 0
                 });
 
                 return {
@@ -138,7 +141,10 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
                     abandonRate: totals.totalConversations > 0
                         ? (totals.abandoned / totals.totalConversations) * 100
                         : 0,
-                    tokensUsed: totals.tokensInput + totals.tokensOutput
+                    tokensUsed: totals.tokensInput + totals.tokensOutput,
+                    avgMessagesPerConversation: totals.totalConversations > 0
+                        ? totals.totalMessages / totals.totalConversations
+                        : 0
                 };
             };
 
@@ -271,6 +277,14 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
             color: 'purple',
             trend: getTrend(kpis.tokensUsed, previousKpis?.tokensUsed || 0),
             positive: true
+        },
+        {
+            label: 'Msgs por Conversa',
+            value: kpis.avgMessagesPerConversation.toFixed(1),
+            icon: MessagesSquare,
+            color: 'cyan',
+            trend: getTrend(kpis.avgMessagesPerConversation, previousKpis?.avgMessagesPerConversation || 0),
+            positive: true
         }
     ];
 
@@ -282,7 +296,8 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
         emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', iconBg: 'bg-emerald-100' },
         orange: { bg: 'bg-orange-50', text: 'text-orange-600', iconBg: 'bg-orange-100' },
         red: { bg: 'bg-red-50', text: 'text-red-600', iconBg: 'bg-red-100' },
-        purple: { bg: 'bg-purple-50', text: 'text-purple-600', iconBg: 'bg-purple-100' }
+        purple: { bg: 'bg-purple-50', text: 'text-purple-600', iconBg: 'bg-purple-100' },
+        cyan: { bg: 'bg-cyan-50', text: 'text-cyan-600', iconBg: 'bg-cyan-100' }
     };
 
     return (
@@ -296,8 +311,8 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
                             key={p}
                             onClick={() => setPeriod(p)}
                             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${period === p
-                                    ? 'bg-indigo-100 text-indigo-600'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                ? 'bg-indigo-100 text-indigo-600'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                 }`}
                         >
                             {p === 'today' ? 'Hoje' : p === 'week' ? '7 dias' : '30 dias'}

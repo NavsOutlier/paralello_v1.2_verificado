@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-    Settings, Save, X, Globe, Key, Webhook, Zap, CheckCircle,
+    Settings, Save, X, Key, Webhook, Zap, CheckCircle,
     AlertCircle, Copy, Eye, EyeOff, RefreshCw, Trash2, Bot, Code, Info
 } from 'lucide-react';
 import { AIAgent } from '../../types/ai-agents';
@@ -30,9 +30,6 @@ export const AgentConfig: React.FC<AgentConfigProps> = ({
     const [formData, setFormData] = useState({
         name: agent?.name || '',
         provider: agent?.provider || 'custom',
-        api_endpoint: agent?.api_endpoint || '',
-        webhook_metrics_url: agent?.webhook_metrics_url || '',
-        webhook_prompt_url: agent?.webhook_prompt_url || '',
         is_active: agent?.is_active ?? true
     });
 
@@ -54,9 +51,6 @@ export const AgentConfig: React.FC<AgentConfigProps> = ({
                     .update({
                         name: formData.name,
                         provider: formData.provider,
-                        api_endpoint: formData.api_endpoint || null,
-                        webhook_metrics_url: formData.webhook_metrics_url || null,
-                        webhook_prompt_url: formData.webhook_prompt_url || null,
                         is_active: formData.is_active
                     })
                     .eq('id', agent.id)
@@ -72,10 +66,7 @@ export const AgentConfig: React.FC<AgentConfigProps> = ({
                         organization_id: organizationId,
                         client_id: clientId,
                         name: formData.name,
-                        provider: formData.provider,
-                        api_endpoint: formData.api_endpoint || null,
-                        webhook_metrics_url: formData.webhook_metrics_url || null,
-                        webhook_prompt_url: formData.webhook_prompt_url || null
+                        provider: formData.provider
                     })
                     .select()
                     .single();
@@ -221,22 +212,6 @@ export const AgentConfig: React.FC<AgentConfigProps> = ({
                                 </select>
                             </div>
                         </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                API Endpoint (opcional)
-                            </label>
-                            <div className="relative">
-                                <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                                <input
-                                    type="url"
-                                    value={formData.api_endpoint}
-                                    onChange={(e) => setFormData({ ...formData, api_endpoint: e.target.value })}
-                                    placeholder="https://api.seu-agente.com"
-                                    className="w-full pl-11 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:outline-none"
-                                />
-                            </div>
-                        </div>
                     </div>
 
                     {/* Webhooks */}
@@ -293,29 +268,22 @@ export const AgentConfig: React.FC<AgentConfigProps> = ({
   "messages_sent": 320,
   "escalated": 3,
   "tokens_in": 45000,
-  "tokens_out": 28000
+  "tokens_out": 28000,
+  "funnel": {
+    "total": 120,
+    "existing_patient": 35,
+    "new_interested": 85,
+    "qualified": 60,
+    "scheduled": 45,
+    "disqualified": 15,
+    "no_response": 10
+  }
 }`}
                                             </pre>
                                         </div>
                                     </div>
                                 </div>
                             )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-1">
-                                Webhook para Enviar Prompts
-                            </label>
-                            <p className="text-xs text-slate-500 mb-2">
-                                URL onde o Paralello enviará atualizações de prompt para seu agente
-                            </p>
-                            <input
-                                type="url"
-                                value={formData.webhook_prompt_url}
-                                onChange={(e) => setFormData({ ...formData, webhook_prompt_url: e.target.value })}
-                                placeholder="https://api.seu-agente.com/update-prompt"
-                                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:outline-none"
-                            />
                         </div>
                     </div>
 

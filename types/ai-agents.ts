@@ -62,6 +62,15 @@ export interface AIAgentMetrics {
     // Channel breakdown
     channel_breakdown: Record<string, number>;
 
+    // Funnel metrics
+    funnel_total: number;
+    funnel_existing_patient: number;
+    funnel_new_interested: number;
+    funnel_qualified: number;
+    funnel_scheduled: number;
+    funnel_disqualified: number;
+    funnel_no_response: number;
+
     created_at: string;
 }
 

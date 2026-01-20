@@ -6,6 +6,7 @@ import {
     Activity, Calendar, ChevronDown, X
 } from 'lucide-react';
 import { AIAgentMetrics, AgentKPIs } from '../../types/ai-agents';
+import { AgentFunnelChart } from './AgentFunnelChart';
 
 type PeriodType = 'yesterday' | '7days' | '14days' | 'this_month' | 'last_month' | 'custom';
 
@@ -28,6 +29,15 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [customStartDate, setCustomStartDate] = useState<string>('');
     const [customEndDate, setCustomEndDate] = useState<string>('');
+    const [funnelData, setFunnelData] = useState({
+        total: 0,
+        existingPatient: 0,
+        newInterested: 0,
+        qualified: 0,
+        scheduled: 0,
+        disqualified: 0,
+        noResponse: 0
+    });
     const datePickerRef = useRef<HTMLDivElement>(null);
 
     // Close date picker when clicking outside
@@ -169,7 +179,7 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
                     resolved: acc.resolved + m.resolved_conversations,
                     escalated: acc.escalated + m.escalated_conversations,
                     abandoned: acc.abandoned + m.abandoned_conversations,
-                    responseTimeSum: acc.responseTimeSum + (m.avg_response_time || 0) * m.total_conversations,
+                    responseTimeSum: acc.responseTimeSum + (m.avg_response_time || 0) * m.total_messages,
                     csatSum: acc.csatSum + (m.avg_csat_score || 0) * m.csat_responses,
                     csatCount: acc.csatCount + m.csat_responses,
                     tokensInput: acc.tokensInput + m.tokens_input,
@@ -192,13 +202,28 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
                     totalMessages: 0
                 });
 
+                // Aggregate funnel data
+                const funnelTotals = metrics.reduce((acc, m) => ({
+                    total: acc.total + (m.funnel_total || 0),
+                    existingPatient: acc.existingPatient + (m.funnel_existing_patient || 0),
+                    newInterested: acc.newInterested + (m.funnel_new_interested || 0),
+                    qualified: acc.qualified + (m.funnel_qualified || 0),
+                    scheduled: acc.scheduled + (m.funnel_scheduled || 0),
+                    disqualified: acc.disqualified + (m.funnel_disqualified || 0),
+                    noResponse: acc.noResponse + (m.funnel_no_response || 0)
+                }), {
+                    total: 0, existingPatient: 0, newInterested: 0,
+                    qualified: 0, scheduled: 0, disqualified: 0, noResponse: 0
+                });
+                setFunnelData(funnelTotals);
+
                 return {
                     totalConversations: totals.totalConversations,
                     resolutionRate: totals.totalConversations > 0
                         ? (totals.resolved / totals.totalConversations) * 100
                         : 0,
-                    avgResponseTime: totals.totalConversations > 0
-                        ? totals.responseTimeSum / totals.totalConversations
+                    avgResponseTime: totals.totalMessages > 0
+                        ? totals.responseTimeSum / totals.totalMessages
                         : 0,
                     avgCsatScore: totals.csatCount > 0
                         ? totals.csatSum / totals.csatCount
@@ -247,8 +272,8 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
 
         return (
             <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${isGood
-                    ? 'text-emerald-400 bg-emerald-500/20'
-                    : 'text-rose-400 bg-rose-500/20'
+                ? 'text-emerald-400 bg-emerald-500/20'
+                : 'text-rose-400 bg-rose-500/20'
                 }`}>
                 {trend === 'up' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
                 {trend === 'up' ? '+' : '-'}5%
@@ -425,8 +450,8 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
                                 key={p.id}
                                 onClick={() => setPeriod(p.id)}
                                 className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${period === p.id
-                                        ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/25'
-                                        : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                                    ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/25'
+                                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
                                     }`}
                             >
                                 {p.label}
@@ -439,8 +464,8 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
                         <button
                             onClick={() => setShowDatePicker(!showDatePicker)}
                             className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all border ${period === 'custom'
-                                    ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white border-transparent shadow-lg shadow-violet-500/25'
-                                    : 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:text-white hover:bg-slate-700/50'
+                                ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white border-transparent shadow-lg shadow-violet-500/25'
+                                : 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:text-white hover:bg-slate-700/50'
                                 }`}
                         >
                             <Calendar className="w-4 h-4" />
@@ -532,6 +557,11 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
                         </div>
                     );
                 })}
+            </div>
+
+            {/* Sales Funnel */}
+            <div className="mt-6">
+                <AgentFunnelChart data={funnelData} />
             </div>
         </div>
     );

@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
     Settings, Save, X, Globe, Key, Webhook, Zap, CheckCircle,
-    AlertCircle, Copy, Eye, EyeOff, RefreshCw, Trash2, Bot
+    AlertCircle, Copy, Eye, EyeOff, RefreshCw, Trash2, Bot, Code, Info
 } from 'lucide-react';
 import { AIAgent } from '../../types/ai-agents';
 
@@ -248,24 +248,56 @@ export const AgentConfig: React.FC<AgentConfigProps> = ({
 
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-1">
-                                Webhook para Receber Métricas
+                                Webhook para Receber Métricas (Simplificado - Recomendado)
                             </label>
                             <p className="text-xs text-slate-500 mb-2">
-                                URL onde seu agente deve enviar as métricas para o Paralello
+                                Envie resumos diários para este endpoint. O Paralello calculará as taxas de resolução e custos.
                             </p>
-                            <input
-                                type="url"
-                                value={formData.webhook_metrics_url}
-                                onChange={(e) => setFormData({ ...formData, webhook_metrics_url: e.target.value })}
-                                placeholder="https://..."
-                                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:outline-none"
-                            />
+
                             {agent && (
-                                <div className="mt-3 p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
-                                    <p className="text-xs text-slate-400 font-medium mb-2">Endpoint Paralello:</p>
-                                    <code className="text-xs text-violet-400 break-all">
-                                        {import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-metrics-webhook
-                                    </code>
+                                <div className="space-y-3">
+                                    <div className="p-4 bg-slate-800/50 rounded-xl border border-cyan-500/20">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-xs text-cyan-400 font-bold flex items-center gap-1">
+                                                <Code className="w-3 h-3" />
+                                                ENDPOINT POST
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-daily-metrics`;
+                                                    navigator.clipboard.writeText(url);
+                                                    alert('URL copiada!');
+                                                }}
+                                                className="text-[10px] text-slate-500 hover:text-white transition-colors flex items-center gap-1"
+                                            >
+                                                <Copy className="w-3 h-3" />
+                                                Copiar URL
+                                            </button>
+                                        </div>
+                                        <code className="text-[11px] text-cyan-300/80 break-all bg-slate-900/50 p-2 rounded block border border-slate-700/50">
+                                            {import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-daily-metrics
+                                        </code>
+                                    </div>
+
+                                    <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                                        <p className="text-[11px] text-slate-400 font-bold mb-2 flex items-center gap-1">
+                                            <Info className="w-3 h-3" />
+                                            EXEMPLO DE PAYLOAD (n8n / HTTP Request)
+                                        </p>
+                                        <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
+                                            <pre className="text-[10px] text-emerald-400 font-mono overflow-x-auto">
+                                                {`{
+  "date": "2026-01-20",
+  "conversations": 45,
+  "messages_sent": 320,
+  "escalated": 3,
+  "tokens_in": 45000,
+  "tokens_out": 28000
+}`}
+                                            </pre>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>

@@ -172,7 +172,7 @@ export const AgentConfig: React.FC<AgentConfigProps> = ({
                         </div>
                         <div>
                             <h2 className="font-bold text-lg text-slate-800">
-                                {isEditing ? 'Configurar Agente' : 'Novo Agente de IA'}
+                                {isEditing ? 'Integrar Agente' : 'Novo Agente de IA'}
                             </h2>
                             <p className="text-sm text-slate-500">
                                 {isEditing ? 'Edite as configurações do agente' : 'Configure um novo agente de IA para este cliente'}

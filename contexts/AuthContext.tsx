@@ -13,6 +13,7 @@ interface AuthContextType {
         can_manage_tasks: boolean;
         can_manage_team: boolean;
         can_manage_marketing: boolean;
+        can_manage_ai_agents: boolean;
     } | null;
     loading: boolean;
     signOut: () => Promise<void>;
@@ -85,14 +86,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     can_manage_clients: false,
                     can_manage_tasks: false,
                     can_manage_team: false,
-                    can_manage_marketing: false
+                    can_manage_marketing: false,
+                    can_manage_ai_agents: false
                 };
 
                 setPermissions({
                     can_manage_clients: isManagerRole || !!perms.can_manage_clients,
                     can_manage_tasks: isManagerRole || !!perms.can_manage_tasks,
                     can_manage_team: isManagerRole || !!perms.can_manage_team,
-                    can_manage_marketing: isManagerRole || !!perms.can_manage_marketing
+                    can_manage_marketing: isManagerRole || !!perms.can_manage_marketing,
+                    can_manage_ai_agents: isManagerRole || !!perms.can_manage_ai_agents
                 });
             } else {
                 setIsManager(false);

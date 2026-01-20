@@ -25,7 +25,8 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
         canManageClients: false,
         canManageTeam: false,
         canManageMarketing: false,
-        canManageAutomation: false
+        canManageAutomation: false,
+        canManageAIAgents: false
     });
     const [loading, setLoading] = useState(false);
     const [isCreatingSpecialty, setIsCreatingSpecialty] = useState(false);
@@ -41,7 +42,8 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                 canManageTasks: member?.permissions?.canManageTasks ?? true,
                 canManageTeam: member?.permissions?.canManageTeam ?? false,
                 canManageMarketing: member?.permissions?.canManageMarketing ?? false,
-                canManageAutomation: member?.permissions?.canManageAutomation ?? false
+                canManageAutomation: member?.permissions?.canManageAutomation ?? false,
+                canManageAIAgents: member?.permissions?.canManageAIAgents ?? false
             });
         }
     }, [isOpen, member]);
@@ -62,7 +64,8 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                     canManageTasks: formData.canManageTasks,
                     canManageTeam: formData.canManageTeam,
                     canManageMarketing: formData.canManageMarketing,
-                    canManageAutomation: formData.canManageAutomation
+                    canManageAutomation: formData.canManageAutomation,
+                    canManageAIAgents: formData.canManageAIAgents
                 }
             });
             onClose();
@@ -244,6 +247,17 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                                 disabled={formData.role === 'manager'}
                             />
                             <span className="text-sm text-slate-700">Gerenciar automações</span>
+                        </label>
+
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={formData.canManageAIAgents}
+                                onChange={(e) => setFormData({ ...formData, canManageAIAgents: e.target.checked })}
+                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                disabled={formData.role === 'manager'}
+                            />
+                            <span className="text-sm text-slate-700">Gerenciar AI Agents</span>
                         </label>
                     </div>
 

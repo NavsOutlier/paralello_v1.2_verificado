@@ -92,7 +92,8 @@ export const TeamManagement: React.FC = () => {
                         canManageTasks: m.permissions?.can_manage_tasks ?? true,
                         canManageTeam: m.permissions?.can_manage_team ?? false,
                         canManageMarketing: m.permissions?.can_manage_marketing ?? false,
-                        canManageAutomation: m.permissions?.can_manage_automation ?? false
+                        canManageAutomation: m.permissions?.can_manage_automation ?? false,
+                        canManageAIAgents: m.permissions?.can_manage_ai_agents ?? false
                     },
                     jobTitle: m.job_title,
                     status: m.status,
@@ -124,7 +125,8 @@ export const TeamManagement: React.FC = () => {
                             can_manage_tasks: memberData.permissions?.canManageTasks ?? true,
                             can_manage_team: memberData.permissions?.canManageTeam ?? false,
                             can_manage_marketing: memberData.permissions?.canManageMarketing ?? false,
-                            can_manage_automation: memberData.permissions?.canManageAutomation ?? false
+                            can_manage_automation: memberData.permissions?.canManageAutomation ?? false,
+                            can_manage_ai_agents: memberData.permissions?.canManageAIAgents ?? false
                         }
                     })
                     .eq('id', selectedMember.id);
@@ -159,7 +161,8 @@ export const TeamManagement: React.FC = () => {
                             can_manage_tasks: memberData.permissions?.canManageTasks ?? true,
                             can_manage_team: memberData.permissions?.canManageTeam ?? false,
                             can_manage_marketing: memberData.permissions?.canManageMarketing ?? false,
-                            can_manage_automation: memberData.permissions?.canManageAutomation ?? false
+                            can_manage_automation: memberData.permissions?.canManageAutomation ?? false,
+                            can_manage_ai_agents: memberData.permissions?.canManageAIAgents ?? false
                         }
                     }
                 });
@@ -366,6 +369,9 @@ export const TeamManagement: React.FC = () => {
                                                 )}
                                                 {member.permissions.canManageAutomation && (
                                                     <span>✓ Gerenciar automações</span>
+                                                )}
+                                                {member.permissions.canManageAIAgents && (
+                                                    <span>✓ Gerenciar AI Agents</span>
                                                 )}
                                             </div>
                                         </div>

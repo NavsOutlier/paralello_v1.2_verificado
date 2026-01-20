@@ -44,7 +44,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
             <NavItem view={ViewState.KANBAN} icon={KanbanSquare} label="Tarefas" />
             <NavItem view={ViewState.MARKETING} icon={BarChart3} label="MetricFlow" />
             <NavItem view={ViewState.AUTOMATION} icon={Zap} label="Automações" />
-            <NavItem view={ViewState.AI_AGENTS} icon={Bot} label="AI Agents" />
+            {(isManager || permissions?.can_manage_ai_agents) && (
+              <NavItem view={ViewState.AI_AGENTS} icon={Bot} label="AI Agents" />
+            )}
 
             {/* Manager/Team Management - Visible only to authorized members */}
             {(isManager || permissions?.can_manage_clients || permissions?.can_manage_team) && (

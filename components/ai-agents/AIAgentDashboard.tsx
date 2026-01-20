@@ -30,32 +30,21 @@ export const AIAgentDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState<DashboardTab>('metrics');
     const [showConfigModal, setShowConfigModal] = useState(false);
 
-    // Fetch clients with AI agents
+    // Fetch all clients (we'll show if they have agents or not)
     useEffect(() => {
         const fetchClients = async () => {
             if (!organizationId) return;
             setLoadingClients(true);
 
-            // Get clients that have AI agents configured
+            // Get all clients for this organization
             const { data, error } = await supabase
                 .from('clients')
-                .select(`
-          id, 
-          name,
-          ai_agents!inner(id)
-        `)
+                .select('id, name')
                 .eq('organization_id', organizationId)
                 .order('name');
 
             if (error) {
-                console.error('Error fetching clients with agents:', error);
-                // Fallback: get all clients
-                const { data: allClients } = await supabase
-                    .from('clients')
-                    .select('id, name')
-                    .eq('organization_id', organizationId)
-                    .order('name');
-                setClients(allClients || []);
+                console.error('Error fetching clients:', error);
             } else {
                 setClients(data || []);
                 if (data && data.length > 0 && !selectedClient) {
@@ -148,8 +137,8 @@ export const AIAgentDashboard: React.FC = () => {
                                     key={client.id}
                                     onClick={() => setSelectedClient(client)}
                                     className={`w-full text-left p-3 rounded-xl transition-all ${selectedClient?.id === client.id
-                                            ? 'bg-indigo-50 border-2 border-indigo-500'
-                                            : 'hover:bg-slate-50 border-2 border-transparent'
+                                        ? 'bg-indigo-50 border-2 border-indigo-500'
+                                        : 'hover:bg-slate-50 border-2 border-transparent'
                                         }`}
                                 >
                                     <div className="flex items-center gap-2">
@@ -189,7 +178,7 @@ export const AIAgentDashboard: React.FC = () => {
                                 className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
                             >
                                 <Zap className="w-4 h-4" />
-                                Configurar Agente
+                                Integrar Agente
                             </button>
                         )}
                     </div>
@@ -213,8 +202,8 @@ export const AIAgentDashboard: React.FC = () => {
                                                 key={tab.id}
                                                 onClick={() => setActiveTab(tab.id)}
                                                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all ${isActive
-                                                        ? 'bg-indigo-100 text-indigo-600 border-2 border-indigo-500'
-                                                        : 'bg-slate-50 text-slate-600 border-2 border-transparent hover:bg-slate-100'
+                                                    ? 'bg-indigo-100 text-indigo-600 border-2 border-indigo-500'
+                                                    : 'bg-slate-50 text-slate-600 border-2 border-transparent hover:bg-slate-100'
                                                     }`}
                                             >
                                                 <Icon className="w-4 h-4" />
@@ -249,17 +238,17 @@ export const AIAgentDashboard: React.FC = () => {
                                 <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <Bot className="w-10 h-10 text-slate-300" />
                                 </div>
-                                <h3 className="font-bold text-slate-700 mb-2">Nenhum Agente Configurado</h3>
+                                <h3 className="font-bold text-slate-700 mb-2">Nenhum Agente Integrado</h3>
                                 <p className="text-slate-500 text-sm mb-6">
-                                    Este cliente ainda não possui um agente de IA configurado.
-                                    Configure um agente para começar a monitorar métricas.
+                                    Este cliente ainda não possui um agente de IA integrado.
+                                    Integre um agente para começar a monitorar métricas.
                                 </p>
                                 <button
                                     onClick={() => setShowConfigModal(true)}
                                     className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors"
                                 >
                                     <Zap className="w-5 h-5" />
-                                    Configurar Agente
+                                    Integrar Agente
                                 </button>
                             </div>
                         </div>

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import {
     TrendingUp, MessageSquare, Clock, DollarSign, CheckCircle,
-    AlertTriangle, Users, Zap, ArrowUp, ArrowDown, Minus, MessagesSquare
+    AlertTriangle, Users, Zap, ArrowUp, ArrowDown, Minus, MessagesSquare,
+    Activity
 } from 'lucide-react';
 import { AIAgentMetrics, AgentKPIs } from '../../types/ai-agents';
 
@@ -55,13 +56,12 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
                     break;
             }
 
-            // Current period
             const { data: currentData, error } = await supabase
                 .from('ai_agent_metrics')
                 .select('*')
                 .eq('agent_id', agentId)
                 .gte('metric_date', startDate.toISOString().split('T')[0])
-                .is('metric_hour', null); // Daily aggregates only
+                .is('metric_hour', null);
 
             if (error) {
                 console.error('Error fetching metrics:', error);
@@ -69,7 +69,6 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
                 return;
             }
 
-            // Previous period for comparison
             const { data: previousData } = await supabase
                 .from('ai_agent_metrics')
                 .select('*')
@@ -105,7 +104,7 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
                     tokensInput: acc.tokensInput + m.tokens_input,
                     tokensOutput: acc.tokensOutput + m.tokens_output,
                     cost: acc.cost + Number(m.estimated_cost_brl),
-                    active: m.active_conversations, // Last value
+                    active: m.active_conversations,
                     totalMessages: acc.totalMessages + m.total_messages
                 }), {
                     totalConversations: 0,
@@ -164,16 +163,26 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
         return 'neutral';
     };
 
-    const TrendIcon = ({ trend, positive = true }: { trend: 'up' | 'down' | 'neutral', positive?: boolean }) => {
-        if (trend === 'neutral') return <Minus className="w-3 h-3 text-slate-400" />;
-        if (trend === 'up') {
-            return positive
-                ? <ArrowUp className="w-3 h-3 text-green-500" />
-                : <ArrowUp className="w-3 h-3 text-red-500" />;
+    const TrendBadge = ({ trend, positive = true }: { trend: 'up' | 'down' | 'neutral', positive?: boolean }) => {
+        if (trend === 'neutral') {
+            return (
+                <span className="flex items-center gap-1 text-xs text-slate-400 bg-slate-700/50 px-2 py-1 rounded-full">
+                    <Minus className="w-3 h-3" /> 0%
+                </span>
+            );
         }
-        return positive
-            ? <ArrowDown className="w-3 h-3 text-red-500" />
-            : <ArrowDown className="w-3 h-3 text-green-500" />;
+
+        const isGood = (trend === 'up' && positive) || (trend === 'down' && !positive);
+
+        return (
+            <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${isGood
+                    ? 'text-emerald-400 bg-emerald-500/20'
+                    : 'text-rose-400 bg-rose-500/20'
+                }`}>
+                {trend === 'up' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+                {trend === 'up' ? '+' : '-'}5%
+            </span>
+        );
     };
 
     const formatTime = (seconds: number): string => {
@@ -191,22 +200,29 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
 
     if (loading) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {[...Array(8)].map((_, i) => (
-                    <div key={i} className="bg-white rounded-xl p-4 animate-pulse">
-                        <div className="h-4 bg-slate-200 rounded w-1/2 mb-2" />
-                        <div className="h-8 bg-slate-200 rounded w-3/4" />
-                    </div>
-                ))}
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <div className="h-8 w-40 bg-slate-700/50 rounded-lg animate-pulse" />
+                    <div className="h-10 w-48 bg-slate-700/50 rounded-xl animate-pulse" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[...Array(9)].map((_, i) => (
+                        <div key={i} className="bg-slate-800/50 rounded-2xl p-5 animate-pulse border border-slate-700/50">
+                            <div className="h-4 bg-slate-700 rounded w-1/2 mb-3" />
+                            <div className="h-8 bg-slate-700 rounded w-3/4" />
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }
 
     if (!kpis) {
         return (
-            <div className="bg-slate-50 rounded-xl p-8 text-center">
-                <AlertTriangle className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500">Nenhuma métrica disponível para este período.</p>
+            <div className="bg-slate-800/30 rounded-2xl p-12 text-center border border-slate-700/50">
+                <Activity className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400">Nenhuma métrica disponível para este período.</p>
+                <p className="text-slate-600 text-sm mt-2">As métricas aparecerão quando o agente começar a receber dados.</p>
             </div>
         );
     }
@@ -216,7 +232,8 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
             label: 'Total de Conversas',
             value: formatNumber(kpis.totalConversations),
             icon: MessageSquare,
-            color: 'indigo',
+            gradient: 'from-violet-500 to-purple-600',
+            bgGradient: 'from-violet-500/10 to-purple-500/10',
             trend: getTrend(kpis.totalConversations, previousKpis?.totalConversations || 0),
             positive: true
         },
@@ -224,7 +241,8 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
             label: 'Taxa de Resolução',
             value: `${kpis.resolutionRate.toFixed(1)}%`,
             icon: CheckCircle,
-            color: 'green',
+            gradient: 'from-emerald-500 to-teal-600',
+            bgGradient: 'from-emerald-500/10 to-teal-500/10',
             trend: getTrend(kpis.resolutionRate, previousKpis?.resolutionRate || 0),
             positive: true
         },
@@ -232,15 +250,17 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
             label: 'Tempo Médio Resposta',
             value: formatTime(kpis.avgResponseTime),
             icon: Clock,
-            color: 'blue',
+            gradient: 'from-blue-500 to-cyan-600',
+            bgGradient: 'from-blue-500/10 to-cyan-500/10',
             trend: getTrend(kpis.avgResponseTime, previousKpis?.avgResponseTime || 0),
-            positive: false // Lower is better
+            positive: false
         },
         {
             label: 'CSAT Score',
             value: kpis.avgCsatScore ? `${kpis.avgCsatScore.toFixed(1)}/5` : 'N/A',
             icon: TrendingUp,
-            color: 'yellow',
+            gradient: 'from-amber-500 to-orange-600',
+            bgGradient: 'from-amber-500/10 to-orange-500/10',
             trend: kpis.avgCsatScore && previousKpis?.avgCsatScore
                 ? getTrend(kpis.avgCsatScore, previousKpis.avgCsatScore)
                 : 'neutral',
@@ -250,31 +270,35 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
             label: 'Custo do Período',
             value: `R$ ${kpis.totalCost.toFixed(2)}`,
             icon: DollarSign,
-            color: 'emerald',
+            gradient: 'from-green-500 to-emerald-600',
+            bgGradient: 'from-green-500/10 to-emerald-500/10',
             trend: getTrend(kpis.totalCost, previousKpis?.totalCost || 0),
-            positive: false // Lower is better
+            positive: false
         },
         {
             label: 'Taxa de Escalonamento',
             value: `${kpis.escalationRate.toFixed(1)}%`,
             icon: Users,
-            color: 'orange',
+            gradient: 'from-orange-500 to-red-600',
+            bgGradient: 'from-orange-500/10 to-red-500/10',
             trend: getTrend(kpis.escalationRate, previousKpis?.escalationRate || 0),
-            positive: false // Lower is better
+            positive: false
         },
         {
             label: 'Taxa de Abandono',
             value: `${kpis.abandonRate.toFixed(1)}%`,
             icon: AlertTriangle,
-            color: 'red',
+            gradient: 'from-rose-500 to-pink-600',
+            bgGradient: 'from-rose-500/10 to-pink-500/10',
             trend: getTrend(kpis.abandonRate, previousKpis?.abandonRate || 0),
-            positive: false // Lower is better
+            positive: false
         },
         {
             label: 'Tokens Utilizados',
             value: formatNumber(kpis.tokensUsed),
             icon: Zap,
-            color: 'purple',
+            gradient: 'from-purple-500 to-indigo-600',
+            bgGradient: 'from-purple-500/10 to-indigo-500/10',
             trend: getTrend(kpis.tokensUsed, previousKpis?.tokensUsed || 0),
             positive: true
         },
@@ -282,37 +306,29 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
             label: 'Msgs por Conversa',
             value: kpis.avgMessagesPerConversation.toFixed(1),
             icon: MessagesSquare,
-            color: 'cyan',
+            gradient: 'from-cyan-500 to-blue-600',
+            bgGradient: 'from-cyan-500/10 to-blue-500/10',
             trend: getTrend(kpis.avgMessagesPerConversation, previousKpis?.avgMessagesPerConversation || 0),
             positive: true
         }
     ];
 
-    const colorClasses: Record<string, { bg: string; text: string; iconBg: string }> = {
-        indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600', iconBg: 'bg-indigo-100' },
-        green: { bg: 'bg-green-50', text: 'text-green-600', iconBg: 'bg-green-100' },
-        blue: { bg: 'bg-blue-50', text: 'text-blue-600', iconBg: 'bg-blue-100' },
-        yellow: { bg: 'bg-yellow-50', text: 'text-yellow-600', iconBg: 'bg-yellow-100' },
-        emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', iconBg: 'bg-emerald-100' },
-        orange: { bg: 'bg-orange-50', text: 'text-orange-600', iconBg: 'bg-orange-100' },
-        red: { bg: 'bg-red-50', text: 'text-red-600', iconBg: 'bg-red-100' },
-        purple: { bg: 'bg-purple-50', text: 'text-purple-600', iconBg: 'bg-purple-100' },
-        cyan: { bg: 'bg-cyan-50', text: 'text-cyan-600', iconBg: 'bg-cyan-100' }
-    };
-
     return (
         <div className="space-y-6">
-            {/* Period Selector */}
+            {/* Header */}
             <div className="flex items-center justify-between">
-                <h3 className="font-bold text-slate-800">Visão Geral</h3>
-                <div className="flex gap-2">
+                <div>
+                    <h3 className="text-xl font-bold text-white">Visão Geral</h3>
+                    <p className="text-slate-400 text-sm mt-1">Métricas de performance do agente</p>
+                </div>
+                <div className="flex gap-1 bg-slate-800/50 p-1 rounded-xl border border-slate-700/50">
                     {(['today', 'week', 'month'] as const).map((p) => (
                         <button
                             key={p}
                             onClick={() => setPeriod(p)}
-                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${period === p
-                                ? 'bg-indigo-100 text-indigo-600'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${period === p
+                                    ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/25'
+                                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
                                 }`}
                         >
                             {p === 'today' ? 'Hoje' : p === 'week' ? '7 dias' : '30 dias'}
@@ -321,43 +337,46 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
                 </div>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {cards.map((card, index) => {
-                    const colors = colorClasses[card.color];
-                    const Icon = card.icon;
-                    return (
-                        <div
-                            key={index}
-                            className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow"
-                        >
-                            <div className="flex items-start justify-between mb-3">
-                                <div className={`p-2 rounded-lg ${colors.iconBg}`}>
-                                    <Icon className={`w-5 h-5 ${colors.text}`} />
-                                </div>
-                                <TrendIcon trend={card.trend} positive={card.positive} />
-                            </div>
-                            <p className="text-xs text-slate-500 mb-1">{card.label}</p>
-                            <p className="text-2xl font-bold text-slate-800">{card.value}</p>
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Active Conversations Highlight */}
+            {/* Active Conversations Banner */}
             {kpis.activeConversations > 0 && (
-                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-4 text-white">
-                    <div className="flex items-center justify-between">
+                <div className="relative overflow-hidden bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl p-5">
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSI0Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+                    <div className="relative flex items-center justify-between">
                         <div>
-                            <p className="text-indigo-100 text-sm">Conversas Ativas Agora</p>
-                            <p className="text-3xl font-bold">{kpis.activeConversations}</p>
+                            <p className="text-violet-200 text-sm font-medium">Conversas Ativas Agora</p>
+                            <p className="text-4xl font-bold text-white mt-1">{kpis.activeConversations}</p>
                         </div>
-                        <div className="p-3 bg-white/20 rounded-xl">
-                            <MessageSquare className="w-8 h-8" />
+                        <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
+                            <Activity className="w-8 h-8 text-white" />
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* KPI Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {cards.map((card, index) => {
+                    const Icon = card.icon;
+                    return (
+                        <div
+                            key={index}
+                            className={`relative overflow-hidden bg-gradient-to-br ${card.bgGradient} backdrop-blur-sm rounded-2xl p-5 border border-slate-700/50 hover:border-slate-600/50 transition-all group`}
+                        >
+                            <div className="flex items-start justify-between mb-4">
+                                <div className={`p-2.5 bg-gradient-to-br ${card.gradient} rounded-xl shadow-lg`}>
+                                    <Icon className="w-5 h-5 text-white" />
+                                </div>
+                                <TrendBadge trend={card.trend} positive={card.positive} />
+                            </div>
+                            <p className="text-slate-400 text-sm mb-1">{card.label}</p>
+                            <p className="text-2xl font-bold text-white">{card.value}</p>
+
+                            {/* Decorative gradient */}
+                            <div className={`absolute -bottom-8 -right-8 w-32 h-32 bg-gradient-to-br ${card.gradient} rounded-full opacity-10 blur-2xl group-hover:opacity-20 transition-opacity`} />
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 };

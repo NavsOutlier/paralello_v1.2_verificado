@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-    Bot, BarChart3, FileText, Settings, Users, Search, Building2,
-    TrendingUp, MessageSquare, Clock, DollarSign, CheckCircle, XCircle,
-    AlertTriangle, Zap, RefreshCw
+    Bot, BarChart3, FileText, Settings, Search,
+    Zap, Plus, ChevronRight
 } from 'lucide-react';
 import { AIAgent } from '../../types/ai-agents';
 import { AgentMetricsCards } from './AgentMetricsCards';
@@ -30,13 +29,12 @@ export const AIAgentDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState<DashboardTab>('metrics');
     const [showConfigModal, setShowConfigModal] = useState(false);
 
-    // Fetch all clients (we'll show if they have agents or not)
+    // Fetch all clients
     useEffect(() => {
         const fetchClients = async () => {
             if (!organizationId) return;
             setLoadingClients(true);
 
-            // Get all clients for this organization
             const { data, error } = await supabase
                 .from('clients')
                 .select('id, name')
@@ -87,9 +85,9 @@ export const AIAgentDashboard: React.FC = () => {
     );
 
     const tabs = [
-        { id: 'metrics' as const, label: 'Métricas', icon: BarChart3, color: 'indigo' },
-        { id: 'prompts' as const, label: 'Prompts', icon: FileText, color: 'purple' },
-        { id: 'config' as const, label: 'Configuração', icon: Settings, color: 'slate' },
+        { id: 'metrics' as const, label: 'Métricas', icon: BarChart3 },
+        { id: 'prompts' as const, label: 'Prompts', icon: FileText },
+        { id: 'config' as const, label: 'Configuração', icon: Settings },
     ];
 
     const handleAgentSaved = (savedAgent: AIAgent) => {
@@ -98,56 +96,70 @@ export const AIAgentDashboard: React.FC = () => {
     };
 
     return (
-        <div className="h-full flex bg-slate-50">
+        <div className="h-full w-full flex bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
             {/* Client Sidebar */}
-            <div className="w-72 bg-white border-r border-slate-200 flex flex-col">
+            <div className="w-80 bg-slate-900/50 backdrop-blur-sm border-r border-slate-700/50 flex flex-col">
                 {/* Sidebar Header */}
-                <div className="p-4 border-b border-slate-100">
-                    <div className="flex items-center gap-2 mb-3">
-                        <Bot className="w-5 h-5 text-indigo-600" />
-                        <h3 className="font-bold text-slate-800">AI Agents</h3>
-                        <span className="text-xs text-slate-400">({clients.length})</span>
+                <div className="p-5 border-b border-slate-700/50">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-lg shadow-violet-500/20">
+                            <Bot className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-white">AI Agents</h3>
+                            <span className="text-xs text-slate-400">{clients.length} clientes</span>
+                        </div>
                     </div>
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                         <input
                             type="text"
                             placeholder="Buscar cliente..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:border-transparent focus:outline-none transition-all"
                         />
                     </div>
                 </div>
 
                 {/* Client List */}
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto p-3">
                     {loadingClients ? (
                         <div className="flex items-center justify-center py-8">
-                            <div className="w-6 h-6 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                            <div className="w-6 h-6 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
                         </div>
                     ) : filteredClients.length === 0 ? (
                         <div className="p-4 text-center text-sm text-slate-500">
-                            {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente com AI Agent'}
+                            {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente disponível'}
                         </div>
                     ) : (
-                        <div className="p-2 space-y-1">
+                        <div className="space-y-1">
                             {filteredClients.map(client => (
                                 <button
                                     key={client.id}
                                     onClick={() => setSelectedClient(client)}
-                                    className={`w-full text-left p-3 rounded-xl transition-all ${selectedClient?.id === client.id
-                                        ? 'bg-indigo-50 border-2 border-indigo-500'
-                                        : 'hover:bg-slate-50 border-2 border-transparent'
+                                    className={`w-full text-left p-3 rounded-xl transition-all group ${selectedClient?.id === client.id
+                                            ? 'bg-gradient-to-r from-violet-600/20 to-purple-600/20 border border-violet-500/50'
+                                            : 'hover:bg-slate-800/50 border border-transparent'
                                         }`}
                                 >
-                                    <div className="flex items-center gap-2">
-                                        <Bot className={`w-4 h-4 ${selectedClient?.id === client.id ? 'text-indigo-600' : 'text-slate-400'
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${selectedClient?.id === client.id
+                                                    ? 'bg-violet-500 text-white'
+                                                    : 'bg-slate-700 text-slate-400 group-hover:bg-slate-600'
+                                                }`}>
+                                                {client.name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <span className={`font-medium text-sm ${selectedClient?.id === client.id ? 'text-white' : 'text-slate-300'
+                                                }`}>
+                                                {client.name}
+                                            </span>
+                                        </div>
+                                        <ChevronRight className={`w-4 h-4 transition-transform ${selectedClient?.id === client.id
+                                                ? 'text-violet-400 translate-x-0'
+                                                : 'text-slate-600 -translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
                                             }`} />
-                                        <p className={`font-bold text-sm ${selectedClient?.id === client.id ? 'text-indigo-700' : 'text-slate-800'
-                                            }`}>
-                                            {client.name}
-                                        </p>
                                     </div>
                                 </button>
                             ))}
@@ -157,27 +169,29 @@ export const AIAgentDashboard: React.FC = () => {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
-                <div className="bg-white border-b border-slate-200 px-6 py-4">
+                <div className="bg-slate-900/30 backdrop-blur-sm border-b border-slate-700/50 px-8 py-5">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
-                                <Bot className="w-5 h-5 text-white" />
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl shadow-lg shadow-violet-500/20">
+                                <Bot className="w-6 h-6 text-white" />
                             </div>
                             <div>
-                                <h2 className="font-bold text-slate-800">AI Agent Metrics</h2>
-                                <p className="text-xs text-slate-500">
-                                    {selectedClient ? selectedClient.name : 'Selecione um cliente'}
+                                <h2 className="text-xl font-bold text-white">
+                                    {selectedClient ? selectedClient.name : 'Selecione um Cliente'}
+                                </h2>
+                                <p className="text-sm text-slate-400">
+                                    {agent ? `Agente: ${agent.name}` : 'Nenhum agente integrado'}
                                 </p>
                             </div>
                         </div>
                         {selectedClient && !agent && (
                             <button
                                 onClick={() => setShowConfigModal(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl text-sm font-bold hover:from-violet-500 hover:to-purple-500 transition-all shadow-lg shadow-violet-500/25"
                             >
-                                <Zap className="w-4 h-4" />
+                                <Plus className="w-4 h-4" />
                                 Integrar Agente
                             </button>
                         )}
@@ -187,12 +201,12 @@ export const AIAgentDashboard: React.FC = () => {
                 {selectedClient ? (
                     loadingAgent ? (
                         <div className="flex-1 flex items-center justify-center">
-                            <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                            <div className="w-10 h-10 border-3 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
                         </div>
                     ) : agent ? (
                         <>
                             {/* Tabs */}
-                            <div className="bg-white border-b border-slate-200 px-4 py-3">
+                            <div className="bg-slate-900/20 backdrop-blur-sm border-b border-slate-700/50 px-8 py-4">
                                 <div className="flex gap-2">
                                     {tabs.map(tab => {
                                         const isActive = activeTab === tab.id;
@@ -201,9 +215,9 @@ export const AIAgentDashboard: React.FC = () => {
                                             <button
                                                 key={tab.id}
                                                 onClick={() => setActiveTab(tab.id)}
-                                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all ${isActive
-                                                    ? 'bg-indigo-100 text-indigo-600 border-2 border-indigo-500'
-                                                    : 'bg-slate-50 text-slate-600 border-2 border-transparent hover:bg-slate-100'
+                                                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all ${isActive
+                                                        ? 'bg-gradient-to-r from-violet-600/20 to-purple-600/20 text-violet-400 border border-violet-500/50'
+                                                        : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/30 border border-transparent'
                                                     }`}
                                             >
                                                 <Icon className="w-4 h-4" />
@@ -215,7 +229,7 @@ export const AIAgentDashboard: React.FC = () => {
                             </div>
 
                             {/* Content */}
-                            <div className="flex-1 overflow-y-auto p-6">
+                            <div className="flex-1 overflow-y-auto p-8">
                                 {activeTab === 'metrics' && (
                                     <AgentMetricsCards agentId={agent.id} />
                                 )}
@@ -235,17 +249,17 @@ export const AIAgentDashboard: React.FC = () => {
                     ) : (
                         <div className="flex-1 flex items-center justify-center">
                             <div className="text-center max-w-md">
-                                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <Bot className="w-10 h-10 text-slate-300" />
+                                <div className="w-24 h-24 bg-gradient-to-br from-violet-600/20 to-purple-600/20 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-violet-500/30">
+                                    <Bot className="w-12 h-12 text-violet-400" />
                                 </div>
-                                <h3 className="font-bold text-slate-700 mb-2">Nenhum Agente Integrado</h3>
-                                <p className="text-slate-500 text-sm mb-6">
+                                <h3 className="text-xl font-bold text-white mb-2">Nenhum Agente Integrado</h3>
+                                <p className="text-slate-400 text-sm mb-8">
                                     Este cliente ainda não possui um agente de IA integrado.
                                     Integre um agente para começar a monitorar métricas.
                                 </p>
                                 <button
                                     onClick={() => setShowConfigModal(true)}
-                                    className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors"
+                                    className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-bold hover:from-violet-500 hover:to-purple-500 transition-all shadow-lg shadow-violet-500/25"
                                 >
                                     <Zap className="w-5 h-5" />
                                     Integrar Agente
@@ -256,10 +270,12 @@ export const AIAgentDashboard: React.FC = () => {
                 ) : (
                     <div className="flex-1 flex items-center justify-center">
                         <div className="text-center">
-                            <Users className="w-16 h-16 text-slate-200 mx-auto mb-4" />
-                            <p className="text-slate-500 font-medium">Selecione um cliente</p>
-                            <p className="text-slate-400 text-sm mt-1">
-                                Escolha um cliente na lista à esquerda para ver as métricas do agente
+                            <div className="w-20 h-20 bg-slate-800/50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-700">
+                                <Search className="w-10 h-10 text-slate-600" />
+                            </div>
+                            <p className="text-slate-400 font-medium">Selecione um cliente</p>
+                            <p className="text-slate-600 text-sm mt-1">
+                                Escolha um cliente na lista à esquerda
                             </p>
                         </div>
                     </div>

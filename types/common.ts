@@ -15,7 +15,8 @@ export enum ViewState {
     SUPERADMIN = 'superadmin',
     UPDATE_PASSWORD = 'update_password',
     MARKETING = 'marketing',
-    AUTOMATION = 'automation'
+    AUTOMATION = 'automation',
+    AI_AGENTS = 'ai_agents'
 }
 
 /**

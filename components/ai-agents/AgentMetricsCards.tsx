@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import {
     TrendingUp, MessageSquare, Clock, DollarSign, CheckCircle,
     AlertTriangle, Users, Zap, ArrowUp, ArrowDown, Minus, MessagesSquare,
-    Activity
+    Activity, Calendar, ChevronDown, X
 } from 'lucide-react';
 import { AIAgentMetrics, AgentKPIs } from '../../types/ai-agents';
+
+type PeriodType = 'yesterday' | '7days' | '14days' | 'this_month' | 'last_month' | 'custom';
 
 interface AgentMetricsCardsProps {
     agentId: string;
@@ -22,45 +24,114 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
     const [kpis, setKpis] = useState<AgentKPIs | null>(null);
     const [previousKpis, setPreviousKpis] = useState<AgentKPIs | null>(null);
     const [loading, setLoading] = useState(true);
-    const [period, setPeriod] = useState<'today' | 'week' | 'month'>('week');
+    const [period, setPeriod] = useState<PeriodType>('7days');
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [customStartDate, setCustomStartDate] = useState<string>('');
+    const [customEndDate, setCustomEndDate] = useState<string>('');
+    const datePickerRef = useRef<HTMLDivElement>(null);
+
+    // Close date picker when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+                setShowDatePicker(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const getDateRange = (selectedPeriod: PeriodType): { start: Date; end: Date; prevStart: Date; prevEnd: Date } => {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        let start: Date;
+        let end: Date;
+        let prevStart: Date;
+        let prevEnd: Date;
+
+        switch (selectedPeriod) {
+            case 'yesterday':
+                start = new Date(today);
+                start.setDate(start.getDate() - 1);
+                end = new Date(today);
+                prevStart = new Date(start);
+                prevStart.setDate(prevStart.getDate() - 1);
+                prevEnd = new Date(start);
+                break;
+
+            case '7days':
+                start = new Date(today);
+                start.setDate(start.getDate() - 7);
+                end = new Date(today);
+                prevStart = new Date(start);
+                prevStart.setDate(prevStart.getDate() - 7);
+                prevEnd = new Date(start);
+                break;
+
+            case '14days':
+                start = new Date(today);
+                start.setDate(start.getDate() - 14);
+                end = new Date(today);
+                prevStart = new Date(start);
+                prevStart.setDate(prevStart.getDate() - 14);
+                prevEnd = new Date(start);
+                break;
+
+            case 'this_month':
+                start = new Date(now.getFullYear(), now.getMonth(), 1);
+                end = new Date(today);
+                prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                prevEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+                break;
+
+            case 'last_month':
+                start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                end = new Date(now.getFullYear(), now.getMonth(), 0);
+                prevStart = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+                prevEnd = new Date(now.getFullYear(), now.getMonth() - 1, 0);
+                break;
+
+            case 'custom':
+                if (customStartDate && customEndDate) {
+                    start = new Date(customStartDate);
+                    end = new Date(customEndDate);
+                    const diff = end.getTime() - start.getTime();
+                    prevEnd = new Date(start);
+                    prevStart = new Date(start.getTime() - diff);
+                } else {
+                    start = new Date(today);
+                    start.setDate(start.getDate() - 7);
+                    end = new Date(today);
+                    prevStart = new Date(start);
+                    prevStart.setDate(prevStart.getDate() - 7);
+                    prevEnd = new Date(start);
+                }
+                break;
+
+            default:
+                start = new Date(today);
+                start.setDate(start.getDate() - 7);
+                end = new Date(today);
+                prevStart = new Date(start);
+                prevStart.setDate(prevStart.getDate() - 7);
+                prevEnd = new Date(start);
+        }
+
+        return { start, end, prevStart, prevEnd };
+    };
 
     useEffect(() => {
         const fetchMetrics = async () => {
             setLoading(true);
 
-            const now = new Date();
-            let startDate: Date;
-            let previousStartDate: Date;
-            let previousEndDate: Date;
-
-            switch (period) {
-                case 'today':
-                    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                    previousStartDate = new Date(startDate);
-                    previousStartDate.setDate(previousStartDate.getDate() - 1);
-                    previousEndDate = new Date(startDate);
-                    break;
-                case 'week':
-                    startDate = new Date(now);
-                    startDate.setDate(startDate.getDate() - 7);
-                    previousStartDate = new Date(startDate);
-                    previousStartDate.setDate(previousStartDate.getDate() - 7);
-                    previousEndDate = new Date(startDate);
-                    break;
-                case 'month':
-                    startDate = new Date(now);
-                    startDate.setDate(startDate.getDate() - 30);
-                    previousStartDate = new Date(startDate);
-                    previousStartDate.setDate(previousStartDate.getDate() - 30);
-                    previousEndDate = new Date(startDate);
-                    break;
-            }
+            const { start, end, prevStart, prevEnd } = getDateRange(period);
 
             const { data: currentData, error } = await supabase
                 .from('ai_agent_metrics')
                 .select('*')
                 .eq('agent_id', agentId)
-                .gte('metric_date', startDate.toISOString().split('T')[0])
+                .gte('metric_date', start.toISOString().split('T')[0])
+                .lte('metric_date', end.toISOString().split('T')[0])
                 .is('metric_hour', null);
 
             if (error) {
@@ -73,8 +144,8 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
                 .from('ai_agent_metrics')
                 .select('*')
                 .eq('agent_id', agentId)
-                .gte('metric_date', previousStartDate.toISOString().split('T')[0])
-                .lt('metric_date', previousEndDate.toISOString().split('T')[0])
+                .gte('metric_date', prevStart.toISOString().split('T')[0])
+                .lte('metric_date', prevEnd.toISOString().split('T')[0])
                 .is('metric_hour', null);
 
             const calculateKPIs = (metrics: AIAgentMetrics[]): AgentKPIs => {
@@ -153,7 +224,7 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
         };
 
         fetchMetrics();
-    }, [agentId, period]);
+    }, [agentId, period, customStartDate, customEndDate]);
 
     const getTrend = (current: number, previous: number): 'up' | 'down' | 'neutral' => {
         if (previous === 0) return 'neutral';
@@ -196,6 +267,30 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
         if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
         if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
         return num.toFixed(0);
+    };
+
+    const periodOptions: { id: PeriodType; label: string }[] = [
+        { id: 'yesterday', label: 'Ontem' },
+        { id: '7days', label: '7 dias' },
+        { id: '14days', label: '14 dias' },
+        { id: 'this_month', label: 'Este mês' },
+        { id: 'last_month', label: 'Mês passado' },
+    ];
+
+    const getSelectedLabel = () => {
+        if (period === 'custom' && customStartDate && customEndDate) {
+            const start = new Date(customStartDate);
+            const end = new Date(customEndDate);
+            return `${start.toLocaleDateString('pt-BR')} - ${end.toLocaleDateString('pt-BR')}`;
+        }
+        return periodOptions.find(p => p.id === period)?.label || '7 dias';
+    };
+
+    const handleApplyCustomDate = () => {
+        if (customStartDate && customEndDate) {
+            setPeriod('custom');
+            setShowDatePicker(false);
+        }
     };
 
     if (loading) {
@@ -316,24 +411,85 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                     <h3 className="text-xl font-bold text-white">Visão Geral</h3>
                     <p className="text-slate-400 text-sm mt-1">Métricas de performance do agente</p>
                 </div>
-                <div className="flex gap-1 bg-slate-800/50 p-1 rounded-xl border border-slate-700/50">
-                    {(['today', 'week', 'month'] as const).map((p) => (
+
+                <div className="flex items-center gap-2">
+                    {/* Period Buttons */}
+                    <div className="flex gap-1 bg-slate-800/50 p-1 rounded-xl border border-slate-700/50">
+                        {periodOptions.map((p) => (
+                            <button
+                                key={p.id}
+                                onClick={() => setPeriod(p.id)}
+                                className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${period === p.id
+                                        ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/25'
+                                        : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                                    }`}
+                            >
+                                {p.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Custom Date Picker */}
+                    <div className="relative" ref={datePickerRef}>
                         <button
-                            key={p}
-                            onClick={() => setPeriod(p)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${period === p
-                                    ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/25'
-                                    : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                            onClick={() => setShowDatePicker(!showDatePicker)}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all border ${period === 'custom'
+                                    ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white border-transparent shadow-lg shadow-violet-500/25'
+                                    : 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:text-white hover:bg-slate-700/50'
                                 }`}
                         >
-                            {p === 'today' ? 'Hoje' : p === 'week' ? '7 dias' : '30 dias'}
+                            <Calendar className="w-4 h-4" />
+                            {period === 'custom' ? getSelectedLabel() : 'Personalizado'}
+                            <ChevronDown className={`w-3 h-3 transition-transform ${showDatePicker ? 'rotate-180' : ''}`} />
                         </button>
-                    ))}
+
+                        {showDatePicker && (
+                            <div className="absolute right-0 top-full mt-2 bg-slate-800 border border-slate-700 rounded-xl p-4 shadow-xl z-50 min-w-[280px]">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h4 className="text-sm font-bold text-white">Período personalizado</h4>
+                                    <button
+                                        onClick={() => setShowDatePicker(false)}
+                                        className="p-1 text-slate-400 hover:text-white transition-colors"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-xs text-slate-400 mb-1">Data inicial</label>
+                                        <input
+                                            type="date"
+                                            value={customStartDate}
+                                            onChange={(e) => setCustomStartDate(e.target.value)}
+                                            className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs text-slate-400 mb-1">Data final</label>
+                                        <input
+                                            type="date"
+                                            value={customEndDate}
+                                            onChange={(e) => setCustomEndDate(e.target.value)}
+                                            className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handleApplyCustomDate}
+                                        disabled={!customStartDate || !customEndDate}
+                                        className="w-full py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg text-sm font-bold hover:from-violet-500 hover:to-purple-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Aplicar
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 

@@ -133,6 +133,8 @@ Deno.serve(async (req: Request) => {
 
         // Extract funnel data
         const funnel = payload.funnel ?? {};
+        const system_metrics = payload.system_metrics ?? {};
+        const evaluator_metrics = payload.evaluator_metrics ?? {};
 
         // Calculate derived metrics
         const resolved = Math.max(0, conversations - escalated - abandoned);
@@ -173,6 +175,10 @@ Deno.serve(async (req: Request) => {
             funnel_scheduled: funnel.scheduled ?? 0,
             funnel_disqualified: funnel.disqualified ?? 0,
             funnel_no_response: funnel.no_response ?? 0,
+            funnel_lost: funnel.lost ?? 0,
+            // Deep Metrics
+            system_metrics: system_metrics,
+            evaluator_metrics: evaluator_metrics
         };
 
         // Upsert metrics

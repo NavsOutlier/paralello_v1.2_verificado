@@ -137,6 +137,7 @@ export const AIAgentDashboard: React.FC = () => {
 
     const tabs = [
         { id: 'metrics' as const, label: 'Métricas', icon: BarChart3 },
+        { id: 'metrics-deep' as const, label: 'Deep Dive', icon: Activity },
         { id: 'kanban' as const, label: 'Atendimentos', icon: GripVertical },
         { id: 'prompts' as const, label: 'Prompts', icon: FileText },
         { id: 'config' as const, label: 'Configuração', icon: Settings },
@@ -350,6 +351,9 @@ export const AIAgentDashboard: React.FC = () => {
                                 )}
                                 {activeTab === 'kanban' && (
                                     <AgentKanbanBoard agentId={agent.id} />
+                                )}
+                                {activeTab === 'metrics-deep' && (
+                                    <AgentDeepMetrics agentId={agent.id} />
                                 )}
                                 {activeTab === 'prompts' && (
                                     <AgentPromptEditor agentId={agent.id} />

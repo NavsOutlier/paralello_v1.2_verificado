@@ -71,6 +71,29 @@ export interface AIAgentMetrics {
     funnel_disqualified: number;
     funnel_no_response: number;
 
+    // Deep Metrics
+    system_metrics?: {
+        tokens_input_cache?: number;
+        tokens_input_total?: number;
+        tokens_output?: number;
+        msg_count_user?: number;
+        msg_count_ai?: number;
+        msg_count_system?: number;
+        msg_count_tool?: number;
+        duration_total_sec?: number;
+        sla_first_response_sec?: number;
+        sla_avg_response_sec?: number;
+    };
+    evaluator_metrics?: {
+        sentiment_positive?: number;
+        sentiment_neutral?: number;
+        sentiment_negative?: number;
+        resolution_resolved?: number;
+        resolution_unresolved?: number;
+        categories?: Record<string, number>;
+        word_cloud?: Record<string, number>;
+    };
+
     created_at: string;
 }
 

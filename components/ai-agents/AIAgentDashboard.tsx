@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
     Bot, BarChart3, FileText, Settings, Search,
-    Zap, Plus, ChevronRight, Cpu, Activity, Sparkles, GripVertical
+    Zap, Plus, ChevronRight, Cpu, Activity, Sparkles, GripVertical, Star
 } from 'lucide-react';
 import { AIAgent } from '../../types/ai-agents';
 import { AgentMetricsCards } from './AgentMetricsCards';

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import {
-    MoreHorizontal, Clock, AlertTriangle, CheckCircle,
-    XCircle, Calendar, UserCheck, MessageSquare, GripVertical,
-    Filter, Search, RefreshCw
+    Clock, AlertTriangle, CheckCircle,
+    XCircle, Calendar, MessageSquare, Search, RefreshCw
 } from 'lucide-react';
 import { AIConversation, ConversationStatus } from '../../types/ai-agents';
 
@@ -48,7 +47,6 @@ export const AgentKanbanBoard: React.FC<AgentKanbanBoardProps> = ({ agentId }) =
     useEffect(() => {
         fetchConversations();
 
-        // Subscribe to real-time updates
         const subscription = supabase
             .channel(`kanban-${agentId}`)
             .on(
@@ -82,7 +80,7 @@ export const AgentKanbanBoard: React.FC<AgentKanbanBoardProps> = ({ agentId }) =
     );
 
     return (
-        <div className="h-full flex flex-col">
+        <div className="h-full flex flex-col pt-2">
             {/* Toolbar */}
             <div className="flex items-center justify-between mb-4">
                 <div className="relative w-64">
@@ -109,10 +107,10 @@ export const AgentKanbanBoard: React.FC<AgentKanbanBoardProps> = ({ agentId }) =
                     {COLUMNS.map(col => (
                         <div
                             key={col.id}
-                            className={`w-72 flex-shrink-0 flex flex-col rounded-xl bg-slate-800/20 border border-slate-700/30`}
+                            className="w-72 flex-shrink-0 flex flex-col rounded-xl bg-slate-800/20 border border-slate-700/30 overflow-hidden"
                         >
                             {/* Column Header */}
-                            <div className={`p-3 border-b border-slate-700/30 flex items-center justify-between ${col.bg} rounded-t-xl`}>
+                            <div className={`p-3 border-b border-slate-700/30 flex items-center justify-between ${col.bg}`}>
                                 <div className="flex items-center gap-2">
                                     <span className={`text-sm font-bold ${col.color}`}>{col.label}</span>
                                     <span className="text-xs bg-slate-900/50 px-2 py-0.5 rounded-full text-slate-400">
@@ -128,46 +126,34 @@ export const AgentKanbanBoard: React.FC<AgentKanbanBoardProps> = ({ agentId }) =
                                     .map(card => (
                                         <div
                                             key={card.id}
-                                            className={`
-                                                group bg-slate-800 border-l-2 p-3 rounded-lg shadow-sm border-slate-600
-                                            `}
+                                            className="group bg-slate-800 border-l-2 p-3 rounded-lg shadow-sm border-slate-600 hover:border-violet-500 transition-all cursor-default"
                                         >
                                             <div className="flex items-start justify-between mb-2">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white">
+                                                    <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white group-hover:bg-violet-600 transition-colors">
                                                         {card.contact_name?.[0] || card.contact_identifier[0]}
                                                     </div>
                                                     <div>
                                                         <p className="text-sm font-medium text-white line-clamp-1">
                                                             {card.contact_name || card.contact_identifier}
                                                         </p>
-                                                        <p className="text-[10px] text-slate-400">
+                                                        <p className="text-[10px] text-slate-500">
                                                             {new Date(card.last_interaction_at).toLocaleDateString()}
                                                         </p>
                                                     </div>
                                                 </div>
-
-                                                <button
-                                                    onClick={() => toggleOverride(card.id, card.is_manual_override)}
-                                                    className={`p-1.5 rounded-md transition-colors ${card.is_manual_override
-                                                        ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20'
-                                                        : 'text-slate-500 hover:bg-slate-700 hover:text-white'
-                                                        }`}
-                                                    title={card.is_manual_override ? "Controle Manual (IA Pausada)" : "Automático (IA Ativa)"}
-                                                >
-                                                    {card.is_manual_override ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
-                                                </button>
                                             </div>
 
                                             {card.summary && (
-                                                <p className="text-xs text-slate-400 mb-3 line-clamp-3 bg-slate-900/50 p-2 rounded border border-slate-700/50">
+                                                <p className="text-xs text-slate-400 mb-3 line-clamp-3 bg-slate-900/30 p-2 rounded border border-slate-700/30">
                                                     {card.summary}
                                                 </p>
                                             )}
 
-                                            <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-700/50">
-                                                <div className="flex items-center gap-2">
-                                                    <MessageSquare className="w-3 h-3 text-slate-500" />
+                                            <div className="flex items-center justify-end text-[10px] text-slate-600 font-bold uppercase tracking-widest">
+                                                <div className="flex items-center gap-1">
+                                                    <MessageSquare className="w-3 h-3" />
+                                                    LOG
                                                 </div>
                                             </div>
                                         </div>

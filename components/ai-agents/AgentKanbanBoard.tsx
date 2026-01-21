@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import {
     MoreHorizontal, Clock, AlertTriangle, CheckCircle,
     XCircle, Calendar, UserCheck, MessageSquare, GripVertical,
-    Lock, Unlock, Filter, Search, RefreshCw
+    Filter, Search, RefreshCw
 } from 'lucide-react';
 import { AIConversation, ConversationStatus } from '../../types/ai-agents';
 
@@ -26,7 +26,6 @@ export const AgentKanbanBoard: React.FC<AgentKanbanBoardProps> = ({ agentId }) =
     const [conversations, setConversations] = useState<AIConversation[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
     const fetchConversations = async () => {
         setLoading(true);
@@ -77,61 +76,6 @@ export const AgentKanbanBoard: React.FC<AgentKanbanBoardProps> = ({ agentId }) =
         };
     }, [agentId]);
 
-    const handleDragStart = (e: React.DragEvent, id: string) => {
-        setDraggedItem(id);
-        e.dataTransfer.effectAllowed = 'move';
-    };
-
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-    };
-
-    const handleDrop = async (e: React.DragEvent, status: ConversationStatus) => {
-        e.preventDefault();
-        if (!draggedItem) return;
-
-        const item = conversations.find(c => c.id === draggedItem);
-        if (!item || item.status === status) return;
-
-        // Optimistic update
-        setConversations(prev => prev.map(c =>
-            c.id === draggedItem ? { ...c, status } : c
-        ));
-
-        try {
-            const { error } = await supabase
-                .from('ai_conversations')
-                .update({ status, is_manual_override: true }) // Moving manually triggers override
-                .eq('id', draggedItem);
-
-            if (error) throw error;
-        } catch (error) {
-            console.error('Error updating status:', error);
-            // Revert on error
-            fetchConversations();
-        } finally {
-            setDraggedItem(null);
-        }
-    };
-
-    const toggleOverride = async (id: string, current: boolean) => {
-        // Optimistic update
-        setConversations(prev => prev.map(c =>
-            c.id === id ? { ...c, is_manual_override: !current } : c
-        ));
-
-        try {
-            await supabase
-                .from('ai_conversations')
-                .update({ is_manual_override: !current })
-                .eq('id', id);
-        } catch (error) {
-            console.error('Error toggling override:', error);
-            fetchConversations();
-        }
-    };
-
     const filteredConversations = conversations.filter(c =>
         c.contact_identifier.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.contact_name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -165,9 +109,7 @@ export const AgentKanbanBoard: React.FC<AgentKanbanBoardProps> = ({ agentId }) =
                     {COLUMNS.map(col => (
                         <div
                             key={col.id}
-                            className={`w-72 flex-shrink-0 flex flex-col rounded-xl bg-slate-800/20 border border-slate-700/30 ${draggedItem ? 'border-dashed border-slate-600' : ''}`}
-                            onDragOver={handleDragOver}
-                            onDrop={(e) => handleDrop(e, col.id)}
+                            className={`w-72 flex-shrink-0 flex flex-col rounded-xl bg-slate-800/20 border border-slate-700/30`}
                         >
                             {/* Column Header */}
                             <div className={`p-3 border-b border-slate-700/30 flex items-center justify-between ${col.bg} rounded-t-xl`}>
@@ -186,11 +128,8 @@ export const AgentKanbanBoard: React.FC<AgentKanbanBoardProps> = ({ agentId }) =
                                     .map(card => (
                                         <div
                                             key={card.id}
-                                            draggable
-                                            onDragStart={(e) => handleDragStart(e, card.id)}
                                             className={`
-                                                group bg-slate-800 border-l-2 p-3 rounded-lg shadow-sm cursor-move transition-all hover:shadow-md hover:bg-slate-750
-                                                ${card.is_manual_override ? 'border-rose-500 bg-rose-500/5' : 'border-slate-600'}
+                                                group bg-slate-800 border-l-2 p-3 rounded-lg shadow-sm border-slate-600
                                             `}
                                         >
                                             <div className="flex items-start justify-between mb-2">
@@ -230,11 +169,6 @@ export const AgentKanbanBoard: React.FC<AgentKanbanBoardProps> = ({ agentId }) =
                                                 <div className="flex items-center gap-2">
                                                     <MessageSquare className="w-3 h-3 text-slate-500" />
                                                 </div>
-                                                {card.is_manual_override && (
-                                                    <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded">
-                                                        MANUAL
-                                                    </span>
-                                                )}
                                             </div>
                                         </div>
                                     ))}

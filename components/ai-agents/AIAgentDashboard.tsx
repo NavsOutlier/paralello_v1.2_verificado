@@ -10,8 +10,11 @@ import { AgentMetricsCards } from './AgentMetricsCards';
 import { AgentPromptEditor } from './AgentPromptEditor';
 import { AgentConfig } from './AgentConfig';
 import { AgentKanbanBoard } from './AgentKanbanBoard';
+import { AgentDeepMetrics } from './AgentDeepMetrics';
+import { AgentConversationAnalytic } from './AgentConversationAnalytic';
+import { AgentConversationAudit } from './AgentConversationAudit';
 
-type DashboardTab = 'metrics' | 'prompts' | 'config' | 'kanban';
+type DashboardTab = 'metrics' | 'prompts' | 'config' | 'kanban' | 'metrics-deep' | 'audit';
 
 interface Client {
     id: string;
@@ -139,6 +142,7 @@ export const AIAgentDashboard: React.FC = () => {
         { id: 'metrics' as const, label: 'Métricas', icon: BarChart3 },
         { id: 'metrics-deep' as const, label: 'Deep Dive', icon: Activity },
         { id: 'kanban' as const, label: 'Atendimentos', icon: GripVertical },
+        { id: 'audit' as const, label: 'Auditoria', icon: Star },
         { id: 'prompts' as const, label: 'Prompts', icon: FileText },
         { id: 'config' as const, label: 'Configuração', icon: Settings },
     ];
@@ -353,7 +357,13 @@ export const AIAgentDashboard: React.FC = () => {
                                     <AgentKanbanBoard agentId={agent.id} />
                                 )}
                                 {activeTab === 'metrics-deep' && (
-                                    <AgentDeepMetrics agentId={agent.id} />
+                                    <div className="space-y-8">
+                                        <AgentDeepMetrics agentId={agent.id} />
+                                        <AgentConversationAnalytic agentId={agent.id} />
+                                    </div>
+                                )}
+                                {activeTab === 'audit' && (
+                                    <AgentConversationAudit agentId={agent.id} />
                                 )}
                                 {activeTab === 'prompts' && (
                                     <AgentPromptEditor agentId={agent.id} />

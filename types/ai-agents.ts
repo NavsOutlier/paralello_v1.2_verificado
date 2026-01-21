@@ -246,8 +246,25 @@ export interface AIConversation {
     contact_phone?: string;
     status: ConversationStatus;
     summary?: string;
+    sentiment?: 'positive' | 'neutral' | 'negative';
+    sentiment_score?: number;
+    session_metrics?: Record<string, any>;
+    resolution_reason?: string;
     last_interaction_at: string;
     is_manual_override: boolean;
     created_at: string;
     updated_at: string;
+    // Relations
+    messages?: AIConversationMessage[];
 }
+
+export interface AIConversationMessage {
+    id: string;
+    conversation_id: string;
+    role: 'user' | 'assistant' | 'system' | 'tool';
+    content: string;
+    tokens_used: number;
+    metadata?: Record<string, any>;
+    created_at: string;
+}
+

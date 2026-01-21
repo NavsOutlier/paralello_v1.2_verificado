@@ -1,34 +1,39 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import {
     Clock, MessageSquare, Zap, ThumbsUp, ThumbsDown,
-    CheckCircle, XCircle, Hash, Server, Activity, Calendar
+    CheckCircle, XCircle, Hash, Server, Activity, Calendar,
+    TrendingUp, BarChart, PieChart as PieIcon, Info
 } from 'lucide-react';
-import { AIAgentMetrics } from '../../types/ai-agents';
+import {
+    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    BarChart as ReBarChart, Bar, Legend, AreaChart, Area
+} from 'recharts';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface AgentDeepMetricsProps {
     agentId: string;
 }
 
 export const AgentDeepMetrics: React.FC<AgentDeepMetricsProps> = ({ agentId }) => {
-    const [metrics, setMetrics] = useState<any>({ system: {}, evaluator: {} });
+    const [rawRows, setRawRows] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [period, setPeriod] = useState<number>(7); // Default 7 days
+    const [period, setPeriod] = useState<number>(7);
 
     useEffect(() => {
         const fetchMetrics = async () => {
             setLoading(true);
-            const endDate = new Date();
             const startDate = new Date();
             startDate.setDate(startDate.getDate() - period);
 
             const { data, error } = await supabase
                 .from('ai_agent_metrics')
-                .select('system_metrics, evaluator_metrics')
+                .select('metric_date, system_metrics, evaluator_metrics')
                 .eq('agent_id', agentId)
                 .gte('metric_date', startDate.toISOString().split('T')[0])
-                .lte('metric_date', endDate.toISOString().split('T')[0]);
+                .order('metric_date', { ascending: true });
 
             if (error) {
                 console.error('Error fetching deep metrics:', error);
@@ -36,282 +41,312 @@ export const AgentDeepMetrics: React.FC<AgentDeepMetricsProps> = ({ agentId }) =
                 return;
             }
 
-            // Aggregation Logic
-            const systemAgg: any = {
-                tokens_input_cache: 0,
-                tokens_input_total: 0,
-                tokens_output: 0,
-                msg_count_user: 0,
-                msg_count_ai: 0,
-                msg_count_system: 0,
-                msg_count_tool: 0,
-                sla_first_response_sec_sum: 0,
-                sla_first_response_count: 0,
-                sla_avg_response_sec_sum: 0,
-                sla_avg_response_count: 0,
-            };
-
-            const evalAgg: any = {
-                sentiment_positive: 0,
-                sentiment_neutral: 0,
-                sentiment_negative: 0,
-                resolution_resolved: 0,
-                resolution_unresolved: 0,
-                categories: {}
-            };
-
-            data?.forEach((row: any) => {
-                const s = row.system_metrics || {};
-                const e = row.evaluator_metrics || {};
-
-                // System Sums
-                systemAgg.tokens_input_cache += s.tokens_input_cache || 0;
-                systemAgg.tokens_input_total += s.tokens_input_total || 0;
-                systemAgg.tokens_output += s.tokens_output || 0;
-                systemAgg.msg_count_user += s.msg_count_user || 0;
-                systemAgg.msg_count_ai += s.msg_count_ai || 0;
-                systemAgg.msg_count_system += s.msg_count_system || 0;
-                systemAgg.msg_count_tool += s.msg_count_tool || 0;
-
-                // SLA Averages (Weighted by occurrence not possible without count, assume pure avg or weighted by msgs if available, using simple sum/count for now)
-                // Better approach: if SLA is avg per day, we need daily volume to weight it.
-                // For simplicity MVP: we'll average the daily averages (not perfect but OK)
-                if (s.sla_first_response_sec) {
-                    systemAgg.sla_first_response_sec_sum += s.sla_first_response_sec;
-                    systemAgg.sla_first_response_count++;
-                }
-                if (s.sla_avg_response_sec) {
-                    systemAgg.sla_avg_response_sec_sum += s.sla_avg_response_sec;
-                    systemAgg.sla_avg_response_count++;
-                }
-
-                // Evaluator Sums
-                evalAgg.sentiment_positive += e.sentiment_positive || 0;
-                evalAgg.sentiment_neutral += e.sentiment_neutral || 0;
-                evalAgg.sentiment_negative += e.sentiment_negative || 0;
-                evalAgg.resolution_resolved += e.resolution_resolved || 0;
-                evalAgg.resolution_unresolved += e.resolution_unresolved || 0;
-
-                // Categories
-                if (e.categories) {
-                    Object.entries(e.categories).forEach(([cat, count]) => {
-                        evalAgg.categories[cat] = (evalAgg.categories[cat] || 0) + (count as number);
-                    });
-                }
-            });
-
-            // Final calculations
-            const finalSystem = {
-                ...systemAgg,
-                sla_first_response_sec: systemAgg.sla_first_response_count ? (systemAgg.sla_first_response_sec_sum / systemAgg.sla_first_response_count).toFixed(1) : 0,
-                sla_avg_response_sec: systemAgg.sla_avg_response_count ? (systemAgg.sla_avg_response_sec_sum / systemAgg.sla_avg_response_count).toFixed(1) : 0,
-            };
-
-            setMetrics({ system: finalSystem, evaluator: evalAgg });
+            setRawRows(data || []);
             setLoading(false);
         };
 
         fetchMetrics();
     }, [agentId, period]);
 
-    const sys = metrics.system;
-    const evalMetrics = metrics.evaluator;
+    // Derived Analytics Framework (Lesson 2)
+    const analytics = useMemo(() => {
+        if (!rawRows.length) return null;
 
-    if (loading) return <div className="text-center text-slate-500 py-10">Carregando métricas avançadas...</div>;
+        const timeSeriesData: any[] = [];
+        const distribution: any = {
+            tokens: { values: [], min: 0, max: 0, median: 0, avg: 0 },
+            sla: { values: [], min: 0, max: 0, median: 0, avg: 0 }
+        };
+
+        const totals: any = {
+            tokens_in: 0,
+            tokens_out: 0,
+            tokens_cache: 0,
+            messages: { user: 0, ai: 0, system: 0, tool: 0 },
+            sentiment: { positive: 0, neutral: 0, negative: 0 },
+            resolution: { resolved: 0, unresolved: 0 }
+        };
+
+        rawRows.forEach(row => {
+            const s = row.system_metrics || {};
+            const e = row.evaluator_metrics || {};
+            const dateStr = format(parseISO(row.metric_date), 'dd/MM', { locale: ptBR });
+
+            // Totals
+            totals.tokens_in += s.tokens_input_total || 0;
+            totals.tokens_out += s.tokens_output || 0;
+            totals.tokens_cache += s.tokens_input_cache || 0;
+            totals.messages.user += s.msg_count_user || 0;
+            totals.messages.ai += s.msg_count_ai || 0;
+            totals.messages.system += s.msg_count_system || 0;
+            totals.messages.tool += s.msg_count_tool || 0;
+            totals.sentiment.positive += e.sentiment_positive || 0;
+            totals.sentiment.neutral += e.sentiment_neutral || 0;
+            totals.sentiment.negative += e.sentiment_negative || 0;
+            totals.resolution.resolved += e.resolution_resolved || 0;
+            totals.resolution.unresolved += e.resolution_unresolved || 0;
+
+            // Distribution samples
+            if (s.tokens_input_total) distribution.tokens.values.push(s.tokens_input_total);
+            if (s.sla_avg_response_sec) distribution.sla.values.push(s.sla_avg_response_sec);
+
+            // Time series grouping
+            const totalSent = (e.sentiment_positive || 0) + (e.sentiment_neutral || 0) + (e.sentiment_negative || 0);
+            const totalRes = (e.resolution_resolved || 0) + (e.resolution_unresolved || 0);
+
+            timeSeriesData.push({
+                date: dateStr,
+                tokens: s.tokens_input_total || 0,
+                sla: s.sla_avg_response_sec || 0,
+                sent_pos: totalSent ? Math.round((e.sentiment_positive / totalSent) * 100) : 0,
+                sent_neu: totalSent ? Math.round((e.sentiment_neutral / totalSent) * 100) : 0,
+                sent_neg: totalSent ? Math.round((e.sentiment_negative / totalSent) * 100) : 0,
+                res_ok: totalRes ? Math.round((e.resolution_resolved / totalRes) * 100) : 0,
+                res_fail: totalRes ? Math.round((e.resolution_unresolved / totalRes) * 100) : 0,
+            });
+        });
+
+        // Calc Distribution Stats
+        const calcStats = (obj: any) => {
+            if (!obj.values.length) return;
+            const vals = [...obj.values].sort((a, b) => a - b);
+            obj.min = vals[0];
+            obj.max = vals[vals.length - 1];
+            obj.avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+            obj.median = vals[Math.floor(vals.length / 2)];
+        };
+        calcStats(distribution.tokens);
+        calcStats(distribution.sla);
+
+        return { timeSeriesData, distribution, totals };
+    }, [rawRows]);
+
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="w-10 h-10 border-4 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+            <p className="text-slate-400 animate-pulse">Processando analytics avançado...</p>
+        </div>
+    );
+
+    if (!analytics) return (
+        <div className="text-center py-20 bg-slate-900/50 rounded-3xl border border-slate-800">
+            <Info className="w-12 h-12 text-slate-700 mx-auto mb-4" />
+            <p className="text-slate-500">Sem dados para o período selecionado.</p>
+        </div>
+    );
+
+    const { timeSeriesData, distribution, totals } = analytics;
 
     return (
-        <div className="space-y-6">
-            {/* Filter */}
-            <div className="flex justify-end">
-                <div className="flex bg-slate-800/50 p-1 rounded-xl border border-slate-700/50">
+        <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Header & Filter */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                        <TrendingUp className="w-6 h-6 text-violet-400" />
+                        Framework Analytics Pro
+                    </h3>
+                    <p className="text-slate-400 text-sm">Visão de tendências e distribuição de performance</p>
+                </div>
+                <div className="flex bg-slate-800/80 p-1.5 rounded-2xl border border-slate-700 shadow-xl">
                     {[7, 14, 30].map((days) => (
                         <button
                             key={days}
                             onClick={() => setPeriod(days)}
-                            className={`px - 3 py - 1.5 rounded - lg text - xs font - medium transition - all ${period === days
-                                    ? 'bg-violet-600 text-white'
-                                    : 'text-slate-400 hover:text-white'
-                                } `}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${period === days
+                                ? 'bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/20'
+                                : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700/50'
+                                }`}
                         >
-                            {days} dias
+                            {days}D
                         </button>
                     ))}
                 </div>
             </div>
 
-            {/* System Metrics Section */}
-            <div>
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <Server className="w-5 h-5 text-violet-400" />
-                    Métricas de Sistema (Infraestrutura)
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Token Usage */}
-                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                        <div className="flex items-center gap-2 text-slate-400 mb-2">
-                            <Zap className="w-4 h-4" />
-                            <span className="text-sm">Tokens (Input/Output)</span>
+            {/* Distribution Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-slate-800/40 p-5 rounded-3xl border border-slate-700/50 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
+                        <Zap className="w-12 h-12 text-violet-400" />
+                    </div>
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Consumo Tokens (Média)</p>
+                    <p className="text-3xl font-black text-white mb-4">{Math.round(distribution.tokens.avg).toLocaleString()}</p>
+                    <div className="grid grid-cols-3 gap-2 py-3 border-t border-slate-700/50">
+                        <div>
+                            <p className="text-[10px] text-slate-500 uppercase">Mín</p>
+                            <p className="text-xs text-slate-300 font-mono">{distribution.tokens.min.toLocaleString()}</p>
                         </div>
-                        <div className="space-y-1">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-500">Total Input:</span>
-                                <span className="text-white font-medium">{sys.tokens_input_total?.toLocaleString() || '-'}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-emerald-500">Cacheado:</span>
-                                <span className="text-emerald-400 font-medium">{sys.tokens_input_cache?.toLocaleString() || '-'}</span>
-                            </div>
-                            <div className="flex justify-between text-sm border-t border-slate-700 mt-1 pt-1">
-                                <span className="text-slate-500">Output:</span>
-                                <span className="text-white font-medium">{sys.tokens_output?.toLocaleString() || '-'}</span>
-                            </div>
+                        <div>
+                            <p className="text-[10px] text-slate-500 uppercase">Mediana</p>
+                            <p className="text-xs text-white font-mono font-bold">{distribution.tokens.median.toLocaleString()}</p>
+                        </div>
+                        <div>
+                            <p className="text-[10px] text-slate-500 uppercase">Máx</p>
+                            <p className="text-xs text-slate-300 font-mono">{distribution.tokens.max.toLocaleString()}</p>
                         </div>
                     </div>
+                </div>
 
-                    {/* Check Cache Hit Rate */}
-                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                        <div className="flex items-center gap-2 text-slate-400 mb-2">
-                            <Activity className="w-4 h-4" />
-                            <span className="text-sm">Eficiência de Cache</span>
+                <div className="bg-slate-800/40 p-5 rounded-3xl border border-slate-700/50 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
+                        <Clock className="w-12 h-12 text-emerald-400" />
+                    </div>
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">SLA Médio Geral</p>
+                    <p className="text-3xl font-black text-white mb-4">{distribution.sla.avg.toFixed(1)}s</p>
+                    <div className="grid grid-cols-3 gap-2 py-3 border-t border-slate-700/50">
+                        <div>
+                            <p className="text-[10px] text-slate-500 uppercase">Mín</p>
+                            <p className="text-xs text-slate-300 font-mono">{distribution.sla.min.toFixed(1)}s</p>
                         </div>
-                        <div className="flex items-end gap-2 mt-2">
-                            <span className="text-3xl font-bold text-white">
-                                {sys.tokens_input_total ? Math.round((sys.tokens_input_cache || 0) / sys.tokens_input_total * 100) : 0}%
-                            </span>
-                            <span className="text-slate-500 text-sm mb-1">dos inputs cacheados</span>
+                        <div>
+                            <p className="text-[10px] text-slate-500 uppercase">Mediana</p>
+                            <p className="text-xs text-white font-mono font-bold">{distribution.sla.median.toFixed(1)}s</p>
+                        </div>
+                        <div>
+                            <p className="text-[10px] text-slate-500 uppercase">Máx</p>
+                            <p className="text-xs text-slate-300 font-mono">{distribution.sla.max.toFixed(1)}s</p>
                         </div>
                     </div>
+                </div>
 
-                    {/* Messages Breakdown */}
-                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                        <div className="flex items-center gap-2 text-slate-400 mb-2">
-                            <MessageSquare className="w-4 h-4" />
-                            <span className="text-sm">Volumetria de Msgs</span>
+                <div className="bg-slate-800/40 p-5 rounded-3xl border border-slate-700/50">
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Cache Hit Rate</p>
+                    <div className="flex items-center gap-4">
+                        <div className="text-3xl font-black text-emerald-400">
+                            {totals.tokens_in ? Math.round((totals.tokens_cache / totals.tokens_in) * 100) : 0}%
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div className="bg-slate-900/50 p-2 rounded">
-                                <p className="text-slate-500 text-xs">Usuário</p>
-                                <p className="text-white font-bold">{sys.msg_count_user || 0}</p>
-                            </div>
-                            <div className="bg-slate-900/50 p-2 rounded">
-                                <p className="text-slate-500 text-xs">IA</p>
-                                <p className="text-violet-400 font-bold">{sys.msg_count_ai || 0}</p>
-                            </div>
-                            <div className="bg-slate-900/50 p-2 rounded">
-                                <p className="text-slate-500 text-xs">Sistema</p>
-                                <p className="text-blue-400 font-bold">{sys.msg_count_system || 0}</p>
-                            </div>
-                            <div className="bg-slate-900/50 p-2 rounded">
-                                <p className="text-slate-500 text-xs">Ferramentas</p>
-                                <p className="text-amber-400 font-bold">{sys.msg_count_tool || 0}</p>
-                            </div>
+                        <div className="flex-1 h-3 bg-slate-700 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400"
+                                style={{ width: `${totals.tokens_in ? (totals.tokens_cache / totals.tokens_in) * 100 : 0}%` }}
+                            />
                         </div>
                     </div>
+                    <p className="text-[10px] text-slate-500 mt-2 uppercase">Economia direta em processamento</p>
+                </div>
 
-                    {/* SLAs */}
-                    <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
-                        <div className="flex items-center gap-2 text-slate-400 mb-2">
-                            <Clock className="w-4 h-4" />
-                            <span className="text-sm">SLA de Resposta</span>
+                <div className="bg-slate-800/40 p-5 rounded-3xl border border-slate-700/50">
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Resolução IA</p>
+                    <div className="flex items-center gap-4">
+                        <div className="text-3xl font-black text-blue-400">
+                            {(totals.resolution.resolved + totals.resolution.unresolved) > 0
+                                ? Math.round((totals.resolution.resolved / (totals.resolution.resolved + totals.resolution.unresolved)) * 100)
+                                : 0}%
                         </div>
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-slate-500">1ª Resposta:</span>
-                                <span className={`font - bold px - 2 py - 0.5 rounded ${(sys.sla_first_response_sec || 0) < 5 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
-                                    } `}>
-                                    {sys.sla_first_response_sec || '-'}s
-                                </span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-slate-500">Média Geral:</span>
-                                <span className="text-white font-medium">{sys.sla_avg_response_sec || '-'}s</span>
-                            </div>
+                        <div className="flex-1 h-3 bg-slate-700 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-gradient-to-r from-blue-600 to-cyan-400"
+                                style={{ width: `${(totals.resolution.resolved + totals.resolution.unresolved) > 0 ? (totals.resolution.resolved / (totals.resolution.resolved + totals.resolution.unresolved)) * 100 : 0}%` }}
+                            />
                         </div>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-2 uppercase">Conversas resolvidas sem escalar</p>
+                </div>
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* SLA Trend */}
+                <div className="bg-slate-800/40 p-6 rounded-3xl border border-slate-700/50 backdrop-blur-sm">
+                    <div className="flex justify-between items-center mb-6">
+                        <h4 className="font-bold text-white flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-emerald-400" />
+                            Tendência de SLA (Resposta)
+                        </h4>
+                    </div>
+                    <div className="h-[250px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={timeSeriesData}>
+                                <defs>
+                                    <linearGradient id="colorSla" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} unit="s" />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', fontSize: '12px' }}
+                                    itemStyle={{ color: '#fff' }}
+                                />
+                                <Area type="monotone" dataKey="sla" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorSla)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Sentiment Distribution Over Time (100% Stacked) */}
+                <div className="bg-slate-800/40 p-6 rounded-3xl border border-slate-700/50 backdrop-blur-sm">
+                    <div className="flex justify-between items-center mb-6">
+                        <h4 className="font-bold text-white flex items-center gap-2">
+                            <PieIcon className="w-4 h-4 text-violet-400" />
+                            Mix de Sentimento (Tendência)
+                        </h4>
+                    </div>
+                    <div className="h-[250px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <ReBarChart data={timeSeriesData} stackOffset="expand">
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                                <YAxis hide />
+                                <Tooltip
+                                    formatter={(value: any) => `${value}%`}
+                                    contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', fontSize: '12px' }}
+                                />
+                                <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
+                                <Bar dataKey="sent_pos" name="Positivo" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
+                                <Bar dataKey="sent_neu" name="Neutro" stackId="a" fill="#3b82f6" />
+                                <Bar dataKey="sent_neg" name="Negativo" stackId="a" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                            </ReBarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Tokens vs Messages Comparison */}
+                <div className="bg-slate-800/40 p-6 rounded-3xl border border-slate-700/50 lg:col-span-2">
+                    <div className="flex justify-between items-center mb-6">
+                        <h4 className="font-bold text-white flex items-center gap-2">
+                            <BarChart className="w-4 h-4 text-blue-400" />
+                            Relação Tokens & Volume de Conversas
+                        </h4>
+                    </div>
+                    <div className="h-[300px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={timeSeriesData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                                <YAxis yAxisId="left" stroke="#3b82f6" fontSize={10} tickLine={false} axisLine={false} />
+                                <YAxis yAxisId="right" orientation="right" stroke="#8b5cf6" fontSize={10} tickLine={false} axisLine={false} />
+                                <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px' }} />
+                                <Legend />
+                                <Line yAxisId="left" type="monotone" dataKey="tokens" name="Tokens Input" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                                <Line yAxisId="right" type="monotone" dataKey="res_ok" name="% Resolução" stroke="#8b5cf6" strokeWidth={2} strokeDasharray="5 5" />
+                            </LineChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
             </div>
 
-            {/* Evaluator Metrics Section */}
-            <div>
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-emerald-400" />
-                    Agente Avaliador (Qualidade)
-                </h3>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Sentiment Analysis */}
-                    <div className="bg-slate-800/50 p-5 rounded-xl border border-slate-700/50">
-                        <h4 className="text-sm font-medium text-slate-400 mb-4">Sentimento do Usuário</h4>
-                        <div className="space-y-3">
-                            {['positive', 'neutral', 'negative'].map((sentiment) => {
-                                const key = `sentiment_${sentiment} `;
-                                const val = evalMetrics[key] || 0;
-                                const total = (evalMetrics.sentiment_positive || 0) + (evalMetrics.sentiment_neutral || 0) + (evalMetrics.sentiment_negative || 0);
-                                const percentage = total > 0 ? (val / total) * 100 : 0;
-
-                                let color = 'bg-slate-500';
-                                if (sentiment === 'positive') color = 'bg-emerald-500';
-                                if (sentiment === 'neutral') color = 'bg-blue-500';
-                                if (sentiment === 'negative') color = 'bg-rose-500';
-
-                                return (
-                                    <div key={sentiment}>
-                                        <div className="flex justify-between text-sm mb-1">
-                                            <span className="capitalize text-slate-300">
-                                                {sentiment === 'positive' ? 'Positivo' : sentiment === 'neutral' ? 'Neutro' : 'Negativo'}
-                                            </span>
-                                            <span className="text-slate-500">{val} ({percentage.toFixed(0)}%)</span>
-                                        </div>
-                                        <div className="h-2 w-full bg-slate-700 rounded-full overflow-hidden">
-                                            <div className={`h - full ${color} `} style={{ width: `${percentage}% ` }} />
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Resolution Rate */}
-                    <div className="bg-slate-800/50 p-5 rounded-xl border border-slate-700/50">
-                        <h4 className="text-sm font-medium text-slate-400 mb-4">Taxa de Resolução</h4>
-                        <div className="flex items-center justify-center h-40">
-                            {/* Simple Donut Chart Representation using text/css */}
-                            <div className="relative w-32 h-32 rounded-full border-8 border-slate-700 flex items-center justify-center">
-                                <div className="text-center">
-                                    <span className="block text-2xl font-bold text-white">
-                                        {evalMetrics.resolution_resolved || 0}
-                                    </span>
-                                    <span className="text-xs text-slate-400">Resolvidos</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex justify-center gap-4 text-sm mt-2">
-                            <div className="flex items-center gap-1">
-                                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                <span className="text-slate-300">Sim: {evalMetrics.resolution_resolved || 0}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <div className="w-2 h-2 rounded-full bg-rose-500"></div>
-                                <span className="text-slate-300">Não: {evalMetrics.resolution_unresolved || 0}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Top Categories */}
-                    <div className="bg-slate-800/50 p-5 rounded-xl border border-slate-700/50">
-                        <h4 className="text-sm font-medium text-slate-400 mb-4">Principais Categorias</h4>
-                        <div className="flex flex-wrap gap-2">
-                            {evalMetrics.categories ? Object.entries(evalMetrics.categories).map(([cat, count]) => (
-                                <div key={cat} className="px-3 py-1 bg-slate-700/50 rounded-lg border border-slate-600/50 flex items-center gap-2">
-                                    <span className="text-sm text-slate-200 capitalize">{cat}</span>
-                                    <span className="text-xs bg-slate-800 rounded px-1.5 py-0.5 text-slate-400 font-mono">{count as number}</span>
-                                </div>
-                            )) : (
-                                <p className="text-sm text-slate-500 italic">Sem categorias registradas ainda.</p>
-                            )}
-                        </div>
-                    </div>
+            {/* Simple Word Cloud / Categories placeholder */}
+            <div className="bg-slate-800/40 p-8 rounded-3xl border border-slate-700/50">
+                <h4 className="font-bold text-white mb-6 uppercase tracking-widest text-xs opacity-60">Categorização Automática (AI)</h4>
+                <div className="flex flex-wrap gap-3">
+                    {/* In a real scenario we'd aggregate words or use tags */}
+                    {rawRows.length > 0 && Array.from(new Set(rawRows.flatMap(r => Object.keys(r.evaluator_metrics?.categories || {})))).map((tag: any) => {
+                        const count = rawRows.reduce((a, b) => a + (b.evaluator_metrics?.categories?.[tag] || 0), 0);
+                        const weight = Math.min(24, 12 + count);
+                        return (
+                            <span
+                                key={tag}
+                                className="px-4 py-2 bg-slate-900/80 rounded-2xl border border-slate-700 text-slate-300 hover:border-violet-500/50 hover:text-white transition-all cursor-default"
+                                style={{ fontSize: `${weight}px` }}
+                            >
+                                {tag} <span className="text-[10px] opacity-40 ml-1">{count}</span>
+                            </span>
+                        );
+                    })}
                 </div>
             </div>
         </div>

@@ -38,6 +38,7 @@ interface FunnelData {
     scheduled?: number;
     disqualified?: number;
     no_response?: number;
+    lost?: number;
 }
 
 interface DailyMetricsPayload {
@@ -50,6 +51,8 @@ interface DailyMetricsPayload {
     tokens_in?: number;
     tokens_out?: number;
     funnel?: FunnelData;
+    system_metrics?: Record<string, any>;
+    evaluator_metrics?: Record<string, any>;
 }
 
 // Token pricing (USD) - GPT-4 approximation
@@ -108,6 +111,9 @@ Deno.serve(async (req: Request) => {
 
         // Find agent by API key hash
         const hashedKey = await hashApiKey(apiKey);
+        console.log("DEBUG: Received Key:", apiKey);
+        console.log("DEBUG: Computed Hash:", hashedKey);
+
         const { data: agent, error: agentError } = await supabase
             .from("ai_agents")
             .select("id, name")

@@ -3,14 +3,15 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
     Bot, BarChart3, FileText, Settings, Search,
-    Zap, Plus, ChevronRight, Cpu, Activity, Sparkles
+    Zap, Plus, ChevronRight, Cpu, Activity, Sparkles, GripVertical
 } from 'lucide-react';
 import { AIAgent } from '../../types/ai-agents';
 import { AgentMetricsCards } from './AgentMetricsCards';
 import { AgentPromptEditor } from './AgentPromptEditor';
 import { AgentConfig } from './AgentConfig';
+import { AgentKanbanBoard } from './AgentKanbanBoard';
 
-type DashboardTab = 'metrics' | 'prompts' | 'config';
+type DashboardTab = 'metrics' | 'prompts' | 'config' | 'kanban';
 
 interface Client {
     id: string;
@@ -136,6 +137,7 @@ export const AIAgentDashboard: React.FC = () => {
 
     const tabs = [
         { id: 'metrics' as const, label: 'Métricas', icon: BarChart3 },
+        { id: 'kanban' as const, label: 'Atendimentos', icon: GripVertical },
         { id: 'prompts' as const, label: 'Prompts', icon: FileText },
         { id: 'config' as const, label: 'Configuração', icon: Settings },
     ];
@@ -209,8 +211,8 @@ export const AIAgentDashboard: React.FC = () => {
                                     key={client.id}
                                     onClick={() => setSelectedClient(client)}
                                     className={`w-full text-left p-3 rounded-xl transition-all group relative overflow-hidden ${selectedClient?.id === client.id
-                                            ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30'
-                                            : 'hover:bg-slate-800/50 border border-transparent'
+                                        ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30'
+                                        : 'hover:bg-slate-800/50 border border-transparent'
                                         }`}
                                 >
                                     {/* Active indicator line */}
@@ -220,8 +222,8 @@ export const AIAgentDashboard: React.FC = () => {
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold relative ${selectedClient?.id === client.id
-                                                    ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/30'
-                                                    : 'bg-slate-700/50 text-slate-400 group-hover:bg-slate-600/50'
+                                                ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/30'
+                                                : 'bg-slate-700/50 text-slate-400 group-hover:bg-slate-600/50'
                                                 }`}>
                                                 {client.name.charAt(0).toUpperCase()}
                                                 {selectedClient?.id === client.id && (
@@ -234,8 +236,8 @@ export const AIAgentDashboard: React.FC = () => {
                                             </span>
                                         </div>
                                         <ChevronRight className={`w-4 h-4 transition-all ${selectedClient?.id === client.id
-                                                ? 'text-cyan-400 translate-x-0'
-                                                : 'text-slate-600 -translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
+                                            ? 'text-cyan-400 translate-x-0'
+                                            : 'text-slate-600 -translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
                                             }`} />
                                     </div>
                                 </button>
@@ -326,8 +328,8 @@ export const AIAgentDashboard: React.FC = () => {
                                                 key={tab.id}
                                                 onClick={() => setActiveTab(tab.id)}
                                                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all relative ${isActive
-                                                        ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400 border border-cyan-500/30'
-                                                        : 'text-slate-400 hover:text-white hover:bg-slate-800/30 border border-transparent'
+                                                    ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400 border border-cyan-500/30'
+                                                    : 'text-slate-400 hover:text-white hover:bg-slate-800/30 border border-transparent'
                                                     }`}
                                             >
                                                 <Icon className={`w-4 h-4 ${isActive ? 'animate-pulse' : ''}`} />
@@ -345,6 +347,9 @@ export const AIAgentDashboard: React.FC = () => {
                             <div className="flex-1 overflow-y-auto p-8">
                                 {activeTab === 'metrics' && (
                                     <AgentMetricsCards agentId={agent.id} />
+                                )}
+                                {activeTab === 'kanban' && (
+                                    <AgentKanbanBoard agentId={agent.id} />
                                 )}
                                 {activeTab === 'prompts' && (
                                     <AgentPromptEditor agentId={agent.id} />

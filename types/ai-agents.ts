@@ -212,3 +212,19 @@ export interface AgentTrend {
     hour?: number;
     value: number;
 }
+
+export type ConversationStatus = 'new' | 'interested' | 'qualified' | 'scheduled' | 'patient' | 'no_response' | 'lost' | 'disqualified';
+
+export interface AIConversation {
+    id: string;
+    agent_id: string;
+    contact_identifier: string; // Phone or Email
+    contact_name?: string;
+    contact_phone?: string;
+    status: ConversationStatus;
+    summary?: string;
+    last_interaction_at: string;
+    is_manual_override: boolean;
+    created_at: string;
+    updated_at: string;
+}

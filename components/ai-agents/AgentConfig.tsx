@@ -30,7 +30,13 @@ export const AgentConfig: React.FC<AgentConfigProps> = ({
     const [formData, setFormData] = useState({
         name: agent?.name || '',
         provider: agent?.provider || 'custom',
-        is_active: agent?.is_active ?? true
+        is_active: agent?.is_active ?? true,
+        // Hosting Config
+        model: agent?.model || 'gpt-4o',
+        temperature: agent?.temperature || 0.7,
+        max_tokens: agent?.max_tokens || 1000,
+        api_key: agent?.api_key || '',
+        agent_type: agent?.agent_type || 'sdr',
     });
 
     const isEditing = !!agent;
@@ -45,14 +51,25 @@ export const AgentConfig: React.FC<AgentConfigProps> = ({
         setSaving(true);
 
         try {
+            const payload: any = {
+                name: formData.name,
+                provider: formData.provider,
+                is_active: formData.is_active,
+                model: formData.model,
+                temperature: Number(formData.temperature),
+                max_tokens: Number(formData.max_tokens),
+                agent_type: formData.agent_type,
+            };
+
+            // Only update API key if provided (security)
+            if (formData.api_key && formData.api_key.trim() !== '') {
+                payload.api_key = formData.api_key;
+            }
+
             if (isEditing) {
                 const { data, error } = await supabase
                     .from('ai_agents')
-                    .update({
-                        name: formData.name,
-                        provider: formData.provider,
-                        is_active: formData.is_active
-                    })
+                    .update(payload)
                     .eq('id', agent.id)
                     .select()
                     .single();
@@ -65,8 +82,7 @@ export const AgentConfig: React.FC<AgentConfigProps> = ({
                     .insert({
                         organization_id: organizationId,
                         client_id: clientId,
-                        name: formData.name,
-                        provider: formData.provider
+                        ...payload
                     })
                     .select()
                     .single();
@@ -174,7 +190,7 @@ export const AgentConfig: React.FC<AgentConfigProps> = ({
                 </div>
 
                 {/* Content */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+                <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-180px)] custom-scrollbar">
                     {/* Basic Info */}
                     <div className="space-y-4">
                         <h3 className="font-bold text-white flex items-center gap-2">
@@ -199,34 +215,148 @@ export const AgentConfig: React.FC<AgentConfigProps> = ({
 
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-2">
-                                    Provider
+                                    Provider (Hospedagem)
                                 </label>
                                 <select
                                     value={formData.provider}
                                     onChange={(e) => setFormData({ ...formData, provider: e.target.value as any })}
                                     className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-violet-500 focus:outline-none"
                                 >
-                                    <option value="custom">Custom</option>
-                                    <option value="openai">OpenAI</option>
-                                    <option value="anthropic">Anthropic</option>
+                                    <option value="custom">Externo (Apenas Métricas)</option>
+                                    <option value="custom">Externo (Apenas Métricas)</option>
+                                    <option value="openai">OpenAI (GPT-4o)</option>
+                                    <option value="anthropic">Anthropic (Claude 3.5)</option>
+                                    <option value="google">Google (Gemini 2.0)</option>
                                 </select>
+                            </div>
+
+                            <div className="col-span-2">
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                    Tipo de Agente (Persona)
+                                </label>
+                                <div className="grid grid-cols-4 gap-3">
+                                    {[
+                                        { id: 'sdr', label: 'SDR / Vendas', icon: '💰' },
+                                        { id: 'scheduler', label: 'Agendamento', icon: '📅' },
+                                        { id: 'support', label: 'Suporte', icon: '🎧' },
+                                        { id: 'custom', label: 'Outro', icon: '🤖' }
+                                    ].map((type) => (
+                                        <button
+                                            key={type.id}
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, agent_type: type.id as any })}
+                                            className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${formData.agent_type === type.id
+                                                ? 'bg-violet-600/20 border-violet-500 text-white'
+                                                : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'
+                                                }`}
+                                        >
+                                            <span className="text-xl mb-1">{type.icon}</span>
+                                            <span className="text-xs font-medium">{type.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <p className="text-[10px] text-slate-500 mt-2">
+                                    Isso adapta o dashboard para mostrar as métricas mais relevantes para este papel.
+                                </p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Webhooks */}
+                    {/* HOSTING CONFIGURATION (Only if NOT custom) */}
+                    {formData.provider !== 'custom' && (
+                        <div className="space-y-4 bg-violet-500/5 p-4 rounded-2xl border border-violet-500/20">
+                            <h3 className="font-bold text-white flex items-center gap-2">
+                                <Bot className="w-4 h-4 text-violet-400" />
+                                Hospedagem & Execução
+                            </h3>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                                        Modelo de IA
+                                    </label>
+                                    <select
+                                        value={formData.model}
+                                        onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                                    >
+                                        {formData.provider === 'openai' && (
+                                            <>
+                                                <option value="gpt-4o">GPT-4o</option>
+                                                <option value="gpt-4o-mini">GPT-4o Mini</option>
+                                            </>
+                                        )}
+                                        {formData.provider === 'anthropic' && (
+                                            <>
+                                                <option value="claude-3-5-sonnet-20240620">Claude 3.5 Sonnet</option>
+                                                <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+                                            </>
+                                        )}
+                                        {formData.provider === 'google' && (
+                                            <>
+                                                <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                                                <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                                            </>
+                                        )}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                                        Temperatura ({formData.temperature})
+                                    </label>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="2"
+                                        step="0.1"
+                                        value={formData.temperature}
+                                        onChange={(e) => setFormData({ ...formData, temperature: Number(e.target.value) })}
+                                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-500"
+                                    />
+                                    <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+                                        <span>Preciso</span>
+                                        <span>Criativo</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                    Chave de API do Cliente ({formData.provider.toUpperCase()})
+                                </label>
+                                <div className="relative">
+                                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                    <input
+                                        type="password"
+                                        value={formData.api_key}
+                                        onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
+                                        placeholder={`sk-... (Sua chave da ${formData.provider})`}
+                                        className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-600 focus:ring-2 focus:ring-violet-500 focus:outline-none font-mono"
+                                    />
+                                </div>
+                                <p className="text-[10px] text-slate-500 mt-2 flex items-center gap-1">
+                                    <Info className="w-3 h-3" />
+                                    A chave será armazenada de forma segura e usada apenas para execuções deste agente.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Webhooks (Legacy/Combined) */}
                     <div className="space-y-4">
                         <h3 className="font-bold text-white flex items-center gap-2">
                             <Webhook className="w-4 h-4 text-violet-400" />
-                            Webhooks
+                            Integração / Webhooks
                         </h3>
 
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-1">
-                                Webhook para Receber Métricas (Simplificado - Recomendado)
+                                Webhook para Receber Métricas
                             </label>
                             <p className="text-xs text-slate-500 mb-2">
-                                Envie resumos diários para este endpoint. O Paralello calculará as taxas de resolução e custos.
+                                {formData.provider === 'custom'
+                                    ? 'Envie resumos diários para este endpoint.'
+                                    : 'Como o agente é hospedado, as métricas serão coletadas automaticamente! Use este endpoint apenas se quiser enviar dados externos.'}
                             </p>
 
                             {agent && (
@@ -254,45 +384,17 @@ export const AgentConfig: React.FC<AgentConfigProps> = ({
                                             {import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-daily-metrics
                                         </code>
                                     </div>
-
-                                    <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
-                                        <p className="text-[11px] text-slate-400 font-bold mb-2 flex items-center gap-1">
-                                            <Info className="w-3 h-3" />
-                                            EXEMPLO DE PAYLOAD (n8n / HTTP Request)
-                                        </p>
-                                        <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                                            <pre className="text-[10px] text-emerald-400 font-mono overflow-x-auto">
-                                                {`{
-  "date": "2026-01-20",
-  "conversations": 45,
-  "messages_sent": 320,
-  "escalated": 3,
-  "tokens_in": 45000,
-  "tokens_out": 28000,
-  "funnel": {
-    "total": 120,
-    "existing_patient": 35,
-    "new_interested": 85,
-    "qualified": 60,
-    "scheduled": 45,
-    "disqualified": 15,
-    "no_response": 10
-  }
-}`}
-                                            </pre>
-                                        </div>
-                                    </div>
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    {/* API Key */}
+                    {/* Paralello API Key (For external calls) */}
                     {isEditing && (
                         <div className="space-y-4">
                             <h3 className="font-bold text-white flex items-center gap-2">
                                 <Key className="w-4 h-4 text-violet-400" />
-                                API Key
+                                Chave de Acesso (Paralello)
                             </h3>
 
                             <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
@@ -327,8 +429,8 @@ export const AgentConfig: React.FC<AgentConfigProps> = ({
                                         <div className="flex items-start gap-2 text-amber-400 bg-amber-500/10 p-4 rounded-xl border border-amber-500/20">
                                             <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                                             <p className="text-xs">
-                                                <strong>Importante:</strong> Copie esta chave agora. Ela não será exibida novamente.
-                                                Use esta chave no header <code className="bg-amber-500/20 px-1.5 py-0.5 rounded">X-API-Key</code> ao enviar métricas.
+                                                <strong>Importante:</strong> Esta chave autentica requisições externas para a API do Paralello.
+                                                Não confunda com a chave da OpenAI/Anthropic acima.
                                             </p>
                                         </div>
                                     </div>
@@ -336,10 +438,10 @@ export const AgentConfig: React.FC<AgentConfigProps> = ({
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm font-medium text-white">
-                                                {agent?.api_key_hash ? 'API Key configurada' : 'Nenhuma API Key configurada'}
+                                                {agent?.api_key_hash ? 'Chave de Acesso configurada' : 'Nenhuma Chave de Acesso configurada'}
                                             </p>
                                             <p className="text-xs text-slate-500 mt-1">
-                                                A API Key é usada para autenticar requisições de métricas
+                                                Gere esta chave se precisar enviar métricas de fontes externas.
                                             </p>
                                         </div>
                                         <button
@@ -349,10 +451,65 @@ export const AgentConfig: React.FC<AgentConfigProps> = ({
                                             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl text-sm font-bold hover:from-violet-500 hover:to-purple-500 transition-all disabled:opacity-50 shadow-lg shadow-violet-500/25"
                                         >
                                             <RefreshCw className={`w-4 h-4 ${generatingKey ? 'animate-spin' : ''}`} />
-                                            {agent?.api_key_hash ? 'Regenerar' : 'Gerar'} API Key
+                                            {agent?.api_key_hash ? 'Regenerar' : 'Gerar'} Chave
                                         </button>
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* n8n / HTTP Request Snippet */}
+                    {isEditing && generatedApiKey && (
+                        <div className="space-y-4">
+                            <h3 className="font-bold text-white flex items-center gap-2">
+                                <Zap className="w-4 h-4 text-violet-400" />
+                                Snippet para n8n (HTTP Request)
+                            </h3>
+                            <div className="p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                                <p className="text-xs text-slate-400 mb-2">
+                                    Copie este JSON e cole dentro de um node <strong>HTTP Request</strong> no n8n.
+                                </p>
+                                <div className="relative">
+                                    <pre className="text-[10px] text-cyan-300 font-mono bg-slate-900 p-3 rounded-xl overflow-x-auto border border-slate-700/50">
+                                        {`{
+  "method": "POST",
+  "url": "${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-agent-executor",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer ${generatedApiKey}"
+  },
+  "body": {
+    "agent_id": "${agent.id}",
+    "message": "{{$json.message}}",
+    "session_id": "{{$json.sessionId}}"
+  }
+}`}
+                                    </pre>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const snippet = JSON.stringify({
+                                                method: "POST",
+                                                url: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-agent-executor`,
+                                                headers: {
+                                                    "Content-Type": "application/json",
+                                                    "Authorization": `Bearer ${generatedApiKey}`
+                                                },
+                                                body: {
+                                                    agent_id: agent.id,
+                                                    message: "{{$json.message}}",
+                                                    session_id: "{{$json.sessionId}}"
+                                                }
+                                            }, null, 2);
+                                            navigator.clipboard.writeText(snippet);
+                                            alert('Snippet copiado!');
+                                        }}
+                                        className="absolute top-2 right-2 p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors border border-slate-600"
+                                    >
+                                        <Copy className="w-3 h-3" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -363,7 +520,7 @@ export const AgentConfig: React.FC<AgentConfigProps> = ({
                             <div>
                                 <p className="text-sm font-medium text-white">Status do Agente</p>
                                 <p className="text-xs text-slate-500">
-                                    {formData.is_active ? 'Agente está ativo e coletando métricas' : 'Agente pausado'}
+                                    {formData.is_active ? 'Agente está ativo' : 'Agente pausado'}
                                 </p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">

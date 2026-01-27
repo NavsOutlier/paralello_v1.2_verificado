@@ -13,10 +13,16 @@ export interface AIAgent {
     organization_id: string;
     client_id: string;
     name: string;
+    agent_type: 'sdr' | 'scheduler' | 'support' | 'custom';
     provider: 'openai' | 'anthropic' | 'custom';
     api_endpoint?: string;
     webhook_metrics_url?: string;
     webhook_prompt_url?: string;
+    // Execution Config
+    model?: string;
+    temperature?: number;
+    max_tokens?: number;
+    api_key?: string; // Only populated when explicitly requested or setting up
     api_key_hash?: string;
     is_active: boolean;
     created_at: string;

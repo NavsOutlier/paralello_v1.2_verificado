@@ -12,6 +12,7 @@ type PeriodType = 'yesterday' | '7days' | '14days' | 'this_month' | 'last_month'
 
 interface AgentMetricsCardsProps {
     agentId: string;
+    agentType?: 'sdr' | 'scheduler' | 'support' | 'custom';
     dateRange?: {
         start: Date;
         end: Date;
@@ -20,6 +21,7 @@ interface AgentMetricsCardsProps {
 
 export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
     agentId,
+    agentType = 'sdr',
     dateRange
 }) => {
     const [kpis, setKpis] = useState<AgentKPIs | null>(null);
@@ -433,6 +435,22 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
         }
     ];
 
+    // Filter cards based on Persona
+    let visibleCards = cards;
+    if (agentType === 'sdr') {
+        visibleCards = cards.filter(c => ['Total de Conversas', 'Taxa de Resolução', 'Custo do Período', 'Taxa de Escalonamento'].includes(c.label));
+    } else if (agentType === 'support') {
+        visibleCards = cards.filter(c => ['Total de Conversas', 'Tempo Médio Resposta', 'CSAT Score', 'Taxa de Resolução'].includes(c.label));
+    } else if (agentType === 'scheduler') {
+        visibleCards = cards.filter(c => ['Total de Conversas', 'Taxa de Abandono', 'Taxa de Resolução', 'Custo do Período'].includes(c.label));
+    } else {
+        // Custom shows everything or a mix
+        visibleCards = cards;
+    }
+
+    // Fallback if filter is too aggressive
+    if (visibleCards.length < 4) visibleCards = cards.slice(0, 6);
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -536,7 +554,7 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
 
             {/* KPI Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {cards.map((card, index) => {
+                {visibleCards.map((card, index) => {
                     const Icon = card.icon;
                     return (
                         <div
@@ -559,10 +577,12 @@ export const AgentMetricsCards: React.FC<AgentMetricsCardsProps> = ({
                 })}
             </div>
 
-            {/* Sales Funnel */}
-            <div className="mt-6">
-                <AgentFunnelChart data={funnelData} />
-            </div>
+            {/* Sales Funnel - Only for SDR/Scheduler */}
+            {(agentType === 'sdr' || agentType === 'scheduler' || agentType === 'custom') && (
+                <div className="mt-6">
+                    <AgentFunnelChart data={funnelData} />
+                </div>
+            )}
         </div>
     );
 };

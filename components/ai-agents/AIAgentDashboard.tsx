@@ -14,7 +14,7 @@ import { AgentDeepMetrics } from './AgentDeepMetrics';
 import { AgentConversationAnalytic } from './AgentConversationAnalytic';
 import { AgentConversationAudit } from './AgentConversationAudit';
 
-type DashboardTab = 'metrics' | 'prompts' | 'config' | 'kanban' | 'metrics-deep' | 'audit';
+type DashboardTab = 'analytics' | 'kanban' | 'audit' | 'prompts' | 'config';
 
 interface Client {
     id: string;
@@ -82,7 +82,7 @@ export const AIAgentDashboard: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [loadingClients, setLoadingClients] = useState(true);
     const [loadingAgent, setLoadingAgent] = useState(false);
-    const [activeTab, setActiveTab] = useState<DashboardTab>('metrics');
+    const [activeTab, setActiveTab] = useState<DashboardTab>('analytics');
     const [showConfigModal, setShowConfigModal] = useState(false);
 
     useEffect(() => {
@@ -139,8 +139,7 @@ export const AIAgentDashboard: React.FC = () => {
     );
 
     const tabs = [
-        { id: 'metrics' as const, label: 'Métricas', icon: BarChart3 },
-        { id: 'metrics-deep' as const, label: 'Deep Dive', icon: Activity },
+        { id: 'analytics' as const, label: 'Analytics', icon: BarChart3 },
         { id: 'kanban' as const, label: 'Atendimentos', icon: GripVertical },
         { id: 'audit' as const, label: 'Auditoria', icon: Star },
         { id: 'prompts' as const, label: 'Prompts', icon: FileText },
@@ -350,14 +349,12 @@ export const AIAgentDashboard: React.FC = () => {
 
                             {/* Content */}
                             <div className="flex-1 overflow-y-auto p-8">
-                                {activeTab === 'metrics' && (
-                                    <AgentMetricsCards agentId={agent.id} />
-                                )}
-                                {activeTab === 'kanban' && (
-                                    <AgentKanbanBoard agentId={agent.id} />
-                                )}
-                                {activeTab === 'metrics-deep' && (
+                                {activeTab === 'analytics' && (
                                     <div className="space-y-8">
+                                        <AgentMetricsCards
+                                            agentId={agent.id}
+                                            agentType={agent.agent_type}
+                                        />
                                         <AgentDeepMetrics agentId={agent.id} />
                                         <AgentConversationAnalytic agentId={agent.id} />
                                     </div>
@@ -373,7 +370,7 @@ export const AIAgentDashboard: React.FC = () => {
                                         agent={agent}
                                         clientId={selectedClient.id}
                                         onSave={handleAgentSaved}
-                                        onClose={() => setActiveTab('metrics')}
+                                        onClose={() => setActiveTab('analytics')}
                                     />
                                 )}
                             </div>

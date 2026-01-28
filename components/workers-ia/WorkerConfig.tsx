@@ -17,6 +17,7 @@ interface WorkerAgent {
     max_tokens: number;
     is_active: boolean;
     sla_threshold_seconds: number;
+    whatsapp_number?: string;
 }
 
 interface WorkerConfigProps {
@@ -37,13 +38,14 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
 
     const [formData, setFormData] = useState({
         name: agent?.name || '',
-        role: agent?.role || 'sdr',
+        role: 'sdr',
         is_active: agent?.is_active ?? true,
         model: agent?.model || 'gpt-4o',
         temperature: agent?.temperature || 0.7,
         max_tokens: agent?.max_tokens || 1000,
         system_prompt: agent?.system_prompt || '',
         sla_threshold_seconds: agent?.sla_threshold_seconds || 60,
+        whatsapp_number: agent?.whatsapp_number || '',
     });
 
     const isEditing = !!agent;
@@ -67,6 +69,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                 max_tokens: Number(formData.max_tokens),
                 system_prompt: formData.system_prompt,
                 sla_threshold_seconds: Number(formData.sla_threshold_seconds),
+                whatsapp_number: formData.whatsapp_number,
             };
 
             let result;
@@ -160,16 +163,28 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                                     Função (Tag)
                                 </label>
                                 <select
-                                    value={formData.role}
-                                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                                    value="sdr"
+                                    disabled
+                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-violet-500 focus:outline-none opacity-50 cursor-not-allowed"
                                 >
                                     <option value="sdr">SDR / Vendas</option>
-                                    <option value="support">Suporte N1</option>
-                                    <option value="scheduler">Agendamento</option>
-                                    <option value="consultant">Consultoria</option>
                                 </select>
                             </div>
+                        </div>
+
+                        {/* WhatsApp Config */}
+                        <div className="mt-4">
+                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                                WhatsApp Conectado
+                            </label>
+                            <input
+                                type="text"
+                                value={formData.whatsapp_number}
+                                onChange={(e) => setFormData({ ...formData, whatsapp_number: e.target.value })}
+                                placeholder="Ex: 5511999999999"
+                                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:outline-none font-mono"
+                            />
+                            <p className="text-xs text-slate-500 mt-1">Número que este agente utilizará para enviar mensagens.</p>
                         </div>
                     </div>
 

@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
     Bot, BarChart3, Settings, Search,
-    Zap, Plus, ChevronRight, Activity, Sparkles, GripVertical, Briefcase
+    Zap, Plus, ChevronRight, Activity, Sparkles, GripVertical, Briefcase, List
 } from 'lucide-react';
 import { WorkerConfig } from './WorkerConfig';
 import { WorkerKanbanBoard } from './WorkerKanbanBoard';
@@ -74,12 +74,15 @@ export const WorkersIADashboard: React.FC = () => {
     const { organizationId } = useAuth();
     const [clients, setClients] = useState<Client[]>([]);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-    const [agent, setAgent] = useState<any | null>(null);
+    const [agents, setAgents] = useState<any[]>([]);
+    const [selectedAgent, setSelectedAgent] = useState<any | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [loadingClients, setLoadingClients] = useState(true);
-    const [loadingAgent, setLoadingAgent] = useState(false);
+    const [loadingAgents, setLoadingAgents] = useState(false);
     const [activeTab, setActiveTab] = useState<DashboardTab>('analytics');
     const [showConfigModal, setShowConfigModal] = useState(false);
+    const [editingAgent, setEditingAgent] = useState<any | null>(null);
+    const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
 
     useEffect(() => {
         const fetchClients = async () => {
@@ -107,27 +110,47 @@ export const WorkersIADashboard: React.FC = () => {
     }, [organizationId]);
 
     useEffect(() => {
-        const fetchAgent = async () => {
+        const fetchAgents = async () => {
             if (!selectedClient) {
-                setAgent(null);
+                setAgents([]);
+                setSelectedAgent(null);
                 return;
             }
-            setLoadingAgent(true);
+            setLoadingAgents(true);
 
             const { data, error } = await supabase
                 .from('workers_ia_agents')
                 .select('*')
                 .eq('client_id', selectedClient.id)
-                .single();
+                .order('created_at', { ascending: false });
 
-            if (error && error.code !== 'PGRST116') {
-                console.error('Error fetching workers agent:', error);
+            if (error) {
+                // If error is code PGRST116 (0 rows) it's expected for empty, 
+                // but .select('*') usually returns arrays, so shouldn't error on empty.
+                console.error('Error fetching workers agents:', error);
             }
-            setAgent(data || null);
-            setLoadingAgent(false);
+
+            const agentList = data || [];
+            setAgents(agentList);
+
+            // Auto-select first agent if none selected, or maintain current selection if valid
+            if (agentList.length > 0) {
+                // Check if we already have a selected agent that still exists in the fetched list
+                const currentStillExists = selectedAgent && agentList.find(a => a.id === selectedAgent.id);
+                if (!currentStillExists) {
+                    setSelectedAgent(agentList[0]);
+                } else {
+                    // Update the selected agent object with fresh data
+                    setSelectedAgent(currentStillExists);
+                }
+            } else {
+                setSelectedAgent(null);
+            }
+
+            setLoadingAgents(false);
         };
 
-        fetchAgent();
+        fetchAgents();
     }, [selectedClient]);
 
     const filteredClients = clients.filter(client =>
@@ -142,9 +165,33 @@ export const WorkersIADashboard: React.FC = () => {
     ];
 
     const handleAgentSaved = (savedAgent: any) => {
-        setAgent(savedAgent);
+        // Update local state to reflect changes/creation
+        setAgents(prev => {
+            const exists = prev.find(a => a.id === savedAgent.id);
+            if (exists) {
+                return prev.map(a => a.id === savedAgent.id ? savedAgent : a);
+            }
+            return [savedAgent, ...prev];
+        });
+        setSelectedAgent(savedAgent);
         setShowConfigModal(false);
+        setEditingAgent(null);
     };
+
+    const handleCreateNew = () => {
+        setEditingAgent(null); // Clear editing state for new creation
+        setShowConfigModal(true);
+    };
+
+    const handleEditAgent = () => {
+        if (selectedAgent) {
+            setEditingAgent(selectedAgent);
+            setShowConfigModal(true);
+        }
+    };
+
+    // If active tab is config, we show the config for the selected agent.
+    // If user wants to create NEW agent, they click the button in header.
 
     return (
         <div className="h-full w-full flex bg-[#0a0f1a] relative overflow-hidden">
@@ -257,14 +304,14 @@ export const WorkersIADashboard: React.FC = () => {
             {/* Main Content */}
             <div className="flex-1 flex flex-col overflow-hidden relative z-10">
                 {/* Header */}
-                <div className="bg-slate-900/50 backdrop-blur-xl border-b border-cyan-500/10 px-8 py-5">
+                <div className="bg-slate-900/50 backdrop-blur-xl border-b border-cyan-500/10 px-8 py-5 relative z-20">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="relative">
                                 <div className="p-3 bg-gradient-to-br from-violet-500 to-fuchsia-600 rounded-2xl shadow-lg shadow-violet-500/30">
                                     <Bot className="w-6 h-6 text-white" />
                                 </div>
-                                {agent?.is_active && (
+                                {selectedAgent?.is_active && (
                                     <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-slate-900 flex items-center justify-center">
                                         <div className="w-2 h-2 bg-green-300 rounded-full animate-pulse" />
                                     </div>
@@ -273,29 +320,96 @@ export const WorkersIADashboard: React.FC = () => {
                             <div>
                                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                                     {selectedClient ? selectedClient.name : 'Selecione um Cliente'}
-                                    {agent?.is_active && (
+                                    {selectedAgent?.is_active && (
                                         <span className="text-xs font-normal text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
                                             WORKER ONLINE
                                         </span>
                                     )}
                                 </h2>
-                                <p className="text-sm text-slate-400">
-                                    {agent ? (
-                                        <span className="flex items-center gap-2">
-                                            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                                            Worker: {agent.name}
+
+                                {selectedClient && agents.length > 0 ? (
+                                    <div className="flex items-center gap-2 mt-1 relative z-50">
+                                        <div className="relative">
+                                            <button
+                                                onClick={() => setIsAgentDropdownOpen(!isAgentDropdownOpen)}
+                                                className="flex items-center gap-2 text-sm text-slate-300 hover:text-white transition-colors bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 hover:border-violet-500/30"
+                                            >
+                                                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                                                <span className="font-medium text-violet-300">Agent:</span>
+                                                {selectedAgent ? selectedAgent.name : 'Selecione um Agente'}
+                                                <ChevronRight className={`w-3 h-3 text-slate-500 transition-transform ${isAgentDropdownOpen ? '-rotate-90' : 'rotate-90'}`} />
+                                            </button>
+
+                                            {/* Agent Selector Dropdown */}
+                                            {isAgentDropdownOpen && (
+                                                <div className="absolute top-full left-0 mt-2 w-64 bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl overflow-hidden z-[100] backdrop-blur-xl">
+                                                    <div className="p-2 border-b border-slate-800/50 bg-slate-900/50">
+                                                        <span className="text-[10px] uppercase font-bold text-slate-500 px-2">Meus Agentes</span>
+                                                    </div>
+                                                    <div className="max-h-60 overflow-y-auto custom-scrollbar p-1">
+                                                        {agents.map(a => (
+                                                            <button
+                                                                key={a.id}
+                                                                onClick={() => {
+                                                                    setSelectedAgent(a);
+                                                                    setIsAgentDropdownOpen(false);
+                                                                }}
+                                                                className={`w-full text-left px-3 py-2 text-sm rounded-lg flex items-center gap-3 transition-all ${selectedAgent?.id === a.id
+                                                                    ? 'bg-violet-500/10 text-white border border-violet-500/20'
+                                                                    : 'text-slate-400 hover:bg-slate-800 hover:text-white border border-transparent'
+                                                                    }`}
+                                                            >
+                                                                <div className={`p-1.5 rounded-md ${selectedAgent?.id === a.id ? 'bg-violet-500/20 text-violet-400' : 'bg-slate-800 text-slate-500'
+                                                                    }`}>
+                                                                    <Bot className="w-3.5 h-3.5" />
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="font-medium truncate">{a.name}</div>
+                                                                    {a.role && <div className="text-[10px] text-slate-500 truncate">{a.role}</div>}
+                                                                </div>
+                                                                {selectedAgent?.id === a.id && (
+                                                                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                                                                )}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    <div className="p-2 border-t border-slate-800/50 bg-slate-900/50">
+                                                        {agents.length === 0 && (
+                                                            <button
+                                                                onClick={() => {
+                                                                    setIsAgentDropdownOpen(false);
+                                                                    handleCreateNew();
+                                                                }}
+                                                                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-violet-400 hover:text-white hover:bg-violet-500/10 rounded-lg transition-colors border border-dashed border-violet-500/20 hover:border-violet-500/40"
+                                                            >
+                                                                <Plus className="w-3 h-3" />
+                                                                Novo Agente
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {isAgentDropdownOpen && <div className="fixed inset-0 z-40" onClick={() => setIsAgentDropdownOpen(false)} />}
+
+                                        <span className="text-xs text-slate-500 max-w-[200px] max-md:hidden truncate">
+                                            Role: {selectedAgent?.role || 'Não definido'}
                                         </span>
-                                    ) : 'Nenhum worker configurado'}
-                                </p>
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-slate-400">Nenhum worker configurado</p>
+                                )}
                             </div>
                         </div>
-                        {selectedClient && !agent && (
+
+                        {selectedClient && (
                             <button
-                                onClick={() => setShowConfigModal(true)}
+                                onClick={handleCreateNew}
                                 className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-500 to-fuchsia-600 text-white rounded-xl text-sm font-bold hover:from-violet-400 hover:to-fuchsia-500 transition-all shadow-lg shadow-violet-500/30 group"
                             >
                                 <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
-                                Criar Worker
+                                {agents.length > 0 ? 'Novo Worker' : 'Criar Worker'}
                                 <Zap className="w-4 h-4 animate-pulse" />
                             </button>
                         )}
@@ -303,7 +417,7 @@ export const WorkersIADashboard: React.FC = () => {
                 </div>
 
                 {selectedClient ? (
-                    loadingAgent ? (
+                    loadingAgents ? (
                         <div className="flex-1 flex items-center justify-center">
                             <div className="text-center">
                                 <div className="relative inline-block">
@@ -311,10 +425,10 @@ export const WorkersIADashboard: React.FC = () => {
                                     <div className="absolute inset-2 w-12 h-12 border-2 border-transparent border-t-fuchsia-500 rounded-full animate-spin" style={{ animationDirection: 'reverse' }} />
                                     <Bot className="absolute inset-0 m-auto w-6 h-6 text-violet-400" />
                                 </div>
-                                <p className="text-slate-400 mt-4">Carregando dados do worker...</p>
+                                <p className="text-slate-400 mt-4">Carregando dados dos workers...</p>
                             </div>
                         </div>
-                    ) : agent ? (
+                    ) : selectedAgent ? (
                         <>
                             {/* Tabs */}
                             <div className="bg-slate-900/30 backdrop-blur-sm border-b border-cyan-500/10 px-8 py-4">
@@ -346,18 +460,18 @@ export const WorkersIADashboard: React.FC = () => {
                             <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
                                 {activeTab === 'analytics' && (
                                     <div className="space-y-8">
-                                        <WorkerAnalytics agentId={agent.id} />
+                                        <WorkerAnalytics agentId={selectedAgent.id} />
                                     </div>
                                 )}
                                 {activeTab === 'kanban' && (
-                                    <WorkerKanbanBoard agentId={agent.id} />
+                                    <WorkerKanbanBoard agentId={selectedAgent.id} />
                                 )}
                                 {activeTab === 'audit' && (
-                                    <WorkerMessageAudit agentId={agent.id} />
+                                    <WorkerMessageAudit agentId={selectedAgent.id} />
                                 )}
                                 {activeTab === 'config' && (
                                     <WorkerConfig
-                                        agent={agent}
+                                        agent={selectedAgent}
                                         clientId={selectedClient.id}
                                         onSave={handleAgentSaved}
                                         onClose={() => setActiveTab('analytics')}
@@ -381,17 +495,17 @@ export const WorkersIADashboard: React.FC = () => {
                                         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-violet-400 rounded-full" />
                                     </div>
                                 </div>
-                                <h3 className="text-xl font-bold text-white mb-2">Nenhum Worker Ativo</h3>
+                                <h3 className="text-xl font-bold text-white mb-2">Configure seu primeiro Worker</h3>
                                 <p className="text-slate-400 text-sm mb-8">
-                                    Este cliente ainda não possui um worker configurado.
-                                    Crie um worker para começar a automação.
+                                    Este cliente ainda não possui workers ativos.
+                                    Crie um agente para começar.
                                 </p>
                                 <button
-                                    onClick={() => setShowConfigModal(true)}
+                                    onClick={handleCreateNew}
                                     className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-violet-500 to-fuchsia-600 text-white rounded-xl font-bold hover:from-violet-400 hover:to-fuchsia-500 transition-all shadow-lg shadow-violet-500/30 group"
                                 >
                                     <Zap className="w-5 h-5 group-hover:animate-bounce" />
-                                    Criar Worker
+                                    Criar Worker Inicial
                                     <Sparkles className="w-4 h-4 animate-pulse" />
                                 </button>
                             </div>
@@ -415,6 +529,7 @@ export const WorkersIADashboard: React.FC = () => {
             {/* Config Modal */}
             {showConfigModal && selectedClient && (
                 <WorkerConfig
+                    agent={editingAgent}
                     clientId={selectedClient.id}
                     onSave={handleAgentSaved}
                     onClose={() => setShowConfigModal(false)}

@@ -13,6 +13,7 @@ import { UpdatePasswordView } from './views/UpdatePasswordView';
 import { MarketingDashboard } from './components/MarketingDashboard';
 import { AutomationTab } from './components/automation';
 import { AIAgentDashboard } from './components/ai-agents';
+import { WorkersIADashboard } from './components/workers-ia/WorkersIADashboard';
 const AppContent: React.FC = () => {
   const { user, loading, isSuperAdmin, isManager } = useAuth();
   const [currentView, setCurrentView] = useState<ViewState | null>(() => {
@@ -133,6 +134,7 @@ const AppContent: React.FC = () => {
         {currentView === ViewState.MARKETING && <MarketingDashboard />}
         {currentView === ViewState.AUTOMATION && <AutomationTab />}
         {currentView === ViewState.AI_AGENTS && <AIAgentDashboard />}
+        {currentView === ViewState.WORKERS_IA && <WorkersIADashboard />}
         {isUpdatingPassword && (
           <div className="absolute inset-0 z-[100] bg-white">
             <UpdatePasswordView onSuccess={() => {

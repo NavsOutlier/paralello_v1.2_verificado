@@ -1,229 +1,305 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import {
-    Search, MessageSquare, Clock, Cpu,
-    User, Bot, ArrowRight, Database, Filter
+    Search, Filter, Calendar, MessageSquare,
+    User, ChevronRight, AlertCircle, CheckCircle,
+    XCircle, Info, RefreshCw, Star, ArrowLeft,
+    Database, Bot, Cpu, Clock
 } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface WorkerMessageAuditProps {
     agentId: string;
 }
 
-interface AuditMessage {
+interface WorkerConversation {
     id: string;
-    conversation_id: string;
-    role: 'user' | 'assistant' | 'system';
-    message: string;
-    created_at: string;
     session_id: string;
-    token_total: number;
-    ai_model: string;
-    response_time_ms: number;
+    client_id: string;
+    agent_id: string;
+    summary: string;
+    last_interaction_at: string;
+    funnel_stage: string;
+    sentiment_score: number;
+    contact_info?: {
+        name?: string;
+        email?: string;
+        phone?: string;
+    };
 }
 
-const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    });
-};
+interface WorkerMessage {
+    id: string;
+    session_id: string;
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+    created_at: string;
+    metadata: any;
+}
 
 export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId }) => {
-    const [messages, setMessages] = useState<AuditMessage[]>([]);
+    const [conversations, setConversations] = useState<WorkerConversation[]>([]);
+    const [selectedConv, setSelectedConv] = useState<WorkerConversation | null>(null);
+    const [messages, setMessages] = useState<WorkerMessage[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMessages, setLoadingMessages] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterRole, setFilterRole] = useState<'all' | 'user' | 'assistant'>('all');
+    const [stageFilter, setStageFilter] = useState<string>('all');
+
+    const fetchConversations = async () => {
+        setLoading(true);
+        try {
+            let query = supabase
+                .from('workers_ia_conversations')
+                .select('*')
+                .eq('agent_id', agentId)
+                .order('last_interaction_at', { ascending: false });
+
+            if (stageFilter !== 'all') {
+                query = query.eq('funnel_stage', stageFilter);
+            }
+
+            const { data, error } = await query.limit(50);
+
+            if (error) throw error;
+            setConversations(data || []);
+        } catch (err) {
+            console.error('Error fetching audit sessions:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchMessages = async (sessionId: string) => {
+        setLoadingMessages(true);
+        try {
+            const { data, error } = await supabase
+                .from('workers_ia_memory_messages')
+                .select('*')
+                .eq('session_id', sessionId)
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+            setMessages(data || []);
+        } catch (err) {
+            console.error('Error fetching session messages:', err);
+        } finally {
+            setLoadingMessages(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchMessages = async () => {
-            setLoading(true);
-            try {
-                // Fetch recent messages linked to this agent context
-                // Note: Since messages are linked to conversations, and conversations are linked to agents/clients via n8n logic,
-                // we might need to filter by client_id if we had it, or just show all for the organization/client context.
-                // For now, we will fetch the last 100 messages from the table.
-                // TODO: Enhance filtering to be strictly specific to this 'agentId' if the relationship is direct.
-                // Currently assuming the dashboard context 'selectedClient' filters the view, but here we query purely on the table.
+        fetchConversations();
+    }, [agentId, stageFilter]);
 
-                let query = supabase
-                    .from('workers_ia_messages')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(100);
+    useEffect(() => {
+        if (selectedConv) {
+            fetchMessages(selectedConv.session_id);
+        }
+    }, [selectedConv]);
 
-                if (filterRole !== 'all') {
-                    query = query.eq('role', filterRole);
-                }
+    const filteredConversations = conversations.filter(c =>
+        (c.session_id?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (c.contact_info?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (c.summary?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    );
 
-                const { data, error } = await query;
+    const getSentimentColor = (score?: number) => {
+        if (score === undefined || score === null) return 'text-slate-400';
+        if (score > 0.5) return 'text-emerald-400';
+        if (score < -0.5) return 'text-rose-400';
+        return 'text-blue-400';
+    };
 
-                if (error) throw error;
+    const getSentimentLabel = (score?: number) => {
+        if (score === undefined || score === null) return 'Neutro';
+        if (score > 0.5) return 'Positivo';
+        if (score < -0.5) return 'Negativo';
+        return 'Neutro';
+    };
 
-                // Client-side filtering for search term since Supabase ILIKE can be heavy on all columns
-                const filtered = (data || []).filter(msg =>
-                    (msg.message?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-                    (msg.session_id?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-                );
+    if (selectedConv) {
+        return (
+            <div className="flex flex-col h-[700px] bg-slate-900/50 rounded-3xl border border-cyan-500/10 overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300">
+                {/* Audit Header */}
+                <div className="p-6 border-b border-cyan-500/10 bg-slate-800/30 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setSelectedConv(null)}
+                            className="p-2 hover:bg-slate-700 rounded-xl text-slate-400 transition-colors"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <div>
+                            <h3 className="text-white font-bold flex items-center gap-2">
+                                {selectedConv.contact_info?.name || 'Visitante Anônimo'}
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full border border-current/20 ${getSentimentColor(selectedConv.sentiment_score)}`}>
+                                    {getSentimentLabel(selectedConv.sentiment_score)}
+                                </span>
+                            </h3>
+                            <p className="text-slate-500 text-xs font-mono">{selectedConv.session_id}</p>
+                        </div>
+                    </div>
 
-                setMessages(filtered);
+                    <div className="text-right hidden md:block">
+                        <p className="text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-1">Status no Funil</p>
+                        <span className="text-xs px-2 py-1 bg-violet-500/10 text-violet-400 rounded-lg border border-violet-500/20 uppercase font-bold">
+                            {selectedConv.funnel_stage?.replace('_', ' ') || 'Novo Lead'}
+                        </span>
+                    </div>
+                </div>
 
-            } catch (err) {
-                console.error('Error fetching audit logs:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
+                {/* Messages Log */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-[#0a0f1a]/50">
+                    {loadingMessages ? (
+                        <div className="flex flex-col items-center justify-center h-full gap-3">
+                            <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+                            <p className="text-xs text-slate-500 animate-pulse uppercase tracking-widest">Carregando Diálogo...</p>
+                        </div>
+                    ) : messages.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full text-slate-500 opacity-30">
+                            <MessageSquare className="w-16 h-16 mb-4" />
+                            <p className="italic">Nenhuma mensagem registrada nesta sessão.</p>
+                        </div>
+                    ) : (
+                        messages.map((msg) => (
+                            <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[80%] rounded-2xl p-4 shadow-xl ${msg.role === 'user'
+                                    ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white rounded-tr-none'
+                                    : 'bg-slate-800/80 text-slate-200 border border-cyan-500/10 rounded-tl-none backdrop-blur-sm'
+                                    }`}>
+                                    <div className="flex items-center justify-between gap-4 mb-2 text-[10px] opacity-60">
+                                        <div className="flex items-center gap-1.5 font-bold uppercase tracking-widest">
+                                            {msg.role === 'user' ? <User className="w-3 h-3" /> : <Bot className="w-3 h-3 text-cyan-400" />}
+                                            {msg.role === 'user' ? 'Lead' : 'Worker IA'}
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <Clock className="w-2.5 h-2.5" />
+                                            {format(parseISO(msg.created_at), "HH:mm")}
+                                        </div>
+                                    </div>
+                                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
 
-        fetchMessages();
-    }, [agentId, searchTerm, filterRole]); // Re-fetch when filters change is simple for now
+                                    {msg.metadata && msg.role === 'assistant' && (
+                                        <div className="mt-3 pt-2 border-t border-white/5 flex items-center gap-3 opacity-40 text-[9px] uppercase font-bold tracking-tighter">
+                                            {msg.metadata.tokens_total && (
+                                                <span className="flex items-center gap-1">
+                                                    <Cpu className="w-2.5 h-2.5" />
+                                                    {msg.metadata.tokens_total} tokens
+                                                </span>
+                                            )}
+                                            {msg.metadata.latency_ms && (
+                                                <span className="flex items-center gap-1">
+                                                    <Zap className="w-2.5 h-2.5" />
+                                                    {msg.metadata.latency_ms}ms
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
-            {/* Header & Controls */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                 <div>
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
                         <Database className="w-5 h-5 text-cyan-400" />
-                        Auditoria de Mensagens
+                        Auditoria de Sessões
                     </h3>
-                    <p className="text-sm text-slate-400">
-                        Histórico detalhado de interações e consumo de tokens
-                    </p>
+                    <p className="text-slate-400 text-sm">Acompanhe o histórico de atendimentos e a performance do Worker</p>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <div className="flex flex-wrap gap-3 w-full lg:w-auto">
+                    <div className="relative flex-1 lg:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-500/50" />
                         <input
                             type="text"
-                            placeholder="Buscar conteúdo ou ID..."
+                            placeholder="Buscar por session_id, nome ou resumo..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-xl text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-cyan-500/50 focus:outline-none w-64"
+                            className="w-full pl-10 pr-4 py-2 bg-slate-800/50 border border-cyan-500/10 rounded-xl text-sm text-white focus:ring-2 focus:ring-violet-500/50 outline-none transition-all"
                         />
                     </div>
 
-                    <div className="flex bg-slate-800/50 rounded-xl p-1 border border-slate-700/50">
-                        <button
-                            onClick={() => setFilterRole('all')}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${filterRole === 'all'
-                                    ? 'bg-cyan-500/20 text-cyan-400'
-                                    : 'text-slate-400 hover:text-white'
-                                }`}
-                        >
-                            Todos
-                        </button>
-                        <button
-                            onClick={() => setFilterRole('user')}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${filterRole === 'user'
-                                    ? 'bg-violet-500/20 text-violet-400'
-                                    : 'text-slate-400 hover:text-white'
-                                }`}
-                        >
-                            Usuário
-                        </button>
-                        <button
-                            onClick={() => setFilterRole('assistant')}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${filterRole === 'assistant'
-                                    ? 'bg-emerald-500/20 text-emerald-400'
-                                    : 'text-slate-400 hover:text-white'
-                                }`}
-                        >
-                            Bot
-                        </button>
-                    </div>
+                    <select
+                        value={stageFilter}
+                        onChange={(e) => setStageFilter(e.target.value)}
+                        className="bg-slate-800/50 border border-cyan-500/10 rounded-xl px-3 py-2 text-sm text-slate-300 outline-none focus:ring-2 focus:ring-violet-500/50"
+                    >
+                        <option value="all">Fase do Funil (Todas)</option>
+                        <option value="new_lead">Novos Leads</option>
+                        <option value="qualified">Qualificados</option>
+                        <option value="proposal">Em Proposta</option>
+                        <option value="scheduled">Agendados</option>
+                    </select>
+
+                    <button
+                        onClick={fetchConversations}
+                        className="p-2 bg-slate-800/50 hover:bg-slate-700/50 border border-cyan-500/10 rounded-xl text-cyan-500 transition-colors"
+                        title="Recarregar"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="bg-slate-900/50 backdrop-blur-sm border border-cyan-500/10 rounded-2xl overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-slate-900/80 border-b border-cyan-500/10 text-xs uppercase tracking-wider text-slate-400">
-                                <th className="p-4 font-medium">Data / Hora</th>
-                                <th className="p-4 font-medium">Participante</th>
-                                <th className="p-4 font-medium w-1/2">Mensagem</th>
-                                <th className="p-4 font-medium text-center">Modelo</th>
-                                <th className="p-4 font-medium text-center">Tokens</th>
-                                <th className="p-4 font-medium text-right">Latência</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-cyan-500/5 text-sm">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan={6} className="p-8 text-center text-slate-500">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <div className="w-4 h-4 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
-                                            Carregando logs...
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : messages.length === 0 ? (
-                                <tr>
-                                    <td colSpan={6} className="p-8 text-center text-slate-500">
-                                        Nenhuma mensagem encontrada para os filtros atuais.
-                                    </td>
-                                </tr>
-                            ) : (
-                                messages.map((msg) => (
-                                    <tr key={msg.id} className="hover:bg-slate-800/30 transition-colors group">
-                                        <td className="p-4 whitespace-nowrap text-slate-400 font-mono text-xs">
-                                            {formatDate(msg.created_at)}
-                                            <div className="text-[10px] opacity-50 mt-1 truncate max-w-[100px]" title={msg.session_id}>
-                                                {msg.session_id}
-                                            </div>
-                                        </td>
-                                        <td className="p-4">
-                                            {msg.role === 'assistant' ? (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-medium border border-emerald-500/20">
-                                                    <Bot className="w-3 h-3" />
-                                                    IA Worker
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-violet-500/10 text-violet-400 text-xs font-medium border border-violet-500/20">
-                                                    <User className="w-3 h-3" />
-                                                    Cliente
-                                                </span>
-                                            )}
-                                        </td>
-                                        <td className="p-4">
-                                            <p className="text-slate-300 line-clamp-2 group-hover:line-clamp-none transition-all duration-300">
-                                                {msg.message}
-                                            </p>
-                                        </td>
-                                        <td className="p-4 text-center">
-                                            {msg.ai_model ? (
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-400 border border-slate-700">
-                                                    <Cpu className="w-3 h-3" />
-                                                    {msg.ai_model}
-                                                </span>
-                                            ) : (
-                                                <span className="text-slate-600">-</span>
-                                            )}
-                                        </td>
-                                        <td className="p-4 text-center font-mono text-slate-400">
-                                            {msg.token_total ? msg.token_total.toLocaleString() : '-'}
-                                        </td>
-                                        <td className="p-4 text-right">
-                                            {msg.response_time_ms ? (
-                                                <span className={`font-mono text-xs ${msg.response_time_ms > 2000 ? 'text-amber-400' : 'text-green-400'
-                                                    }`}>
-                                                    {msg.response_time_ms}ms
-                                                </span>
-                                            ) : (
-                                                <span className="text-slate-600">-</span>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {loading ? (
+                    Array(6).fill(0).map((_, i) => (
+                        <div key={i} className="h-44 bg-slate-800/20 rounded-2xl border border-cyan-500/5 animate-pulse"></div>
+                    ))
+                ) : filteredConversations.length === 0 ? (
+                    <div className="col-span-full py-20 text-center bg-slate-900/20 rounded-3xl border border-dashed border-slate-800">
+                        <MessageSquare className="w-12 h-12 text-slate-700 mx-auto mb-4" />
+                        <p className="text-slate-500">Nenhuma sessão encontrada para os filtros aplicados.</p>
+                    </div>
+                ) : (
+                    filteredConversations.map((conv) => (
+                        <button
+                            key={conv.id}
+                            onClick={() => setSelectedConv(conv)}
+                            className="p-5 bg-slate-900/40 hover:bg-slate-800/60 border border-cyan-500/10 hover:border-violet-500/50 rounded-2xl text-left transition-all group relative overflow-hidden shadow-lg"
+                        >
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/20 flex items-center justify-center text-violet-400 group-hover:scale-110 transition-transform">
+                                    <User className="w-5 h-5" />
+                                </div>
+                                <div className={`px-2 py-1 rounded-lg border text-[9px] font-black uppercase ${getSentimentColor(conv.sentiment_score)} border-current/20 bg-current/5 tracking-tighter`}>
+                                    {getSentimentLabel(conv.sentiment_score)}
+                                </div>
+                            </div>
+
+                            <h4 className="text-white font-bold truncate mb-1">
+                                {conv.contact_info?.name || 'Visitante Anônimo'}
+                            </h4>
+                            <p className="text-slate-500 text-[10px] font-mono mb-4">{conv.session_id}</p>
+
+                            <div className="bg-slate-950/40 rounded-xl p-3 mb-4 border border-white/5">
+                                <p className="text-slate-400 text-xs line-clamp-2 italic leading-relaxed">
+                                    {conv.summary ? `"${conv.summary}"` : 'Sem resumo disponível para esta sessão.'}
+                                </p>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[9px] text-slate-500 font-bold uppercase tracking-widest pt-3 border-t border-white/5">
+                                <span className="flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    {format(parseISO(conv.last_interaction_at), "dd/MM HH:mm")}
+                                </span>
+                                <span className="flex items-center gap-1 group-hover:text-violet-400 transition-colors">
+                                    Ver Chat <ChevronRight className="w-3 h-3" />
+                                </span>
+                            </div>
+                        </button>
+                    ))
+                )}
             </div>
         </div>
     );

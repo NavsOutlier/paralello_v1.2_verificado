@@ -99,8 +99,8 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId })
             c.funnel_stage === stageId &&
             (
                 !searchTerm ||
-                c.session_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                c.contact_info?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+                (c.session_id?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                (c.contact_info?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
             )
         );
     };
@@ -199,7 +199,7 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId })
                                     {/* Sentiment Indicator */}
                                     {card.sentiment_score !== undefined && (
                                         <div className={`absolute right-2 top-2 w-2 h-2 rounded-full ${card.sentiment_score > 0.5 ? 'bg-green-500' :
-                                                card.sentiment_score < -0.5 ? 'bg-red-500' : 'bg-yellow-500'
+                                            card.sentiment_score < -0.5 ? 'bg-red-500' : 'bg-yellow-500'
                                             }`} title="Sentimento" />
                                     )}
 
@@ -231,7 +231,7 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId })
                                             {/* Platform Icon placeholder - assume Web for now */}
                                             <MessageSquare className="w-3 h-3 text-slate-500" />
                                             <span className="text-[10px] text-slate-500 font-mono">
-                                                {card.session_id.substring(0, 8)}...
+                                                {card.session_id ? card.session_id.substring(0, 8) : 'ID n/a'}...
                                             </span>
                                         </div>
                                         <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-800 rounded transition-all">

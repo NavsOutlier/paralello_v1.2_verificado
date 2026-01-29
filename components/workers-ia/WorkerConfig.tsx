@@ -427,8 +427,8 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                                 key={tab.id}
                                 onClick={() => setActiveInlineTab(tab.id)}
                                 className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-all border-b-2 ${isActive
-                                        ? 'border-violet-500 text-violet-400 bg-violet-500/5'
-                                        : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/50'
+                                    ? 'border-violet-500 text-violet-400 bg-violet-500/5'
+                                    : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/50'
                                     }`}
                             >
                                 <Icon className="w-4 h-4" />
@@ -440,9 +440,184 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                    {activeInlineTab === 'general' && <GeneralSection />}
-                    {activeInlineTab === 'prompt' && <PromptSection />}
-                    {activeInlineTab === 'connection' && <ConnectionSection />}
+                    {activeInlineTab === 'general' && (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="col-span-1">
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Nome do Worker *</label>
+                                    <input
+                                        type="text"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        placeholder="Ex: Consultor de Vendas"
+                                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                                    />
+                                </div>
+                                <div className="col-span-1">
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Função (Tag)</label>
+                                    <select value="sdr" disabled className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white opacity-50 cursor-not-allowed">
+                                        <option value="sdr">SDR / Vendas</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Modelo de IA</label>
+                                    <select
+                                        value={formData.model}
+                                        onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                                    >
+                                        <option value="gpt-4o">GPT-4o (OpenAI)</option>
+                                        <option value="gpt-4o-mini">GPT-4o Mini (Rápido)</option>
+                                        <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+                                        <option value="deepseek-v3">DeepSeek V3 (Custo-Benefício)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">SLA de Resposta (Segundos)</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={formData.sla_threshold_seconds}
+                                        onChange={(e) => setFormData({ ...formData, sla_threshold_seconds: Number(e.target.value) })}
+                                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                                <div>
+                                    <p className="text-sm font-medium text-white">Status</p>
+                                    <p className="text-xs text-slate-500">Worker está {formData.is_active ? 'Ativo' : 'Pausado'}</p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.is_active}
+                                        onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-12 h-6 bg-slate-700 peer-focus:ring-2 peer-focus:ring-violet-500 rounded-full peer peer-checked:after:translate-x-6 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600 peer-checked:after:bg-white"></div>
+                                </label>
+                            </div>
+                        </div>
+                    )}
+                    {activeInlineTab === 'prompt' && (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2 flex justify-between">
+                                        <span>Temperatura ({formData.temperature})</span>
+                                        <span className="text-xs text-slate-500">{formData.temperature > 1 ? 'Criativo' : 'Preciso'}</span>
+                                    </label>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="2"
+                                        step="0.1"
+                                        value={formData.temperature}
+                                        onChange={(e) => setFormData({ ...formData, temperature: Number(e.target.value) })}
+                                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Max Tokens</label>
+                                    <input
+                                        type="number"
+                                        step="100"
+                                        value={formData.max_tokens}
+                                        onChange={(e) => setFormData({ ...formData, max_tokens: Number(e.target.value) })}
+                                        className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2">
+                                    <FileText className="w-4 h-4 text-violet-400" />
+                                    Instruções Principais
+                                </label>
+                                <textarea
+                                    value={formData.system_prompt}
+                                    onChange={(e) => setFormData({ ...formData, system_prompt: e.target.value })}
+                                    placeholder="Você é um assistente útil e amigável..."
+                                    className="w-full h-64 px-4 py-4 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-600 focus:ring-2 focus:ring-violet-500 focus:outline-none font-mono text-sm leading-relaxed resize-none custom-scrollbar"
+                                />
+                            </div>
+                        </div>
+                    )}
+                    {activeInlineTab === 'connection' && (
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
+                                    <Phone className="w-4 h-4 text-emerald-400" />
+                                    Número do WhatsApp
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData.whatsapp_number}
+                                    onChange={(e) => setFormData({ ...formData, whatsapp_number: e.target.value })}
+                                    placeholder="Ex: 5511999999999"
+                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                                />
+                                <p className="text-xs text-slate-500 mt-1">Formato: código do país + DDD + número (sem espaços)</p>
+                            </div>
+                            <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
+                                <h4 className="font-bold text-white mb-4 text-center">Status da Conexão</h4>
+                                {isConnected ? (
+                                    <div className="flex flex-col items-center gap-4">
+                                        <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center border-4 border-emerald-500/20">
+                                            <CheckCircle className="w-10 h-10 text-emerald-500" />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-white font-bold text-lg">Conectado!</p>
+                                            <p className="text-slate-400 text-sm">O agente está online.</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        {!connectingWs && !isWaitingQr ? (
+                                            <div className="flex flex-col items-center">
+                                                <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4 border border-slate-700">
+                                                    <QrCode className="w-8 h-8 text-slate-400" />
+                                                </div>
+                                                <p className="text-slate-400 text-sm mb-4 text-center">
+                                                    {myInstance?.status === 'disconnected' ? 'Instância criada. Gere o QR Code para conectar.' : 'Clique para gerar o QR Code de conexão.'}
+                                                </p>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleConnectWhatsApp}
+                                                    disabled={!currentAgent?.id}
+                                                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                                                >
+                                                    <Smartphone className="w-4 h-4" />
+                                                    Gerar QR Code
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center py-4">
+                                                {myInstance?.qrCode ? (
+                                                    <div className="space-y-4">
+                                                        <div className="bg-white p-3 rounded-2xl border-4 border-emerald-500/30 shadow-2xl mx-auto">
+                                                            <img src={myInstance.qrCode} alt="QR Code" className="w-48 h-48" />
+                                                        </div>
+                                                        <div className="text-center">
+                                                            <p className="text-white font-bold animate-pulse">Aguardando leitura...</p>
+                                                            <p className="text-xs text-slate-400">Abra o WhatsApp &gt; Dispositivos Conectados</p>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-col items-center">
+                                                        <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-3" />
+                                                        <p className="text-slate-300 font-medium">Gerando QR Code...</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer */}
@@ -503,14 +678,14 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                                     className={`flex flex-col items-center gap-2 bg-slate-900 px-2 ${isActive ? 'scale-110' : ''} transition-all duration-300`}
                                 >
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${isActive ? 'border-violet-500 bg-violet-500/10 text-violet-400' :
-                                            isCompleted ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400' :
-                                                'border-slate-700 bg-slate-800 text-slate-500'
+                                        isCompleted ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400' :
+                                            'border-slate-700 bg-slate-800 text-slate-500'
                                         }`}>
                                         {isCompleted ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                                     </div>
                                     <span className={`text-xs font-medium ${isActive ? 'text-violet-400' :
-                                            isCompleted ? 'text-emerald-400' :
-                                                'text-slate-500'
+                                        isCompleted ? 'text-emerald-400' :
+                                            'text-slate-500'
                                         }`}>
                                         {step.label}
                                     </span>

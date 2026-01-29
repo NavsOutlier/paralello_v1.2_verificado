@@ -110,7 +110,7 @@ export const useWhatsApp = (instanceId?: string) => {
         };
     }, [instanceId, fetchMessages]);
 
-    const createInstance = async (name: string, customAction?: string) => {
+    const createInstance = async (name: string, customAction?: string, metadata?: Record<string, any>) => {
         if (!organizationId) {
             return { error: new Error('No organization') };
         }
@@ -122,7 +122,8 @@ export const useWhatsApp = (instanceId?: string) => {
                 body: {
                     action: customAction || 'create_instance',
                     name: name.trim(),
-                    organization_id: organizationId
+                    organization_id: organizationId,
+                    ...metadata  // Spread metadata to top-level body or pass as nested metadata
                 },
                 headers: {
                     Authorization: `Bearer ${session?.access_token}`

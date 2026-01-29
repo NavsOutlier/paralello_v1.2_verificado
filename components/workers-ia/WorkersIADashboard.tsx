@@ -403,13 +403,13 @@ export const WorkersIADashboard: React.FC = () => {
                             </div>
                         </div>
 
-                        {selectedClient && (
+                        {selectedClient && agents.length === 0 && (
                             <button
                                 onClick={handleCreateNew}
                                 className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-500 to-fuchsia-600 text-white rounded-xl text-sm font-bold hover:from-violet-400 hover:to-fuchsia-500 transition-all shadow-lg shadow-violet-500/30 group"
                             >
                                 <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
-                                {agents.length > 0 ? 'Novo Worker' : 'Criar Worker'}
+                                Criar Worker
                                 <Zap className="w-4 h-4 animate-pulse" />
                             </button>
                         )}

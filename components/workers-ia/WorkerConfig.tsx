@@ -57,6 +57,18 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
             return;
         }
 
+        const whatsappRef = formData.whatsapp_number?.replace(/\D/g, '') || '';
+        if (whatsappRef.length > 0) {
+            if (!whatsappRef.startsWith('55')) {
+                alert('O número do WhatsApp deve começar com 55 (Brasil)');
+                return;
+            }
+            if (whatsappRef.length < 12) {
+                alert('O número do WhatsApp parece incompleto (min 12 dígitos com DDD)');
+                return;
+            }
+        }
+
         setSaving(true);
 
         try {
@@ -180,11 +192,16 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                             <input
                                 type="text"
                                 value={formData.whatsapp_number}
-                                onChange={(e) => setFormData({ ...formData, whatsapp_number: e.target.value })}
+                                onChange={(e) => {
+                                    const onlyNums = e.target.value.replace(/\D/g, '');
+                                    setFormData({ ...formData, whatsapp_number: onlyNums });
+                                }}
                                 placeholder="Ex: 5511999999999"
                                 className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:outline-none font-mono"
                             />
-                            <p className="text-xs text-slate-500 mt-1">Número que este agente utilizará para enviar mensagens.</p>
+                            <p className="text-xs text-slate-500 mt-1">
+                                Somente números. Formato: 55 + DDD + Número (Ex: 5535911111111)
+                            </p>
                         </div>
                     </div>
 

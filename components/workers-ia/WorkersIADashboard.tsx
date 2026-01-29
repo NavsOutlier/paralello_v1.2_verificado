@@ -483,6 +483,7 @@ export const WorkersIADashboard: React.FC = () => {
                                         clientName={selectedClient.name}
                                         onSave={handleAgentSaved}
                                         onClose={() => setActiveTab('analytics')}
+                                        isInline={true}
                                     />
                                 )}
                             </div>

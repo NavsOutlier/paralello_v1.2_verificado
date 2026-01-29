@@ -1,10 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import {
     Activity, Clock, DollarSign, MessageSquare,
-    Zap, Users, TrendingUp, BarChart3
+    Zap, Users, TrendingUp, BarChart3, Filter
 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import {
+    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+    BarChart, Bar, Legend, LineChart, Line
+} from 'recharts';
+import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface WorkerAnalyticsProps {
     agentId: string;
@@ -12,320 +17,336 @@ interface WorkerAnalyticsProps {
 
 export const WorkerAnalytics: React.FC<WorkerAnalyticsProps> = ({ agentId }) => {
     const [loading, setLoading] = useState(true);
-    const [metrics, setMetrics] = useState({
-        totalConversations: 0,
-        totalTokens: 0,
-        avgResponseTime: 0,
-        estimatedCost: 0,
-        activeLeads: 0,
-        conversionRate: 0
-    });
-    const [tokenHistory, setTokenHistory] = useState<any[]>([]);
+    const [period, setPeriod] = useState(7); // Default 7 days
+    const [rawMetrics, setRawMetrics] = useState<any[]>([]);
 
     useEffect(() => {
         if (agentId) {
             fetchMetrics();
         }
-    }, [agentId]);
+    }, [agentId, period]);
 
     const fetchMetrics = async () => {
         setLoading(true);
-        const endDate = new Date();
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - 30); // Last 30 days
+        const startDate = subDays(new Date(), period);
 
         try {
-            // 1. Fetch Conversations Stats
-            const { data: conversations, error: convError } = await supabase
-                .from('workers_ia_conversations')
+            const { data, error } = await supabase
+                .from('workers_ia_daily_metrics')
                 .select('*')
                 .eq('agent_id', agentId)
-                .gte('created_at', startDate.toISOString());
+                .gte('metric_date', startDate.toISOString().split('T')[0])
+                .order('metric_date', { ascending: true });
 
-            if (convError) throw convError;
-
-            // 2. Fetch Messages Stats (for tokens and latency)
-            // Note: In a real app, we might want to use a summarized view or RPC for performance
-            // For now, we fetch summary if possible, or raw messages (careful with volume)
-            // Let's assume we can fetch last 1000 messages for analytics sample or summarized data
-            // To be safe, let's just count conversations for now and maybe fetch messages aggregates if we had a dedicated table.
-            // Since we added columns to messages, we can try to fetch them but limit to recent.
-
-            const { data: messages, error: msgError } = await supabase
-                .from('workers_ia_messages')
-                .select('token_total, response_time_ms, created_at')
-                .eq('role', 'assistant') // Only assistant messages have costs/latency
-                .eq('agent_id', agentId) // Assuming we added agent_id to messages or we filter by conversation
-                .gte('created_at', startDate.toISOString())
-                .limit(2000);
-
-            // Actually workers_ia_messages might not have agent_id directly, it links to conversation.
-            // Let's check schema. We defined workers_ia_messages with conversation_id.
-            // So we need to filter messages by conversations that belong to this agent.
-            // This is complex to do in one query without a join or view. 
-            // SIMPLIFICATION: For the MVP, we will assume we can get this via the conversations we fetched.
-            // But fetching messages for ALL conversations is heavy.
-            // ALTERNATIVE: Use the RPC or just mock the heavy data for now/use the conversations metadata if we stored it there.
-            // Wait, we added `token_usage` to conversations? No, we added to messages.
-            // However, we implemented `workers_ia_conversations` with `funnel_stage`.
-
-            // Let's iterate over fetched conversations to calculate funnel
-            const total = conversations?.length || 0;
-            const active = conversations?.filter(c => c.status === 'active').length || 0;
-            const qualified = conversations?.filter(c => ['qualified', 'proposal', 'negotiation', 'closed_won'].includes(c.funnel_stage)).length || 0;
-
-            let totalTokens = 0;
-            let totalLatency = 0;
-            let latencyCount = 0;
-            const historyMap = new Map();
-
-            // We need a way to get message metrics. 
-            // If we can't join easily, let's fetch messages for the top 50 recent conversations to calculate averages.
-            const recentConvIds = conversations?.slice(0, 50).map(c => c.id) || [];
-
-            if (recentConvIds.length > 0) {
-                const { data: recentMessages } = await supabase
-                    .from('workers_ia_messages')
-                    .select('token_total, response_time_ms, created_at')
-                    .in('conversation_id', recentConvIds)
-                    .eq('role', 'assistant');
-
-                if (recentMessages) {
-                    recentMessages.forEach(msg => {
-                        totalTokens += (msg.token_total || 0);
-                        if (msg.response_time_ms) {
-                            totalLatency += msg.response_time_ms;
-                            latencyCount++;
-                        }
-
-                        // Group by day for chart
-                        const day = new Date(msg.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-                        historyMap.set(day, (historyMap.get(day) || 0) + (msg.token_total || 0));
-                    });
-                }
-            }
-
-            // Extrapolate tokens (rough estimate if we only sampled)
-            // If we sampled 50/100 conversations, multiply by 2? 
-            // For now let's just display collected.
-
-            // Cost estimate: Input/Output mix. diverse models.
-            // Simple assumption: $2.00 / 1M tokens (blended) -> 0.000002 per token
-            const estimatedCost = totalTokens * 0.000002;
-
-            setMetrics({
-                totalConversations: total,
-                activeLeads: active,
-                conversionRate: total > 0 ? (qualified / total) * 100 : 0,
-                totalTokens,
-                avgResponseTime: latencyCount > 0 ? Math.round(totalLatency / latencyCount) : 0,
-                estimatedCost
-            });
-
-            // Format history for chart
-            const history = Array.from(historyMap.entries())
-                .map(([date, tokens]) => ({ date, tokens }))
-                .sort((a, b) => a.date.localeCompare(b.date))
-                .slice(-7); // Last 7 days
-
-            setTokenHistory(history.length > 0 ? history : [
-                { date: 'Seg', tokens: 1200 },
-                { date: 'Ter', tokens: 3500 },
-                { date: 'Qua', tokens: 2100 },
-                { date: 'Qui', tokens: 4800 },
-                { date: 'Sex', tokens: 3200 },
-            ]); // Fallback mock if empty for demo
-
+            if (error) throw error;
+            setRawMetrics(data || []);
         } catch (error) {
             console.error('Error fetching analytics:', error);
         }
         setLoading(false);
     };
 
+    // Aggregate daily metrics into totals and chart data
+    const analytics = useMemo(() => {
+        if (!rawMetrics.length) return null;
+
+        const totals = {
+            conversations: 0,
+            messages: 0,
+            tokens: 0,
+            cost: 0,
+            leads: {
+                total: 0,
+                interested: 0,
+                qualified: 0,
+                scheduled: 0,
+                disqualified: 0
+            },
+            avgResponseTime: 0
+        };
+
+        // For chart data, we might have multiple rows per day if we had hourly (but schema is unique per day/client/agent)
+        // Since we query by agent_id, if this agent serves multiple clients, we might have multiple rows per day.
+        // We should group by date.
+
+        const dailyMap = new Map<string, any>();
+
+        let responseTimeSum = 0;
+        let responseTimeCount = 0;
+
+        rawMetrics.forEach(row => {
+            totals.conversations += row.total_conversations || 0;
+            totals.messages += row.total_messages || 0;
+            const rowTokens = (row.tokens_input || 0) + (row.tokens_output || 0);
+            totals.tokens += rowTokens;
+            totals.cost += Number(row.estimated_cost || 0);
+
+            // Funnel
+            totals.leads.total += row.leads_processed || 0;
+            totals.leads.interested += row.leads_interested || 0;
+            totals.leads.qualified += row.leads_qualified || 0;
+            totals.leads.scheduled += row.leads_scheduled || 0;
+            totals.leads.disqualified += row.leads_disqualified || 0;
+
+            // SLA Weighted Average
+            if (row.avg_response_time) {
+                responseTimeSum += (Number(row.avg_response_time) * (row.total_messages || 1));
+                responseTimeCount += (row.total_messages || 1);
+            }
+
+            // Group for charts
+            const date = format(new Date(row.metric_date), 'dd/MM', { locale: ptBR });
+            if (!dailyMap.has(date)) {
+                dailyMap.set(date, {
+                    date,
+                    conversations: 0,
+                    tokens: 0,
+                    cost: 0,
+                    response_time: 0,
+                    leads_qualified: 0,
+                    leads_scheduled: 0
+                });
+            }
+            const d = dailyMap.get(date);
+            d.conversations += row.total_conversations || 0;
+            d.tokens += rowTokens;
+            d.cost += Number(row.estimated_cost || 0);
+            d.leads_qualified += row.leads_qualified || 0;
+            d.leads_scheduled += row.leads_scheduled || 0;
+            // For chart avg response time, we'll just take the max or avg of the day loosely for trends
+            d.response_time = Math.max(d.response_time, Number(row.avg_response_time || 0));
+        });
+
+        totals.avgResponseTime = responseTimeCount > 0 ? (responseTimeSum / responseTimeCount) : 0;
+
+        const chartData = Array.from(dailyMap.values());
+
+        // Conversion Rates
+        const conversionRate = totals.leads.total > 0
+            ? ((totals.leads.scheduled / totals.leads.total) * 100)
+            : 0;
+
+        return { totals, chartData, conversionRate };
+    }, [rawMetrics]);
+
     if (loading) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-pulse">
-                {[1, 2, 3].map(i => (
-                    <div key={i} className="h-32 bg-slate-800/50 rounded-xl" />
-                ))}
+            <div className="flex items-center justify-center h-64">
+                <div className="w-10 h-10 border-4 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
             </div>
         );
     }
 
-    const cards = [
-        {
-            label: 'Total de Tokens',
-            value: (metrics.totalTokens / 1000).toFixed(1) + 'k',
-            sub: 'Últimos 30 dias',
-            icon: Zap,
-            color: 'text-yellow-400',
-            bg: 'bg-yellow-500/10'
-        },
-        {
-            label: 'Custo Estimado',
-            value: `$ ${metrics.estimatedCost.toFixed(3)}`,
-            sub: 'Baseado no modelo',
-            icon: DollarSign,
-            color: 'text-green-400',
-            bg: 'bg-green-500/10'
-        },
-        {
-            label: 'Tempo de Resposta',
-            value: `${(metrics.avgResponseTime / 1000).toFixed(1)}s`,
-            sub: 'Média geral',
-            icon: Clock,
-            color: 'text-cyan-400',
-            bg: 'bg-cyan-500/10'
-        },
-        {
-            label: 'Taxa de Conversão',
-            value: `${metrics.conversionRate.toFixed(1)}%`,
-            sub: 'Leads qualificados',
-            icon: TrendingUp,
-            color: 'text-violet-400',
-            bg: 'bg-violet-500/10'
-        }
-    ];
+    if (!analytics) {
+        return (
+            <div className="text-center py-20 bg-slate-900/50 rounded-2xl border border-slate-700/50">
+                <BarChart3 className="w-12 h-12 text-slate-700 mx-auto mb-4" />
+                <p className="text-slate-400">Sem dados de métricas para este período.</p>
+                <p className="text-xs text-slate-600 mt-2">Comece a processar conversas para gerar insights.</p>
+            </div>
+        );
+    }
+
+    const { totals, chartData, conversionRate } = analytics;
 
     return (
-        <div className="space-y-6">
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {cards.map((card, idx) => {
-                    const Icon = card.icon;
-                    return (
-                        <div key={idx} className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 p-5 rounded-2xl hover:border-violet-500/30 transition-all group">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className={`p-2.5 rounded-xl ${card.bg}`}>
-                                    <Icon className={`w-5 h-5 ${card.color}`} />
-                                </div>
-                                <span className="text-xs font-medium text-slate-500 bg-slate-800 px-2 py-1 rounded-full">
-                                    +12%
-                                </span>
-                            </div>
-                            <h3 className="text-2xl font-bold text-white mb-1">{card.value}</h3>
-                            <p className="text-sm text-slate-400">{card.label}</p>
-                            <p className="text-xs text-slate-600 mt-2">{card.sub}</p>
-                        </div>
-                    );
-                })}
+        <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Header & Controls */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                        <TrendingUp className="w-6 h-6 text-violet-400" />
+                        Performance do Agente
+                    </h3>
+                    <p className="text-slate-400 text-sm">Acompanhamento de engajamento, custos e conversão</p>
+                </div>
+                <div className="flex bg-slate-800/80 p-1 rounded-xl border border-slate-700 shadow-lg">
+                    {[7, 14, 30, 90].map((days) => (
+                        <button
+                            key={days}
+                            onClick={() => setPeriod(days)}
+                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${period === days
+                                ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/20'
+                                : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                                }`}
+                        >
+                            {days} dias
+                        </button>
+                    ))}
+                </div>
             </div>
 
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Token Usage Chart */}
-                <div className="lg:col-span-2 bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 p-6 rounded-2xl">
-                    <div className="flex items-center justify-between mb-6">
-                        <div>
-                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                <Activity className="w-5 h-5 text-violet-400" />
-                                Consumo de Recursos
-                            </h3>
-                            <p className="text-sm text-slate-400">Tokens processados nos últimos 7 dias</p>
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-slate-900/50 backdrop-blur-sm p-5 rounded-2xl border border-slate-700/50 group hover:border-violet-500/30 transition-all">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="p-2.5 bg-violet-500/10 rounded-xl">
+                            <MessageSquare className="w-5 h-5 text-violet-400" />
                         </div>
+                        <span className="text-xs font-bold text-slate-500">VOLUME</span>
                     </div>
+                    <h4 className="text-3xl font-bold text-white mb-1">{totals.conversations}</h4>
+                    <p className="text-xs text-slate-400">Conversas iniciadas</p>
+                </div>
 
+                <div className="bg-slate-900/50 backdrop-blur-sm p-5 rounded-2xl border border-slate-700/50 group hover:border-green-500/30 transition-all">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="p-2.5 bg-green-500/10 rounded-xl">
+                            <DollarSign className="w-5 h-5 text-green-400" />
+                        </div>
+                        <span className="text-xs font-bold text-slate-500">CUSTO</span>
+                    </div>
+                    <h4 className="text-3xl font-bold text-white mb-1">R$ {totals.cost.toFixed(2)}</h4>
+                    <p className="text-xs text-slate-400">{((totals.tokens / 1000).toFixed(1))}k tokens processados</p>
+                </div>
+
+                <div className="bg-slate-900/50 backdrop-blur-sm p-5 rounded-2xl border border-slate-700/50 group hover:border-cyan-500/30 transition-all">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="p-2.5 bg-cyan-500/10 rounded-xl">
+                            <Clock className="w-5 h-5 text-cyan-400" />
+                        </div>
+                        <span className="text-xs font-bold text-slate-500">SLA MÉDIO</span>
+                    </div>
+                    <h4 className="text-3xl font-bold text-white mb-1">{totals.avgResponseTime.toFixed(1)}s</h4>
+                    <p className="text-xs text-slate-400">Tempo de resposta da IA</p>
+                </div>
+
+                <div className="bg-slate-900/50 backdrop-blur-sm p-5 rounded-2xl border border-slate-700/50 group hover:border-yellow-500/30 transition-all">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="p-2.5 bg-yellow-500/10 rounded-xl">
+                            <Zap className="w-5 h-5 text-yellow-400" />
+                        </div>
+                        <span className="text-xs font-bold text-slate-500">CONVERSÃO</span>
+                    </div>
+                    <h4 className="text-3xl font-bold text-white mb-1">{conversionRate.toFixed(1)}%</h4>
+                    <p className="text-xs text-slate-400">{totals.leads.scheduled} agendamentos</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Main Activity Chart */}
+                <div className="lg:col-span-2 bg-slate-900/50 p-6 rounded-2xl border border-slate-700/50">
+                    <h4 className="font-bold text-white mb-6 flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-violet-400" />
+                        Atividade e Agendamentos
+                    </h4>
                     <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={tokenHistory}>
+                            <AreaChart data={chartData}>
                                 <defs>
-                                    <linearGradient id="colorTokens" x1="0" y1="0" x2="0" y2="1">
+                                    <linearGradient id="colorConv" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
                                         <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                                <XAxis
-                                    dataKey="date"
-                                    stroke="#64748b"
-                                    tick={{ fill: '#64748b', fontSize: 12 }}
-                                    tickLine={false}
-                                    axisLine={false}
-                                />
-                                <YAxis
-                                    stroke="#64748b"
-                                    tick={{ fill: '#64748b', fontSize: 12 }}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickFormatter={(value) => `${value / 1000}k`}
-                                />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#f8fafc' }}
-                                    itemStyle={{ color: '#8b5cf6' }}
-                                    formatter={(value: number) => [`${value} tokens`, 'Consumo']}
+                                    contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', fontSize: '12px' }}
+                                    itemStyle={{ color: '#fff' }}
                                 />
-                                <Area
-                                    type="monotone"
-                                    dataKey="tokens"
-                                    stroke="#8b5cf6"
-                                    strokeWidth={3}
-                                    fillOpacity={1}
-                                    fill="url(#colorTokens)"
-                                />
+                                <Legend />
+                                <Area type="monotone" dataKey="conversations" name="Conversas" stroke="#8b5cf6" fill="url(#colorConv)" strokeWidth={2} />
+                                <Area type="monotone" dataKey="leads_scheduled" name="Agendamentos" stroke="#22c55e" fill="none" strokeWidth={2} />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* Funnel Summary */}
-                <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 p-6 rounded-2xl">
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-2">
-                        <Users className="w-5 h-5 text-cyan-400" />
-                        Saúde do Funil
-                    </h3>
-                    <p className="text-sm text-slate-400 mb-6">Eficiência de conversão por estágio</p>
+                {/* Funnel Visualization */}
+                <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-700/50">
+                    <h4 className="font-bold text-white mb-6 flex items-center gap-2">
+                        <Users className="w-4 h-4 text-cyan-400" />
+                        Funil de Vendas (SDR)
+                    </h4>
 
-                    <div className="space-y-4">
-                        <div className="relative pt-2">
-                            <div className="flex justify-between mb-1 text-sm">
-                                <span className="text-slate-300">Total Leads</span>
-                                <span className="text-white font-bold">{metrics.totalConversations}</span>
-                            </div>
-                            <div className="w-full bg-slate-800 rounded-full h-2">
-                                <div className="bg-blue-500 h-2 rounded-full" style={{ width: '100%' }}></div>
+                    <div className="space-y-6 relative">
+                        {/* Connecting Line */}
+                        <div className="absolute left-[19px] top-4 bottom-4 w-0.5 bg-gradient-to-b from-blue-500/20 via-violet-500/20 to-green-500/20" />
+
+                        <div className="relative group">
+                            <div className="flex items-center gap-4">
+                                <div className="z-10 w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center group-hover:border-blue-500 transition-colors">
+                                    <span className="text-xs font-bold text-slate-400">ALL</span>
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex justify-between text-sm mb-1">
+                                        <span className="text-slate-300">Leads Processados</span>
+                                        <span className="text-white font-bold">{totals.leads.total}</span>
+                                    </div>
+                                    <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                        <div className="bg-blue-500 h-full w-full" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="relative pt-2">
-                            <div className="flex justify-between mb-1 text-sm">
-                                <span className="text-slate-300">Qualificados</span>
-                                <span className="text-white font-bold">{Math.round(metrics.totalConversations * 0.6)}</span>
-                            </div>
-                            <div className="w-full bg-slate-800 rounded-full h-2">
-                                <div className="bg-violet-500 h-2 rounded-full" style={{ width: '60%' }}></div>
+                        <div className="relative group">
+                            <div className="flex items-center gap-4">
+                                <div className="z-10 w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center group-hover:border-violet-500 transition-colors">
+                                    <span className="text-xs font-bold text-slate-400">INT</span>
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex justify-between text-sm mb-1">
+                                        <span className="text-slate-300">Interessados</span>
+                                        <span className="text-white font-bold">{totals.leads.interested}</span>
+                                    </div>
+                                    <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                        <div
+                                            className="bg-violet-500 h-full transition-all duration-1000"
+                                            style={{ width: `${totals.leads.total ? (totals.leads.interested / totals.leads.total) * 100 : 0}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-[10px] text-slate-500 text-right block mt-1">
+                                        {totals.leads.total ? Math.round((totals.leads.interested / totals.leads.total) * 100) : 0}% conv.
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="relative pt-2">
-                            <div className="flex justify-between mb-1 text-sm">
-                                <span className="text-slate-300">Em Negociação</span>
-                                <span className="text-white font-bold">{Math.round(metrics.totalConversations * 0.3)}</span>
-                            </div>
-                            <div className="w-full bg-slate-800 rounded-full h-2">
-                                <div className="bg-cyan-500 h-2 rounded-full" style={{ width: '30%' }}></div>
+                        <div className="relative group">
+                            <div className="flex items-center gap-4">
+                                <div className="z-10 w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center group-hover:border-cyan-500 transition-colors">
+                                    <span className="text-xs font-bold text-slate-400">QLF</span>
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex justify-between text-sm mb-1">
+                                        <span className="text-slate-300">Qualificados</span>
+                                        <span className="text-white font-bold">{totals.leads.qualified}</span>
+                                    </div>
+                                    <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                        <div
+                                            className="bg-cyan-500 h-full transition-all duration-1000"
+                                            style={{ width: `${totals.leads.total ? (totals.leads.qualified / totals.leads.total) * 100 : 0}%` }}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="relative pt-2">
-                            <div className="flex justify-between mb-1 text-sm">
-                                <span className="text-slate-300">Convertidos</span>
-                                <span className="text-white font-bold">{Math.round(metrics.totalConversations * metrics.conversionRate / 100)}</span>
-                            </div>
-                            <div className="w-full bg-slate-800 rounded-full h-2">
-                                <div className="bg-green-500 h-2 rounded-full" style={{ width: `${metrics.conversionRate}%` }}></div>
+                        <div className="relative group">
+                            <div className="flex items-center gap-4">
+                                <div className="z-10 w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center group-hover:border-green-500 transition-colors effect-shine">
+                                    <Zap className="w-4 h-4 text-green-400 fill-current" />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex justify-between text-sm mb-1">
+                                        <span className="text-green-400 font-bold">Agendados</span>
+                                        <span className="text-white font-bold">{totals.leads.scheduled}</span>
+                                    </div>
+                                    <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                        <div
+                                            className="bg-green-500 h-full transition-all duration-1000"
+                                            style={{ width: `${totals.leads.total ? (totals.leads.scheduled / totals.leads.total) * 100 : 0}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-[10px] text-green-500/60 text-right block mt-1">
+                                        Taxa Final: {conversionRate.toFixed(1)}%
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div className="mt-8 p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Zap className="w-4 h-4 text-yellow-400" />
-                            <span className="text-sm font-bold text-white">Insight da IA</span>
-                        </div>
-                        <p className="text-xs text-slate-400 leading-relaxed">
-                            A taxa de conversão aumentou 5% desde a última alteração no System Prompt.
-                            Recomendamos manter o tom atual de abordagem.
-                        </p>
                     </div>
                 </div>
             </div>

@@ -3,14 +3,16 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
     Bot, BarChart3, Settings, Search,
-    Zap, Plus, ChevronRight, Activity, Sparkles, GripVertical, Briefcase, List
+    Zap, Plus, ChevronRight, Activity, Sparkles, GripVertical, Briefcase, List, Table
 } from 'lucide-react';
 import { WorkerConfig } from './WorkerConfig';
 import { WorkerKanbanBoard } from './WorkerKanbanBoard';
 import { WorkerAnalytics } from './WorkerAnalytics';
-import { WorkerMessageAudit } from './WorkerMessageAudit';
 
-type DashboardTab = 'analytics' | 'kanban' | 'audit' | 'config';
+import { WorkerMessageAudit } from './WorkerMessageAudit';
+import { WorkerMetricsTable } from './WorkerMetricsTable';
+
+type DashboardTab = 'analytics' | 'table' | 'kanban' | 'audit' | 'config';
 
 interface Client {
     id: string;
@@ -159,6 +161,7 @@ export const WorkersIADashboard: React.FC = () => {
 
     const tabs = [
         { id: 'analytics' as const, label: 'Analytics', icon: BarChart3 },
+        { id: 'table' as const, label: 'Relatório', icon: Table },
         { id: 'kanban' as const, label: 'Funil de Leads', icon: GripVertical },
         { id: 'audit' as const, label: 'Auditoria', icon: Search },
         { id: 'config' as const, label: 'Configuração', icon: Settings },
@@ -462,6 +465,9 @@ export const WorkersIADashboard: React.FC = () => {
                                     <div className="space-y-8">
                                         <WorkerAnalytics agentId={selectedAgent.id} />
                                     </div>
+                                )}
+                                {activeTab === 'table' && (
+                                    <WorkerMetricsTable agentId={selectedAgent.id} />
                                 )}
                                 {activeTab === 'kanban' && (
                                     <WorkerKanbanBoard agentId={selectedAgent.id} />

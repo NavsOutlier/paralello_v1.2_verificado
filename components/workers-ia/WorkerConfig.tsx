@@ -65,7 +65,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         let interval: any;
         if (connectingWs && isWaitingQr && !isConnected) {
             interval = setInterval(() => {
-                createInstance(instanceName).catch(console.error);
+                createInstance(instanceName, 'create_instance_worker_ia').catch(console.error);
             }, 10000);
         }
         return () => {
@@ -84,7 +84,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
     const handleConnectWhatsApp = async () => {
         setConnectingWs(true);
         try {
-            await createInstance(instanceName);
+            await createInstance(instanceName, 'create_instance_worker_ia');
         } catch (error) {
             console.error('Error creating instance:', error);
             alert('Erro ao gerar QR Code. Tente novamente.');

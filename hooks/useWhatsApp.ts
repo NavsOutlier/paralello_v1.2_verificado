@@ -110,7 +110,7 @@ export const useWhatsApp = (instanceId?: string) => {
         };
     }, [instanceId, fetchMessages]);
 
-    const createInstance = async (name: string) => {
+    const createInstance = async (name: string, customAction?: string) => {
         if (!organizationId) {
             return { error: new Error('No organization') };
         }
@@ -120,7 +120,7 @@ export const useWhatsApp = (instanceId?: string) => {
 
             const { data, error } = await supabase.functions.invoke('whatsapp-proxy-v2', {
                 body: {
-                    action: 'create_instance',
+                    action: customAction || 'create_instance',
                     name: name.trim(),
                     organization_id: organizationId
                 },

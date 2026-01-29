@@ -473,6 +473,7 @@ export const WorkersIADashboard: React.FC = () => {
                                     <WorkerConfig
                                         agent={selectedAgent}
                                         clientId={selectedClient.id}
+                                        clientName={selectedClient.name}
                                         onSave={handleAgentSaved}
                                         onClose={() => setActiveTab('analytics')}
                                     />
@@ -531,6 +532,7 @@ export const WorkersIADashboard: React.FC = () => {
                 <WorkerConfig
                     agent={editingAgent}
                     clientId={selectedClient.id}
+                    clientName={selectedClient.name}
                     onSave={handleAgentSaved}
                     onClose={() => setShowConfigModal(false)}
                 />

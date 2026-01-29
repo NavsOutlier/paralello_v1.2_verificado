@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useWhatsApp } from '../../hooks/useWhatsApp';
 import {
     Settings, Save, X, Bot, Zap, CheckCircle,
-    AlertCircle, Activity, BrainCircuit, Type, FileText
+    AlertCircle, Activity, BrainCircuit, Type, FileText,
+    Smartphone, Loader2, RefreshCw, QrCode
 } from 'lucide-react';
 
 // Using 'any' for now, but should link to a proper type in types/workers-ia
@@ -23,6 +25,7 @@ interface WorkerAgent {
 interface WorkerConfigProps {
     agent?: WorkerAgent;
     clientId: string;
+    clientName?: string;
     onSave?: (agent: WorkerAgent) => void;
     onClose: () => void;
 }
@@ -30,11 +33,14 @@ interface WorkerConfigProps {
 export const WorkerConfig: React.FC<WorkerConfigProps> = ({
     agent,
     clientId,
+    clientName,
     onSave,
     onClose
 }) => {
     const { organizationId } = useAuth();
+    const { instances, createInstance } = useWhatsApp();
     const [saving, setSaving] = useState(false);
+    const [connectingWs, setConnectingWs] = useState(false);
 
     const [formData, setFormData] = useState({
         name: agent?.name || '',
@@ -49,6 +55,42 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
     });
 
     const isEditing = !!agent;
+    const instanceName = `Worker: ${clientName || clientId.slice(0, 8)}`;
+    const myInstance = instances.find(i => i.name === instanceName);
+    const isConnected = myInstance && ['connected', 'conectado'].includes(myInstance.status);
+    const isWaitingQr = myInstance && (myInstance.status === 'waiting_scan' || myInstance.status === 'connecting');
+
+    // Auto-refresh QR Code logic
+    useEffect(() => {
+        let interval: any;
+        if (connectingWs && isWaitingQr && !isConnected) {
+            interval = setInterval(() => {
+                createInstance(instanceName).catch(console.error);
+            }, 10000);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [connectingWs, isWaitingQr, isConnected, instanceName, createInstance]);
+
+    // Auto-fill connected number (mock logic or real if available in instance)
+    useEffect(() => {
+        if (isConnected && !formData.whatsapp_number) {
+            // If the instance has the phone number in its metadata, we could use it.
+            // For now, simpler to just mark as connected visually.
+        }
+    }, [isConnected]);
+
+    const handleConnectWhatsApp = async () => {
+        setConnectingWs(true);
+        try {
+            await createInstance(instanceName);
+        } catch (error) {
+            console.error('Error creating instance:', error);
+            alert('Erro ao gerar QR Code. Tente novamente.');
+            setConnectingWs(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -184,24 +226,103 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                             </div>
                         </div>
 
-                        {/* WhatsApp Config */}
-                        <div className="mt-4">
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
-                                WhatsApp Conectado
-                            </label>
-                            <input
-                                type="text"
-                                value={formData.whatsapp_number}
-                                onChange={(e) => {
-                                    const onlyNums = e.target.value.replace(/\D/g, '');
-                                    setFormData({ ...formData, whatsapp_number: onlyNums });
-                                }}
-                                placeholder="Ex: 5511999999999"
-                                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:outline-none font-mono"
-                            />
-                            <p className="text-xs text-slate-500 mt-1">
-                                Somente números. Formato: 55 + DDD + Número (Ex: 5535911111111)
-                            </p>
+                        {/* WhatsApp Connection Section */}
+                        <div className="mt-6 bg-slate-800/30 border border-slate-700/50 rounded-2xl p-5">
+                            <div className="flex items-center justify-between mb-4">
+                                <label className="flex items-center gap-2 text-sm font-medium text-slate-300">
+                                    <Smartphone className="w-4 h-4 text-emerald-400" />
+                                    Conexão WhatsApp
+                                </label>
+                                {isConnected ? (
+                                    <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-bold border border-emerald-500/20">
+                                        <CheckCircle className="w-3 h-3" />
+                                        Conectado
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-700 text-slate-400 rounded-full text-xs font-medium">
+                                        Desconectado
+                                    </span>
+                                )}
+                            </div>
+
+                            {isConnected ? (
+                                <div className="space-y-4">
+                                    <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-4 flex items-center gap-4">
+                                        <div className="p-3 bg-emerald-500/10 rounded-full">
+                                            <Smartphone className="w-6 h-6 text-emerald-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-white font-medium">WhatsApp Vinculado</p>
+                                            <p className="text-xs text-slate-400 mt-0.5">O agente está pronto para enviar e receber mensagens.</p>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wider">
+                                            Número Confirmado
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={formData.whatsapp_number}
+                                            onChange={(e) => {
+                                                const onlyNums = e.target.value.replace(/\D/g, '');
+                                                setFormData({ ...formData, whatsapp_number: onlyNums });
+                                            }}
+                                            placeholder="Ex: 5511999999999"
+                                            className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:outline-none font-mono"
+                                        />
+                                        <p className="text-[10px] text-slate-500 mt-1">
+                                            Este número será usado para validação e disparo.
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    {!connectingWs && !myInstance ? (
+                                        <div className="text-center py-6">
+                                            <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-700">
+                                                <QrCode className="w-8 h-8 text-slate-400" />
+                                            </div>
+                                            <p className="text-slate-300 font-medium mb-1">Nenhuma conexão ativa</p>
+                                            <p className="text-xs text-slate-500 mb-6 max-w-xs mx-auto">
+                                                Conecte o WhatsApp do cliente para permitir que o SDR Max atue automaticamente.
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={handleConnectWhatsApp}
+                                                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 mx-auto"
+                                            >
+                                                <Smartphone className="w-4 h-4" />
+                                                Gerar QR Code
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center py-4 animate-in fade-in duration-500">
+                                            {myInstance?.qrCode ? (
+                                                <div className="relative group">
+                                                    <div className="bg-white p-3 rounded-2xl border-2 border-emerald-500/30 shadow-2xl shadow-emerald-500/20">
+                                                        <img
+                                                            src={myInstance.qrCode}
+                                                            alt="QR Code"
+                                                            className="w-48 h-48"
+                                                        />
+                                                    </div>
+                                                    <div className="text-center mt-4">
+                                                        <p className="text-white font-bold animate-pulse">Aguardando leitura...</p>
+                                                        <p className="text-xs text-slate-400 mt-1">Abra o WhatsApp &gt; Dispositivos Conectados</p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col items-center">
+                                                    <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-3" />
+                                                    <p className="text-slate-300 font-medium">Gerando QR Code...</p>
+                                                    <p className="text-xs text-slate-500 mt-1">Isso pode levar alguns segundos.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 

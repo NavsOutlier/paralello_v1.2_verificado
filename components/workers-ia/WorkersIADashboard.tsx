@@ -177,7 +177,8 @@ export const WorkersIADashboard: React.FC = () => {
             return [savedAgent, ...prev];
         });
         setSelectedAgent(savedAgent);
-        setShowConfigModal(false);
+        // Don't close modal here - let the wizard handle its own flow
+        // Modal will close when user clicks "Finalizar" (which calls onClose)
         setEditingAgent(null);
     };
 

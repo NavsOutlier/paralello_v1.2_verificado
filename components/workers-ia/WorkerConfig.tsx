@@ -161,6 +161,17 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                 result = data;
                 onSave?.(data as WorkerAgent);
             }
+
+            // Link Instance to Agent if connected
+            if (myInstance && result?.id) {
+                await supabase
+                    .from('instances')
+                    .update({
+                        agent_id: result.id,
+                        client_id: clientId
+                    })
+                    .eq('id', myInstance.id);
+            }
         } catch (error: any) {
             console.error('Error saving worker:', error);
             alert(`Erro ao salvar: ${error.message}`);

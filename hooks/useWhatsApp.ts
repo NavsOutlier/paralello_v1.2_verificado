@@ -123,7 +123,9 @@ export const useWhatsApp = (instanceId?: string) => {
                     action: customAction || 'create_instance',
                     name: name.trim(),
                     organization_id: organizationId,
-                    ...metadata  // Spread metadata to top-level body or pass as nested metadata
+                    client_id: metadata?.client_id,
+                    agent_id: metadata?.agent_id,
+                    ...metadata  // Spread metadata to allow additional fields if needed
                 },
                 headers: {
                     Authorization: `Bearer ${session?.access_token}`

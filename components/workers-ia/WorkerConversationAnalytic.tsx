@@ -62,7 +62,30 @@ export const WorkerConversationAnalytic: React.FC<WorkerConversationAnalyticProp
     };
 
     useEffect(() => {
+        if (!agentId) return;
+
         fetchConversations();
+
+        // Subscribe to real-time updates for conversations
+        const channel = supabase
+            .channel(`worker-sessions-${agentId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'workers_ia_conversations',
+                    filter: `agent_id=eq.${agentId}`
+                },
+                () => {
+                    fetchConversations();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [agentId, stageFilter]);
 
     const filteredConversations = conversations.filter(c =>

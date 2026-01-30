@@ -97,62 +97,84 @@ export const WorkerMetricsCards: React.FC<WorkerMetricsCardsProps> = ({ agentId 
         return { start, end, prevStart, prevEnd };
     };
 
-    useEffect(() => {
-        const fetchMetrics = async () => {
-            setLoading(true);
-            const { start, end, prevStart, prevEnd } = getDateRange(period);
+    const fetchMetrics = async () => {
+        setLoading(true);
+        const { start, end, prevStart, prevEnd } = getDateRange(period);
 
-            const { data: currentData } = await supabase
-                .from('workers_ia_daily_metrics')
-                .select('*')
-                .eq('agent_id', agentId)
-                .gte('metric_date', start.toISOString().split('T')[0])
-                .lte('metric_date', end.toISOString().split('T')[0]);
+        const { data: currentData } = await supabase
+            .from('workers_ia_daily_metrics')
+            .select('*')
+            .eq('agent_id', agentId)
+            .gte('metric_date', start.toISOString().split('T')[0])
+            .lte('metric_date', end.toISOString().split('T')[0]);
 
-            const { data: previousData } = await supabase
-                .from('workers_ia_daily_metrics')
-                .select('*')
-                .eq('agent_id', agentId)
-                .gte('metric_date', prevStart.toISOString().split('T')[0])
-                .lte('metric_date', prevEnd.toISOString().split('T')[0]);
+        const { data: previousData } = await supabase
+            .from('workers_ia_daily_metrics')
+            .select('*')
+            .eq('agent_id', agentId)
+            .gte('metric_date', prevStart.toISOString().split('T')[0])
+            .lte('metric_date', prevEnd.toISOString().split('T')[0]);
 
-            const calculateKPIs = (metrics: any[]) => {
-                if (!metrics || metrics.length === 0) return null;
-                return metrics.reduce((acc, m) => ({
-                    totalConversations: acc.totalConversations + (m.total_conversations || 0),
-                    totalCost: acc.totalCost + Number(m.estimated_cost || 0),
-                    tokensUsed: acc.tokensUsed + (m.tokens_input || 0) + (m.tokens_output || 0),
-                    avgResponseTime: acc.avgResponseTime + (Number(m.avg_response_time || 0)),
-                    leadsScheduled: acc.leadsScheduled + (m.leads_scheduled || 0),
-                    leadsProcessed: acc.leadsProcessed + (m.leads_processed || 0),
-                    activeConversations: acc.activeConversations + (m.active_conversations || 0),
-                    // Missing columns fallback
-                    avgSentiment: acc.avgSentiment + (Number(m.avg_sentiment_score || 0)),
-                    resolved: acc.resolved + (m.resolved_conversations || 0)
-                }), {
-                    totalConversations: 0, totalCost: 0, tokensUsed: 0, avgResponseTime: 0,
-                    leadsScheduled: 0, leadsProcessed: 0, activeConversations: 0, avgSentiment: 0, resolved: 0
-                });
-            };
-
-            const processKPIs = (data: any) => {
-                const kpi = calculateKPIs(data || []);
-                if (!kpi) return null;
-                const count = (data || []).length;
-                return {
-                    ...kpi,
-                    avgResponseTime: kpi.avgResponseTime / (count || 1),
-                    avgSentiment: kpi.avgSentiment / (count || 1),
-                    resolutionRate: kpi.totalConversations > 0 ? (kpi.resolved / kpi.totalConversations) * 100 : 0
-                };
-            };
-
-            setKpis(processKPIs(currentData));
-            setPreviousKpis(processKPIs(previousData));
-            setLoading(false);
+        const calculateKPIs = (metrics: any[]) => {
+            if (!metrics || metrics.length === 0) return null;
+            return metrics.reduce((acc, m) => ({
+                totalConversations: acc.totalConversations + (m.total_conversations || 0),
+                totalCost: acc.totalCost + Number(m.estimated_cost || 0),
+                tokensUsed: acc.tokensUsed + (m.tokens_input || 0) + (m.tokens_output || 0),
+                avgResponseTime: acc.avgResponseTime + (Number(m.avg_response_time || 0)),
+                leadsScheduled: acc.leadsScheduled + (m.leads_scheduled || 0),
+                leadsProcessed: acc.leadsProcessed + (m.leads_processed || 0),
+                activeConversations: acc.activeConversations + (m.active_conversations || 0),
+                avgSentiment: acc.avgSentiment + (Number(m.avg_sentiment_score || 0)),
+                resolved: acc.resolved + (m.resolved_conversations || 0)
+            }), {
+                totalConversations: 0, totalCost: 0, tokensUsed: 0, avgResponseTime: 0,
+                leadsScheduled: 0, leadsProcessed: 0, activeConversations: 0, avgSentiment: 0, resolved: 0
+            });
         };
 
+        const processKPIs = (data: any) => {
+            const kpi = calculateKPIs(data || []);
+            if (!kpi) return null;
+            const count = (data || []).length;
+            return {
+                ...kpi,
+                avgResponseTime: kpi.avgResponseTime / (count || 1),
+                avgSentiment: kpi.avgSentiment / (count || 1),
+                resolutionRate: kpi.totalConversations > 0 ? (kpi.resolved / kpi.totalConversations) * 100 : 0
+            };
+        };
+
+        setKpis(processKPIs(currentData));
+        setPreviousKpis(processKPIs(previousData));
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        if (!agentId) return;
+
         fetchMetrics();
+
+        // Subscribe to real-time updates for metrics
+        const channel = supabase
+            .channel(`worker-kpis-${agentId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'workers_ia_daily_metrics',
+                    filter: `agent_id=eq.${agentId}`
+                },
+                () => {
+                    fetchMetrics();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [agentId, period]);
 
     const getTrend = (current: number, previous: number) => {

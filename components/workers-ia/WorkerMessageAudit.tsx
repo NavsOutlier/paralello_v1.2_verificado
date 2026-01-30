@@ -92,7 +92,29 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
     };
 
     useEffect(() => {
+        if (!agentId) return;
+
         fetchConversations();
+
+        const channel = supabase
+            .channel(`audit-sessions-${agentId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'workers_ia_conversations',
+                    filter: `agent_id=eq.${agentId}`
+                },
+                () => {
+                    fetchConversations();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [agentId, stageFilter]);
 
     useEffect(() => {
@@ -105,9 +127,35 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
     }, [initialSessionId, conversations]);
 
     useEffect(() => {
-        if (selectedConv) {
-            fetchMessages(selectedConv.session_id);
-        }
+        if (!selectedConv) return;
+
+        fetchMessages(selectedConv.session_id);
+
+        // Real-time messages for the active chat
+        const channel = supabase
+            .channel(`audit-messages-${selectedConv.session_id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'workers_ia_memory_messages',
+                    filter: `session_id=eq.${selectedConv.session_id}`
+                },
+                (payload) => {
+                    const newMessage = payload.new as WorkerMessage;
+                    setMessages(prev => {
+                        const exists = prev.some(m => m.id === newMessage.id);
+                        if (exists) return prev;
+                        return [...prev, newMessage];
+                    });
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [selectedConv]);
 
     const filteredConversations = conversations.filter(c =>

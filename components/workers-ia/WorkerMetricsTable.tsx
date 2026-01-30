@@ -20,9 +20,29 @@ export const WorkerMetricsTable: React.FC<WorkerMetricsTableProps> = ({ agentId 
     });
 
     useEffect(() => {
-        if (agentId) {
-            fetchMetrics();
-        }
+        if (!agentId) return;
+
+        fetchMetrics();
+
+        const channel = supabase
+            .channel(`worker-pivot-metrics-${agentId}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'workers_ia_daily_metrics',
+                    filter: `agent_id=eq.${agentId}`
+                },
+                () => {
+                    fetchMetrics();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [agentId, dateRange]);
 
     const fetchMetrics = async () => {

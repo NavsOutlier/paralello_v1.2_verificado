@@ -14,9 +14,30 @@ export const WorkerAnalytics: React.FC<WorkerAnalyticsProps> = ({ agentId }) => 
     const [activeConvs, setActiveConvs] = useState(0);
 
     useEffect(() => {
-        if (agentId) {
-            fetchActiveConversations();
-        }
+        if (!agentId) return;
+
+        fetchActiveConversations();
+
+        // Subscribe to real-time updates for metrics
+        const channel = supabase
+            .channel('worker-analytics-metrics')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'workers_ia_daily_metrics',
+                    filter: `agent_id=eq.${agentId}`
+                },
+                () => {
+                    fetchActiveConversations();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [agentId]);
 
     const fetchActiveConversations = async () => {

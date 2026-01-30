@@ -4,7 +4,8 @@ import {
     Search, Filter, Calendar, MessageSquare,
     User, ChevronRight, AlertCircle, CheckCircle,
     XCircle, Info, RefreshCw, Star, ArrowLeft,
-    Database, Bot, Cpu, Clock, Zap
+    Database, Bot, Cpu, Clock, Zap, Sparkles,
+    Frown, Meh, Smile
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -115,18 +116,13 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
         (c.summary?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     );
 
-    const getSentimentColor = (score?: number) => {
-        if (score === undefined || score === null) return 'text-slate-400';
-        if (score > 0.5) return 'text-emerald-400';
-        if (score < -0.5) return 'text-rose-400';
-        return 'text-blue-400';
-    };
-
-    const getSentimentLabel = (score?: number) => {
-        if (score === undefined || score === null) return 'Neutro';
-        if (score > 0.5) return 'Positivo';
-        if (score < -0.5) return 'Negativo';
-        return 'Neutro';
+    const getSentimentConfig = (score?: number) => {
+        if (score === undefined || score === null) return { color: 'text-slate-500', icon: Meh, label: 'Neutro' };
+        if (score <= -0.6) return { color: 'text-rose-500', icon: Frown, label: 'Muito Insatisfeito' };
+        if (score <= -0.1) return { color: 'text-orange-400', icon: Frown, label: 'Insatisfeito' };
+        if (score < 0.2) return { color: 'text-amber-400', icon: Meh, label: 'Neutro' };
+        if (score < 0.6) return { color: 'text-emerald-400', icon: Smile, label: 'Satisfeito' };
+        return { color: 'text-green-500', icon: Smile, label: 'Muito Satisfeito' };
     };
 
     if (selectedConv) {
@@ -144,19 +140,34 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
                         <div>
                             <h3 className="text-white font-bold flex items-center gap-2">
                                 {selectedConv.contact_info?.name || 'Visitante Anônimo'}
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full border border-current/20 ${getSentimentColor(selectedConv.sentiment_score)}`}>
-                                    {getSentimentLabel(selectedConv.sentiment_score)}
-                                </span>
+                                {(() => {
+                                    const config = getSentimentConfig(selectedConv.sentiment_score);
+                                    const Icon = config.icon;
+                                    return (
+                                        <span className={`flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full border border-current/20 ${config.color} bg-current/5`}>
+                                            <Icon className="w-3 h-3" />
+                                            {config.label}
+                                        </span>
+                                    );
+                                })()}
                             </h3>
                             <p className="text-slate-500 text-xs font-mono">{selectedConv.session_id}</p>
                         </div>
                     </div>
 
-                    <div className="text-right hidden md:block">
-                        <p className="text-slate-400 text-[10px] uppercase font-bold tracking-widest mb-1">Status no Funil</p>
-                        <span className="text-xs px-2 py-1 bg-violet-500/10 text-violet-400 rounded-lg border border-violet-500/20 uppercase font-bold">
-                            {selectedConv.funnel_stage?.replace('_', ' ') || 'Novo Lead'}
-                        </span>
+                    <div className="flex flex-col items-end gap-1">
+                        <div className="flex items-center gap-2 text-violet-400">
+                            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                            <p className="text-[10px] uppercase font-bold tracking-widest">Resumo da IA</p>
+                        </div>
+                        <p className="text-white text-xs max-w-[200px] md:max-w-md line-clamp-2 text-right italic opacity-80 leading-relaxed">
+                            {selectedConv.summary ? `"${selectedConv.summary}"` : 'Aguardando processamento de resumo...'}
+                        </p>
+                        <div className="mt-1 flex items-center gap-2">
+                            <span className="text-[9px] px-1.5 py-0.5 bg-violet-500/10 text-violet-400 rounded-md border border-violet-500/20 uppercase font-bold tracking-wider">
+                                {selectedConv.funnel_stage?.replace('_', ' ') || 'Novo Lead'}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
@@ -282,9 +293,16 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/20 flex items-center justify-center text-violet-400 group-hover:scale-110 transition-transform">
                                     <User className="w-5 h-5" />
                                 </div>
-                                <div className={`px-2 py-1 rounded-lg border text-[9px] font-black uppercase ${getSentimentColor(conv.sentiment_score)} border-current/20 bg-current/5 tracking-tighter`}>
-                                    {getSentimentLabel(conv.sentiment_score)}
-                                </div>
+                                {(() => {
+                                    const config = getSentimentConfig(conv.sentiment_score);
+                                    const Icon = config.icon;
+                                    return (
+                                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[9px] font-black uppercase ${config.color} border-current/20 bg-current/5 tracking-tighter shadow-[0_0_10px_currentColor] shadow-opacity-10`}>
+                                            <Icon className="w-3 h-3" />
+                                            {config.label}
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
                             <h4 className="text-white font-bold truncate mb-1">

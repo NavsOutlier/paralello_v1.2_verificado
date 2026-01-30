@@ -15,19 +15,19 @@ interface AgentKanbanBoardProps {
 const getSentimentConfig = (score?: number, label?: string) => {
     // If we have a score, use 5 levels
     if (score !== undefined && score !== null) {
-        if (score <= -0.6) return { color: 'text-rose-500', icon: Frown, label: 'Muito Insatisfeito' };
-        if (score <= -0.1) return { color: 'text-orange-400', icon: Frown, label: label || 'Insatisfeito' };
-        if (score < 0.2) return { color: 'text-amber-400', icon: Meh, label: label || 'Neutro' };
-        if (score < 0.6) return { color: 'text-emerald-400', icon: Smile, label: label || 'Satisfeito' };
-        return { color: 'text-green-500', icon: Smile, label: 'Muito Satisfeito' };
+        if (score <= -0.6) return { color: 'text-rose-500', border: 'border-l-rose-500', icon: Frown, label: 'Muito Insatisfeito' };
+        if (score <= -0.1) return { color: 'text-orange-400', border: 'border-l-orange-400', icon: Frown, label: label || 'Insatisfeito' };
+        if (score < 0.2) return { color: 'text-amber-400', border: 'border-l-amber-400', icon: Meh, label: label || 'Neutro' };
+        if (score < 0.6) return { color: 'text-emerald-400', border: 'border-l-emerald-400', icon: Smile, label: label || 'Satisfeito' };
+        return { color: 'text-green-500', border: 'border-l-green-500', icon: Smile, label: 'Muito Satisfeito' };
     }
 
     // Fallback to label if no score
     switch (label) {
-        case 'positive': return { color: 'text-emerald-400', icon: Smile, label: 'Satisfeito' };
-        case 'negative': return { color: 'text-rose-400', icon: Frown, label: 'Insatisfeito' };
-        case 'neutral': return { color: 'text-amber-400', icon: Meh, label: 'Neutro' };
-        default: return { color: 'text-slate-500', icon: Meh, label: 'Sem Feeling' };
+        case 'positive': return { color: 'text-emerald-400', border: 'border-l-emerald-400', icon: Smile, label: 'Satisfeito' };
+        case 'negative': return { color: 'text-rose-400', border: 'border-l-rose-400', icon: Frown, label: 'Insatisfeito' };
+        case 'neutral': return { color: 'text-amber-400', border: 'border-l-amber-400', icon: Meh, label: 'Neutro' };
+        default: return { color: 'text-slate-500', border: 'border-l-slate-700', icon: Meh, label: 'Sem Feeling' };
     }
 };
 
@@ -147,7 +147,7 @@ export const AgentKanbanBoard: React.FC<AgentKanbanBoardProps> = ({ agentId, onV
                                     .map(card => (
                                         <div
                                             key={card.id}
-                                            className="group bg-slate-800 border-l-2 p-3 rounded-lg shadow-sm border-slate-600 hover:border-violet-500 transition-all cursor-default"
+                                            className={`group bg-slate-900/60 border-l-4 p-3 rounded-lg shadow-sm ${getSentimentConfig(card.sentiment_score, card.sentiment).border} hover:bg-slate-800/80 transition-all cursor-default border-y border-r border-slate-700/30`}
                                         >
                                             <div className="flex items-start justify-between mb-2">
                                                 <div className="flex items-center gap-2">

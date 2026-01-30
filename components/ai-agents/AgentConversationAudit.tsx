@@ -4,7 +4,8 @@ import { supabase } from '../../lib/supabase';
 import {
     Search, Filter, Calendar, MessageSquare,
     User, ChevronRight, AlertCircle, CheckCircle,
-    XCircle, Info, RefreshCw, Star, ArrowLeft
+    XCircle, Info, RefreshCw, Star, ArrowLeft,
+    Frown, Meh, Smile
 } from 'lucide-react';
 import { AIConversation, AIConversationMessage } from '../../types/ai-agents';
 import { format, parseISO } from 'date-fns';
@@ -87,12 +88,22 @@ export const AgentConversationAudit: React.FC<AgentConversationAuditProps> = ({ 
         c.summary?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const getSentimentColor = (sentiment?: string) => {
-        switch (sentiment) {
-            case 'positive': return 'text-emerald-400';
-            case 'negative': return 'text-rose-400';
-            case 'neutral': return 'text-blue-400';
-            default: return 'text-slate-400';
+    const getSentimentConfig = (score?: number, label?: string) => {
+        // If we have a score, use 5 levels
+        if (score !== undefined && score !== null) {
+            if (score <= -0.6) return { color: 'text-rose-500', icon: Frown, label: 'Muito Insatisfeito' };
+            if (score <= -0.1) return { color: 'text-orange-400', icon: Frown, label: label || 'Insatisfeito' };
+            if (score < 0.2) return { color: 'text-amber-400', icon: Meh, label: label || 'Neutro' };
+            if (score < 0.6) return { color: 'text-emerald-400', icon: Smile, label: label || 'Satisfeito' };
+            return { color: 'text-green-500', icon: Smile, label: 'Muito Satisfeito' };
+        }
+
+        // Fallback to label if no score
+        switch (label) {
+            case 'positive': return { color: 'text-emerald-400', icon: Smile, label: 'Satisfeito' };
+            case 'negative': return { color: 'text-rose-400', icon: Frown, label: 'Insatisfeito' };
+            case 'neutral': return { color: 'text-amber-400', icon: Meh, label: 'Neutro' };
+            default: return { color: 'text-slate-500', icon: Meh, label: 'Sem Feeling' };
         }
     };
 
@@ -111,9 +122,16 @@ export const AgentConversationAudit: React.FC<AgentConversationAuditProps> = ({ 
                         <div>
                             <h3 className="text-white font-bold flex items-center gap-2">
                                 {selectedConv.contact_name || 'Anônimo'}
-                                <span className={`text-xs px-2 py-0.5 rounded-full border border-current/20 ${getSentimentColor(selectedConv.sentiment)}`}>
-                                    {selectedConv.sentiment || 'Sem Sentimento'}
-                                </span>
+                                {(() => {
+                                    const config = getSentimentConfig(selectedConv.sentiment_score, selectedConv.sentiment);
+                                    const Icon = config.icon;
+                                    return (
+                                        <span className={`flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full border border-current/20 ${config.color} bg-current/5`}>
+                                            <Icon className="w-3 h-3" />
+                                            {config.label}
+                                        </span>
+                                    );
+                                })()}
                             </h3>
                             <p className="text-slate-500 text-xs">{selectedConv.contact_identifier}</p>
                         </div>
@@ -222,9 +240,16 @@ export const AgentConversationAudit: React.FC<AgentConversationAuditProps> = ({ 
                             <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-400 group-hover:bg-violet-500 group-hover:text-white transition-colors">
                                 <User className="w-5 h-5" />
                             </div>
-                            <div className={`px-2 py-1 rounded-lg border text-[10px] font-bold uppercase ${getSentimentColor(conv.sentiment)} border-current/20 bg-current/5`}>
-                                {conv.sentiment || 'N/A'}
-                            </div>
+                            {(() => {
+                                const config = getSentimentConfig(conv.sentiment_score, conv.sentiment);
+                                const Icon = config.icon;
+                                return (
+                                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] font-bold uppercase ${config.color} border-current/20 bg-current/5 shadow-[0_0_10px_currentColor] shadow-opacity-10`}>
+                                        <Icon className="w-3 h-3" />
+                                        {config.label}
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         <h4 className="text-white font-bold truncate">{conv.contact_name || 'Anônimo'}</h4>

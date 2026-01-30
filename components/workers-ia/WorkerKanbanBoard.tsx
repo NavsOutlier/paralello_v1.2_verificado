@@ -28,6 +28,9 @@ interface WorkerConversation {
         phone?: string;
     };
     sentiment_score?: number;
+    last_message_by?: 'ai' | 'user' | 'human';
+    last_message_at?: string;
+    sla_breach_count?: number;
 }
 
 interface WorkerKanbanBoardProps {
@@ -60,15 +63,31 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId, o
     const [conversations, setConversations] = useState<WorkerConversation[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [slaThreshold, setSlaThreshold] = useState(600); // Default 10 mins in seconds
 
     useEffect(() => {
         if (agentId) {
             fetchConversations();
+            fetchAgentConfig();
         }
     }, [agentId]);
 
+    const fetchAgentConfig = async () => {
+        const { data } = await supabase
+            .from('workers_ia_agents')
+            .select('sla_threshold_seconds')
+            .eq('id', agentId)
+            .single();
+
+        if (data?.sla_threshold_seconds) {
+            setSlaThreshold(data.sla_threshold_seconds);
+        }
+    };
+
     // Real-time updates
     useEffect(() => {
+        if (!agentId) return;
+
         const subscription = supabase
             .channel(`workers-kanban-${agentId}`)
             .on(
@@ -80,13 +99,21 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId, o
                     filter: `agent_id=eq.${agentId}`
                 },
                 (payload) => {
-                    fetchConversations();
+                    // Update local state instead of full fetch if possible, 
+                    // or just fetch if it's an external change
+                    if (payload.eventType === 'UPDATE') {
+                        setConversations(prev => prev.map(c =>
+                            c.id === payload.new.id ? { ...c, ...payload.new } : c
+                        ));
+                    } else {
+                        fetchConversations();
+                    }
                 }
             )
             .subscribe();
 
         return () => {
-            subscription.unsubscribe();
+            supabase.removeChannel(subscription);
         };
     }, [agentId]);
 
@@ -96,6 +123,7 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId, o
             .from('workers_ia_conversations')
             .select('*')
             .eq('agent_id', agentId)
+            .eq('organization_id', organizationId)
             .order('updated_at', { ascending: false });
 
         if (error) {
@@ -128,18 +156,25 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId, o
     const handleDrop = async (e: React.DragEvent, targetStage: string) => {
         e.preventDefault();
         const conversationId = e.dataTransfer.getData('text/plain');
+        if (!conversationId) return;
 
+        // Optimistic update
         setConversations(prev => prev.map(c =>
             c.id === conversationId ? { ...c, funnel_stage: targetStage as any } : c
         ));
 
         const { error } = await supabase
             .from('workers_ia_conversations')
-            .update({ funnel_stage: targetStage })
-            .eq('id', conversationId);
+            .update({
+                funnel_stage: targetStage,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', conversationId)
+            .eq('organization_id', organizationId);
 
         if (error) {
             console.error('Error moving card:', error);
+            // Revert on error
             fetchConversations();
         }
     };
@@ -229,7 +264,59 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId, o
                                                         <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1.5 opacity-60">
                                                             <Clock className="w-3 h-3" />
                                                             {format(new Date(card.updated_at), "dd/MM HH:mm")}
+                                                            {card.sla_breach_count && card.sla_breach_count > 0 ? (
+                                                                <span className="ml-2 px-1.5 py-0.5 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-md text-[9px] font-black animate-pulse flex items-center gap-1">
+                                                                    <Zap className="w-2.5 h-2.5 fill-rose-500" />
+                                                                    {card.sla_breach_count}x SLA
+                                                                </span>
+                                                            ) : null}
                                                         </span>
+                                                    </div>
+
+                                                    {/* Strategic Badges */}
+                                                    <div className="flex flex-col items-end gap-1.5">
+                                                        {(() => {
+                                                            const lastMsgAt = card.last_message_at ? new Date(card.last_message_at) : null;
+                                                            const now = new Date();
+                                                            const diffSeconds = lastMsgAt ? Math.floor((now.getTime() - lastMsgAt.getTime()) / 1000) : 0;
+
+                                                            if (card.last_message_by === 'user') {
+                                                                if (card.sentiment_score !== undefined && card.sentiment_score < 0) {
+                                                                    return (
+                                                                        <div className="flex items-center gap-1.5 px-2 py-1 bg-rose-600 border border-rose-400 rounded-lg text-[9px] font-black text-white animate-[pulse_0.8s_infinite] shadow-[0_0_15px_rgba(225,29,72,0.4)]">
+                                                                            <AlertCircle className="w-3 h-3" />
+                                                                            INTERVENÇÃO
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                // URGENT: SLA breached
+                                                                if (diffSeconds > slaThreshold) {
+                                                                    return (
+                                                                        <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-500 border border-amber-300 rounded-lg text-[9px] font-black text-slate-950 animate-[pulse_1.5s_infinite] shadow-[0_0_15px_rgba(245,158,11,0.4)]">
+                                                                            <Zap className="w-3 h-3 fill-slate-950" />
+                                                                            SLA ESTOURADO
+                                                                        </div>
+                                                                    );
+                                                                }
+                                                                return (
+                                                                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/20 border border-amber-500/30 rounded text-[8px] font-black text-amber-400">
+                                                                        <MessageSquare className="w-2.5 h-2.5" />
+                                                                        PENDENTE
+                                                                    </div>
+                                                                );
+                                                            }
+
+                                                            if (card.last_message_by === 'ai') {
+                                                                return (
+                                                                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded text-[8px] font-black text-emerald-400">
+                                                                        <CheckCircle2 className="w-2.5 h-2.5" />
+                                                                        OK
+                                                                    </div>
+                                                                );
+                                                            }
+
+                                                            return null;
+                                                        })()}
                                                     </div>
                                                 </div>
 

@@ -116,6 +116,7 @@ export const WorkerMetricsTable: React.FC<WorkerMetricsTableProps> = ({ agentId 
             rows: [
                 { label: 'Conversas Ativas', key: 'total_conversations', format: formatNumber },
                 { label: 'Mensagens Trocadas', key: 'total_messages', format: formatNumber },
+                { label: 'Estouros de SLA', key: 'total_sla_breaches', format: formatNumber },
                 { label: 'Tokens Processados', getter: (d: any) => (d.tokens_input + d.tokens_output), format: (v: number) => `${(v / 1000).toFixed(1)}k` },
             ]
         },

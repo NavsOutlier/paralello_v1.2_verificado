@@ -29,6 +29,7 @@ interface WorkerConversation {
         email?: string;
         phone?: string;
     };
+    sla_breach_count?: number;
 }
 
 interface WorkerMessage {
@@ -369,9 +370,16 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
                                     <Calendar className="w-3 h-3" />
                                     {format(parseISO(conv.last_interaction_at), "dd/MM HH:mm")}
                                 </span>
-                                <span className="flex items-center gap-1 group-hover:text-violet-400 transition-colors">
-                                    Ver Chat <ChevronRight className="w-3 h-3" />
-                                </span>
+                                {conv.sla_breach_count && conv.sla_breach_count > 0 ? (
+                                    <span className="flex items-center gap-1 text-rose-500 font-black">
+                                        <Zap className="w-2.5 h-2.5 fill-rose-500" />
+                                        {conv.sla_breach_count}x SLA
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center gap-1 group-hover:text-violet-400 transition-colors">
+                                        Ver Chat <ChevronRight className="w-3 h-3" />
+                                    </span>
+                                )}
                             </div>
                         </button>
                     ))

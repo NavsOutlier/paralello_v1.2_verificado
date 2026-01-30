@@ -252,7 +252,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">
-                        SLA de Resposta (Segundos)
+                        SLA Máximo de Resposta (Segundos)
                     </label>
                     <input
                         type="number"
@@ -475,7 +475,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">SLA de Resposta (Segundos)</label>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">SLA Máximo de Resposta (Segundos)</label>
                                     <input
                                         type="number"
                                         min="1"

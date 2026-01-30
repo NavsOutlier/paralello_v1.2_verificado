@@ -12,9 +12,10 @@ import { ptBR } from 'date-fns/locale';
 
 interface AgentConversationAuditProps {
     agentId: string;
+    initialConversationId?: string;
 }
 
-export const AgentConversationAudit: React.FC<AgentConversationAuditProps> = ({ agentId }) => {
+export const AgentConversationAudit: React.FC<AgentConversationAuditProps> = ({ agentId, initialConversationId }) => {
     const [conversations, setConversations] = useState<AIConversation[]>([]);
     const [selectedConv, setSelectedConv] = useState<AIConversation | null>(null);
     const [messages, setMessages] = useState<AIConversationMessage[]>([]);
@@ -64,6 +65,15 @@ export const AgentConversationAudit: React.FC<AgentConversationAuditProps> = ({ 
     useEffect(() => {
         fetchConversations();
     }, [agentId, sentimentFilter]);
+
+    useEffect(() => {
+        if (initialConversationId && conversations.length > 0) {
+            const found = conversations.find(c => c.id === initialConversationId);
+            if (found) {
+                setSelectedConv(found);
+            }
+        }
+    }, [initialConversationId, conversations]);
 
     useEffect(() => {
         if (selectedConv) {
@@ -130,10 +140,10 @@ export const AgentConversationAudit: React.FC<AgentConversationAuditProps> = ({ 
                         messages.map((msg) => (
                             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-[80%] rounded-2xl p-4 ${msg.role === 'user'
-                                        ? 'bg-violet-600 text-white rounded-tr-none'
-                                        : msg.role === 'assistant'
-                                            ? 'bg-slate-800 text-slate-200 border border-slate-700 rounded-tl-none'
-                                            : 'bg-slate-900 text-slate-400 border border-slate-800 italic text-xs'
+                                    ? 'bg-violet-600 text-white rounded-tr-none'
+                                    : msg.role === 'assistant'
+                                        ? 'bg-slate-800 text-slate-200 border border-slate-700 rounded-tl-none'
+                                        : 'bg-slate-900 text-slate-400 border border-slate-800 italic text-xs'
                                     }`}>
                                     <div className="flex items-center justify-between gap-4 mb-1 text-[10px] opacity-60">
                                         <span className="font-bold uppercase tracking-widest">{msg.role}</span>

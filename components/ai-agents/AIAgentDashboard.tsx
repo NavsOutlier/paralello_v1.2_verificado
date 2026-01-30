@@ -83,6 +83,7 @@ export const AIAgentDashboard: React.FC = () => {
     const [loadingClients, setLoadingClients] = useState(true);
     const [loadingAgent, setLoadingAgent] = useState(false);
     const [activeTab, setActiveTab] = useState<DashboardTab>('analytics');
+    const [selectedAuditConvId, setSelectedAuditConvId] = useState<string | undefined>();
     const [showConfigModal, setShowConfigModal] = useState(false);
 
     useEffect(() => {
@@ -359,8 +360,20 @@ export const AIAgentDashboard: React.FC = () => {
                                         <AgentConversationAnalytic agentId={agent.id} />
                                     </div>
                                 )}
+                                {activeTab === 'kanban' && (
+                                    <AgentKanbanBoard
+                                        agentId={agent.id}
+                                        onViewAudit={(id) => {
+                                            setSelectedAuditConvId(id);
+                                            setActiveTab('audit');
+                                        }}
+                                    />
+                                )}
                                 {activeTab === 'audit' && (
-                                    <AgentConversationAudit agentId={agent.id} />
+                                    <AgentConversationAudit
+                                        agentId={agent.id}
+                                        initialConversationId={selectedAuditConvId}
+                                    />
                                 )}
                                 {activeTab === 'prompts' && (
                                     <AgentPromptEditor agentId={agent.id} />

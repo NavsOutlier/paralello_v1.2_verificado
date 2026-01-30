@@ -82,6 +82,7 @@ export const WorkersIADashboard: React.FC = () => {
     const [loadingClients, setLoadingClients] = useState(true);
     const [loadingAgents, setLoadingAgents] = useState(false);
     const [activeTab, setActiveTab] = useState<DashboardTab>('analytics');
+    const [selectedAuditSessionId, setSelectedAuditSessionId] = useState<string | undefined>();
     const [showConfigModal, setShowConfigModal] = useState(false);
     const [editingAgent, setEditingAgent] = useState<any | null>(null);
     const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
@@ -471,10 +472,19 @@ export const WorkersIADashboard: React.FC = () => {
                                     <WorkerMetricsTable agentId={selectedAgent.id} />
                                 )}
                                 {activeTab === 'kanban' && (
-                                    <WorkerKanbanBoard agentId={selectedAgent.id} />
+                                    <WorkerKanbanBoard
+                                        agentId={selectedAgent.id}
+                                        onViewAudit={(sessionId) => {
+                                            setSelectedAuditSessionId(sessionId);
+                                            setActiveTab('audit');
+                                        }}
+                                    />
                                 )}
                                 {activeTab === 'audit' && (
-                                    <WorkerMessageAudit agentId={selectedAgent.id} />
+                                    <WorkerMessageAudit
+                                        agentId={selectedAgent.id}
+                                        initialSessionId={selectedAuditSessionId}
+                                    />
                                 )}
                                 {activeTab === 'config' && (
                                     <WorkerConfig

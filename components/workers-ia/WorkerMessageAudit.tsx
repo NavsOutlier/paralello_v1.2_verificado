@@ -4,13 +4,14 @@ import {
     Search, Filter, Calendar, MessageSquare,
     User, ChevronRight, AlertCircle, CheckCircle,
     XCircle, Info, RefreshCw, Star, ArrowLeft,
-    Database, Bot, Cpu, Clock
+    Database, Bot, Cpu, Clock, Zap
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface WorkerMessageAuditProps {
     agentId: string;
+    initialSessionId?: string;
 }
 
 interface WorkerConversation {
@@ -38,7 +39,7 @@ interface WorkerMessage {
     metadata: any;
 }
 
-export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId }) => {
+export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId, initialSessionId }) => {
     const [conversations, setConversations] = useState<WorkerConversation[]>([]);
     const [selectedConv, setSelectedConv] = useState<WorkerConversation | null>(null);
     const [messages, setMessages] = useState<WorkerMessage[]>([]);
@@ -92,6 +93,15 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId 
     useEffect(() => {
         fetchConversations();
     }, [agentId, stageFilter]);
+
+    useEffect(() => {
+        if (initialSessionId && conversations.length > 0) {
+            const found = conversations.find(c => c.session_id === initialSessionId);
+            if (found) {
+                setSelectedConv(found);
+            }
+        }
+    }, [initialSessionId, conversations]);
 
     useEffect(() => {
         if (selectedConv) {

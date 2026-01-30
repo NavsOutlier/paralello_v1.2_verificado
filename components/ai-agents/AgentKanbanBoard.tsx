@@ -2,13 +2,34 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import {
     Clock, AlertTriangle, CheckCircle,
-    XCircle, Calendar, MessageSquare, Search, RefreshCw
+    XCircle, Calendar, MessageSquare, Search, RefreshCw,
+    Frown, Meh, Smile
 } from 'lucide-react';
 import { AIConversation, ConversationStatus } from '../../types/ai-agents';
 
 interface AgentKanbanBoardProps {
     agentId: string;
+    onViewAudit?: (conversationId: string) => void;
 }
+
+const getSentimentConfig = (score?: number, label?: string) => {
+    // If we have a score, use 5 levels
+    if (score !== undefined && score !== null) {
+        if (score <= -0.6) return { color: 'text-rose-500', icon: Frown, label: 'Muito Insatisfeito' };
+        if (score <= -0.1) return { color: 'text-orange-400', icon: Frown, label: label || 'Insatisfeito' };
+        if (score < 0.2) return { color: 'text-amber-400', icon: Meh, label: label || 'Neutro' };
+        if (score < 0.6) return { color: 'text-emerald-400', icon: Smile, label: label || 'Satisfeito' };
+        return { color: 'text-green-500', icon: Smile, label: 'Muito Satisfeito' };
+    }
+
+    // Fallback to label if no score
+    switch (label) {
+        case 'positive': return { color: 'text-emerald-400', icon: Smile, label: 'Satisfeito' };
+        case 'negative': return { color: 'text-rose-400', icon: Frown, label: 'Insatisfeito' };
+        case 'neutral': return { color: 'text-amber-400', icon: Meh, label: 'Neutro' };
+        default: return { color: 'text-slate-500', icon: Meh, label: 'Sem Feeling' };
+    }
+};
 
 const COLUMNS: { id: ConversationStatus; label: string; color: string; bg: string }[] = [
     { id: 'new', label: 'Novos', color: 'text-slate-400', bg: 'bg-slate-500/10' },
@@ -21,7 +42,7 @@ const COLUMNS: { id: ConversationStatus; label: string; color: string; bg: strin
     { id: 'disqualified', label: 'Desqualificados', color: 'text-rose-400', bg: 'bg-rose-500/10' },
 ];
 
-export const AgentKanbanBoard: React.FC<AgentKanbanBoardProps> = ({ agentId }) => {
+export const AgentKanbanBoard: React.FC<AgentKanbanBoardProps> = ({ agentId, onViewAudit }) => {
     const [conversations, setConversations] = useState<AIConversation[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -134,9 +155,18 @@ export const AgentKanbanBoard: React.FC<AgentKanbanBoardProps> = ({ agentId }) =
                                                         {card.contact_name?.[0] || card.contact_identifier[0]}
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-medium text-white line-clamp-1">
-                                                            {card.contact_name || card.contact_identifier}
-                                                        </p>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <p className="text-sm font-medium text-white line-clamp-1">
+                                                                {card.contact_name || card.contact_identifier}
+                                                            </p>
+                                                            {(() => {
+                                                                const config = getSentimentConfig(card.sentiment_score, card.sentiment);
+                                                                const Icon = config.icon;
+                                                                return (
+                                                                    <Icon className={`w-3.5 h-3.5 ${config.color} transition-colors`} />
+                                                                );
+                                                            })()}
+                                                        </div>
                                                         <p className="text-[10px] text-slate-500">
                                                             {new Date(card.last_interaction_at).toLocaleDateString()}
                                                         </p>
@@ -150,11 +180,30 @@ export const AgentKanbanBoard: React.FC<AgentKanbanBoardProps> = ({ agentId }) =
                                                 </p>
                                             )}
 
-                                            <div className="flex items-center justify-end text-[10px] text-slate-600 font-bold uppercase tracking-widest">
-                                                <div className="flex items-center gap-1">
-                                                    <MessageSquare className="w-3 h-3" />
-                                                    LOG
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex flex-col gap-1">
+                                                    {(() => {
+                                                        const config = getSentimentConfig(card.sentiment_score, card.sentiment);
+                                                        return (
+                                                            <div className={`text-[9px] font-bold uppercase tracking-tighter ${config.color}`}>
+                                                                {config.label}
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                    {card.session_metrics?.avg_response_sec && (
+                                                        <div className="flex items-center gap-1 text-[8px] text-slate-500 font-mono">
+                                                            <Clock className="w-2 h-2" />
+                                                            TMR: {card.session_metrics.avg_response_sec}s
+                                                        </div>
+                                                    )}
                                                 </div>
+                                                <button
+                                                    onClick={() => onViewAudit?.(card.id)}
+                                                    className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-violet-400 font-bold uppercase tracking-widest transition-colors"
+                                                >
+                                                    <MessageSquare className="w-3 h-3" />
+                                                    AUDITORIA
+                                                </button>
                                             </div>
                                         </div>
                                     ))}

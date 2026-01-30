@@ -28,7 +28,7 @@ interface WorkerConversation {
         phone?: string;
     };
     sentiment_score?: number;
-    last_message_by?: 'ai' | 'user' | 'human';
+    last_message_by?: 'ai' | 'lead' | 'support';
     last_message_at?: string;
     sla_breach_count?: number;
 }
@@ -280,12 +280,12 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId, o
                                                             const now = new Date();
                                                             const diffSeconds = lastMsgAt ? Math.floor((now.getTime() - lastMsgAt.getTime()) / 1000) : 0;
 
-                                                            if (card.last_message_by === 'user') {
+                                                            if (card.last_message_by === 'lead') {
                                                                 if (card.sentiment_score !== undefined && card.sentiment_score < 0) {
                                                                     return (
                                                                         <div className="flex items-center gap-1.5 px-2 py-1 bg-rose-600 border border-rose-400 rounded-lg text-[9px] font-black text-white animate-[pulse_0.8s_infinite] shadow-[0_0_15px_rgba(225,29,72,0.4)]">
                                                                             <AlertCircle className="w-3 h-3" />
-                                                                            INTERVENÇÃO
+                                                                            INTERVENÇÃO (HUMANA)
                                                                         </div>
                                                                     );
                                                                 }
@@ -299,18 +299,27 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId, o
                                                                     );
                                                                 }
                                                                 return (
-                                                                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/20 border border-amber-500/30 rounded text-[8px] font-black text-amber-400">
+                                                                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded text-[8px] font-black text-amber-500/80">
                                                                         <MessageSquare className="w-2.5 h-2.5" />
-                                                                        PENDENTE
+                                                                        AGUARDANDO SUPORTE
                                                                     </div>
                                                                 );
                                                             }
 
                                                             if (card.last_message_by === 'ai') {
                                                                 return (
-                                                                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded text-[8px] font-black text-emerald-400">
+                                                                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded text-[8px] font-black text-emerald-500/60">
                                                                         <CheckCircle2 className="w-2.5 h-2.5" />
-                                                                        OK
+                                                                        IA RESPONDEU
+                                                                    </div>
+                                                                );
+                                                            }
+
+                                                            if (card.last_message_by === 'support') {
+                                                                return (
+                                                                    <div className="flex items-center gap-1 px-1.5 py-0.5 bg-violet-500/10 border border-violet-500/20 rounded text-[8px] font-black text-violet-400/80">
+                                                                        <User className="w-2.5 h-2.5" />
+                                                                        SUPORTE HUMANO
                                                                     </div>
                                                                 );
                                                             }

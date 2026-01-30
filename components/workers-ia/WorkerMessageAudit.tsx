@@ -35,7 +35,7 @@ interface WorkerConversation {
 interface WorkerMessage {
     id: string;
     session_id: string;
-    role: 'user' | 'assistant' | 'system';
+    role: 'user' | 'assistant' | 'support' | 'system';
     content: string;
     created_at: string;
     metadata: any;
@@ -237,12 +237,19 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
                             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-[80%] rounded-2xl p-4 shadow-xl ${msg.role === 'user'
                                     ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white rounded-tr-none'
-                                    : 'bg-slate-800/80 text-slate-200 border border-cyan-500/10 rounded-tl-none backdrop-blur-sm'
+                                    : msg.role === 'support'
+                                        ? 'bg-gradient-to-br from-slate-700 to-slate-800 text-slate-200 border border-violet-500/30 rounded-tl-none shadow-[0_0_15px_rgba(139,92,246,0.1)]'
+                                        : 'bg-slate-800/80 text-slate-200 border border-cyan-500/10 rounded-tl-none backdrop-blur-sm'
                                     }`}>
                                     <div className="flex items-center justify-between gap-4 mb-2 text-[10px] opacity-60">
                                         <div className="flex items-center gap-1.5 font-bold uppercase tracking-widest">
-                                            {msg.role === 'user' ? <User className="w-3 h-3" /> : <Bot className="w-3 h-3 text-cyan-400" />}
-                                            {msg.role === 'user' ? 'Lead' : 'Worker IA'}
+                                            {msg.role === 'user' ? (
+                                                <><User className="w-3 h-3" />Lead</>
+                                            ) : msg.role === 'support' ? (
+                                                <><User className="w-3 h-3 text-violet-400" />Suporte</>
+                                            ) : (
+                                                <><Bot className="w-3 h-3 text-cyan-400" />Worker IA</>
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <Clock className="w-2.5 h-2.5" />

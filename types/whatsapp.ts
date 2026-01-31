@@ -13,6 +13,7 @@ export interface WhatsAppInstance {
     qrCode?: string;
     instanceApiId?: string;
     instanceApiToken?: string;
+    agentId?: string;
     createdAt: Date;
     updatedAt: Date;
 }

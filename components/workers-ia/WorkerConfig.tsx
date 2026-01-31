@@ -76,7 +76,8 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
 }) => {
     const { organizationId } = useAuth();
     const { showToast } = useToast();
-    const { instances, createInstance, createGroup } = useWhatsApp();
+    const [currentAgent, setCurrentAgent] = useState<WorkerAgent | undefined>(agent);
+    const { instances, createInstance, createGroup } = useWhatsApp(undefined, { agentId: agent?.id || currentAgent?.id });
     const [saving, setSaving] = useState(false);
     const [connectingWs, setConnectingWs] = useState(false);
 
@@ -84,8 +85,6 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
     const [currentStep, setCurrentStep] = useState<WizardStep>('identity');
     // Tab Control (for inline mode)
     const [activeInlineTab, setActiveInlineTab] = useState<InlineTab>('general');
-
-    const [currentAgent, setCurrentAgent] = useState<WorkerAgent | undefined>(agent);
 
     const [formData, setFormData] = useState({
         name: agent?.name || '',

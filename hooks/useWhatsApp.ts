@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { WhatsAppInstance, WhatsAppMessage } from '../types';
 
-export const useWhatsApp = (instanceId?: string) => {
+export const useWhatsApp = (instanceId?: string, config?: { agentId?: string; onlyOrg?: boolean }) => {
     const { organizationId } = useAuth();
     const [instances, setInstances] = useState<WhatsAppInstance[]>([]);
     const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
@@ -17,6 +17,7 @@ export const useWhatsApp = (instanceId?: string) => {
         qrCode: data.qr_code,
         instanceApiId: data.instance_api_id,
         instanceApiToken: data.instance_api_token,
+        agentId: data.agent_id,
         createdAt: new Date(data.created_at),
         updatedAt: new Date(data.updated_at)
     });
@@ -34,16 +35,25 @@ export const useWhatsApp = (instanceId?: string) => {
 
     const fetchInstances = useCallback(async () => {
         if (!organizationId) return;
-        const { data, error } = await supabase
+
+        let query = supabase
             .from('instances')
             .select('*')
-            .eq('organization_id', organizationId)
-            .order('created_at', { ascending: false });
+            .eq('organization_id', organizationId);
+
+        // Apply filters
+        if (config?.agentId) {
+            query = query.eq('agent_id', config.agentId);
+        } else if (config?.onlyOrg) {
+            query = query.is('agent_id', null);
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: false });
 
         if (!error && data) {
             setInstances(data.map(mapInstance));
         }
-    }, [organizationId]);
+    }, [organizationId, config?.agentId, config?.onlyOrg]);
 
     const fetchMessages = useCallback(async (instId: string) => {
         const { data, error } = await supabase
@@ -64,13 +74,20 @@ export const useWhatsApp = (instanceId?: string) => {
         fetchInstances().then(() => setLoading(false));
 
         // Realtime for Instances
+        let filter = `organization_id=eq.${organizationId}`;
+        if (config?.agentId) {
+            filter += `&agent_id=eq.${config.agentId}`;
+        } else if (config?.onlyOrg) {
+            filter += `&agent_id=is.null`;
+        }
+
         const instancesChannel = supabase
-            .channel('whatsapp-instances')
+            .channel(`whatsapp-instances-${organizationId}-${config?.agentId || 'org'}`)
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
                 table: 'instances',
-                filter: `organization_id=eq.${organizationId}`
+                filter: filter
             }, (payload) => {
                 if (payload.eventType === 'INSERT') {
                     setInstances(prev => [mapInstance(payload.new), ...prev]);
@@ -85,7 +102,7 @@ export const useWhatsApp = (instanceId?: string) => {
         return () => {
             supabase.removeChannel(instancesChannel);
         };
-    }, [organizationId, fetchInstances]);
+    }, [organizationId, fetchInstances, config?.agentId, config?.onlyOrg]);
 
     useEffect(() => {
         if (!instanceId) return;

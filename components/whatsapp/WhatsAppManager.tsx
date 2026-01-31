@@ -10,7 +10,7 @@ interface WhatsAppManagerProps {
 }
 
 export const WhatsAppManager: React.FC<WhatsAppManagerProps> = ({ organizationId }) => {
-    const { instances, loading, createInstance, deleteInstance } = useWhatsApp();
+    const { instances, loading, createInstance, deleteInstance } = useWhatsApp(undefined, { onlyOrg: true });
     const [newInstanceName, setNewInstanceName] = useState('');
     const [isCreating, setIsCreating] = useState(false);
 

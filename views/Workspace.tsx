@@ -43,7 +43,7 @@ export const Workspace: React.FC = () => {
   const { messages: taskMessages, refreshMessages: refreshTaskMessages } = useMessages(selectedTaskId);
   const { tasks, refreshTasks } = useTasks(selectedEntityId); // Fetch tasks for selected client/member
   const { templates: checklistTemplates, createTemplate, deleteTemplate } = useChecklists();
-  const { instances } = useWhatsApp();
+  const { instances } = useWhatsApp(undefined, { onlyOrg: true });
   const { notifications, markAsRead } = useNotifications();
 
   // Mark notifications as read when selecting an entity

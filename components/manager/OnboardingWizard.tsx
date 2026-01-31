@@ -38,7 +38,7 @@ interface OnboardingWizardProps {
 export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, stats: initialStats }) => {
     const { organizationId } = useAuth();
     const { showToast } = useToast();
-    const { instances, createInstance, createGroup, loading: wsLoading } = useWhatsApp();
+    const { instances, createInstance, createGroup, loading: wsLoading } = useWhatsApp(undefined, { onlyOrg: true });
 
     const [step, setStep] = useState(() => {
         if (initialStats.hasWhatsApp && initialStats.clients > 0 && initialStats.members > 1) return 5;

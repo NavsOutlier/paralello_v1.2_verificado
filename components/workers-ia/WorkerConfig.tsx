@@ -245,7 +245,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
 
     // ==================== SHARED UI COMPONENTS ====================
 
-    const GeneralSection = () => (
+    const renderGeneralSection = () => (
         <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-1">
@@ -325,7 +325,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         </div>
     );
 
-    const PromptSection = () => (
+    const renderPromptSection = () => (
         <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
@@ -371,7 +371,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         </div>
     );
 
-    const ConnectionSection = () => (
+    const renderConnectionSection = () => (
         <div className="space-y-6">
             {/* WhatsApp Number Field */}
             <div>
@@ -488,7 +488,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         });
     };
 
-    const TriggersSection = () => (
+    const renderTriggersSection = () => (
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
@@ -710,7 +710,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         { label: 'Rosa', color: 'text-rose-500', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
     ];
 
-    const FunnelSection = () => (
+    const renderFunnelSection = () => (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
@@ -831,13 +831,12 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                     })}
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                    {activeInlineTab === 'general' && <GeneralSection />}
-                    {activeInlineTab === 'prompt' && <PromptSection />}
-                    {activeInlineTab === 'funnel' && <FunnelSection />}
-                    {activeInlineTab === 'triggers' && <TriggersSection />}
-                    {activeInlineTab === 'connection' && <ConnectionSection />}
+                    {activeInlineTab === 'general' && renderGeneralSection()}
+                    {activeInlineTab === 'prompt' && renderPromptSection()}
+                    {activeInlineTab === 'funnel' && renderFunnelSection()}
+                    {activeInlineTab === 'triggers' && renderTriggersSection()}
+                    {activeInlineTab === 'connection' && renderConnectionSection()}
                 </div>
 
                 {/* Footer */}
@@ -920,26 +919,26 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                     {currentStep === 'identity' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                             <h3 className="font-bold text-white text-lg mb-4">Configuração Básica</h3>
-                            <GeneralSection />
+                            {renderGeneralSection()}
                         </div>
                     )}
 
                     {currentStep === 'brain' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                             <h3 className="font-bold text-white text-lg mb-4">Prompt do Sistema</h3>
-                            <PromptSection />
+                            {renderPromptSection()}
                         </div>
                     )}
 
                     {currentStep === 'funnel' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                            <FunnelSection />
+                            {renderFunnelSection()}
                         </div>
                     )}
 
                     {currentStep === 'triggers' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                            <TriggersSection />
+                            {renderTriggersSection()}
                         </div>
                     )}
 
@@ -951,7 +950,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                                     O Worker foi criado com sucesso. Conecte o número para ativá-lo.
                                 </p>
                             </div>
-                            <ConnectionSection />
+                            {renderConnectionSection()}
                         </div>
                     )}
                 </div>

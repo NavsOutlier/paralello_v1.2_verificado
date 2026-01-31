@@ -160,9 +160,12 @@ export const useWhatsApp = (instanceId?: string) => {
         if (!organizationId) return { error: new Error('No organization') };
         const { data: { session } } = await supabase.auth.getSession();
 
+        // Use different action for worker vs organization groups
+        const action = agentId ? 'create_group_worker' : 'create_group';
+
         const { data, error } = await supabase.functions.invoke('whatsapp-proxy-v2', {
             body: {
-                action: 'create_group',
+                action,
                 name: clientName,
                 client_id: clientId,
                 agent_id: agentId,

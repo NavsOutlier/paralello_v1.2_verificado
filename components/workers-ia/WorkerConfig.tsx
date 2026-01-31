@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { useWhatsApp } from '../../hooks/useWhatsApp';
 import {
     Settings, Save, X, Bot, Zap, CheckCircle,
@@ -74,7 +75,8 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
     isInline = false
 }) => {
     const { organizationId } = useAuth();
-    const { instances, createInstance } = useWhatsApp();
+    const { showToast } = useToast();
+    const { instances, createInstance, createGroup } = useWhatsApp();
     const [saving, setSaving] = useState(false);
     const [connectingWs, setConnectingWs] = useState(false);
 
@@ -210,7 +212,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         if (connectingWs && isWaitingQr && !isConnected) {
             interval = setInterval(() => {
                 if (currentAgent?.id) {
-                    createInstance(instanceName, undefined, {
+                    createInstance(instanceName, 'create_instance_worker', {
                         client_id: clientId,
                         agent_id: currentAgent.id
                     }).catch(console.error);
@@ -230,7 +232,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
 
         setConnectingWs(true);
         try {
-            await createInstance(instanceName, undefined, {
+            await createInstance(instanceName, 'create_instance_worker', {
                 client_id: clientId,
                 agent_id: currentAgent.id
             });

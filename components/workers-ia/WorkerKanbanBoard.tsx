@@ -11,13 +11,21 @@ import { Avatar } from '../ui';
 import { format } from 'date-fns';
 
 // TODO: Move to types/workers-ia
+interface FunnelStage {
+    id: string;
+    label: string;
+    color: string;
+    bg: string;
+    border: string;
+}
+
 interface WorkerConversation {
     id: string;
     session_id: string;
     client_id: string;
     agent_id: string;
     status: 'active' | 'completed' | 'expired';
-    funnel_stage: 'new_lead' | 'interested' | 'qualified' | 'scheduled' | 'patient' | 'no_response' | 'lost' | 'disqualified';
+    funnel_stage: string; // Changed from fixed union to string
     created_at: string;
     updated_at: string;
     metadata: any;
@@ -38,7 +46,7 @@ interface WorkerKanbanBoardProps {
     onViewAudit?: (sessionId: string) => void;
 }
 
-const FUNNEL_STAGES: { id: string; label: string; color: string; bg: string; border: string }[] = [
+const DEFAULT_FUNNEL_STAGES: FunnelStage[] = [
     { id: 'new_lead', label: 'Novos', color: 'text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500/20' },
     { id: 'interested', label: 'Interessados', color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' },
     { id: 'qualified', label: 'Qualificados', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
@@ -61,9 +69,10 @@ const getSentimentConfig = (score?: number) => {
 export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId, onViewAudit }) => {
     const { organizationId } = useAuth();
     const [conversations, setConversations] = useState<WorkerConversation[]>([]);
+    const [funnelStages, setFunnelStages] = useState<FunnelStage[]>(DEFAULT_FUNNEL_STAGES);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [slaThreshold, setSlaThreshold] = useState(600); // Default 10 mins in seconds
+    const [slaThreshold, setSlaThreshold] = useState(600);
 
     useEffect(() => {
         if (agentId) {
@@ -75,12 +84,17 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId, o
     const fetchAgentConfig = async () => {
         const { data } = await supabase
             .from('workers_ia_agents')
-            .select('sla_threshold_seconds')
+            .select('sla_threshold_seconds, funnel_config')
             .eq('id', agentId)
             .single();
 
-        if (data?.sla_threshold_seconds) {
-            setSlaThreshold(data.sla_threshold_seconds);
+        if (data) {
+            if (data.sla_threshold_seconds) {
+                setSlaThreshold(data.sla_threshold_seconds);
+            }
+            if (data.funnel_config && Array.isArray(data.funnel_config)) {
+                setFunnelStages(data.funnel_config as FunnelStage[]);
+            }
         }
     };
 
@@ -88,8 +102,9 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId, o
     useEffect(() => {
         if (!agentId) return;
 
-        const subscription = supabase
-            .channel(`workers-kanban-${agentId}`)
+        const channel = supabase.channel(`workers-kanban-${agentId}`);
+
+        channel
             .on(
                 'postgres_changes',
                 {
@@ -99,8 +114,6 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId, o
                     filter: `agent_id=eq.${agentId}`
                 },
                 (payload) => {
-                    // Update local state instead of full fetch if possible, 
-                    // or just fetch if it's an external change
                     if (payload.eventType === 'UPDATE') {
                         setConversations(prev => prev.map(c =>
                             c.id === payload.new.id ? { ...c, ...payload.new } : c
@@ -110,10 +123,28 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId, o
                     }
                 }
             )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'workers_ia_agents',
+                    filter: `id=eq.${agentId}`
+                },
+                (payload) => {
+                    // Update funnel configuration if changed
+                    if (payload.new.funnel_config) {
+                        setFunnelStages(payload.new.funnel_config);
+                    }
+                    if (payload.new.sla_threshold_seconds) {
+                        setSlaThreshold(payload.new.sla_threshold_seconds);
+                    }
+                }
+            )
             .subscribe();
 
         return () => {
-            supabase.removeChannel(subscription);
+            supabase.removeChannel(channel);
         };
     }, [agentId]);
 
@@ -203,7 +234,7 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId, o
             </div>
 
             <div className="flex-1 flex gap-5 overflow-x-auto pb-6 px-1 custom-scrollbar">
-                {FUNNEL_STAGES.map(column => {
+                {funnelStages.map(column => {
                     const columnCards = getColumnConversations(column.id);
                     return (
                         <div

@@ -4,6 +4,15 @@ import { Activity } from 'lucide-react';
 import { WorkerMetricsCards } from './WorkerMetricsCards';
 import { WorkerDeepMetrics } from './WorkerDeepMetrics';
 import { WorkerConversationAnalytic } from './WorkerConversationAnalytic';
+import { WorkerFunnelChart } from './WorkerFunnelChart';
+
+interface FunnelStage {
+    id: string;
+    label: string;
+    color: string;
+    bg: string;
+    border: string;
+}
 
 interface WorkerAnalyticsProps {
     agentId: string;
@@ -14,12 +23,16 @@ export const WorkerAnalytics: React.FC<WorkerAnalyticsProps> = ({ agentId }) => 
     const [activeConvs, setActiveConvs] = useState(0);
     const [attentionLeads, setAttentionLeads] = useState(0);
     const [highRiskLeads, setHighRiskLeads] = useState(0);
+    const [funnelStages, setFunnelStages] = useState<FunnelStage[]>([]);
+    const [funnelCounts, setFunnelCounts] = useState<Record<string, number>>({});
+    const [loadingFunnel, setLoadingFunnel] = useState(false);
 
     useEffect(() => {
         if (!agentId) return;
 
         fetchActiveConversations();
         fetchStrategicCounters();
+        fetchFunnelData();
 
         // Subscribe to real-time updates for metrics
         const metricsChannel = supabase
@@ -49,8 +62,27 @@ export const WorkerAnalytics: React.FC<WorkerAnalyticsProps> = ({ agentId }) => 
                     table: 'workers_ia_conversations',
                     filter: `agent_id=eq.${agentId}`
                 },
-                () => {
+                (payload) => {
                     fetchStrategicCounters();
+                    fetchFunnelData();
+                }
+            )
+            .subscribe();
+
+        const agentChannel = supabase
+            .channel('worker-analytics-agent')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'workers_ia_agents',
+                    filter: `id=eq.${agentId}`
+                },
+                (payload) => {
+                    if (payload.new.funnel_config) {
+                        setFunnelStages(payload.new.funnel_config as FunnelStage[]);
+                    }
                 }
             )
             .subscribe();
@@ -58,6 +90,7 @@ export const WorkerAnalytics: React.FC<WorkerAnalyticsProps> = ({ agentId }) => 
         return () => {
             supabase.removeChannel(metricsChannel);
             supabase.removeChannel(conversationsChannel);
+            supabase.removeChannel(agentChannel);
         };
     }, [agentId]);
 
@@ -90,6 +123,37 @@ export const WorkerAnalytics: React.FC<WorkerAnalyticsProps> = ({ agentId }) => 
 
         setAttentionLeads(attention || 0);
         setHighRiskLeads(risk || 0);
+    };
+
+    const fetchFunnelData = async () => {
+        setLoadingFunnel(true);
+
+        // Fetch agent config for stages
+        const { data: agentData } = await supabase
+            .from('workers_ia_agents')
+            .select('funnel_config')
+            .eq('id', agentId)
+            .single();
+
+        if (agentData?.funnel_config) {
+            setFunnelStages(agentData.funnel_config as FunnelStage[]);
+        }
+
+        // Fetch counts per stage
+        const { data: convData } = await supabase
+            .from('workers_ia_conversations')
+            .select('funnel_stage')
+            .eq('agent_id', agentId);
+
+        if (convData) {
+            const counts: Record<string, number> = {};
+            convData.forEach((c: any) => {
+                const stageId = c.funnel_stage || 'unknown';
+                counts[stageId] = (counts[stageId] || 0) + 1;
+            });
+            setFunnelCounts(counts);
+        }
+        setLoadingFunnel(false);
     };
 
     if (loading) {
@@ -157,8 +221,17 @@ export const WorkerAnalytics: React.FC<WorkerAnalyticsProps> = ({ agentId }) => 
             <WorkerMetricsCards agentId={agentId} />
 
             {/* Section 2: Advanced Data Visualization */}
-            <div className="animate-in slide-in-from-bottom-4 duration-700 delay-150">
-                <WorkerDeepMetrics agentId={agentId} />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in slide-in-from-bottom-4 duration-700 delay-150">
+                <div className="lg:col-span-4">
+                    <WorkerFunnelChart
+                        funnelStages={funnelStages}
+                        counts={funnelCounts}
+                        loading={loadingFunnel}
+                    />
+                </div>
+                <div className="lg:col-span-8">
+                    <WorkerDeepMetrics agentId={agentId} />
+                </div>
             </div>
 
             {/* Section 3: Individual Session Analytics (The "Resumo" List) */}

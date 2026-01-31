@@ -6,8 +6,17 @@ import {
     Settings, Save, X, Bot, Zap, CheckCircle,
     AlertCircle, Activity, BrainCircuit, Type, FileText,
     Smartphone, Loader2, RefreshCw, QrCode, ArrowRight, Check, Phone,
-    Plus, Trash2, ToggleLeft, ToggleRight, Filter, MessageSquare
+    Plus, Trash2, ToggleLeft, ToggleRight, Filter, MessageSquare,
+    GripVertical, Layout, ChevronUp, ChevronDown, Palette
 } from 'lucide-react';
+
+interface FunnelStage {
+    id: string;
+    label: string;
+    color: string;
+    bg: string;
+    border: string;
+}
 
 interface HandoffTrigger {
     id: string;
@@ -31,6 +40,7 @@ interface WorkerAgent {
     sla_threshold_seconds: number;
     whatsapp_number?: string;
     handoff_triggers?: HandoffTrigger[];
+    funnel_config?: FunnelStage[];
 }
 
 interface WorkerConfigProps {
@@ -42,8 +52,8 @@ interface WorkerConfigProps {
     isInline?: boolean; // NEW: Show inline (tab) instead of modal (onboarding)
 }
 
-type WizardStep = 'identity' | 'brain' | 'triggers' | 'connect';
-type InlineTab = 'general' | 'prompt' | 'triggers' | 'connection';
+type WizardStep = 'identity' | 'brain' | 'funnel' | 'triggers' | 'connect';
+type InlineTab = 'general' | 'prompt' | 'funnel' | 'triggers' | 'connection';
 
 export const WorkerConfig: React.FC<WorkerConfigProps> = ({
     agent,
@@ -76,6 +86,16 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         sla_threshold_seconds: agent?.sla_threshold_seconds || 60,
         whatsapp_number: agent?.whatsapp_number || '',
         handoff_triggers: agent?.handoff_triggers || [] as HandoffTrigger[],
+        funnel_config: agent?.funnel_config || [
+            { id: 'new_lead', label: 'Novos', color: 'text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500/20' },
+            { id: 'interested', label: 'Interessados', color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' },
+            { id: 'qualified', label: 'Qualificados', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+            { id: 'scheduled', label: 'Agendados', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
+            { id: 'patient', label: 'Já Paciente', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+            { id: 'no_response', label: 'Sem Resposta', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+            { id: 'lost', label: 'Perdido', color: 'text-slate-500', bg: 'bg-slate-700/10', border: 'border-slate-700/20' },
+            { id: 'disqualified', label: 'Desqualificados', color: 'text-rose-500', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
+        ] as FunnelStage[],
     });
 
     const isEditing = !!agent;
@@ -140,6 +160,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                 sla_threshold_seconds: Number(formData.sla_threshold_seconds),
                 whatsapp_number: formData.whatsapp_number,
                 handoff_triggers: formData.handoff_triggers,
+                funnel_config: formData.funnel_config,
             };
 
             let savedData;
@@ -185,7 +206,8 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
             // For wizard mode, advance steps
             if (advanceStep && !isInline) {
                 if (currentStep === 'identity') setCurrentStep('brain');
-                else if (currentStep === 'brain') setCurrentStep('triggers');
+                else if (currentStep === 'brain') setCurrentStep('funnel');
+                else if (currentStep === 'funnel') setCurrentStep('triggers');
                 else if (currentStep === 'triggers') {
                     setCurrentStep('connect');
                     if (onSave) onSave(savedData as WorkerAgent);
@@ -206,6 +228,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
     const wizardSteps: { id: WizardStep, label: string, icon: any }[] = [
         { id: 'identity', label: 'Identidade', icon: Zap },
         { id: 'brain', label: 'Cérebro', icon: BrainCircuit },
+        { id: 'funnel', label: 'Funil', icon: Layout },
         { id: 'triggers', label: 'Gatilhos', icon: Filter },
         { id: 'connect', label: 'Conexão', icon: Smartphone }
     ];
@@ -213,6 +236,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
     const inlineTabs: { id: InlineTab, label: string, icon: any }[] = [
         { id: 'general', label: 'Geral', icon: Settings },
         { id: 'prompt', label: 'Prompt', icon: BrainCircuit },
+        { id: 'funnel', label: 'Funil', icon: Layout },
         { id: 'triggers', label: 'Gatilhos', icon: Filter },
         { id: 'connection', label: 'Conexão', icon: Smartphone }
     ];
@@ -430,17 +454,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         </div>
     );
 
-    // Funnel stages for trigger dropdown
-    const funnelStages = [
-        { value: 'new_lead', label: 'Novo Lead' },
-        { value: 'interested', label: 'Interessado' },
-        { value: 'qualified', label: 'Qualificado' },
-        { value: 'scheduled', label: 'Agendado' },
-        { value: 'patient', label: 'Paciente' },
-        { value: 'no_response', label: 'Sem Resposta' },
-        { value: 'lost', label: 'Perdido' },
-        { value: 'disqualified', label: 'Desqualificado' },
-    ];
+    // ==================== TRIGGER LOGIC ====================
 
     const addTrigger = () => {
         const newTrigger: HandoffTrigger = {
@@ -587,8 +601,8 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                                             onChange={(e) => updateTrigger(trigger.id, { trigger_value: e.target.value })}
                                             className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
                                         >
-                                            {funnelStages.map((stage) => (
-                                                <option key={stage.value} value={stage.value}>{stage.label}</option>
+                                            {formData.funnel_config.map((stage) => (
+                                                <option key={stage.id} value={stage.id}>{stage.label}</option>
                                             ))}
                                         </select>
                                     ) : trigger.trigger_type === 'sentiment' ? (
@@ -643,6 +657,156 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         </div>
     );
 
+    // ==================== FUNNEL LOGIC ====================
+
+    const addFunnelStage = () => {
+        const newStage: FunnelStage = {
+            id: `stage_${Date.now()}`,
+            label: 'Nova Etapa',
+            color: 'text-slate-400',
+            bg: 'bg-slate-500/10',
+            border: 'border-slate-500/20'
+        };
+        setFormData({
+            ...formData,
+            funnel_config: [...formData.funnel_config, newStage]
+        });
+    };
+
+    const removeFunnelStage = (id: string) => {
+        setFormData({
+            ...formData,
+            funnel_config: formData.funnel_config.filter(s => s.id !== id)
+        });
+    };
+
+    const updateFunnelStage = (id: string, updates: Partial<FunnelStage>) => {
+        setFormData({
+            ...formData,
+            funnel_config: formData.funnel_config.map(s => s.id === id ? { ...s, ...updates } : s)
+        });
+    };
+
+    const moveFunnelStage = (index: number, direction: 'up' | 'down') => {
+        const newConfig = [...formData.funnel_config];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= newConfig.length) return;
+
+        const temp = newConfig[index];
+        newConfig[index] = newConfig[targetIndex];
+        newConfig[targetIndex] = temp;
+
+        setFormData({ ...formData, funnel_config: newConfig });
+    };
+
+    const COLOR_PRESETS = [
+        { label: 'Cinza', color: 'text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500/20' },
+        { label: 'Ciano', color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' },
+        { label: 'Esmeralda', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+        { label: 'Verde', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
+        { label: 'Azul', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+        { label: 'Âmbar', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+        { label: 'Violeta', color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20' },
+        { label: 'Rosa', color: 'text-rose-500', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
+    ];
+
+    const FunnelSection = () => (
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h4 className="font-bold text-white flex items-center gap-2">
+                        <Layout className="w-4 h-4 text-violet-400" />
+                        Etapas do Funil (Kanban)
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-1">Personalize as colunas e o fluxo do seu atendimento</p>
+                </div>
+                <button
+                    type="button"
+                    onClick={addFunnelStage}
+                    className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-medium transition-all text-sm block"
+                >
+                    <Plus className="w-4 h-4" />
+                    Adicionar Etapa
+                </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+                {formData.funnel_config.map((stage, idx) => (
+                    <div
+                        key={stage.id}
+                        className="flex items-center gap-4 p-4 bg-slate-800/50 border border-slate-700 rounded-2xl group hover:border-violet-500/30 transition-all"
+                    >
+                        <div className="flex flex-col gap-1">
+                            <button
+                                type="button"
+                                onClick={() => moveFunnelStage(idx, 'up')}
+                                disabled={idx === 0}
+                                className="p-1 text-slate-500 hover:text-white disabled:opacity-0"
+                            >
+                                <ChevronUp className="w-4 h-4" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => moveFunnelStage(idx, 'down')}
+                                disabled={idx === formData.funnel_config.length - 1}
+                                className="p-1 text-slate-500 hover:text-white disabled:opacity-0"
+                            >
+                                <ChevronDown className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 grid grid-cols-12 gap-4 items-center">
+                            <div className="col-span-12 md:col-span-5">
+                                <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">Rótulo da Etapa</label>
+                                <input
+                                    type="text"
+                                    value={stage.label}
+                                    onChange={(e) => updateFunnelStage(stage.id, { label: e.target.value })}
+                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-violet-500 focus:outline-none"
+                                />
+                            </div>
+                            <div className="col-span-10 md:col-span-5">
+                                <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">Cor / Estilo</label>
+                                <div className="flex items-center gap-2">
+                                    <select
+                                        value={stage.color}
+                                        onChange={(e) => {
+                                            const preset = COLOR_PRESETS.find(p => p.color === e.target.value);
+                                            if (preset) updateFunnelStage(stage.id, preset);
+                                        }}
+                                        className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
+                                    >
+                                        {COLOR_PRESETS.map(p => (
+                                            <option key={p.color} value={p.color}>{p.label}</option>
+                                        ))}
+                                    </select>
+                                    <div className={`w-8 h-8 rounded-lg border-2 ${stage.bg} ${stage.border} flex-shrink-0`} />
+                                </div>
+                            </div>
+                            <div className="col-span-2 flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => removeFunnelStage(stage.id)}
+                                    className="p-2.5 text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
+                                    title="Remover Etapa"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            <div className="p-4 bg-slate-800/30 rounded-2xl border border-slate-700/50">
+                <p className="text-[11px] text-slate-500 leading-relaxed italic">
+                    * A ordem das etapas aqui define a ordem das colunas no seu Kanban Board.<br />
+                    * Se você remover uma etapa que já possui leads, eles aparecerão como 'Desconhecidos' até serem movidos.
+                </p>
+            </div>
+        </div>
+    );
+
     if (isInline) {
         return (
             <div className="h-full flex flex-col bg-slate-900/50 rounded-2xl border border-slate-700/50 overflow-hidden">
@@ -669,187 +833,11 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
 
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                    {activeInlineTab === 'general' && (
-                        <div className="space-y-6">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="col-span-1">
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Nome do Worker *</label>
-                                    <input
-                                        type="text"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        placeholder="Ex: Consultor de Vendas"
-                                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:outline-none"
-                                    />
-                                </div>
-                                <div className="col-span-1">
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Função (Tag)</label>
-                                    <select value="sdr" disabled className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white opacity-50 cursor-not-allowed">
-                                        <option value="sdr">SDR / Vendas</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Modelo de IA</label>
-                                    <select
-                                        value={formData.model}
-                                        onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-violet-500 focus:outline-none"
-                                    >
-                                        <option value="gpt-4o">GPT-4o (OpenAI)</option>
-                                        <option value="gpt-4o-mini">GPT-4o Mini (Rápido)</option>
-                                        <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
-                                        <option value="deepseek-v3">DeepSeek V3 (Custo-Benefício)</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">SLA Máximo de Resposta (Segundos)</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        value={formData.sla_threshold_seconds}
-                                        onChange={(e) => setFormData({ ...formData, sla_threshold_seconds: Number(e.target.value) })}
-                                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-violet-500 focus:outline-none"
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
-                                <div>
-                                    <p className="text-sm font-medium text-white">Status</p>
-                                    <p className="text-xs text-slate-500">Worker está {formData.is_active ? 'Ativo' : 'Pausado'}</p>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.is_active}
-                                        onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                                        className="sr-only peer"
-                                    />
-                                    <div className="w-12 h-6 bg-slate-700 peer-focus:ring-2 peer-focus:ring-violet-500 rounded-full peer peer-checked:after:translate-x-6 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600 peer-checked:after:bg-white"></div>
-                                </label>
-                            </div>
-                        </div>
-                    )}
-                    {activeInlineTab === 'prompt' && (
-                        <div className="space-y-6">
-                            <div className="grid grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2 flex justify-between">
-                                        <span>Temperatura ({formData.temperature})</span>
-                                        <span className="text-xs text-slate-500">{formData.temperature > 1 ? 'Criativo' : 'Preciso'}</span>
-                                    </label>
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="2"
-                                        step="0.1"
-                                        value={formData.temperature}
-                                        onChange={(e) => setFormData({ ...formData, temperature: Number(e.target.value) })}
-                                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Max Tokens</label>
-                                    <input
-                                        type="number"
-                                        step="100"
-                                        value={formData.max_tokens}
-                                        onChange={(e) => setFormData({ ...formData, max_tokens: Number(e.target.value) })}
-                                        className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:outline-none"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2">
-                                    <FileText className="w-4 h-4 text-violet-400" />
-                                    Instruções Principais
-                                </label>
-                                <textarea
-                                    value={formData.system_prompt}
-                                    onChange={(e) => setFormData({ ...formData, system_prompt: e.target.value })}
-                                    placeholder="Você é um assistente útil e amigável..."
-                                    className="w-full h-64 px-4 py-4 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-600 focus:ring-2 focus:ring-violet-500 focus:outline-none font-mono text-sm leading-relaxed resize-none custom-scrollbar"
-                                />
-                            </div>
-                        </div>
-                    )}
-                    {activeInlineTab === 'triggers' && (
-                        <TriggersSection />
-                    )}
-                    {activeInlineTab === 'connection' && (
-                        <div className="space-y-6">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
-                                    <Phone className="w-4 h-4 text-emerald-400" />
-                                    Número do WhatsApp
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.whatsapp_number}
-                                    onChange={(e) => setFormData({ ...formData, whatsapp_number: e.target.value })}
-                                    placeholder="Ex: 5511999999999"
-                                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                                />
-                                <p className="text-xs text-slate-500 mt-1">Formato: código do país + DDD + número (sem espaços)</p>
-                            </div>
-                            <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
-                                <h4 className="font-bold text-white mb-4 text-center">Status da Conexão</h4>
-                                {isConnected ? (
-                                    <div className="flex flex-col items-center gap-4">
-                                        <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center border-4 border-emerald-500/20">
-                                            <CheckCircle className="w-10 h-10 text-emerald-500" />
-                                        </div>
-                                        <div className="text-center">
-                                            <p className="text-white font-bold text-lg">Conectado!</p>
-                                            <p className="text-slate-400 text-sm">O agente está online.</p>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-6">
-                                        {!connectingWs && !isWaitingQr ? (
-                                            <div className="flex flex-col items-center">
-                                                <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4 border border-slate-700">
-                                                    <QrCode className="w-8 h-8 text-slate-400" />
-                                                </div>
-                                                <p className="text-slate-400 text-sm mb-4 text-center">
-                                                    {myInstance?.status === 'disconnected' ? 'Instância criada. Gere o QR Code para conectar.' : 'Clique para gerar o QR Code de conexão.'}
-                                                </p>
-                                                <button
-                                                    type="button"
-                                                    onClick={handleConnectWhatsApp}
-                                                    disabled={!currentAgent?.id}
-                                                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
-                                                >
-                                                    <Smartphone className="w-4 h-4" />
-                                                    Gerar QR Code
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center py-4">
-                                                {myInstance?.qrCode ? (
-                                                    <div className="space-y-4">
-                                                        <div className="bg-white p-3 rounded-2xl border-4 border-emerald-500/30 shadow-2xl mx-auto">
-                                                            <img src={myInstance.qrCode} alt="QR Code" className="w-48 h-48" />
-                                                        </div>
-                                                        <div className="text-center">
-                                                            <p className="text-white font-bold animate-pulse">Aguardando leitura...</p>
-                                                            <p className="text-xs text-slate-400">Abra o WhatsApp &gt; Dispositivos Conectados</p>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex flex-col items-center">
-                                                        <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-3" />
-                                                        <p className="text-slate-300 font-medium">Gerando QR Code...</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
+                    {activeInlineTab === 'general' && <GeneralSection />}
+                    {activeInlineTab === 'prompt' && <PromptSection />}
+                    {activeInlineTab === 'funnel' && <FunnelSection />}
+                    {activeInlineTab === 'triggers' && <TriggersSection />}
+                    {activeInlineTab === 'connection' && <ConnectionSection />}
                 </div>
 
                 {/* Footer */}
@@ -883,7 +871,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                                 {isEditing ? 'Configurar Worker IA' : 'Novo Worker IA'}
                             </h2>
                             <p className="text-sm text-slate-400">
-                                Passo {currentStepIndex + 1} de 3
+                                Passo {currentStepIndex + 1} de {wizardSteps.length}
                             </p>
                         </div>
                     </div>
@@ -915,7 +903,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                                         }`}>
                                         {isCompleted ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                                     </div>
-                                    <span className={`text-xs font-medium ${isActive ? 'text-violet-400' :
+                                    <span className={`text-[10px] font-medium ${isActive ? 'text-violet-400' :
                                         isCompleted ? 'text-emerald-400' :
                                             'text-slate-500'
                                         }`}>
@@ -940,6 +928,12 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                             <h3 className="font-bold text-white text-lg mb-4">Prompt do Sistema</h3>
                             <PromptSection />
+                        </div>
+                    )}
+
+                    {currentStep === 'funnel' && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                            <FunnelSection />
                         </div>
                     )}
 
@@ -992,6 +986,25 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                                 className="flex items-center gap-2 px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold transition-all"
                             >
                                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                                Próximo: Funil
+                            </button>
+                        </>
+                    )}
+
+                    {currentStep === 'funnel' && (
+                        <>
+                            <button
+                                onClick={() => setCurrentStep('brain')}
+                                className="px-4 py-2 text-slate-400 hover:bg-slate-800 rounded-xl transition-colors"
+                            >
+                                Voltar
+                            </button>
+                            <button
+                                onClick={() => handleSave(true)}
+                                disabled={saving}
+                                className="flex items-center gap-2 px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold transition-all"
+                            >
+                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
                                 Próximo: Gatilhos
                             </button>
                         </>
@@ -1000,7 +1013,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                     {currentStep === 'triggers' && (
                         <>
                             <button
-                                onClick={() => setCurrentStep('brain')}
+                                onClick={() => setCurrentStep('funnel')}
                                 className="px-4 py-2 text-slate-400 hover:bg-slate-800 rounded-xl transition-colors"
                             >
                                 Voltar

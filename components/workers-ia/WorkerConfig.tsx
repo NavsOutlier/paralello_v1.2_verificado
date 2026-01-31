@@ -19,13 +19,11 @@ interface FunnelStage {
 }
 
 interface HandoffTrigger {
-    id: string;
-    name: string;
-    trigger_type: 'funnel_stage' | 'keyword' | 'sentiment';
-    trigger_value: string;
-    action: 'stop_ai';
-    farewell_message: string;
-    is_active: boolean;
+    id?: string;
+    keyword: string;
+    stage: string;
+    action: 'notify' | 'transfer';
+    farewellMessage: string;
 }
 
 interface FollowupConfig {
@@ -133,6 +131,56 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         };
 
         fetchNormalizedStages();
+    }, [agent?.id]);
+
+    // Fetch normalized handoff triggers on load
+    useEffect(() => {
+        const fetchNormalizedTriggers = async () => {
+            if (!agent?.id) return;
+            const { data, error } = await supabase
+                .from('workers_ia_handoff_triggers')
+                .select('*')
+                .eq('agent_id', agent.id)
+                .eq('is_active', true);
+
+            if (!error && data && data.length > 0) {
+                const mappedTriggers: HandoffTrigger[] = data.map(t => ({
+                    id: t.id,
+                    keyword: t.keyword,
+                    stage: t.target_stage,
+                    action: t.action as 'notify' | 'transfer',
+                    farewellMessage: t.farewell_message || ''
+                }));
+                setFormData(prev => ({ ...prev, handoff_triggers: mappedTriggers }));
+            }
+        };
+
+        fetchNormalizedTriggers();
+    }, [agent?.id]);
+
+    // Fetch normalized followups on load
+    useEffect(() => {
+        const fetchNormalizedFollowups = async () => {
+            if (!agent?.id) return;
+            const { data, error } = await supabase
+                .from('workers_ia_followups')
+                .select('*')
+                .eq('agent_id', agent.id)
+                .eq('is_active', true)
+                .order('attempt_number', { ascending: true });
+
+            if (!error && data && data.length > 0) {
+                const maxAttempts = data.length;
+                const intervals = data.map(f => f.interval_hours);
+                const messages = data.map(f => f.message_template || '');
+                setFormData(prev => ({
+                    ...prev,
+                    followup_config: { max_attempts: maxAttempts, interval_hours: intervals, messages }
+                }));
+            }
+        };
+
+        fetchNormalizedFollowups();
     }, [agent?.id]);
 
     const isEditing = !!agent;
@@ -265,6 +313,61 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                 await supabase
                     .from('workers_ia_funnel_stages')
                     .upsert(stagesToUpsert, { onConflict: 'agent_id,stage_key' });
+            }
+
+            // Normalize: Sync with workers_ia_handoff_triggers
+            if (savedData?.id) {
+                // 1. Delete triggers not in the current list
+                const currentTriggerKeywords = formData.handoff_triggers.map(t => t.keyword).filter(k => k);
+                await supabase
+                    .from('workers_ia_handoff_triggers')
+                    .delete()
+                    .eq('agent_id', savedData.id);
+
+                // 2. Insert current triggers (fresh insert since we deleted all)
+                if (formData.handoff_triggers.length > 0) {
+                    const triggersToInsert = formData.handoff_triggers.filter(t => t.keyword).map(t => ({
+                        agent_id: savedData.id,
+                        keyword: t.keyword,
+                        target_stage: t.stage,
+                        action: t.action,
+                        farewell_message: t.farewellMessage,
+                        is_active: true
+                    }));
+
+                    if (triggersToInsert.length > 0) {
+                        await supabase
+                            .from('workers_ia_handoff_triggers')
+                            .insert(triggersToInsert);
+                    }
+                }
+            }
+
+            // Normalize: Sync with workers_ia_followups
+            if (savedData?.id) {
+                // Delete existing followups
+                await supabase
+                    .from('workers_ia_followups')
+                    .delete()
+                    .eq('agent_id', savedData.id);
+
+                // Insert current followups
+                const followupsToInsert = [];
+                for (let i = 0; i < formData.followup_config.max_attempts; i++) {
+                    followupsToInsert.push({
+                        agent_id: savedData.id,
+                        attempt_number: i + 1,
+                        interval_hours: formData.followup_config.interval_hours[i] || (24 * (i + 1)),
+                        message_template: formData.followup_config.messages[i] || '',
+                        is_active: true
+                    });
+                }
+
+                if (followupsToInsert.length > 0) {
+                    await supabase
+                        .from('workers_ia_followups')
+                        .insert(followupsToInsert);
+                }
             }
 
             // For wizard mode, advance steps
@@ -526,12 +629,10 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
     const addTrigger = () => {
         const newTrigger: HandoffTrigger = {
             id: crypto.randomUUID(),
-            name: '',
-            trigger_type: 'funnel_stage',
-            trigger_value: 'qualified',
-            action: 'stop_ai',
-            farewell_message: 'Vou transferir você para nossa equipe. Em instantes alguém vai te atender!',
-            is_active: true,
+            keyword: '',
+            stage: formData.funnel_config[2]?.id || 'qualified',
+            action: 'notify',
+            farewellMessage: 'Vou transferir você para nossa equipe. Em instantes alguém vai te atender!',
         };
         setFormData({
             ...formData,
@@ -592,121 +693,79 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                     {formData.handoff_triggers.map((trigger, index) => (
                         <div
                             key={trigger.id}
-                            className={`p-4 rounded-xl border transition-all ${trigger.is_active
-                                ? 'bg-slate-800/50 border-amber-500/30'
-                                : 'bg-slate-800/20 border-slate-700/50 opacity-60'
-                                }`}
+                            className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-5 space-y-4"
                         >
-                            {/* Trigger Header */}
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-xs font-bold text-slate-500">#{index + 1}</span>
-                                    <input
-                                        type="text"
-                                        value={trigger.name}
-                                        onChange={(e) => updateTrigger(trigger.id, { name: e.target.value })}
-                                        placeholder="Nome do gatilho"
-                                        className="bg-transparent border-b border-slate-600 text-white font-medium focus:border-amber-500 focus:outline-none px-1 py-0.5"
-                                    />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => updateTrigger(trigger.id, { is_active: !trigger.is_active })}
-                                        className={`p-1.5 rounded-lg transition-colors ${trigger.is_active
-                                            ? 'text-amber-400 hover:bg-amber-500/10'
-                                            : 'text-slate-500 hover:bg-slate-700'
-                                            }`}
-                                        title={trigger.is_active ? 'Desativar' : 'Ativar'}
-                                    >
-                                        {trigger.is_active ? (
-                                            <ToggleRight className="w-5 h-5" />
-                                        ) : (
-                                            <ToggleLeft className="w-5 h-5" />
-                                        )}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeTrigger(trigger.id)}
-                                        className="p-1.5 text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                                        title="Remover"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-slate-500">Gatilho #{index + 1}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => removeTrigger(trigger.id)}
+                                    className="p-1.5 text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                                    title="Remover"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
                             </div>
 
-                            {/* Trigger Config */}
-                            <div className="grid grid-cols-2 gap-4">
-                                {/* Trigger Type */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {/* Keyword */}
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-400 mb-1">Tipo de Gatilho</label>
+                                    <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
+                                        Palavra-chave
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={trigger.keyword}
+                                        onChange={(e) => updateTrigger(trigger.id, { keyword: e.target.value })}
+                                        placeholder="preço, valor, orçamento"
+                                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                                    />
+                                </div>
+
+                                {/* Target Stage */}
+                                <div>
+                                    <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
+                                        Mover para Etapa
+                                    </label>
                                     <select
-                                        value={trigger.trigger_type}
-                                        onChange={(e) => updateTrigger(trigger.id, {
-                                            trigger_type: e.target.value as HandoffTrigger['trigger_type'],
-                                            trigger_value: e.target.value === 'funnel_stage' ? 'qualified' : e.target.value === 'sentiment' ? '-0.5' : ''
-                                        })}
-                                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                                        value={trigger.stage}
+                                        onChange={(e) => updateTrigger(trigger.id, { stage: e.target.value })}
+                                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
                                     >
-                                        <option value="funnel_stage">Etapa do Funil</option>
-                                        <option value="keyword">Palavras-chave</option>
-                                        <option value="sentiment">Sentimento Negativo</option>
+                                        {formData.funnel_config.map((stage) => (
+                                            <option key={stage.id} value={stage.id}>{stage.label}</option>
+                                        ))}
                                     </select>
                                 </div>
 
-                                {/* Trigger Value */}
+                                {/* Action */}
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-400 mb-1">
-                                        {trigger.trigger_type === 'funnel_stage' ? 'Etapa' :
-                                            trigger.trigger_type === 'keyword' ? 'Palavras (separadas por vírgula)' :
-                                                'Limite de Sentimento'}
+                                    <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
+                                        Ação
                                     </label>
-                                    {trigger.trigger_type === 'funnel_stage' ? (
-                                        <select
-                                            value={trigger.trigger_value}
-                                            onChange={(e) => updateTrigger(trigger.id, { trigger_value: e.target.value })}
-                                            className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                                        >
-                                            {formData.funnel_config.map((stage) => (
-                                                <option key={stage.id} value={stage.id}>{stage.label}</option>
-                                            ))}
-                                        </select>
-                                    ) : trigger.trigger_type === 'sentiment' ? (
-                                        <input
-                                            type="number"
-                                            step="0.1"
-                                            min="-1"
-                                            max="0"
-                                            value={trigger.trigger_value}
-                                            onChange={(e) => updateTrigger(trigger.id, { trigger_value: e.target.value })}
-                                            placeholder="-0.5"
-                                            className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                                        />
-                                    ) : (
-                                        <input
-                                            type="text"
-                                            value={trigger.trigger_value}
-                                            onChange={(e) => updateTrigger(trigger.id, { trigger_value: e.target.value })}
-                                            placeholder="preço, valor, quanto custa"
-                                            className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                                        />
-                                    )}
+                                    <select
+                                        value={trigger.action}
+                                        onChange={(e) => updateTrigger(trigger.id, { action: e.target.value as 'notify' | 'transfer' })}
+                                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                                    >
+                                        <option value="notify">Notificar Humano</option>
+                                        <option value="transfer">Transferir Conversa</option>
+                                    </select>
                                 </div>
                             </div>
 
                             {/* Farewell Message */}
-                            <div className="mt-4">
-                                <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1">
+                            <div>
+                                <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1 flex items-center gap-1">
                                     <MessageSquare className="w-3 h-3" />
                                     Mensagem de Despedida
                                 </label>
                                 <textarea
-                                    value={trigger.farewell_message}
-                                    onChange={(e) => updateTrigger(trigger.id, { farewell_message: e.target.value })}
+                                    value={trigger.farewellMessage}
+                                    onChange={(e) => updateTrigger(trigger.id, { farewellMessage: e.target.value })}
                                     placeholder="Vou transferir você para nossa equipe..."
                                     rows={2}
-                                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none resize-none"
+                                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none resize-none"
                                 />
                             </div>
                         </div>

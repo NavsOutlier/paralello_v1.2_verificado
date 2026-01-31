@@ -20,7 +20,9 @@ interface FunnelStage {
 
 interface HandoffTrigger {
     id?: string;
-    keyword: string;
+    trigger_type: 'ai_phrase' | 'lead_keyword' | 'satisfaction_score';
+    keyword: string; // For ai_phrase: the phrase AI must say. For lead_keyword: keywords to detect
+    satisfactionThreshold?: number; // For satisfaction_score: threshold below which to trigger
     stage: string;
     action: 'notify' | 'transfer';
     farewellMessage: string;
@@ -156,7 +158,9 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
             if (!error && data && data.length > 0) {
                 const mappedTriggers: HandoffTrigger[] = data.map(t => ({
                     id: t.id,
-                    keyword: t.keyword,
+                    trigger_type: (t.trigger_type || 'lead_keyword') as 'ai_phrase' | 'lead_keyword' | 'satisfaction_score',
+                    keyword: t.keyword || '',
+                    satisfactionThreshold: t.satisfaction_threshold || undefined,
                     stage: t.target_stage,
                     action: t.action as 'notify' | 'transfer',
                     farewellMessage: t.farewell_message || '',
@@ -339,15 +343,19 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
 
                 // 2. Insert current triggers (fresh insert since we deleted all)
                 if (formData.handoff_triggers.length > 0) {
-                    const triggersToInsert = formData.handoff_triggers.filter(t => t.keyword).map(t => ({
-                        agent_id: savedData.id,
-                        keyword: t.keyword,
-                        target_stage: t.stage,
-                        action: t.action,
-                        farewell_message: t.farewellMessage,
-                        group_message: t.groupMessage,
-                        is_active: true
-                    }));
+                    const triggersToInsert = formData.handoff_triggers
+                        .filter(t => t.keyword || t.trigger_type === 'satisfaction_score')
+                        .map(t => ({
+                            agent_id: savedData.id,
+                            trigger_type: t.trigger_type || 'lead_keyword',
+                            keyword: t.keyword || '',
+                            satisfaction_threshold: t.satisfactionThreshold || null,
+                            target_stage: t.stage,
+                            action: t.action,
+                            farewell_message: t.farewellMessage,
+                            group_message: t.groupMessage,
+                            is_active: true
+                        }));
 
                     if (triggersToInsert.length > 0) {
                         await supabase
@@ -788,7 +796,9 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
     const addTrigger = () => {
         const newTrigger: HandoffTrigger = {
             id: crypto.randomUUID(),
+            trigger_type: 'lead_keyword',
             keyword: '',
+            satisfactionThreshold: undefined,
             stage: formData.funnel_config[2]?.id || 'qualified',
             action: 'notify',
             farewellMessage: 'Vou transferir você para nossa equipe. Em instantes alguém vai te atender!',
@@ -867,67 +877,136 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                                 </button>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {/* Keyword */}
+                            <div className="space-y-4">
+                                {/* Trigger Type Selector */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                    {[
+                                        { type: 'lead_keyword', label: '🔍 Palavra do Lead', desc: 'Lead diz algo parecido' },
+                                        { type: 'ai_phrase', label: '🤖 Frase da IA', desc: 'IA fala determinada frase' },
+                                        { type: 'satisfaction_score', label: '📊 Satisfação', desc: 'Score abaixo de X' },
+                                    ].map((opt) => (
+                                        <button
+                                            key={opt.type}
+                                            type="button"
+                                            onClick={() => updateTrigger(trigger.id, { trigger_type: opt.type as any })}
+                                            className={`p-3 rounded-xl border text-left transition-all ${trigger.trigger_type === opt.type
+                                                ? 'border-amber-500 bg-amber-500/10'
+                                                : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                                                }`}
+                                        >
+                                            <span className="text-sm font-bold text-white">{opt.label}</span>
+                                            <p className="text-[10px] text-slate-400 mt-0.5">{opt.desc}</p>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Conditional Input based on Type */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {trigger.trigger_type === 'lead_keyword' && (
+                                        <div className="md:col-span-2">
+                                            <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
+                                                Palavras-chave (separadas por vírgula)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={trigger.keyword}
+                                                onChange={(e) => updateTrigger(trigger.id, { keyword: e.target.value })}
+                                                placeholder="preço, valor, orçamento, quanto custa"
+                                                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                                            />
+                                            <p className="text-[10px] text-slate-600 mt-1">Quando o lead mencionar estas palavras</p>
+                                        </div>
+                                    )}
+
+                                    {trigger.trigger_type === 'ai_phrase' && (
+                                        <div className="md:col-span-2">
+                                            <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
+                                                Frase que a IA deve dizer
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={trigger.keyword}
+                                                onChange={(e) => updateTrigger(trigger.id, { keyword: e.target.value })}
+                                                placeholder="Vou transferir você para um atendente"
+                                                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                                            />
+                                            <p className="text-[10px] text-slate-600 mt-1">A IA precisa falar exatamente esta frase para disparar</p>
+                                        </div>
+                                    )}
+
+                                    {trigger.trigger_type === 'satisfaction_score' && (
+                                        <div className="md:col-span-2">
+                                            <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
+                                                Limite de Satisfação (0-10)
+                                            </label>
+                                            <div className="flex items-center gap-3">
+                                                <input
+                                                    type="range"
+                                                    min="1"
+                                                    max="10"
+                                                    value={trigger.satisfactionThreshold || 3}
+                                                    onChange={(e) => updateTrigger(trigger.id, { satisfactionThreshold: Number(e.target.value) })}
+                                                    className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-rose-500"
+                                                />
+                                                <span className="text-xl font-black text-rose-400 w-8 text-center">
+                                                    {trigger.satisfactionThreshold || 3}
+                                                </span>
+                                            </div>
+                                            <p className="text-[10px] text-slate-600 mt-1">Dispara quando satisfação do lead fica abaixo deste valor</p>
+                                        </div>
+                                    )}
+
+                                    {/* Common Fields: Stage and Action */}
+                                    <div>
+                                        <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
+                                            Mover para Etapa
+                                        </label>
+                                        <select
+                                            value={trigger.stage}
+                                            onChange={(e) => updateTrigger(trigger.id, { stage: e.target.value })}
+                                            className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                                        >
+                                            {formData.funnel_config.map((stage) => (
+                                                <option key={stage.id} value={stage.id}>{stage.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Action Row */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
+                                            Ação
+                                        </label>
+                                        <select
+                                            value={trigger.action}
+                                            onChange={(e) => updateTrigger(trigger.id, { action: e.target.value as 'notify' | 'transfer' })}
+                                            className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                                        >
+                                            <option value="notify">Notificar Humano</option>
+                                            <option value="transfer">Transferir Conversa</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Farewell Message - Hidden for ai_phrase since the phrase IS the farewell */}
+                            {trigger.trigger_type !== 'ai_phrase' && (
                                 <div>
-                                    <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
-                                        Palavra-chave
+                                    <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1 flex items-center gap-1">
+                                        <MessageSquare className="w-3 h-3" />
+                                        Mensagem de Despedida
                                     </label>
-                                    <input
-                                        type="text"
-                                        value={trigger.keyword}
-                                        onChange={(e) => updateTrigger(trigger.id, { keyword: e.target.value })}
-                                        placeholder="preço, valor, orçamento"
-                                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                                    <textarea
+                                        value={trigger.farewellMessage}
+                                        onChange={(e) => updateTrigger(trigger.id, { farewellMessage: e.target.value })}
+                                        placeholder="Vou transferir você para nossa equipe..."
+                                        rows={2}
+                                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none resize-none"
                                     />
                                 </div>
-
-                                {/* Target Stage */}
-                                <div>
-                                    <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
-                                        Mover para Etapa
-                                    </label>
-                                    <select
-                                        value={trigger.stage}
-                                        onChange={(e) => updateTrigger(trigger.id, { stage: e.target.value })}
-                                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
-                                    >
-                                        {formData.funnel_config.map((stage) => (
-                                            <option key={stage.id} value={stage.id}>{stage.label}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                {/* Action */}
-                                <div>
-                                    <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
-                                        Ação
-                                    </label>
-                                    <select
-                                        value={trigger.action}
-                                        onChange={(e) => updateTrigger(trigger.id, { action: e.target.value as 'notify' | 'transfer' })}
-                                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none"
-                                    >
-                                        <option value="notify">Notificar Humano</option>
-                                        <option value="transfer">Transferir Conversa</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            {/* Farewell Message */}
-                            <div>
-                                <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1 flex items-center gap-1">
-                                    <MessageSquare className="w-3 h-3" />
-                                    Mensagem de Despedida
-                                </label>
-                                <textarea
-                                    value={trigger.farewellMessage}
-                                    onChange={(e) => updateTrigger(trigger.id, { farewellMessage: e.target.value })}
-                                    placeholder="Vou transferir você para nossa equipe..."
-                                    rows={2}
-                                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none resize-none"
-                                />
-                            </div>
+                            )}
 
                             {/* Group Message */}
                             <div>

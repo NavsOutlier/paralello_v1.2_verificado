@@ -7,7 +7,7 @@ import {
     AlertCircle, Activity, BrainCircuit, Type, FileText,
     Smartphone, Loader2, RefreshCw, QrCode, ArrowRight, Check, Phone,
     Plus, Trash2, ToggleLeft, ToggleRight, Filter, MessageSquare,
-    GripVertical, Layout, ChevronUp, ChevronDown, Palette
+    GripVertical, Layout, ChevronUp, ChevronDown, Palette, RotateCcw
 } from 'lucide-react';
 
 interface FunnelStage {
@@ -28,6 +28,12 @@ interface HandoffTrigger {
     is_active: boolean;
 }
 
+interface FollowupConfig {
+    max_attempts: number;
+    interval_hours: number[];
+    messages: string[];
+}
+
 interface WorkerAgent {
     id: string;
     name: string;
@@ -41,6 +47,7 @@ interface WorkerAgent {
     whatsapp_number?: string;
     handoff_triggers?: HandoffTrigger[];
     funnel_config?: FunnelStage[];
+    followup_config?: FollowupConfig;
 }
 
 interface WorkerConfigProps {
@@ -52,8 +59,8 @@ interface WorkerConfigProps {
     isInline?: boolean; // NEW: Show inline (tab) instead of modal (onboarding)
 }
 
-type WizardStep = 'identity' | 'brain' | 'funnel' | 'triggers' | 'connect';
-type InlineTab = 'general' | 'prompt' | 'funnel' | 'triggers' | 'connection';
+type WizardStep = 'identity' | 'brain' | 'funnel' | 'triggers' | 'followups' | 'connect';
+type InlineTab = 'general' | 'prompt' | 'funnel' | 'triggers' | 'followups' | 'connection';
 
 export const WorkerConfig: React.FC<WorkerConfigProps> = ({
     agent,
@@ -96,6 +103,11 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
             { id: 'lost', label: 'Perdido', color: 'text-slate-500', bg: 'bg-slate-700/10', border: 'border-slate-700/20' },
             { id: 'disqualified', label: 'Desqualificados', color: 'text-rose-500', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
         ]) as FunnelStage[],
+        followup_config: (agent?.followup_config || {
+            max_attempts: 3,
+            interval_hours: [24, 48, 72],
+            messages: ['', '', '']
+        }) as FollowupConfig,
     });
 
     // Fetch normalized funnel stages on load
@@ -186,6 +198,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                 whatsapp_number: formData.whatsapp_number,
                 handoff_triggers: formData.handoff_triggers,
                 funnel_config: formData.funnel_config,
+                followup_config: formData.followup_config,
             };
 
             let savedData;
@@ -259,7 +272,8 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                 if (currentStep === 'identity') setCurrentStep('brain');
                 else if (currentStep === 'brain') setCurrentStep('funnel');
                 else if (currentStep === 'funnel') setCurrentStep('triggers');
-                else if (currentStep === 'triggers') {
+                else if (currentStep === 'triggers') setCurrentStep('followups');
+                else if (currentStep === 'followups') {
                     setCurrentStep('connect');
                     if (onSave) onSave(savedData as WorkerAgent);
                 }
@@ -281,6 +295,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         { id: 'brain', label: 'Cérebro', icon: BrainCircuit },
         { id: 'funnel', label: 'Funil', icon: Layout },
         { id: 'triggers', label: 'Gatilhos', icon: Filter },
+        { id: 'followups', label: 'Followups', icon: RotateCcw },
         { id: 'connect', label: 'Conexão', icon: Smartphone }
     ];
 
@@ -289,6 +304,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         { id: 'prompt', label: 'Prompt', icon: BrainCircuit },
         { id: 'funnel', label: 'Funil', icon: Layout },
         { id: 'triggers', label: 'Gatilhos', icon: Filter },
+        { id: 'followups', label: 'Followups', icon: RotateCcw },
         { id: 'connection', label: 'Conexão', icon: Smartphone }
     ];
 
@@ -708,6 +724,113 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         </div>
     );
 
+    // ==================== FOLLOWUPS SECTION ====================
+
+    const updateFollowupConfig = (updates: Partial<FollowupConfig>) => {
+        setFormData({
+            ...formData,
+            followup_config: { ...formData.followup_config, ...updates }
+        });
+    };
+
+    const updateFollowupMessage = (index: number, message: string) => {
+        const newMessages = [...formData.followup_config.messages];
+        newMessages[index] = message;
+        updateFollowupConfig({ messages: newMessages });
+    };
+
+    const updateFollowupInterval = (index: number, hours: number) => {
+        const newIntervals = [...formData.followup_config.interval_hours];
+        newIntervals[index] = hours;
+        updateFollowupConfig({ interval_hours: newIntervals });
+    };
+
+    const renderFollowupsSection = () => (
+        <div className="space-y-6">
+            <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-cyan-500/10 rounded-xl">
+                    <RotateCcw className="w-5 h-5 text-cyan-400" />
+                </div>
+                <div>
+                    <h3 className="font-bold text-white">Configuração de Followups</h3>
+                    <p className="text-sm text-slate-500">Defina a sequência de reengajamento para leads sem resposta</p>
+                </div>
+            </div>
+
+            {/* Max Attempts Slider */}
+            <div className="bg-slate-800/50 p-5 rounded-2xl border border-slate-700/50 space-y-4">
+                <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-slate-300">Máximo de Tentativas</label>
+                    <span className="text-2xl font-black text-cyan-400">{formData.followup_config.max_attempts}</span>
+                </div>
+                <input
+                    type="range"
+                    min="1"
+                    max="3"
+                    step="1"
+                    value={formData.followup_config.max_attempts}
+                    onChange={(e) => updateFollowupConfig({ max_attempts: Number(e.target.value) })}
+                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                />
+                <div className="flex justify-between text-xs text-slate-500 font-medium">
+                    <span>1 tentativa</span>
+                    <span>2 tentativas</span>
+                    <span>3 tentativas</span>
+                </div>
+            </div>
+
+            {/* Per-Attempt Configuration */}
+            <div className="space-y-4">
+                {[0, 1, 2].slice(0, formData.followup_config.max_attempts).map((index) => (
+                    <div key={index} className="bg-slate-800/30 p-5 rounded-2xl border border-slate-700/50 space-y-4">
+                        <div className="flex items-center gap-2">
+                            <span className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 font-bold text-sm">
+                                {index + 1}
+                            </span>
+                            <h4 className="font-bold text-white">{index + 1}º Followup</h4>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="md:col-span-1">
+                                <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
+                                    Intervalo (horas)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="168"
+                                    value={formData.followup_config.interval_hours[index] || 24}
+                                    onChange={(e) => updateFollowupInterval(index, Number(e.target.value))}
+                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                                />
+                            </div>
+                            <div className="md:col-span-3">
+                                <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
+                                    Mensagem Template
+                                </label>
+                                <textarea
+                                    value={formData.followup_config.messages[index] || ''}
+                                    onChange={(e) => updateFollowupMessage(index, e.target.value)}
+                                    placeholder={`Ex: Olá! Notei que não conseguimos conversar. Posso te ajudar com algo?`}
+                                    rows={2}
+                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-cyan-500 focus:outline-none resize-none"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Info Box */}
+            <div className="p-4 bg-cyan-500/5 rounded-xl border border-cyan-500/20">
+                <p className="text-xs text-cyan-300/80">
+                    <strong>Como funciona:</strong> Após o intervalo definido sem resposta do lead, a IA automaticamente envia a mensagem de followup correspondente.
+                    Se o lead responder, o contador é zerado e a conversa segue normalmente.
+                </p>
+            </div>
+        </div>
+    );
+
     // ==================== FUNNEL LOGIC ====================
 
     const addFunnelStage = () => {
@@ -887,6 +1010,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                     {activeInlineTab === 'prompt' && renderPromptSection()}
                     {activeInlineTab === 'funnel' && renderFunnelSection()}
                     {activeInlineTab === 'triggers' && renderTriggersSection()}
+                    {activeInlineTab === 'followups' && renderFollowupsSection()}
                     {activeInlineTab === 'connection' && renderConnectionSection()}
                 </div>
 
@@ -990,6 +1114,12 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                     {currentStep === 'triggers' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                             {renderTriggersSection()}
+                        </div>
+                    )}
+
+                    {currentStep === 'followups' && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                            {renderFollowupsSection()}
                         </div>
                     )}
 

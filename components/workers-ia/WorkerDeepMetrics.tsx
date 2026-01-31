@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase';
 import {
     Clock, MessageSquare, Zap, ThumbsUp, ThumbsDown,
     CheckCircle, XCircle, Hash, Server, Activity, Calendar,
-    TrendingUp, BarChart, PieChart as PieIcon, Info
+    TrendingUp, BarChart, PieChart as PieIcon, Info, RotateCcw
 } from 'lucide-react';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -62,7 +62,13 @@ export const WorkerDeepMetrics: React.FC<WorkerDeepMetricsProps> = ({ agentId })
             sentiment: 0,
             ai_scheduled: 0,
             human_scheduled: 0,
-            handoffs: 0
+            handoffs: 0,
+            followup1_sent: 0,
+            followup1_success: 0,
+            followup2_sent: 0,
+            followup2_success: 0,
+            followup3_sent: 0,
+            followup3_success: 0
         };
 
         rawRows.forEach(row => {
@@ -81,6 +87,12 @@ export const WorkerDeepMetrics: React.FC<WorkerDeepMetricsProps> = ({ agentId })
             totals.ai_scheduled += row.ai_scheduled_count || 0;
             totals.human_scheduled += row.human_scheduled_count || 0;
             totals.handoffs += row.handoff_to_human_count || 0;
+            totals.followup1_sent += row.followup_1_sent || 0;
+            totals.followup1_success += row.followup_1_success || 0;
+            totals.followup2_sent += row.followup_2_sent || 0;
+            totals.followup2_success += row.followup_2_success || 0;
+            totals.followup3_sent += row.followup_3_sent || 0;
+            totals.followup3_success += row.followup_3_success || 0;
 
             timeSeriesData.push({
                 date: dateStr,
@@ -105,7 +117,10 @@ export const WorkerDeepMetrics: React.FC<WorkerDeepMetricsProps> = ({ agentId })
             avgSentiment: totals.sentiment / rawRows.length,
             cac: totals.scheduled > 0 ? totals.cost / totals.scheduled : 0,
             overallConvRate: totals.processed > 0 ? (totals.scheduled / totals.processed) * 100 : 0,
-            handoffEfficiency: totals.handoffs > 0 ? (totals.human_scheduled / totals.handoffs) * 100 : 0
+            handoffEfficiency: totals.handoffs > 0 ? (totals.human_scheduled / totals.handoffs) * 100 : 0,
+            followup1Rate: totals.followup1_sent > 0 ? (totals.followup1_success / totals.followup1_sent) * 100 : 0,
+            followup2Rate: totals.followup2_sent > 0 ? (totals.followup2_success / totals.followup2_sent) * 100 : 0,
+            followup3Rate: totals.followup3_sent > 0 ? (totals.followup3_success / totals.followup3_sent) * 100 : 0
         };
     }, [rawRows]);
 
@@ -123,7 +138,7 @@ export const WorkerDeepMetrics: React.FC<WorkerDeepMetricsProps> = ({ agentId })
         </div>
     );
 
-    const { timeSeriesData, totals, cac, overallConvRate, avgSentiment, handoffEfficiency } = analytics;
+    const { timeSeriesData, totals, cac, overallConvRate, avgSentiment, handoffEfficiency, followup1Rate, followup2Rate, followup3Rate } = analytics;
 
     return (
         <div className="space-y-12 animate-in fade-in duration-500 pb-20">
@@ -275,6 +290,58 @@ export const WorkerDeepMetrics: React.FC<WorkerDeepMetricsProps> = ({ agentId })
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* SECTION 3: Followup & Reatenção */}
+            <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                    <div className="p-3 bg-cyan-500/10 rounded-2xl">
+                        <RotateCcw className="w-6 h-6 text-cyan-400" />
+                    </div>
+                    <div>
+                        <h4 className="text-lg font-bold text-white">Reengajamento & Followups</h4>
+                        <p className="text-xs text-slate-500 uppercase tracking-widest font-black">Taxa de Sucesso por Tentativa</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Total Enviados</p>
+                        <p className="text-xl font-black text-white">{totals.followup1_sent + totals.followup2_sent + totals.followup3_sent}</p>
+                    </div>
+                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-cyan-500/20">
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Taxa 1º Followup</p>
+                        <p className="text-xl font-black text-cyan-400">{followup1Rate.toFixed(1)}%</p>
+                    </div>
+                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-cyan-500/20">
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Taxa 2º Followup</p>
+                        <p className="text-xl font-black text-cyan-400">{followup2Rate.toFixed(1)}%</p>
+                    </div>
+                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-cyan-500/20">
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Taxa 3º Followup</p>
+                        <p className="text-xl font-black text-cyan-400">{followup3Rate.toFixed(1)}%</p>
+                    </div>
+                </div>
+
+                <div className="bg-slate-800/40 p-6 rounded-3xl border border-white/5">
+                    <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Efetividade por Tentativa</h5>
+                    <div className="h-[200px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <ReBarChart data={[
+                                { name: '1º', enviados: totals.followup1_sent, sucesso: totals.followup1_success },
+                                { name: '2º', enviados: totals.followup2_sent, sucesso: totals.followup2_success },
+                                { name: '3º', enviados: totals.followup3_sent, sucesso: totals.followup3_success }
+                            ]}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                                <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                                <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px' }} />
+                                <Bar dataKey="enviados" name="Enviados" fill="#475569" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="sucesso" name="Responderam" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                            </ReBarChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
             </div>

@@ -82,19 +82,37 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId, o
     }, [agentId]);
 
     const fetchAgentConfig = async () => {
-        const { data } = await supabase
+        // 1. Fetch Basic Config (SLA, fallback JSONB funnel)
+        const { data: agentData } = await supabase
             .from('workers_ia_agents')
             .select('sla_threshold_seconds, funnel_config')
             .eq('id', agentId)
             .single();
 
-        if (data) {
-            if (data.sla_threshold_seconds) {
-                setSlaThreshold(data.sla_threshold_seconds);
+        if (agentData) {
+            if (agentData.sla_threshold_seconds) {
+                setSlaThreshold(agentData.sla_threshold_seconds);
             }
-            if (data.funnel_config && Array.isArray(data.funnel_config)) {
-                setFunnelStages(data.funnel_config as FunnelStage[]);
-            }
+        }
+
+        // 2. Fetch Normalized Funnel Stages (Primary)
+        const { data: stagesData, error: stagesError } = await supabase
+            .from('workers_ia_funnel_stages')
+            .select('*')
+            .eq('agent_id', agentId)
+            .order('position', { ascending: true });
+
+        if (!stagesError && stagesData && stagesData.length > 0) {
+            setFunnelStages(stagesData.map(s => ({
+                id: s.stage_key,
+                label: s.label,
+                color: s.color,
+                bg: s.bg,
+                border: s.border
+            })));
+        } else if (agentData?.funnel_config) {
+            // Fallback to JSONB if table is empty
+            setFunnelStages(agentData.funnel_config as FunnelStage[]);
         }
     };
 
@@ -139,6 +157,19 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId, o
                     if (payload.new.sla_threshold_seconds) {
                         setSlaThreshold(payload.new.sla_threshold_seconds);
                     }
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'workers_ia_funnel_stages',
+                    filter: `agent_id=eq.${agentId}`
+                },
+                () => {
+                    // Refetch all config when stages change
+                    fetchAgentConfig();
                 }
             )
             .subscribe();

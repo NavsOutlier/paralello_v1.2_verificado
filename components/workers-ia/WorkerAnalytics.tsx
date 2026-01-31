@@ -62,8 +62,23 @@ export const WorkerAnalytics: React.FC<WorkerAnalyticsProps> = ({ agentId }) => 
                     table: 'workers_ia_conversations',
                     filter: `agent_id=eq.${agentId}`
                 },
-                (payload) => {
-                    fetchStrategicCounters();
+                (payload: any) => {
+                    if (payload.new && payload.new.id === agentId) {
+                        fetchStrategicCounters();
+                        // Also refetch funnel if config changed (though it's now in separate table)
+                        fetchFunnelData();
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'workers_ia_funnel_stages',
+                    filter: `agent_id=eq.${agentId}`
+                },
+                () => {
                     fetchFunnelData();
                 }
             )
@@ -79,10 +94,9 @@ export const WorkerAnalytics: React.FC<WorkerAnalyticsProps> = ({ agentId }) => 
                     table: 'workers_ia_agents',
                     filter: `id=eq.${agentId}`
                 },
-                (payload) => {
-                    if (payload.new.funnel_config) {
-                        setFunnelStages(payload.new.funnel_config as FunnelStage[]);
-                    }
+                () => {
+                    // Update general info if needed, or just refetch relevant parts
+                    fetchActiveConversations();
                 }
             )
             .subscribe();
@@ -126,32 +140,61 @@ export const WorkerAnalytics: React.FC<WorkerAnalyticsProps> = ({ agentId }) => 
     };
 
     const fetchFunnelData = async () => {
+        if (!agentId) return;
         setLoadingFunnel(true);
+        try {
+            // 1. Fetch Funnel Configuration (Normalized)
+            const { data: stagesData, error: stagesError } = await supabase
+                .from('workers_ia_funnel_stages')
+                .select('*')
+                .eq('agent_id', agentId)
+                .order('position', { ascending: true });
 
-        // Fetch agent config for stages
-        const { data: agentData } = await supabase
-            .from('workers_ia_agents')
-            .select('funnel_config')
-            .eq('id', agentId)
-            .single();
+            let currentStages: FunnelStage[] = [];
 
-        if (agentData?.funnel_config) {
-            setFunnelStages(agentData.funnel_config as FunnelStage[]);
-        }
+            if (!stagesError && stagesData && stagesData.length > 0) {
+                currentStages = stagesData.map(s => ({
+                    id: s.stage_key,
+                    label: s.label,
+                    color: s.color,
+                    bg: s.bg,
+                    border: s.border
+                }));
+            } else {
+                // Fallback to agent's JSONB column
+                const { data: agentData } = await supabase
+                    .from('workers_ia_agents')
+                    .select('funnel_config')
+                    .eq('id', agentId)
+                    .single();
 
-        // Fetch counts per stage
-        const { data: convData } = await supabase
-            .from('workers_ia_conversations')
-            .select('funnel_stage')
-            .eq('agent_id', agentId);
+                if (agentData?.funnel_config) {
+                    currentStages = agentData.funnel_config as FunnelStage[];
+                }
+            }
 
-        if (convData) {
-            const counts: Record<string, number> = {};
-            convData.forEach((c: any) => {
-                const stageId = c.funnel_stage || 'unknown';
-                counts[stageId] = (counts[stageId] || 0) + 1;
-            });
-            setFunnelCounts(counts);
+            setFunnelStages(currentStages);
+
+            // 2. Fetch Conversation Counts per Stage
+            if (currentStages.length > 0) {
+                const { data: convData, error: convError } = await supabase
+                    .from('workers_ia_conversations')
+                    .select('funnel_stage')
+                    .eq('agent_id', agentId);
+
+                if (convData) {
+                    const counts: Record<string, number> = {};
+                    currentStages.forEach(s => counts[s.id] = 0);
+                    convData.forEach(c => {
+                        if (c.funnel_stage && counts[c.funnel_stage] !== undefined) {
+                            counts[c.funnel_stage]++;
+                        }
+                    });
+                    setFunnelCounts(counts);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching funnel data:', error);
         }
         setLoadingFunnel(false);
     };

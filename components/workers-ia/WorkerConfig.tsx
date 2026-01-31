@@ -86,7 +86,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         sla_threshold_seconds: agent?.sla_threshold_seconds || 60,
         whatsapp_number: agent?.whatsapp_number || '',
         handoff_triggers: agent?.handoff_triggers || [] as HandoffTrigger[],
-        funnel_config: agent?.funnel_config || [
+        funnel_config: (agent?.funnel_config || [
             { id: 'new_lead', label: 'Novos', color: 'text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500/20' },
             { id: 'interested', label: 'Interessados', color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' },
             { id: 'qualified', label: 'Qualificados', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
@@ -95,8 +95,33 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
             { id: 'no_response', label: 'Sem Resposta', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
             { id: 'lost', label: 'Perdido', color: 'text-slate-500', bg: 'bg-slate-700/10', border: 'border-slate-700/20' },
             { id: 'disqualified', label: 'Desqualificados', color: 'text-rose-500', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
-        ] as FunnelStage[],
+        ]) as FunnelStage[],
     });
+
+    // Fetch normalized funnel stages on load
+    useEffect(() => {
+        const fetchNormalizedStages = async () => {
+            if (!agent?.id) return;
+            const { data, error } = await supabase
+                .from('workers_ia_funnel_stages')
+                .select('*')
+                .eq('agent_id', agent.id)
+                .order('position', { ascending: true });
+
+            if (!error && data && data.length > 0) {
+                const mappedStages = data.map(s => ({
+                    id: s.stage_key,
+                    label: s.label,
+                    color: s.color,
+                    bg: s.bg,
+                    border: s.border
+                }));
+                setFormData(prev => ({ ...prev, funnel_config: mappedStages }));
+            }
+        };
+
+        fetchNormalizedStages();
+    }, [agent?.id]);
 
     const isEditing = !!agent;
     const instanceName = `Worker: ${clientName || clientId.slice(0, 8)}`;
@@ -202,6 +227,32 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
             }
 
             setCurrentAgent(savedData as WorkerAgent);
+
+            // Normalize: Sync with workers_ia_funnel_stages
+            if (savedData?.id) {
+                // 1. Delete stages not in the current list
+                const currentKeys = formData.funnel_config.map(s => s.id);
+                await supabase
+                    .from('workers_ia_funnel_stages')
+                    .delete()
+                    .eq('agent_id', savedData.id)
+                    .not('stage_key', 'in', `(${currentKeys.join(',')})`);
+
+                // 2. Upsert current stages
+                const stagesToUpsert = formData.funnel_config.map((s, idx) => ({
+                    agent_id: savedData.id,
+                    stage_key: s.id,
+                    label: s.label,
+                    color: s.color,
+                    bg: s.bg,
+                    border: s.border,
+                    position: idx
+                }));
+
+                await supabase
+                    .from('workers_ia_funnel_stages')
+                    .upsert(stagesToUpsert, { onConflict: 'agent_id,stage_key' });
+            }
 
             // For wizard mode, advance steps
             if (advanceStep && !isInline) {

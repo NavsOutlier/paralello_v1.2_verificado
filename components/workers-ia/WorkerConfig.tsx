@@ -24,6 +24,7 @@ interface HandoffTrigger {
     stage: string;
     action: 'notify' | 'transfer';
     farewellMessage: string;
+    groupMessage: string;
 }
 
 interface FollowupConfig {
@@ -46,6 +47,8 @@ interface WorkerAgent {
     handoff_triggers?: HandoffTrigger[];
     funnel_config?: FunnelStage[];
     followup_config?: FollowupConfig;
+    notification_group_id?: string;
+    notification_group_name?: string;
 }
 
 interface WorkerConfigProps {
@@ -106,7 +109,14 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
             interval_hours: [24, 48, 72],
             messages: ['', '', '']
         }) as FollowupConfig,
+        notification_group_id: agent?.notification_group_id || '',
+        notification_group_name: agent?.notification_group_name || '',
     });
+
+    // State for group creation form
+    const [groupName, setGroupName] = useState('');
+    const [groupParticipants, setGroupParticipants] = useState<{ name: string; phone: string }[]>([]);
+    const [creatingGroup, setCreatingGroup] = useState(false);
 
     // Fetch normalized funnel stages on load
     useEffect(() => {
@@ -149,7 +159,8 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                     keyword: t.keyword,
                     stage: t.target_stage,
                     action: t.action as 'notify' | 'transfer',
-                    farewellMessage: t.farewell_message || ''
+                    farewellMessage: t.farewell_message || '',
+                    groupMessage: t.group_message || ''
                 }));
                 setFormData(prev => ({ ...prev, handoff_triggers: mappedTriggers }));
             }
@@ -247,6 +258,8 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                 handoff_triggers: formData.handoff_triggers,
                 funnel_config: formData.funnel_config,
                 followup_config: formData.followup_config,
+                notification_group_id: formData.notification_group_id || null,
+                notification_group_name: formData.notification_group_name || null,
             };
 
             let savedData;
@@ -332,6 +345,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                         target_stage: t.stage,
                         action: t.action,
                         farewell_message: t.farewellMessage,
+                        group_message: t.groupMessage,
                         is_active: true
                     }));
 
@@ -621,6 +635,151 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                     </div>
                 )}
             </div>
+
+            {/* Notification Group Section - Only show when connected */}
+            {isConnected && (
+                <div className="bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 rounded-2xl border border-emerald-500/20 p-5">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-emerald-500/20 rounded-xl">
+                            <Phone className="w-5 h-5 text-emerald-400" />
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-white">Grupo de Notificação</h4>
+                            <p className="text-xs text-slate-400">Grupo WhatsApp para receber alertas de handoff</p>
+                        </div>
+                    </div>
+
+                    {formData.notification_group_id ? (
+                        <div className="flex items-center justify-between bg-slate-800/50 rounded-xl p-4">
+                            <div className="flex items-center gap-3">
+                                <CheckCircle className="w-5 h-5 text-emerald-400" />
+                                <div>
+                                    <p className="text-white font-medium">{formData.notification_group_name || 'Grupo Configurado'}</p>
+                                    <p className="text-[10px] text-slate-500 font-mono">ID: {formData.notification_group_id}</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setFormData(prev => ({ ...prev, notification_group_id: '', notification_group_name: '' }))}
+                                className="text-xs text-rose-400 hover:text-rose-300 transition-colors"
+                            >
+                                Remover
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
+                                    Nome do Grupo
+                                </label>
+                                <input
+                                    type="text"
+                                    value={groupName}
+                                    onChange={(e) => setGroupName(e.target.value)}
+                                    placeholder="Notificações - Clínica ABC"
+                                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-2">
+                                    Participantes ({groupParticipants.length})
+                                </label>
+                                <div className="space-y-2 max-h-32 overflow-y-auto">
+                                    {groupParticipants.map((p, idx) => (
+                                        <div key={idx} className="flex items-center gap-2 bg-slate-900/50 rounded-lg p-2">
+                                            <input
+                                                type="text"
+                                                value={p.name}
+                                                onChange={(e) => {
+                                                    const updated = [...groupParticipants];
+                                                    updated[idx].name = e.target.value;
+                                                    setGroupParticipants(updated);
+                                                }}
+                                                placeholder="Nome"
+                                                className="flex-1 px-2 py-1 bg-transparent border-b border-slate-700 text-white text-sm focus:border-emerald-500 focus:outline-none"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={p.phone}
+                                                onChange={(e) => {
+                                                    const updated = [...groupParticipants];
+                                                    updated[idx].phone = e.target.value;
+                                                    setGroupParticipants(updated);
+                                                }}
+                                                placeholder="5511999999999"
+                                                className="w-36 px-2 py-1 bg-transparent border-b border-slate-700 text-white text-sm focus:border-emerald-500 focus:outline-none font-mono"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setGroupParticipants(groupParticipants.filter((_, i) => i !== idx))}
+                                                className="p-1 text-rose-400 hover:bg-rose-500/10 rounded"
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setGroupParticipants([...groupParticipants, { name: '', phone: '' }])}
+                                    className="mt-2 flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                                >
+                                    <Plus className="w-3 h-3" /> Adicionar Participante
+                                </button>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    if (!groupName || groupParticipants.length === 0) {
+                                        alert('Preencha o nome do grupo e adicione pelo menos 1 participante');
+                                        return;
+                                    }
+                                    setCreatingGroup(true);
+                                    try {
+                                        const response = await fetch(`${process.env.NEXT_PUBLIC_EVOLUTION_API_URL}/group/create/${myInstance?.name}`, {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'apikey': process.env.NEXT_PUBLIC_EVOLUTION_API_KEY || ''
+                                            },
+                                            body: JSON.stringify({
+                                                subject: groupName,
+                                                participants: groupParticipants.map(p => p.phone.replace(/\D/g, ''))
+                                            })
+                                        });
+                                        const data = await response.json();
+                                        if (data.id) {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                notification_group_id: data.id,
+                                                notification_group_name: groupName
+                                            }));
+                                            setGroupName('');
+                                            setGroupParticipants([]);
+                                        } else {
+                                            throw new Error(data.message || 'Erro ao criar grupo');
+                                        }
+                                    } catch (error: any) {
+                                        alert(`Erro: ${error.message}`);
+                                    } finally {
+                                        setCreatingGroup(false);
+                                    }
+                                }}
+                                disabled={creatingGroup || !groupName || groupParticipants.length === 0}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-all"
+                            >
+                                {creatingGroup ? (
+                                    <><Loader2 className="w-4 h-4 animate-spin" /> Criando Grupo...</>
+                                ) : (
+                                    <><Phone className="w-4 h-4" /> Criar Grupo WhatsApp</>
+                                )}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 
@@ -633,6 +792,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
             stage: formData.funnel_config[2]?.id || 'qualified',
             action: 'notify',
             farewellMessage: 'Vou transferir você para nossa equipe. Em instantes alguém vai te atender!',
+            groupMessage: '🚨 Novo lead qualificado! Cliente solicitou atendimento humano.',
         };
         setFormData({
             ...formData,
@@ -658,7 +818,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
 
     const renderTriggersSection = () => (
         <div className="space-y-6">
-            {/* Header */}
+            {/* Triggers Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h4 className="font-bold text-white flex items-center gap-2">
@@ -768,6 +928,22 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                                     className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none resize-none"
                                 />
                             </div>
+
+                            {/* Group Message */}
+                            <div>
+                                <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1 flex items-center gap-1">
+                                    <Phone className="w-3 h-3" />
+                                    Mensagem para Grupo de Notificação
+                                </label>
+                                <textarea
+                                    value={trigger.groupMessage}
+                                    onChange={(e) => updateTrigger(trigger.id, { groupMessage: e.target.value })}
+                                    placeholder="🚨 Novo lead qualificado! Nome: {{lead_name}}, Tel: {{lead_phone}}"
+                                    rows={2}
+                                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-1 focus:ring-amber-500 focus:outline-none resize-none"
+                                />
+                                <p className="text-[10px] text-slate-600 mt-1">Variáveis: {'{{lead_name}}'}, {'{{lead_phone}}'}, {'{{trigger_keyword}}'}</p>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -776,8 +952,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
             {/* Info Box */}
             <div className="p-4 bg-amber-500/5 rounded-xl border border-amber-500/20">
                 <p className="text-xs text-amber-300/80">
-                    <strong>Como funciona:</strong> Quando um gatilho é acionado, a IA envia a mensagem de despedida e para de responder.
-                    O SLA começa a contar para o suporte humano atender.
+                    <strong>Como funciona:</strong> Quando a palavra-chave é detectada, a IA envia a mensagem de despedida ao lead e notifica o grupo.
                 </p>
             </div>
         </div>

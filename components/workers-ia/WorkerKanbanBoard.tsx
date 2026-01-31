@@ -39,6 +39,7 @@ interface WorkerConversation {
     last_message_at?: string;
     sla_breach_count?: number;
     loss_reason?: string;
+    is_human_takeover?: boolean;
 }
 
 interface WorkerKanbanBoardProps {
@@ -159,6 +160,11 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId, o
                                                         <Clock className="w-3 h-3" /> {format(new Date(card.updated_at), "dd/MM HH:mm")}
                                                         {card.sla_breach_count && card.sla_breach_count > 0 && <span className="ml-2 px-1.5 py-0.5 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-md text-[8px] font-black animate-pulse flex items-center gap-1"><Zap className="w-2.5 h-2.5 fill-rose-500" /> {card.sla_breach_count}x SLA</span>}
                                                     </span>
+                                                    {card.is_human_takeover && (
+                                                        <div className="mt-1 flex items-center gap-1.5 text-[9px] font-black bg-white/5 text-white border border-white/20 px-2 py-0.5 rounded-lg w-fit">
+                                                            <User className="w-3 h-3" /> ATENDIMENTO HUMANO
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                             {card.summary && <div className="bg-[#111827] rounded-xl p-3 mb-4 border border-slate-800/50"><p className="text-[11px] text-slate-400 line-clamp-3 leading-relaxed italic">{card.summary}</p></div>}
@@ -173,6 +179,25 @@ export const WorkerKanbanBoard: React.FC<WorkerKanbanBoardProps> = ({ agentId, o
                                                         </div>
                                                     )}
                                                     <button onClick={(e) => { e.stopPropagation(); onViewAudit?.(card.session_id); }} className="flex items-center gap-2 text-[10px] text-slate-500 hover:text-white font-black uppercase tracking-[0.2em] transition-colors"><MessageSquare className="w-3.5 h-3.5" /> AUDITORIA</button>
+
+                                                    {card.is_human_takeover && (
+                                                        <button
+                                                            onClick={async (e) => {
+                                                                e.stopPropagation();
+                                                                if (confirm('Deseja que a IA retome o atendimento deste lead?')) {
+                                                                    const { error } = await supabase
+                                                                        .from('workers_ia_conversations')
+                                                                        .update({ is_human_takeover: false })
+                                                                        .eq('id', card.id);
+                                                                    if (!error) fetchConversations();
+                                                                }
+                                                            }}
+                                                            className="flex items-center gap-1 text-[9px] text-emerald-500 hover:text-emerald-400 font-black uppercase transition-colors"
+                                                            title="Resetar Trava de IA"
+                                                        >
+                                                            <RefreshCw className="w-3 h-3" /> RETOMAR IA
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

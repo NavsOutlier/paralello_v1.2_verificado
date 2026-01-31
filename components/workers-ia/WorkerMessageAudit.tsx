@@ -27,6 +27,7 @@ interface WorkerConversation {
     sentiment_history?: number[];
     loss_reason?: string;
     closing_notes?: string;
+    is_human_takeover?: boolean;
 }
 
 interface WorkerMessage {
@@ -225,6 +226,11 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
                             <span className="text-[9px] px-1.5 py-0.5 bg-violet-500/10 text-violet-400 rounded-md border border-violet-500/20 uppercase font-bold tracking-wider">
                                 {selectedConv.funnel_stage?.replace('_', ' ') || 'Novo Lead'}
                             </span>
+                            {selectedConv.is_human_takeover && (
+                                <span className="text-[9px] px-1.5 py-0.5 bg-white/5 text-white rounded-md border border-white/20 uppercase font-black flex items-center gap-1 shadow-[0_0_10px_rgba(255,255,255,0.05)]">
+                                    <User className="w-2.5 h-2.5" /> Atendimento Humano
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -296,6 +302,23 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
                             <button onClick={saveAuditData} disabled={loadingSave} className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-700 rounded-xl text-xs font-black text-white hover:from-violet-500 hover:to-indigo-600 transition-all flex items-center justify-center gap-2 uppercase tracking-widest">
                                 {loadingSave ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />} Salvar
                             </button>
+
+                            {selectedConv.is_human_takeover && (
+                                <button
+                                    onClick={async () => {
+                                        if (confirm('Deseja que a IA retome o atendimento deste lead?')) {
+                                            const { error } = await supabase
+                                                .from('workers_ia_conversations')
+                                                .update({ is_human_takeover: false })
+                                                .eq('id', selectedConv.id);
+                                            if (!error) updateAuditFields({ is_human_takeover: false });
+                                        }
+                                    }}
+                                    className="w-full py-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[10px] font-black text-emerald-500 hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2 uppercase tracking-widest"
+                                >
+                                    <RefreshCw className="w-3.5 h-3.5" /> Retomar IA
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -352,6 +375,13 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
                                     );
                                 })()}
                             </div>
+                            {conv.is_human_takeover && (
+                                <div className="absolute top-0 right-0 p-2">
+                                    <div className="bg-white/5 border border-white/20 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-lg backdrop-blur-sm">
+                                        🙋 HUMANO
+                                    </div>
+                                </div>
+                            )}
                             <h4 className="text-white font-bold truncate mb-1">{conv.contact_info?.name || 'Visitante Anônimo'}</h4>
                             <p className="text-slate-500 text-[10px] font-mono mb-4">{conv.session_id}</p>
                             <div className="bg-slate-950/40 rounded-xl p-3 mb-4 border border-white/5"><p className="text-slate-400 text-xs line-clamp-2 italic leading-relaxed">{conv.summary || 'Sem resumo disponível.'}</p></div>

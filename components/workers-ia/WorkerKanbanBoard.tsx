@@ -5,7 +5,7 @@ import {
     Search, Filter, Plus, GripVertical, Calendar,
     MessageSquare, User, Tag, Clock, CheckCircle2,
     AlertCircle, MoreHorizontal, ChevronRight, X,
-    Frown, Meh, Smile, Zap, Sparkles
+    Frown, Meh, Smile, Zap, Sparkles, RefreshCw
 } from 'lucide-react';
 import { Avatar } from '../ui';
 import { format } from 'date-fns';

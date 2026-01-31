@@ -156,7 +156,7 @@ export const useWhatsApp = (instanceId?: string) => {
         return { data, error };
     };
 
-    const createGroup = async (clientName: string, clientId: string, phone?: string) => {
+    const createGroup = async (clientName: string, clientId: string, phone?: string, agentId?: string) => {
         if (!organizationId) return { error: new Error('No organization') };
         const { data: { session } } = await supabase.auth.getSession();
 
@@ -165,6 +165,7 @@ export const useWhatsApp = (instanceId?: string) => {
                 action: 'create_group',
                 name: clientName,
                 client_id: clientId,
+                agent_id: agentId,
                 phone: phone,
                 organization_id: organizationId
             },

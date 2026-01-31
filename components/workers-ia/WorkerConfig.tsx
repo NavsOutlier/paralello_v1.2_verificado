@@ -746,29 +746,22 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                                     }
                                     setCreatingGroup(true);
                                     try {
-                                        const response = await fetch(`${process.env.NEXT_PUBLIC_EVOLUTION_API_URL}/group/create/${myInstance?.name}`, {
-                                            method: 'POST',
-                                            headers: {
-                                                'Content-Type': 'application/json',
-                                                'apikey': process.env.NEXT_PUBLIC_EVOLUTION_API_KEY || ''
-                                            },
-                                            body: JSON.stringify({
-                                                subject: groupName,
-                                                participants: groupParticipants.map(p => p.phone.replace(/\D/g, ''))
-                                            })
-                                        });
-                                        const data = await response.json();
-                                        if (data.id) {
-                                            setFormData(prev => ({
-                                                ...prev,
-                                                notification_group_id: data.id,
-                                                notification_group_name: groupName
-                                            }));
-                                            setGroupName('');
-                                            setGroupParticipants([]);
-                                        } else {
-                                            throw new Error(data.message || 'Erro ao criar grupo');
-                                        }
+                                        const { data, error } = await createGroup(
+                                            groupName,
+                                            'worker-notification', // Placeholder for workers as they don't have a dedicated client ID here, or we use agent_id
+                                            groupParticipants[0]?.phone.replace(/\D/g, ''),
+                                            currentAgent?.id
+                                        );
+
+                                        if (error) throw error;
+
+                                        // Wait-and-poll logic or assumption that n8n worked correctly 
+                                        // (Usually the webhook returns success immediately)
+                                        showToast('Criação do grupo solicitada com sucesso!');
+
+                                        // Clear local states
+                                        setGroupName('');
+                                        setGroupParticipants([]);
                                     } catch (error: any) {
                                         alert(`Erro: ${error.message}`);
                                     } finally {

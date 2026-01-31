@@ -5,8 +5,19 @@ import { useWhatsApp } from '../../hooks/useWhatsApp';
 import {
     Settings, Save, X, Bot, Zap, CheckCircle,
     AlertCircle, Activity, BrainCircuit, Type, FileText,
-    Smartphone, Loader2, RefreshCw, QrCode, ArrowRight, Check, Phone
+    Smartphone, Loader2, RefreshCw, QrCode, ArrowRight, Check, Phone,
+    Plus, Trash2, ToggleLeft, ToggleRight, Filter, MessageSquare
 } from 'lucide-react';
+
+interface HandoffTrigger {
+    id: string;
+    name: string;
+    trigger_type: 'funnel_stage' | 'keyword' | 'sentiment';
+    trigger_value: string;
+    action: 'stop_ai';
+    farewell_message: string;
+    is_active: boolean;
+}
 
 interface WorkerAgent {
     id: string;
@@ -19,6 +30,7 @@ interface WorkerAgent {
     is_active: boolean;
     sla_threshold_seconds: number;
     whatsapp_number?: string;
+    handoff_triggers?: HandoffTrigger[];
 }
 
 interface WorkerConfigProps {
@@ -30,8 +42,8 @@ interface WorkerConfigProps {
     isInline?: boolean; // NEW: Show inline (tab) instead of modal (onboarding)
 }
 
-type WizardStep = 'identity' | 'brain' | 'connect';
-type InlineTab = 'general' | 'prompt' | 'connection';
+type WizardStep = 'identity' | 'brain' | 'triggers' | 'connect';
+type InlineTab = 'general' | 'prompt' | 'triggers' | 'connection';
 
 export const WorkerConfig: React.FC<WorkerConfigProps> = ({
     agent,
@@ -63,6 +75,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         system_prompt: agent?.system_prompt || '',
         sla_threshold_seconds: agent?.sla_threshold_seconds || 60,
         whatsapp_number: agent?.whatsapp_number || '',
+        handoff_triggers: agent?.handoff_triggers || [] as HandoffTrigger[],
     });
 
     const isEditing = !!agent;
@@ -126,6 +139,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                 system_prompt: formData.system_prompt,
                 sla_threshold_seconds: Number(formData.sla_threshold_seconds),
                 whatsapp_number: formData.whatsapp_number,
+                handoff_triggers: formData.handoff_triggers,
             };
 
             let savedData;
@@ -171,7 +185,8 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
             // For wizard mode, advance steps
             if (advanceStep && !isInline) {
                 if (currentStep === 'identity') setCurrentStep('brain');
-                if (currentStep === 'brain') {
+                else if (currentStep === 'brain') setCurrentStep('triggers');
+                else if (currentStep === 'triggers') {
                     setCurrentStep('connect');
                     if (onSave) onSave(savedData as WorkerAgent);
                 }
@@ -191,12 +206,14 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
     const wizardSteps: { id: WizardStep, label: string, icon: any }[] = [
         { id: 'identity', label: 'Identidade', icon: Zap },
         { id: 'brain', label: 'Cérebro', icon: BrainCircuit },
+        { id: 'triggers', label: 'Gatilhos', icon: Filter },
         { id: 'connect', label: 'Conexão', icon: Smartphone }
     ];
 
     const inlineTabs: { id: InlineTab, label: string, icon: any }[] = [
         { id: 'general', label: 'Geral', icon: Settings },
         { id: 'prompt', label: 'Prompt', icon: BrainCircuit },
+        { id: 'triggers', label: 'Gatilhos', icon: Filter },
         { id: 'connection', label: 'Conexão', icon: Smartphone }
     ];
 
@@ -413,7 +430,219 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         </div>
     );
 
-    // ==================== INLINE MODE (for existing agents in tab) ====================
+    // Funnel stages for trigger dropdown
+    const funnelStages = [
+        { value: 'new_lead', label: 'Novo Lead' },
+        { value: 'interested', label: 'Interessado' },
+        { value: 'qualified', label: 'Qualificado' },
+        { value: 'scheduled', label: 'Agendado' },
+        { value: 'patient', label: 'Paciente' },
+        { value: 'no_response', label: 'Sem Resposta' },
+        { value: 'lost', label: 'Perdido' },
+        { value: 'disqualified', label: 'Desqualificado' },
+    ];
+
+    const addTrigger = () => {
+        const newTrigger: HandoffTrigger = {
+            id: crypto.randomUUID(),
+            name: '',
+            trigger_type: 'funnel_stage',
+            trigger_value: 'qualified',
+            action: 'stop_ai',
+            farewell_message: 'Vou transferir você para nossa equipe. Em instantes alguém vai te atender!',
+            is_active: true,
+        };
+        setFormData({
+            ...formData,
+            handoff_triggers: [...formData.handoff_triggers, newTrigger],
+        });
+    };
+
+    const updateTrigger = (id: string, updates: Partial<HandoffTrigger>) => {
+        setFormData({
+            ...formData,
+            handoff_triggers: formData.handoff_triggers.map((t) =>
+                t.id === id ? { ...t, ...updates } : t
+            ),
+        });
+    };
+
+    const removeTrigger = (id: string) => {
+        setFormData({
+            ...formData,
+            handoff_triggers: formData.handoff_triggers.filter((t) => t.id !== id),
+        });
+    };
+
+    const TriggersSection = () => (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h4 className="font-bold text-white flex items-center gap-2">
+                        <Filter className="w-4 h-4 text-amber-400" />
+                        Gatilhos de Handoff
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-1">
+                        Configure quando a IA deve parar e transferir para o suporte humano
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    onClick={addTrigger}
+                    className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-medium transition-all text-sm"
+                >
+                    <Plus className="w-4 h-4" />
+                    Adicionar Gatilho
+                </button>
+            </div>
+
+            {/* Triggers List */}
+            {formData.handoff_triggers.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 bg-slate-800/30 rounded-2xl border border-dashed border-slate-700">
+                    <Filter className="w-12 h-12 text-slate-600 mb-4" />
+                    <p className="text-slate-400 text-center">
+                        Nenhum gatilho configurado.<br />
+                        <span className="text-xs text-slate-500">A IA responderá todas as mensagens normalmente.</span>
+                    </p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {formData.handoff_triggers.map((trigger, index) => (
+                        <div
+                            key={trigger.id}
+                            className={`p-4 rounded-xl border transition-all ${trigger.is_active
+                                ? 'bg-slate-800/50 border-amber-500/30'
+                                : 'bg-slate-800/20 border-slate-700/50 opacity-60'
+                                }`}
+                        >
+                            {/* Trigger Header */}
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-xs font-bold text-slate-500">#{index + 1}</span>
+                                    <input
+                                        type="text"
+                                        value={trigger.name}
+                                        onChange={(e) => updateTrigger(trigger.id, { name: e.target.value })}
+                                        placeholder="Nome do gatilho"
+                                        className="bg-transparent border-b border-slate-600 text-white font-medium focus:border-amber-500 focus:outline-none px-1 py-0.5"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => updateTrigger(trigger.id, { is_active: !trigger.is_active })}
+                                        className={`p-1.5 rounded-lg transition-colors ${trigger.is_active
+                                            ? 'text-amber-400 hover:bg-amber-500/10'
+                                            : 'text-slate-500 hover:bg-slate-700'
+                                            }`}
+                                        title={trigger.is_active ? 'Desativar' : 'Ativar'}
+                                    >
+                                        {trigger.is_active ? (
+                                            <ToggleRight className="w-5 h-5" />
+                                        ) : (
+                                            <ToggleLeft className="w-5 h-5" />
+                                        )}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeTrigger(trigger.id)}
+                                        className="p-1.5 text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                                        title="Remover"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Trigger Config */}
+                            <div className="grid grid-cols-2 gap-4">
+                                {/* Trigger Type */}
+                                <div>
+                                    <label className="block text-xs font-medium text-slate-400 mb-1">Tipo de Gatilho</label>
+                                    <select
+                                        value={trigger.trigger_type}
+                                        onChange={(e) => updateTrigger(trigger.id, {
+                                            trigger_type: e.target.value as HandoffTrigger['trigger_type'],
+                                            trigger_value: e.target.value === 'funnel_stage' ? 'qualified' : e.target.value === 'sentiment' ? '-0.5' : ''
+                                        })}
+                                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                                    >
+                                        <option value="funnel_stage">Etapa do Funil</option>
+                                        <option value="keyword">Palavras-chave</option>
+                                        <option value="sentiment">Sentimento Negativo</option>
+                                    </select>
+                                </div>
+
+                                {/* Trigger Value */}
+                                <div>
+                                    <label className="block text-xs font-medium text-slate-400 mb-1">
+                                        {trigger.trigger_type === 'funnel_stage' ? 'Etapa' :
+                                            trigger.trigger_type === 'keyword' ? 'Palavras (separadas por vírgula)' :
+                                                'Limite de Sentimento'}
+                                    </label>
+                                    {trigger.trigger_type === 'funnel_stage' ? (
+                                        <select
+                                            value={trigger.trigger_value}
+                                            onChange={(e) => updateTrigger(trigger.id, { trigger_value: e.target.value })}
+                                            className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                                        >
+                                            {funnelStages.map((stage) => (
+                                                <option key={stage.value} value={stage.value}>{stage.label}</option>
+                                            ))}
+                                        </select>
+                                    ) : trigger.trigger_type === 'sentiment' ? (
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            min="-1"
+                                            max="0"
+                                            value={trigger.trigger_value}
+                                            onChange={(e) => updateTrigger(trigger.id, { trigger_value: e.target.value })}
+                                            placeholder="-0.5"
+                                            className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                                        />
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            value={trigger.trigger_value}
+                                            onChange={(e) => updateTrigger(trigger.id, { trigger_value: e.target.value })}
+                                            placeholder="preço, valor, quanto custa"
+                                            className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                                        />
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Farewell Message */}
+                            <div className="mt-4">
+                                <label className="block text-xs font-medium text-slate-400 mb-1 flex items-center gap-1">
+                                    <MessageSquare className="w-3 h-3" />
+                                    Mensagem de Despedida
+                                </label>
+                                <textarea
+                                    value={trigger.farewell_message}
+                                    onChange={(e) => updateTrigger(trigger.id, { farewell_message: e.target.value })}
+                                    placeholder="Vou transferir você para nossa equipe..."
+                                    rows={2}
+                                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none resize-none"
+                                />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Info Box */}
+            <div className="p-4 bg-amber-500/5 rounded-xl border border-amber-500/20">
+                <p className="text-xs text-amber-300/80">
+                    <strong>Como funciona:</strong> Quando um gatilho é acionado, a IA envia a mensagem de despedida e para de responder.
+                    O SLA começa a contar para o suporte humano atender.
+                </p>
+            </div>
+        </div>
+    );
+
     if (isInline) {
         return (
             <div className="h-full flex flex-col bg-slate-900/50 rounded-2xl border border-slate-700/50 overflow-hidden">
@@ -544,6 +773,9 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                                 />
                             </div>
                         </div>
+                    )}
+                    {activeInlineTab === 'triggers' && (
+                        <TriggersSection />
                     )}
                     {activeInlineTab === 'connection' && (
                         <div className="space-y-6">
@@ -711,6 +943,12 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                         </div>
                     )}
 
+                    {currentStep === 'triggers' && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                            <TriggersSection />
+                        </div>
+                    )}
+
                     {currentStep === 'connect' && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                             <div className="text-center mb-6">
@@ -744,6 +982,25 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                         <>
                             <button
                                 onClick={() => setCurrentStep('identity')}
+                                className="px-4 py-2 text-slate-400 hover:bg-slate-800 rounded-xl transition-colors"
+                            >
+                                Voltar
+                            </button>
+                            <button
+                                onClick={() => handleSave(true)}
+                                disabled={saving}
+                                className="flex items-center gap-2 px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold transition-all"
+                            >
+                                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                                Próximo: Gatilhos
+                            </button>
+                        </>
+                    )}
+
+                    {currentStep === 'triggers' && (
+                        <>
+                            <button
+                                onClick={() => setCurrentStep('brain')}
                                 className="px-4 py-2 text-slate-400 hover:bg-slate-800 rounded-xl transition-colors"
                             >
                                 Voltar

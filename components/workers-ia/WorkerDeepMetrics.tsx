@@ -65,10 +65,16 @@ export const WorkerDeepMetrics: React.FC<WorkerDeepMetricsProps> = ({ agentId })
             handoffs: 0,
             followup1_sent: 0,
             followup1_success: 0,
+            followup1_qualified: 0,
+            followup1_converted: 0,
             followup2_sent: 0,
             followup2_success: 0,
+            followup2_qualified: 0,
+            followup2_converted: 0,
             followup3_sent: 0,
-            followup3_success: 0
+            followup3_success: 0,
+            followup3_qualified: 0,
+            followup3_converted: 0
         };
 
         rawRows.forEach(row => {
@@ -89,10 +95,16 @@ export const WorkerDeepMetrics: React.FC<WorkerDeepMetricsProps> = ({ agentId })
             totals.handoffs += row.handoff_to_human_count || 0;
             totals.followup1_sent += row.followup_1_sent || 0;
             totals.followup1_success += row.followup_1_success || 0;
+            totals.followup1_qualified += row.followup_1_qualified || 0;
+            totals.followup1_converted += row.followup_1_converted || 0;
             totals.followup2_sent += row.followup_2_sent || 0;
             totals.followup2_success += row.followup_2_success || 0;
+            totals.followup2_qualified += row.followup_2_qualified || 0;
+            totals.followup2_converted += row.followup_2_converted || 0;
             totals.followup3_sent += row.followup_3_sent || 0;
             totals.followup3_success += row.followup_3_success || 0;
+            totals.followup3_qualified += row.followup_3_qualified || 0;
+            totals.followup3_converted += row.followup_3_converted || 0;
 
             timeSeriesData.push({
                 date: dateStr,
@@ -325,21 +337,76 @@ export const WorkerDeepMetrics: React.FC<WorkerDeepMetricsProps> = ({ agentId })
                     </div>
                 </div>
 
+                {/* Funnel Table */}
+                <div className="bg-slate-800/40 p-6 rounded-3xl border border-white/5 overflow-x-auto">
+                    <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Funil Completo por Tentativa</h5>
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b border-slate-700/50">
+                                <th className="text-left py-3 px-2 text-slate-400 font-bold">Tentativa</th>
+                                <th className="text-center py-3 px-2 text-slate-400 font-bold">Enviados</th>
+                                <th className="text-center py-3 px-2 text-slate-400 font-bold">Responderam</th>
+                                <th className="text-center py-3 px-2 text-cyan-400 font-bold">Qualificados</th>
+                                <th className="text-center py-3 px-2 text-emerald-400 font-bold">Convertidos</th>
+                                <th className="text-center py-3 px-2 text-slate-400 font-bold">Taxa Conversão</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {[
+                                { label: '1º Followup', sent: totals.followup1_sent, success: totals.followup1_success, qualified: totals.followup1_qualified, converted: totals.followup1_converted },
+                                { label: '2º Followup', sent: totals.followup2_sent, success: totals.followup2_success, qualified: totals.followup2_qualified, converted: totals.followup2_converted },
+                                { label: '3º Followup', sent: totals.followup3_sent, success: totals.followup3_success, qualified: totals.followup3_qualified, converted: totals.followup3_converted }
+                            ].map((row, idx) => (
+                                <tr key={idx} className="border-b border-slate-700/30 hover:bg-slate-700/20 transition-colors">
+                                    <td className="py-3 px-2 font-bold text-white">{row.label}</td>
+                                    <td className="py-3 px-2 text-center text-slate-300">{row.sent}</td>
+                                    <td className="py-3 px-2 text-center text-slate-300">{row.success}</td>
+                                    <td className="py-3 px-2 text-center text-cyan-400 font-bold">{row.qualified}</td>
+                                    <td className="py-3 px-2 text-center text-emerald-400 font-bold">{row.converted}</td>
+                                    <td className="py-3 px-2 text-center">
+                                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${row.sent > 0 ? (row.converted / row.sent * 100) > 10 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400' : 'bg-slate-700/50 text-slate-500'
+                                            }`}>
+                                            {row.sent > 0 ? ((row.converted / row.sent) * 100).toFixed(1) : 0}%
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                            <tr className="bg-slate-900/50">
+                                <td className="py-3 px-2 font-black text-white">TOTAL</td>
+                                <td className="py-3 px-2 text-center font-bold text-white">{totals.followup1_sent + totals.followup2_sent + totals.followup3_sent}</td>
+                                <td className="py-3 px-2 text-center font-bold text-white">{totals.followup1_success + totals.followup2_success + totals.followup3_success}</td>
+                                <td className="py-3 px-2 text-center font-bold text-cyan-400">{totals.followup1_qualified + totals.followup2_qualified + totals.followup3_qualified}</td>
+                                <td className="py-3 px-2 text-center font-bold text-emerald-400">{totals.followup1_converted + totals.followup2_converted + totals.followup3_converted}</td>
+                                <td className="py-3 px-2 text-center">
+                                    <span className="px-2 py-1 rounded-full text-xs font-bold bg-violet-500/20 text-violet-400">
+                                        {(totals.followup1_sent + totals.followup2_sent + totals.followup3_sent) > 0
+                                            ? (((totals.followup1_converted + totals.followup2_converted + totals.followup3_converted) / (totals.followup1_sent + totals.followup2_sent + totals.followup3_sent)) * 100).toFixed(1)
+                                            : 0}%
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
                 <div className="bg-slate-800/40 p-6 rounded-3xl border border-white/5">
-                    <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Efetividade por Tentativa</h5>
+                    <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Pipeline Visual por Tentativa</h5>
                     <div className="h-[200px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <ReBarChart data={[
-                                { name: '1º', enviados: totals.followup1_sent, sucesso: totals.followup1_success },
-                                { name: '2º', enviados: totals.followup2_sent, sucesso: totals.followup2_success },
-                                { name: '3º', enviados: totals.followup3_sent, sucesso: totals.followup3_success }
+                                { name: '1º', enviados: totals.followup1_sent, responderam: totals.followup1_success, qualificados: totals.followup1_qualified, convertidos: totals.followup1_converted },
+                                { name: '2º', enviados: totals.followup2_sent, responderam: totals.followup2_success, qualificados: totals.followup2_qualified, convertidos: totals.followup2_converted },
+                                { name: '3º', enviados: totals.followup3_sent, responderam: totals.followup3_success, qualificados: totals.followup3_qualified, convertidos: totals.followup3_converted }
                             ]}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                                 <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                                 <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                                 <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px' }} />
+                                <Legend wrapperStyle={{ fontSize: '10px' }} />
                                 <Bar dataKey="enviados" name="Enviados" fill="#475569" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="sucesso" name="Responderam" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="responderam" name="Responderam" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="qualificados" name="Qualificados" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="convertidos" name="Convertidos" fill="#10b981" radius={[4, 4, 0, 0]} />
                             </ReBarChart>
                         </ResponsiveContainer>
                     </div>

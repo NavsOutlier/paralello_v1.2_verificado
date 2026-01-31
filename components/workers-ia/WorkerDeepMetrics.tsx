@@ -57,17 +57,30 @@ export const WorkerDeepMetrics: React.FC<WorkerDeepMetricsProps> = ({ agentId })
             tokens_out: 0,
             messages: 0,
             cost: 0,
-            scheduled: 0
+            scheduled: 0,
+            processed: 0,
+            sentiment: 0,
+            ai_scheduled: 0,
+            human_scheduled: 0,
+            handoffs: 0
         };
 
         rawRows.forEach(row => {
             const dateStr = format(parseISO(row.metric_date), 'dd/MM', { locale: ptBR });
+            const processed = row.leads_processed || 0;
+            const scheduled = row.leads_scheduled || 0;
+            const convRate = processed > 0 ? (scheduled / processed) * 100 : 0;
 
             totals.tokens_in += row.tokens_input || 0;
             totals.tokens_out += row.tokens_output || 0;
             totals.messages += row.total_messages || 0;
             totals.cost += Number(row.estimated_cost) || 0;
-            totals.scheduled += row.leads_scheduled || 0;
+            totals.scheduled += scheduled;
+            totals.processed += processed;
+            totals.sentiment += Number(row.avg_sentiment) || 0;
+            totals.ai_scheduled += row.ai_scheduled_count || 0;
+            totals.human_scheduled += row.human_scheduled_count || 0;
+            totals.handoffs += row.handoff_to_human_count || 0;
 
             timeSeriesData.push({
                 date: dateStr,
@@ -75,11 +88,25 @@ export const WorkerDeepMetrics: React.FC<WorkerDeepMetricsProps> = ({ agentId })
                 messages: row.total_messages || 0,
                 cost: Number(row.estimated_cost) || 0,
                 avgResponse: row.avg_response_time_sec || 0,
-                scheduled: row.leads_scheduled || 0
+                aiResponse: row.ai_avg_response_time || 0,
+                humanResponse: row.human_avg_response_time || 0,
+                scheduled: scheduled,
+                processed: processed,
+                convRate: Number(convRate.toFixed(1)),
+                sentiment: Number(row.avg_sentiment) || 0,
+                aiWin: row.ai_scheduled_count || 0,
+                humanWin: row.human_scheduled_count || 0
             });
         });
 
-        return { timeSeriesData, totals };
+        return {
+            timeSeriesData,
+            totals,
+            avgSentiment: totals.sentiment / rawRows.length,
+            cac: totals.scheduled > 0 ? totals.cost / totals.scheduled : 0,
+            overallConvRate: totals.processed > 0 ? (totals.scheduled / totals.processed) * 100 : 0,
+            handoffEfficiency: totals.handoffs > 0 ? (totals.human_scheduled / totals.handoffs) * 100 : 0
+        };
     }, [rawRows]);
 
     if (loading) return (
@@ -96,18 +123,18 @@ export const WorkerDeepMetrics: React.FC<WorkerDeepMetricsProps> = ({ agentId })
         </div>
     );
 
-    const { timeSeriesData, totals } = analytics;
+    const { timeSeriesData, totals, cac, overallConvRate, avgSentiment, handoffEfficiency } = analytics;
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-12 animate-in fade-in duration-500 pb-20">
             {/* Header & Filter */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h3 className="text-2xl font-bold text-white flex items-center gap-3">
                         <TrendingUp className="w-6 h-6 text-violet-400" />
-                        Framework Analytics Pro
+                        Estratégia & Performance Híbrida
                     </h3>
-                    <p className="text-slate-400 text-sm">Visão de tendências e distribuição de performance</p>
+                    <p className="text-slate-400 text-sm">Monitoramento especializado por função: SDR (IA) e Closer (Humano)</p>
                 </div>
                 <div className="flex bg-slate-800/80 p-1.5 rounded-2xl border border-slate-700 shadow-xl">
                     {[7, 14, 30].map((days) => (
@@ -125,81 +152,129 @@ export const WorkerDeepMetrics: React.FC<WorkerDeepMetricsProps> = ({ agentId })
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Response Time Trend */}
-                <div className="bg-slate-800/40 p-6 rounded-3xl border border-cyan-500/10 backdrop-blur-sm">
-                    <div className="flex justify-between items-center mb-6">
-                        <h4 className="font-bold text-white flex items-center gap-2 text-sm uppercase tracking-wider">
-                            <Clock className="w-4 h-4 text-emerald-400" />
-                            Tempo de Resposta (Média)
-                        </h4>
+            {/* SECTION 1: Efetividade SDR (IA) */}
+            <div className="space-y-6">
+                <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                    <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
+                        <Zap className="w-5 h-5 text-violet-400" />
                     </div>
-                    <div className="h-[250px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={timeSeriesData}>
-                                <defs>
-                                    <linearGradient id="colorResponse" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                                <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                                <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} unit="s" />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', fontSize: '12px' }}
-                                    itemStyle={{ color: '#fff' }}
-                                />
-                                <Area type="monotone" dataKey="avgResponse" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorResponse)" />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                    <div>
+                        <h4 className="text-lg font-bold text-white">Performance SDR (IA)</h4>
+                        <p className="text-xs text-slate-500 uppercase tracking-widest font-black">Qualificação & Triagem Neuronal</p>
                     </div>
                 </div>
 
-                {/* Scheduled Leads Mix */}
-                <div className="bg-slate-800/40 p-6 rounded-3xl border border-cyan-500/10 backdrop-blur-sm">
-                    <div className="flex justify-between items-center mb-6">
-                        <h4 className="font-bold text-white flex items-center gap-2 text-sm uppercase tracking-wider">
-                            <PieIcon className="w-4 h-4 text-violet-400" />
-                            Agendamentos Confirmados
-                        </h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Taxa de Qualificação</p>
+                        <p className="text-xl font-black text-violet-400">{((totals.handoffs + totals.ai_scheduled) / (totals.processed || 1) * 100).toFixed(1)}%</p>
                     </div>
-                    <div className="h-[250px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <ReBarChart data={timeSeriesData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                                <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                                <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', fontSize: '12px' }}
-                                />
-                                <Bar dataKey="scheduled" name="Agendamentos" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                            </ReBarChart>
-                        </ResponsiveContainer>
+                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Agendamento Direto</p>
+                        <p className="text-xl font-black text-emerald-400">{((totals.ai_scheduled / (totals.scheduled || 1)) * 100).toFixed(0)}%</p>
+                    </div>
+                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">SLA Médio SDR</p>
+                        <p className="text-xl font-black text-white">{(analytics.timeSeriesData.reduce((acc, d) => acc + d.aiResponse, 0) / (analytics.timeSeriesData.length || 1)).toFixed(1)}s</p>
+                    </div>
+                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Custo/Qualificação</p>
+                        <p className="text-xl font-black text-cyan-400">R$ {(totals.cost / (totals.handoffs + totals.ai_scheduled || 1)).toFixed(2)}</p>
                     </div>
                 </div>
 
-                {/* Tokens vs Cost */}
-                <div className="bg-slate-800/40 p-6 rounded-3xl border border-cyan-500/10 lg:col-span-2">
-                    <div className="flex justify-between items-center mb-6">
-                        <h4 className="font-bold text-white flex items-center gap-2 text-sm uppercase tracking-wider">
-                            <Zap className="w-4 h-4 text-blue-400" />
-                            Relação Tokens & Custo Estimado
-                        </h4>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-slate-800/40 p-6 rounded-3xl border border-white/5">
+                        <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Tendência de Qualificação Diária</h5>
+                        <div className="h-[200px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={timeSeriesData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                    <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px' }} />
+                                    <Area type="monotone" dataKey="processed" name="Entrada" stroke="#6366f1" fill="#6366f1" fillOpacity={0.1} />
+                                    <Area type="monotone" dataKey="aiWin" name="Qualificados IA" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.2} />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
-                    <div className="h-[300px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={timeSeriesData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                                <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
-                                <YAxis yAxisId="left" stroke="#3b82f6" fontSize={10} tickLine={false} axisLine={false} />
-                                <YAxis yAxisId="right" orientation="right" stroke="#f43f5e" fontSize={10} tickLine={false} axisLine={false} unit="R$" />
-                                <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px' }} />
-                                <Legend />
-                                <Line yAxisId="left" type="monotone" dataKey="tokens" name="Tokens Input" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                                <Line yAxisId="right" type="monotone" dataKey="cost" name="Custo (R$)" stroke="#f43f5e" strokeWidth={2} />
-                            </LineChart>
-                        </ResponsiveContainer>
+                    <div className="bg-slate-800/40 p-6 rounded-3xl border border-white/5">
+                        <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Agilidade de Resposta IA (SLA)</h5>
+                        <div className="h-[200px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={timeSeriesData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                    <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} unit="s" />
+                                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px' }} />
+                                    <Line type="monotone" dataKey="aiResponse" name="Tempo SDR" stroke="#a78bfa" strokeWidth={2} dot={false} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* SECTION 2: Efetividade Closer (Humano) */}
+            <div className="space-y-6">
+                <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                    <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                        <CheckCircle className="w-5 h-5 text-cyan-400" />
+                    </div>
+                    <div>
+                        <h4 className="text-lg font-bold text-white">Performance Closer (Humano)</h4>
+                        <p className="text-xs text-slate-500 uppercase tracking-widest font-black">Fechamento & Conversão Final</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Conversão de Handoff</p>
+                        <p className="text-xl font-black text-cyan-400">{handoffEfficiency.toFixed(1)}%</p>
+                    </div>
+                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Latência de Handoff</p>
+                        <p className="text-xl font-black text-rose-400">{(analytics.timeSeriesData.reduce((acc, d) => acc + d.humanResponse, 0) / (analytics.timeSeriesData.length || 1)).toFixed(0)}m</p>
+                    </div>
+                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Volume Closer</p>
+                        <p className="text-xl font-black text-white">{totals.human_scheduled}</p>
+                    </div>
+                    <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Leads Entregues</p>
+                        <p className="text-xl font-black text-slate-400">{totals.handoffs}</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-slate-800/40 p-6 rounded-3xl border border-white/5">
+                        <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Efetividade de Fechamento Pós-Handoff</h5>
+                        <div className="h-[200px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <ReBarChart data={timeSeriesData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                    <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px' }} />
+                                    <Bar dataKey="humanWin" name="Agendamentos" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                                </ReBarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+                    <div className="bg-slate-800/40 p-6 rounded-3xl border border-white/5">
+                        <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Atraso na Resposta Humana (Latência)</h5>
+                        <div className="h-[200px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={timeSeriesData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                    <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                                    <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} unit="m" />
+                                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px' }} />
+                                    <Line type="monotone" dataKey="humanResponse" name="Tempo Espera" stroke="#f43f5e" strokeWidth={2} dot={false} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
                 </div>
             </div>

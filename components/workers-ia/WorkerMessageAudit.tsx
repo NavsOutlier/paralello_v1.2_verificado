@@ -8,12 +8,6 @@ import {
     Frown, Meh, Smile
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-
-interface WorkerMessageAuditProps {
-    agentId: string;
-    initialSessionId?: string;
-}
 
 interface WorkerConversation {
     id: string;
@@ -30,6 +24,9 @@ interface WorkerConversation {
         phone?: string;
     };
     sla_breach_count?: number;
+    sentiment_history?: number[];
+    loss_reason?: string;
+    closing_notes?: string;
 }
 
 interface WorkerMessage {
@@ -41,6 +38,11 @@ interface WorkerMessage {
     metadata: any;
 }
 
+interface WorkerMessageAuditProps {
+    agentId: string;
+    initialSessionId?: string;
+}
+
 export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId, initialSessionId }) => {
     const [conversations, setConversations] = useState<WorkerConversation[]>([]);
     const [selectedConv, setSelectedConv] = useState<WorkerConversation | null>(null);
@@ -49,6 +51,35 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
     const [loadingMessages, setLoadingMessages] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [stageFilter, setStageFilter] = useState<string>('all');
+    const [loadingSave, setLoadingSave] = useState(false);
+
+    const updateAuditFields = (updates: Partial<WorkerConversation>) => {
+        if (!selectedConv) return;
+        setSelectedConv({ ...selectedConv, ...updates });
+        setConversations(prev => prev.map(c =>
+            c.id === selectedConv.id ? { ...c, ...updates } : c
+        ));
+    };
+
+    const saveAuditData = async () => {
+        if (!selectedConv) return;
+        setLoadingSave(true);
+        try {
+            const { error } = await supabase
+                .from('workers_ia_conversations')
+                .update({
+                    loss_reason: selectedConv.loss_reason,
+                    closing_notes: selectedConv.closing_notes
+                })
+                .eq('id', selectedConv.id);
+
+            if (error) throw error;
+        } catch (err) {
+            console.error('Error saving audit data:', err);
+        } finally {
+            setLoadingSave(false);
+        }
+    };
 
     const fetchConversations = async () => {
         setLoading(true);
@@ -64,7 +95,6 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
             }
 
             const { data, error } = await query.limit(50);
-
             if (error) throw error;
             setConversations(data || []);
         } catch (err) {
@@ -94,69 +124,41 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
 
     useEffect(() => {
         if (!agentId) return;
-
         fetchConversations();
 
         const channel = supabase
             .channel(`audit-sessions-${agentId}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'workers_ia_conversations',
-                    filter: `agent_id=eq.${agentId}`
-                },
-                () => {
-                    fetchConversations();
-                }
-            )
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'workers_ia_conversations', filter: `agent_id=eq.${agentId}` }, () => {
+                fetchConversations();
+            })
             .subscribe();
 
-        return () => {
-            supabase.removeChannel(channel);
-        };
+        return () => { supabase.removeChannel(channel); };
     }, [agentId, stageFilter]);
 
     useEffect(() => {
         if (initialSessionId && conversations.length > 0) {
             const found = conversations.find(c => c.session_id === initialSessionId);
-            if (found) {
-                setSelectedConv(found);
-            }
+            if (found) setSelectedConv(found);
         }
     }, [initialSessionId, conversations]);
 
     useEffect(() => {
         if (!selectedConv) return;
-
         fetchMessages(selectedConv.session_id);
 
-        // Real-time messages for the active chat
         const channel = supabase
             .channel(`audit-messages-${selectedConv.session_id}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'workers_ia_memory_messages',
-                    filter: `session_id=eq.${selectedConv.session_id}`
-                },
-                (payload) => {
-                    const newMessage = payload.new as WorkerMessage;
-                    setMessages(prev => {
-                        const exists = prev.some(m => m.id === newMessage.id);
-                        if (exists) return prev;
-                        return [...prev, newMessage];
-                    });
-                }
-            )
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'workers_ia_memory_messages', filter: `session_id=eq.${selectedConv.session_id}` }, (payload) => {
+                const newMessage = payload.new as WorkerMessage;
+                setMessages(prev => {
+                    if (prev.some(m => m.id === newMessage.id)) return prev;
+                    return [...prev, newMessage];
+                });
+            })
             .subscribe();
 
-        return () => {
-            supabase.removeChannel(channel);
-        };
+        return () => { supabase.removeChannel(channel); };
     }, [selectedConv]);
 
     const filteredConversations = conversations.filter(c =>
@@ -180,22 +182,19 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
                 {/* Audit Header */}
                 <div className="p-6 border-b border-cyan-500/10 bg-slate-800/30 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => setSelectedConv(null)}
-                            className="p-2 hover:bg-slate-700 rounded-xl text-slate-400 transition-colors"
-                        >
+                        <button onClick={() => setSelectedConv(null)} className="p-2 hover:bg-slate-700 rounded-xl text-slate-400 transition-colors">
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                         <div>
                             <h3 className="text-white font-bold flex items-center gap-2">
                                 {selectedConv.contact_info?.name || 'Visitante Anônimo'}
                                 {(() => {
-                                    const config = getSentimentConfig(selectedConv.sentiment_score);
-                                    const Icon = config.icon;
+                                    const cfg = getSentimentConfig(selectedConv.sentiment_score);
+                                    const Icon = cfg.icon;
                                     return (
-                                        <span className={`flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full border border-current/20 ${config.color} bg-current/5`}>
+                                        <span className={`flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full border border-current/20 ${cfg.color} bg-current/5`}>
                                             <Icon className="w-3 h-3" />
-                                            {config.label}
+                                            {cfg.label}
                                         </span>
                                     );
                                 })()}
@@ -212,6 +211,16 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
                         <p className="text-white text-xs max-w-[200px] md:max-w-md line-clamp-2 text-right italic opacity-80 leading-relaxed">
                             {selectedConv.summary ? `"${selectedConv.summary}"` : 'Aguardando processamento de resumo...'}
                         </p>
+
+                        {selectedConv.sentiment_history && selectedConv.sentiment_history.length > 0 && (
+                            <div className="mt-2 flex items-center gap-1 bg-slate-900/50 p-1.5 rounded-lg border border-white/5">
+                                <span className="text-[8px] text-slate-500 uppercase font-black mr-1">Humor:</span>
+                                {selectedConv.sentiment_history.map((score, i) => (
+                                    <div key={i} className={`w-1.5 h-1.5 rounded-full ${getSentimentConfig(score).color.replace('text-', 'bg-')} shadow-[0_0_5px_currentColor] shadow-opacity-40`} title={`Score: ${score}`} />
+                                ))}
+                            </div>
+                        )}
+
                         <div className="mt-1 flex items-center gap-2">
                             <span className="text-[9px] px-1.5 py-0.5 bg-violet-500/10 text-violet-400 rounded-md border border-violet-500/20 uppercase font-bold tracking-wider">
                                 {selectedConv.funnel_stage?.replace('_', ' ') || 'Novo Lead'}
@@ -220,64 +229,75 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
                     </div>
                 </div>
 
-                {/* Messages Log */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-[#0a0f1a]/50">
-                    {loadingMessages ? (
-                        <div className="flex flex-col items-center justify-center h-full gap-3">
-                            <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
-                            <p className="text-xs text-slate-500 animate-pulse uppercase tracking-widest">Carregando Diálogo...</p>
-                        </div>
-                    ) : messages.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-slate-500 opacity-30">
-                            <MessageSquare className="w-16 h-16 mb-4" />
-                            <p className="italic">Nenhuma mensagem registrada nesta sessão.</p>
-                        </div>
-                    ) : (
-                        messages.map((msg) => (
-                            <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[80%] rounded-2xl p-4 shadow-xl ${msg.role === 'user'
-                                    ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white rounded-tr-none'
-                                    : msg.role === 'support'
-                                        ? 'bg-gradient-to-br from-slate-700 to-slate-800 text-slate-200 border border-violet-500/30 rounded-tl-none shadow-[0_0_15px_rgba(139,92,246,0.1)]'
-                                        : 'bg-slate-800/80 text-slate-200 border border-cyan-500/10 rounded-tl-none backdrop-blur-sm'
-                                    }`}>
-                                    <div className="flex items-center justify-between gap-4 mb-2 text-[10px] opacity-60">
-                                        <div className="flex items-center gap-1.5 font-bold uppercase tracking-widest">
-                                            {msg.role === 'user' ? (
-                                                <><User className="w-3 h-3" />Lead</>
-                                            ) : msg.role === 'support' ? (
-                                                <><User className="w-3 h-3 text-violet-400" />Suporte</>
-                                            ) : (
-                                                <><Bot className="w-3 h-3 text-cyan-400" />Worker IA</>
+                <div className="flex-1 flex overflow-hidden">
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-[#0a0f1a]/50">
+                        {loadingMessages ? (
+                            <div className="flex flex-col items-center justify-center h-full gap-3">
+                                <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
+                                <p className="text-xs text-slate-500 animate-pulse uppercase tracking-widest">Carregando Diálogo...</p>
+                            </div>
+                        ) : messages.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-full text-slate-500 opacity-30">
+                                <MessageSquare className="w-16 h-16 mb-4" />
+                                <p className="italic">Nenhuma mensagem registrada nesta sessão.</p>
+                            </div>
+                        ) : (
+                            messages.map((msg) => {
+                                const isHandoff = msg.role === 'assistant' && msg.content.toLowerCase().includes('handoff');
+                                return (
+                                    <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[80%] rounded-2xl p-4 shadow-xl relative ${msg.role === 'user'
+                                            ? 'bg-gradient-to-br from-violet-600 to-indigo-700 text-white rounded-tr-none'
+                                            : msg.role === 'support'
+                                                ? 'bg-gradient-to-br from-slate-700 to-slate-800 text-slate-200 border border-violet-500/30 rounded-tl-none'
+                                                : isHandoff
+                                                    ? 'bg-amber-500/10 border-2 border-amber-500/30 text-slate-200 rounded-tl-none'
+                                                    : 'bg-slate-800/80 text-slate-200 border border-cyan-500/10 rounded-tl-none backdrop-blur-sm'
+                                            }`}>
+                                            {isHandoff && (
+                                                <div className="absolute -top-2 -left-2 bg-amber-500 text-slate-950 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase flex items-center gap-1">
+                                                    <Zap className="w-2.5 h-2.5 fill-slate-950" /> Gatilho
+                                                </div>
                                             )}
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <Clock className="w-2.5 h-2.5" />
-                                            {format(parseISO(msg.created_at), "HH:mm")}
+                                            <div className="flex items-center justify-between gap-4 mb-2 text-[10px] opacity-60 font-bold uppercase tracking-widest">
+                                                <span>{msg.role === 'user' ? 'Lead' : msg.role === 'support' ? 'Suporte' : 'Worker IA'}</span>
+                                                <span>{format(parseISO(msg.created_at), "HH:mm")}</span>
+                                            </div>
+                                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                                         </div>
                                     </div>
-                                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                                );
+                            })
+                        )}
+                    </div>
 
-                                    {msg.metadata && msg.role === 'assistant' && (
-                                        <div className="mt-3 pt-2 border-t border-white/5 flex items-center gap-3 opacity-40 text-[9px] uppercase font-bold tracking-tighter">
-                                            {msg.metadata.tokens_total && (
-                                                <span className="flex items-center gap-1">
-                                                    <Cpu className="w-2.5 h-2.5" />
-                                                    {msg.metadata.tokens_total} tokens
-                                                </span>
-                                            )}
-                                            {msg.metadata.latency_ms && (
-                                                <span className="flex items-center gap-1">
-                                                    <Zap className="w-2.5 h-2.5" />
-                                                    {msg.metadata.latency_ms}ms
-                                                </span>
-                                            )}
-                                        </div>
-                                    )}
+                    <div className="w-80 bg-slate-900 border-l border-cyan-500/10 p-6 flex flex-col gap-6">
+                        <div className="flex items-center gap-2 text-violet-400">
+                            <Database className="w-4 h-4" />
+                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Classificação Pro</h4>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[10px] text-slate-500 font-bold uppercase mb-2 block tracking-widest">Status de Fechamento</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {['price', 'competitor', 'no_fit', 'scheduled'].map(id => (
+                                        <button key={id} onClick={() => updateAuditFields({ loss_reason: id })} className={`px-3 py-2 rounded-xl text-[10px] font-bold border transition-all ${selectedConv.loss_reason === id ? 'bg-violet-500/20 border-violet-500/50 text-white' : 'bg-slate-800/40 border-slate-700/50 text-slate-500 hover:border-slate-600'}`}>
+                                            {id === 'price' ? 'Preço' : id === 'competitor' ? 'Concorrência' : id === 'no_fit' ? 'Sem Perfil' : 'Sucesso'}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
-                        ))
-                    )}
+                            <textarea
+                                value={selectedConv.closing_notes || ''}
+                                onChange={(e) => updateAuditFields({ closing_notes: e.target.value })}
+                                placeholder="Notas de auditoria..."
+                                className="w-full h-32 bg-slate-800/40 border border-slate-700/50 rounded-xl p-3 text-xs text-slate-300 placeholder-slate-600 focus:ring-2 focus:ring-violet-500/50 outline-none transition-all resize-none"
+                            />
+                            <button onClick={saveAuditData} disabled={loadingSave} className="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-700 rounded-xl text-xs font-black text-white hover:from-violet-500 hover:to-indigo-600 transition-all flex items-center justify-center gap-2 uppercase tracking-widest">
+                                {loadingSave ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />} Salvar
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -288,41 +308,22 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                 <div>
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <Database className="w-5 h-5 text-cyan-400" />
-                        Auditoria de Sessões
+                        <Database className="w-5 h-5 text-cyan-400" /> Auditoria de Sessões
                     </h3>
                     <p className="text-slate-400 text-sm">Acompanhe o histórico de atendimentos e a performance do Worker</p>
                 </div>
-
                 <div className="flex flex-wrap gap-3 w-full lg:w-auto">
                     <div className="relative flex-1 lg:w-64">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cyan-500/50" />
-                        <input
-                            type="text"
-                            placeholder="Buscar por session_id, nome ou resumo..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-slate-800/50 border border-cyan-500/10 rounded-xl text-sm text-white focus:ring-2 focus:ring-violet-500/50 outline-none transition-all"
-                        />
+                        <input type="text" placeholder="Buscar..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-slate-800/50 border border-cyan-500/10 rounded-xl text-sm text-white focus:ring-2 focus:ring-violet-500/50 outline-none" />
                     </div>
-
-                    <select
-                        value={stageFilter}
-                        onChange={(e) => setStageFilter(e.target.value)}
-                        className="bg-slate-800/50 border border-cyan-500/10 rounded-xl px-3 py-2 text-sm text-slate-300 outline-none focus:ring-2 focus:ring-violet-500/50"
-                    >
-                        <option value="all">Fase do Funil (Todas)</option>
+                    <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value)} className="bg-slate-800/50 border border-cyan-500/10 rounded-xl px-3 py-2 text-sm text-slate-300 outline-none">
+                        <option value="all">Todas as Fases</option>
                         <option value="new_lead">Novos Leads</option>
                         <option value="qualified">Qualificados</option>
-                        <option value="proposal">Em Proposta</option>
                         <option value="scheduled">Agendados</option>
                     </select>
-
-                    <button
-                        onClick={fetchConversations}
-                        className="p-2 bg-slate-800/50 hover:bg-slate-700/50 border border-cyan-500/10 rounded-xl text-cyan-500 transition-colors"
-                        title="Recarregar"
-                    >
+                    <button onClick={fetchConversations} className="p-2 bg-slate-800/50 hover:bg-slate-700/50 border border-cyan-500/10 rounded-xl text-cyan-500 transition-colors">
                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                     </button>
                 </div>
@@ -330,63 +331,33 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {loading ? (
-                    Array(6).fill(0).map((_, i) => (
-                        <div key={i} className="h-44 bg-slate-800/20 rounded-2xl border border-cyan-500/5 animate-pulse"></div>
-                    ))
+                    Array(6).fill(0).map((_, i) => <div key={i} className="h-44 bg-slate-800/20 rounded-2xl border border-cyan-500/5 animate-pulse"></div>)
                 ) : filteredConversations.length === 0 ? (
                     <div className="col-span-full py-20 text-center bg-slate-900/20 rounded-3xl border border-dashed border-slate-800">
                         <MessageSquare className="w-12 h-12 text-slate-700 mx-auto mb-4" />
-                        <p className="text-slate-500">Nenhuma sessão encontrada para os filtros aplicados.</p>
+                        <p className="text-slate-500">Nenhuma sessão encontrada.</p>
                     </div>
                 ) : (
                     filteredConversations.map((conv) => (
-                        <button
-                            key={conv.id}
-                            onClick={() => setSelectedConv(conv)}
-                            className="p-5 bg-slate-900/40 hover:bg-slate-800/60 border border-cyan-500/10 hover:border-violet-500/50 rounded-2xl text-left transition-all group relative overflow-hidden shadow-lg"
-                        >
+                        <button key={conv.id} onClick={() => setSelectedConv(conv)} className="p-5 bg-slate-900/40 hover:bg-slate-800/60 border border-cyan-500/10 hover:border-violet-500/50 rounded-2xl text-left transition-all group relative overflow-hidden shadow-lg">
                             <div className="flex justify-between items-start mb-4">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/20 flex items-center justify-center text-violet-400 group-hover:scale-110 transition-transform">
-                                    <User className="w-5 h-5" />
-                                </div>
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/20 flex items-center justify-center text-violet-400"><User className="w-5 h-5" /></div>
                                 {(() => {
-                                    const config = getSentimentConfig(conv.sentiment_score);
-                                    const Icon = config.icon;
+                                    const cfg = getSentimentConfig(conv.sentiment_score);
+                                    const Icon = cfg.icon;
                                     return (
-                                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[9px] font-black uppercase ${config.color} border-current/20 bg-current/5 tracking-tighter shadow-[0_0_10px_currentColor] shadow-opacity-10`}>
-                                            <Icon className="w-3 h-3" />
-                                            {config.label}
+                                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[9px] font-black uppercase ${cfg.color} border-current/20 bg-current/5 tracking-tighter`}>
+                                            <Icon className="w-3 h-3" /> {cfg.label}
                                         </div>
                                     );
                                 })()}
                             </div>
-
-                            <h4 className="text-white font-bold truncate mb-1">
-                                {conv.contact_info?.name || 'Visitante Anônimo'}
-                            </h4>
+                            <h4 className="text-white font-bold truncate mb-1">{conv.contact_info?.name || 'Visitante Anônimo'}</h4>
                             <p className="text-slate-500 text-[10px] font-mono mb-4">{conv.session_id}</p>
-
-                            <div className="bg-slate-950/40 rounded-xl p-3 mb-4 border border-white/5">
-                                <p className="text-slate-400 text-xs line-clamp-2 italic leading-relaxed">
-                                    {conv.summary ? `"${conv.summary}"` : 'Sem resumo disponível para esta sessão.'}
-                                </p>
-                            </div>
-
+                            <div className="bg-slate-950/40 rounded-xl p-3 mb-4 border border-white/5"><p className="text-slate-400 text-xs line-clamp-2 italic leading-relaxed">{conv.summary || 'Sem resumo disponível.'}</p></div>
                             <div className="flex items-center justify-between text-[9px] text-slate-500 font-bold uppercase tracking-widest pt-3 border-t border-white/5">
-                                <span className="flex items-center gap-1">
-                                    <Calendar className="w-3 h-3" />
-                                    {format(parseISO(conv.last_interaction_at), "dd/MM HH:mm")}
-                                </span>
-                                {conv.sla_breach_count && conv.sla_breach_count > 0 ? (
-                                    <span className="flex items-center gap-1 text-rose-500 font-black">
-                                        <Zap className="w-2.5 h-2.5 fill-rose-500" />
-                                        {conv.sla_breach_count}x SLA
-                                    </span>
-                                ) : (
-                                    <span className="flex items-center gap-1 group-hover:text-violet-400 transition-colors">
-                                        Ver Chat <ChevronRight className="w-3 h-3" />
-                                    </span>
-                                )}
+                                <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {format(parseISO(conv.last_interaction_at), "dd/MM HH:mm")}</span>
+                                <span className="flex items-center gap-1 group-hover:text-violet-400 transition-colors">Ver Chat <ChevronRight className="w-3 h-3" /></span>
                             </div>
                         </button>
                     ))
@@ -395,3 +366,5 @@ export const WorkerMessageAudit: React.FC<WorkerMessageAuditProps> = ({ agentId,
         </div>
     );
 };
+
+export default WorkerMessageAudit;

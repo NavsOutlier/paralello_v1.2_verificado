@@ -577,22 +577,29 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                     value={formData.whatsapp_number}
                     onChange={(e) => setFormData({ ...formData, whatsapp_number: e.target.value })}
                     placeholder="Ex: 5511999999999"
-                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                    disabled={isConnected}
+                    className={`w-full px-4 py-3 bg-slate-800 border rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all ${isConnected ? 'opacity-50 border-slate-700 cursor-not-allowed' : 'border-slate-700'}`}
                 />
-                <p className="text-xs text-slate-500 mt-1">Formato: código do país + DDD + número (sem espaços ou caracteres especiais)</p>
+                <p className="text-xs text-slate-500 mt-1">
+                    {isConnected
+                        ? 'O número está vinculado a uma conexão ativa.'
+                        : 'Formato: código do país + DDD + número (sem espaços ou caracteres especiais)'}
+                </p>
             </div>
 
             {/* QR Code / Connection Status */}
             <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
                 <h4 className="font-bold text-white mb-4 text-center">Status da Conexão</h4>
                 {isConnected ? (
-                    <div className="flex flex-col items-center gap-4">
-                        <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center border-4 border-emerald-500/20">
+                    <div className="flex flex-col items-center gap-4 py-4 animate-in fade-in duration-500">
+                        <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center border-4 border-emerald-500/20 shadow-xl shadow-emerald-500/10">
                             <CheckCircle className="w-10 h-10 text-emerald-500" />
                         </div>
-                        <div className="text-center">
-                            <p className="text-white font-bold text-lg">Conectado!</p>
-                            <p className="text-slate-400 text-sm">O agente está online.</p>
+                        <div className="text-center space-y-1">
+                            <p className="text-white font-bold text-lg tracking-tight">Conexão Ativa</p>
+                            <p className="text-slate-400 text-xs max-w-[240px] leading-relaxed">
+                                Para trocar de conexão, entre em contato com o suporte da <span className="text-indigo-400 font-bold">Paralello</span>.
+                            </p>
                         </div>
                     </div>
                 ) : (
@@ -659,21 +666,28 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                     </div>
 
                     {formData.notification_group_id ? (
-                        <div className="flex items-center justify-between bg-slate-800/50 rounded-xl p-4">
-                            <div className="flex items-center gap-3">
-                                <CheckCircle className="w-5 h-5 text-emerald-400" />
-                                <div>
-                                    <p className="text-white font-medium">{formData.notification_group_name || 'Grupo Configurado'}</p>
-                                    <p className="text-[10px] text-slate-500 font-mono">ID: {formData.notification_group_id}</p>
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full w-fit">
+                                <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Status: Grupo Criado</span>
+                            </div>
+
+                            <div className="flex flex-col gap-3 bg-slate-900/60 border border-slate-700/50 rounded-2xl p-4 shadow-inner">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center border border-slate-700">
+                                        <MessageSquare className="w-5 h-5 text-slate-400" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-white font-bold truncate">{formData.notification_group_name || 'Grupo de Notificação'}</p>
+                                        <p className="text-[10px] text-slate-500 font-mono truncate">ID: {formData.notification_group_id}</p>
+                                    </div>
+                                </div>
+                                <div className="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded-xl">
+                                    <p className="text-[9px] text-slate-400 leading-relaxed">
+                                        As notificações de handoff e alertas estratégicos estão sendo enviadas para este grupo.
+                                    </p>
                                 </div>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setFormData(prev => ({ ...prev, notification_group_id: '', notification_group_name: '' }))}
-                                className="text-xs text-rose-400 hover:text-rose-300 transition-colors"
-                            >
-                                Remover
-                            </button>
                         </div>
                     ) : (
                         <div className="space-y-4">

@@ -135,25 +135,65 @@ export const useWhatsApp = (instanceId?: string, config?: { agentId?: string; on
         try {
             const { data: { session } } = await supabase.auth.getSession();
 
+            // Step 1: Check if an instance with this name already exists for this org
+            const { data: existingInstance } = await supabase
+                .from('instances')
+                .select('id')
+                .eq('organization_id', organizationId)
+                .eq('name', name.trim())
+                .maybeSingle();
+
+            let instanceId = existingInstance?.id;
+
+            // Step 2: If no instance exists, INSERT a new one with status 'connecting'
+            if (!instanceId) {
+                const { data: newInstance, error: insertError } = await supabase
+                    .from('instances')
+                    .insert({
+                        organization_id: organizationId,
+                        name: name.trim(),
+                        status: 'connecting',
+                        client_id: metadata?.client_id || null,
+                        agent_id: metadata?.agent_id || null
+                    })
+                    .select('id')
+                    .single();
+
+                if (insertError) {
+                    console.error('Error creating instance in DB:', insertError);
+                    return { error: insertError };
+                }
+                instanceId = newInstance.id;
+            } else {
+                // If instance exists, update status to 'connecting' to trigger QR refresh
+                await supabase
+                    .from('instances')
+                    .update({ status: 'connecting', qr_code: null })
+                    .eq('id', instanceId);
+            }
+
+            // Step 3: Call n8n to generate QR Code (n8n will UPDATE this instance)
             const { data, error } = await supabase.functions.invoke('whatsapp-proxy-v2', {
                 body: {
                     action: customAction || 'create_instance',
+                    instance_id: instanceId, // Pass the DB instance ID so n8n can UPDATE it
                     name: name.trim(),
                     organization_id: organizationId,
                     client_id: metadata?.client_id,
                     agent_id: metadata?.agent_id,
-                    ...metadata  // Spread metadata to allow additional fields if needed
+                    ...metadata
                 },
                 headers: {
                     Authorization: `Bearer ${session?.access_token}`
                 }
             });
 
-            return { data, error };
+            return { data: { ...data, instanceId }, error };
         } catch (err: any) {
             return { error: err };
         }
     };
+
 
     const sendMessage = async (instId: string, to: string, text: string) => {
         const { data: { session } } = await supabase.auth.getSession();

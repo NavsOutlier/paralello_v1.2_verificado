@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, MessageSquare, KanbanSquare, Users, LogOut, Shield, BarChart3, Zap, Bot, Briefcase } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, KanbanSquare, Users, LogOut, Shield, BarChart3, Zap, Briefcase } from 'lucide-react';
 import { ViewState } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { Avatar, NotificationCenter } from './ui';
@@ -44,10 +44,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
             <NavItem view={ViewState.KANBAN} icon={KanbanSquare} label="Tarefas" />
             <NavItem view={ViewState.MARKETING} icon={BarChart3} label="MetricFlow" />
             <NavItem view={ViewState.AUTOMATION} icon={Zap} label="Automações" />
-            {(isManager || permissions?.can_manage_ai_agents) && (
-              <NavItem view={ViewState.AI_AGENTS} icon={Bot} label="AI Agents" />
-            )}
-
             <NavItem view={ViewState.WORKERS_IA} icon={Briefcase} label="Workers IA" />
 
             {/* Manager/Team Management - Visible only to authorized members */}

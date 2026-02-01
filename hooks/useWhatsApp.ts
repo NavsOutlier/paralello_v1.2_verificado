@@ -73,28 +73,50 @@ export const useWhatsApp = (instanceId?: string, config?: { agentId?: string; on
 
         fetchInstances().then(() => setLoading(false));
 
-        // Realtime for Instances
-        let filter = `organization_id=eq.${organizationId}`;
-        if (config?.agentId) {
-            filter += `&agent_id=eq.${config.agentId}`;
-        } else if (config?.onlyOrg) {
-            filter += `&agent_id=is.null`;
-        }
-
+        // Realtime for Instances - Supabase Realtime only supports single filters,
+        // so we filter by organization_id and apply agent_id filtering client-side
         const instancesChannel = supabase
-            .channel(`whatsapp-instances-${organizationId}-${config?.agentId || 'org'}`)
+            .channel(`whatsapp-instances-${organizationId}`)
             .on('postgres_changes', {
                 event: '*',
                 schema: 'public',
                 table: 'instances',
-                filter: filter
+                filter: `organization_id=eq.${organizationId}`
             }, (payload) => {
-                if (payload.eventType === 'INSERT') {
-                    setInstances(prev => [mapInstance(payload.new), ...prev]);
+                const newData = payload.new as any;
+                const oldData = payload.old as any;
+
+                // Client-side filtering based on config
+                const matchesFilter = (data: any) => {
+                    if (!data) return false;
+                    if (config?.agentId) {
+                        return data.agent_id === config.agentId;
+                    } else if (config?.onlyOrg) {
+                        return data.agent_id === null;
+                    }
+                    return true; // No filter, show all
+                };
+
+                if (payload.eventType === 'INSERT' && matchesFilter(newData)) {
+                    setInstances(prev => [mapInstance(newData), ...prev]);
                 } else if (payload.eventType === 'UPDATE') {
-                    setInstances(prev => prev.map(inst => inst.id === payload.new.id ? mapInstance(payload.new) : inst));
-                } else if (payload.eventType === 'DELETE') {
-                    setInstances(prev => prev.filter(inst => inst.id !== payload.old.id));
+                    // For updates, check if it matches our filter
+                    if (matchesFilter(newData)) {
+                        setInstances(prev => {
+                            const exists = prev.some(inst => inst.id === newData.id);
+                            if (exists) {
+                                return prev.map(inst => inst.id === newData.id ? mapInstance(newData) : inst);
+                            } else {
+                                // Instance now matches our filter (e.g., agent_id was set)
+                                return [mapInstance(newData), ...prev];
+                            }
+                        });
+                    } else {
+                        // Instance no longer matches our filter, remove it
+                        setInstances(prev => prev.filter(inst => inst.id !== newData.id));
+                    }
+                } else if (payload.eventType === 'DELETE' && matchesFilter(oldData)) {
+                    setInstances(prev => prev.filter(inst => inst.id !== oldData.id));
                 }
             })
             .subscribe();
@@ -103,6 +125,7 @@ export const useWhatsApp = (instanceId?: string, config?: { agentId?: string; on
             supabase.removeChannel(instancesChannel);
         };
     }, [organizationId, fetchInstances, config?.agentId, config?.onlyOrg]);
+
 
     useEffect(() => {
         if (!instanceId) return;
@@ -152,7 +175,7 @@ export const useWhatsApp = (instanceId?: string, config?: { agentId?: string; on
                     .insert({
                         organization_id: organizationId,
                         name: name.trim(),
-                        status: 'connecting',
+                        status: 'pending',
                         client_id: metadata?.client_id || null,
                         agent_id: metadata?.agent_id || null
                     })
@@ -168,7 +191,7 @@ export const useWhatsApp = (instanceId?: string, config?: { agentId?: string; on
                 // If instance exists, update status to 'connecting' to trigger QR refresh
                 await supabase
                     .from('instances')
-                    .update({ status: 'connecting', qr_code: null })
+                    .update({ status: 'pending', qr_code: null })
                     .eq('id', instanceId);
             }
 

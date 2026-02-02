@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
     Users, Calendar, Filter, Download, ArrowRight, Table, BarChart3, GripHorizontal, Pencil, CheckCircle2, LayoutDashboard,
-    Settings, ShieldCheck, Link, Activity, Check, X, Copy, ExternalLink, ChevronDown, Sparkles
+    Settings, ShieldCheck, Link, Activity, Check, X, Copy, ExternalLink, ChevronDown, Sparkles, Plus
 } from 'lucide-react';
 import { TintimIntegrationForm } from './manager/TintimIntegrationForm';
 import { ManualLeadModal } from './ManualLeadModal';
@@ -205,7 +205,7 @@ export const MarketingDashboard: React.FC = () => {
 
     // Real Data State
     const [rawData, setRawData] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
+    // const [loading, setLoading] = useState(false); // Removed separate loading state to fix potential conflicts, relying on effect
 
     // New Marketing Data State (from new tables)
     const [leadsData, setLeadsData] = useState<any[]>([]);
@@ -349,84 +349,6 @@ export const MarketingDashboard: React.FC = () => {
             alert('Erro ao salvar dados manuais.');
         }
     };
-
-    // ... (Table Data Generation remains same) ...
-
-    // Helper Components for Editing
-    const EditableCell = ({
-        value,
-        dateKey,
-        channel,
-        metric,
-        isMoney = false
-    }: { value: number, dateKey: string, channel: string, metric: 'leads' | 'investment' | 'conversions' | 'revenue', isMoney?: boolean }) => {
-        const [localValue, setLocalValue] = useState(isMoney ? value.toFixed(2).replace('.', ',') : value.toString());
-
-        useEffect(() => {
-            setLocalValue(isMoney ? value.toFixed(2).replace('.', ',') : value.toString());
-        }, [value, isMoney]);
-
-        if (!isEditing) {
-            return (
-                <span className={value === 0 ? "text-slate-500" : "text-white font-black"}>
-                    {isMoney ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) : value}
-                </span>
-            );
-        }
-
-        const isLocked = isIntegrated && metric !== 'investment';
-
-        if (isLocked) {
-            return (
-                <span className="text-slate-500 italic text-xs flex items-center justify-center gap-1" title="Gerenciado pela Integração">
-                    {isMoney ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) : value}
-                    <ShieldCheck className="w-3 h-3 text-cyan-500 opacity-50" />
-                </span>
-            );
-        }
-
-        return (
-            <input
-                type="text"
-                value={localValue}
-                onChange={(e) => setLocalValue(e.target.value)}
-                onBlur={(e) => handleSaveCell(dateKey, channel, metric, e.target.value)}
-                className="w-24 text-center text-xs p-1.5 bg-slate-800/50 border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500/50 focus:outline-none text-white font-black placeholder:text-slate-600 transition-all font-sans"
-            />
-        );
-    };
-
-    const DataRow = ({ label, channel, metric, getter, format = (v: any) => v, bg = '', editable = false }: any) => (
-        <tr className={`border-b border-white/5 hover:bg-white/[0.02] transition-colors ${bg}`}>
-            <td className="sticky left-0 bg-slate-900 z-10 py-3.5 px-6 font-bold text-slate-400 text-xs uppercase tracking-widest border-r border-white/5 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)]">
-                {label}
-            </td>
-            {tableData.map((d) => (
-                <td key={d.dateKey} className="py-3.5 px-6 text-center text-sm font-medium text-slate-300 whitespace-nowrap min-w-[140px]">
-                    {editable && channel && metric ? (
-                        <EditableCell
-                            value={getter(d)}
-                            dateKey={d.dateKey}
-                            channel={channel}
-                            metric={metric}
-                            isMoney={metric === 'investment'}
-                        />
-                    ) : (
-                        <span className="font-black">{format(getter(d))}</span>
-                    )}
-                </td>
-            ))}
-        </tr>
-    );
-
-    // ... (Return JSX updates to include DataRow changes and Toggle Button) ...
-    // Note: I will only replace the top logic and helper components here, then do another pass for the JSX if needed.
-    // Actually, I need to update DataRow calls in the JSX to pass 'channel' and 'metric'.
-
-    // Let's replace the whole component body logic part first.
-
-
-
 
     // Fetch data from new tables (marketing_leads and marketing_conversions)
     useEffect(() => {
@@ -645,6 +567,9 @@ export const MarketingDashboard: React.FC = () => {
         });
     }, [periods, rawData, leadsData, conversionsData, granularity]);
 
+    const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+    const formatPercent = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 2 }).format(val);
+
     // Dashboard View Render Logic
     const renderDashboardView = () => {
         const totalLeadsNew = leadsData.length;
@@ -661,18 +586,18 @@ export const MarketingDashboard: React.FC = () => {
         const avgCpl = grandTotal.leads > 0 ? grandTotal.investment / grandTotal.leads : 0;
 
         return (
-            <div className="flex-1 overflow-y-auto p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 custom-scrollbar">
                 {/* Real-time Integration Panel */}
                 {(totalLeadsNew > 0 || totalConversionsNew > 0) && (
-                    <div className="relative group overflow-hidden bg-slate-900/40 backdrop-blur-2xl p-8 rounded-[2rem] border border-white/10 shadow-3xl">
+                    <div className="relative group overflow-hidden bg-slate-900/40 backdrop-blur-2xl p-6 md:p-8 rounded-[2rem] border border-white/5 shadow-3xl">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
 
-                        <h4 className="relative z-10 text-xs font-black text-cyan-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
+                        <h4 className="relative z-10 text-[10px] md:text-xs font-black text-cyan-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
                             <Activity className="w-5 h-5 animate-pulse" />
                             Dados da Integração em Tempo Real
                         </h4>
 
-                        <div className="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                             {[
                                 { label: 'Leads (n8n)', val: totalLeadsNew, color: 'text-indigo-400', icon: Users },
                                 { label: 'Vendas (CRM)', val: totalConversionsNew, color: 'text-emerald-400', icon: Activity },
@@ -684,7 +609,7 @@ export const MarketingDashboard: React.FC = () => {
                                         {stat.label}
                                         <stat.icon className="w-3 h-3 opacity-30" />
                                     </p>
-                                    <h3 className={`text-2xl font-black ${stat.color} group-hover/stat:scale-105 transition-transform origin-left`}>{stat.val}</h3>
+                                    <h3 className={`text-xl md:text-2xl font-black ${stat.color} group-hover/stat:scale-105 transition-transform origin-left`}>{stat.val}</h3>
                                 </div>
                             ))}
                         </div>
@@ -692,17 +617,17 @@ export const MarketingDashboard: React.FC = () => {
                 )}
 
                 {/* Manual Totals Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                     {[
                         { label: 'Leads Totais', val: grandTotal.leads, sub: 'Manual + n8n', color: 'text-white' },
                         { label: 'Investimento', val: formatCurrency(grandTotal.investment), sub: 'Meta/Google', color: 'text-white' },
                         { label: 'CPL Médio', val: formatCurrency(avgCpl), sub: 'Custo por Lead', color: 'text-cyan-400' },
                         { label: 'Conversões', val: grandTotal.conversions, sub: 'Vendas Fechadas', color: 'text-emerald-400' }
                     ].map((stat, i) => (
-                        <div key={i} className="relative bg-slate-900/40 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-2xl group hover:border-white/20 transition-all">
-                            <div className="absolute top-2 right-4 text-[10px] font-black text-slate-600 uppercase tracking-widest">{stat.sub}</div>
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
-                            <h3 className={`text-3xl font-black ${stat.color}`}>{stat.val}</h3>
+                        <div key={i} className="relative bg-slate-900/40 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-xl group hover:border-white/20 transition-all">
+                            <div className="absolute top-4 right-4 text-[9px] font-black text-slate-600 uppercase tracking-widest bg-slate-950/30 px-2 py-1 rounded-full">{stat.sub}</div>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">{stat.label}</p>
+                            <h3 className={`text-2xl md:text-3xl font-black ${stat.color}`}>{stat.val}</h3>
                         </div>
                     ))}
                 </div>
@@ -710,47 +635,49 @@ export const MarketingDashboard: React.FC = () => {
                 {/* Charts Area */}
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 h-auto xl:h-[400px]">
                     {/* Line Chart: Leads over Time */}
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col h-[400px] xl:h-full">
-                        <h4 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <div className="bg-slate-900/40 backdrop-blur-xl p-6 rounded-3xl border border-white/5 shadow-xl flex flex-col h-[400px] xl:h-full">
+                        <h4 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
                             <BarChart3 className="w-5 h-5 text-indigo-500" />
                             Evolução de Leads
                         </h4>
                         <div className="flex-1 w-full min-h-0">
                             <ResponsiveContainer width="100%" height="100%">
                                 <LineChart data={tableData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis dataKey="label" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
+                                    <XAxis dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickMargin={10} />
+                                    <YAxis stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                                     <RechartsTooltip
-                                        contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                        contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: '1px solid #1e293b', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.5)', color: '#fff' }}
+                                        labelStyle={{ color: '#94a3b8', fontSize: '12px', fontWeight: 'bold' }}
                                     />
-                                    <Legend />
-                                    <Line type="monotone" dataKey="meta.leads" name="Meta Ads" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                                    <Line type="monotone" dataKey="google.leads" name="Google Ads" stroke="#10b981" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
-                                    <Line type="monotone" dataKey="direct.leads" name="Sem Rastreio" stroke="#a855f7" strokeWidth={3} dot={{ r: 4, strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                                    <Line type="monotone" dataKey="meta.leads" name="Meta Ads" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, strokeWidth: 0, fill: '#3b82f6' }} activeDot={{ r: 6, strokeWidth: 0 }} />
+                                    <Line type="monotone" dataKey="google.leads" name="Google Ads" stroke="#10b981" strokeWidth={3} dot={{ r: 4, strokeWidth: 0, fill: '#10b981' }} activeDot={{ r: 6, strokeWidth: 0 }} />
+                                    <Line type="monotone" dataKey="direct.leads" name="Sem Rastreio" stroke="#a855f7" strokeWidth={3} dot={{ r: 4, strokeWidth: 0, fill: '#a855f7' }} activeDot={{ r: 6, strokeWidth: 0 }} />
                                 </LineChart>
                             </ResponsiveContainer>
                         </div>
                     </div>
 
                     {/* Bar Chart: Investment vs Conversions */}
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col h-[400px] xl:h-full">
-                        <h4 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <div className="bg-slate-900/40 backdrop-blur-xl p-6 rounded-3xl border border-white/5 shadow-xl flex flex-col h-[400px] xl:h-full">
+                        <h4 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
                             <BarChart3 className="w-5 h-5 text-emerald-500" />
                             Investimento x Conversões
                         </h4>
                         <div className="flex-1 w-full min-h-0">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={tableData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis dataKey="label" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis yAxisId="left" orientation="left" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                                    <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
+                                    <XAxis dataKey="label" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} tickMargin={10} />
+                                    <YAxis yAxisId="left" orientation="left" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
+                                    <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
                                     <RechartsTooltip
-                                        contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                        contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: '1px solid #1e293b', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.5)', color: '#fff' }}
+                                        labelStyle={{ color: '#94a3b8', fontSize: '12px', fontWeight: 'bold' }}
                                     />
-                                    <Legend />
-                                    <Bar yAxisId="left" dataKey="total.investment" name="Investimento (R$)" fill="#0f172a" radius={[4, 4, 0, 0]} />
+                                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                                    <Bar yAxisId="left" dataKey="total.investment" name="Investimento (R$)" fill="#334155" radius={[4, 4, 0, 0]} />
                                     <Bar yAxisId="right" dataKey="total.conversions" name="Conversões" fill="#fbbf24" radius={[4, 4, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -761,52 +688,119 @@ export const MarketingDashboard: React.FC = () => {
         );
     };
 
-    const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
-    const formatPercent = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 2 }).format(val);
+    // Helper Components for Table View
+    const EditableCell = ({
+        value,
+        dateKey,
+        channel,
+        metric,
+        isMoney = false
+    }: { value: number, dateKey: string, channel: string, metric: 'leads' | 'investment' | 'conversions' | 'revenue', isMoney?: boolean }) => {
+        const [localValue, setLocalValue] = useState(isMoney ? value.toFixed(2).replace('.', ',') : value.toString());
+
+        useEffect(() => {
+            setLocalValue(isMoney ? value.toFixed(2).replace('.', ',') : value.toString());
+        }, [value, isMoney]);
+
+        if (!isEditing) {
+            return (
+                <span className={value === 0 ? "text-slate-600" : "text-slate-200 font-bold"}>
+                    {isMoney ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) : value}
+                </span>
+            );
+        }
+
+        const isLocked = isIntegrated && metric !== 'investment';
+
+        if (isLocked) {
+            return (
+                <span className="text-slate-600 italic text-xs flex items-center justify-center gap-1 opacity-60" title="Gerenciado pela Integração">
+                    {isMoney ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) : value}
+                    <ShieldCheck className="w-3 h-3 text-cyan-500 opacity-50" />
+                </span>
+            );
+        }
+
+        return (
+            <input
+                type="text"
+                value={localValue}
+                onChange={(e) => setLocalValue(e.target.value)}
+                onBlur={(e) => handleSaveCell(dateKey, channel, metric, e.target.value)}
+                className="w-24 text-center text-xs p-2 bg-slate-950/50 border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500/50 focus:outline-none text-white font-bold placeholder:text-slate-700 transition-all font-mono"
+            />
+        );
+    };
+
+    const DataRow = ({ label, channel, metric, getter, format = (v: any) => v, bg = '', editable = false }: any) => (
+        <tr className={`border-b border-white/5 hover:bg-white/[0.02] transition-colors ${bg}`}>
+            <td className="sticky left-0 bg-[#0b101b] z-10 py-4 px-6 font-black text-slate-500 text-[10px] uppercase tracking-[0.2em] border-r border-white/5 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)]">
+                {label}
+            </td>
+            {tableData.map((d) => (
+                <td key={d.dateKey} className="py-4 px-6 text-center text-xs font-medium text-slate-400 whitespace-nowrap min-w-[140px]">
+                    {editable && channel && metric ? (
+                        <EditableCell
+                            value={getter(d)}
+                            dateKey={d.dateKey}
+                            channel={channel}
+                            metric={metric}
+                            isMoney={metric === 'investment'}
+                        />
+                    ) : (
+                        <span className="font-bold text-slate-300">{format(getter(d))}</span>
+                    )}
+                </td>
+            ))}
+        </tr>
+    );
 
     const SectionHeader = ({ title, color }: { title: string, color: string }) => (
-        <tr className={`${color} bg-opacity-10 border-b border-slate-200`}>
-            <td className={`sticky left-0 z-10 py-2 px-4 font-black text-xs uppercase tracking-wider text-slate-800 border-l-4 border-slate-800 bg-slate-50`}>
+        <tr className={`bg-white/[0.01] border-b border-white/5`}>
+            <td className={`sticky left-0 z-10 py-3 px-4 font-black text-[10px] uppercase tracking-[0.3em] text-cyan-500/80 border-l-[3px] border-cyan-500/50 bg-[#0b101b] shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)]`}>
                 {title}
             </td>
-            {tableData.map(d => <td key={d.dateKey} className="bg-slate-50/50"></td>)}
+            {tableData.map(d => <td key={d.dateKey} className=""></td>)}
         </tr>
     );
 
     return (
-        <div className="flex-1 w-full h-full flex flex-col bg-slate-50">
+        <div className="flex-1 w-full h-full flex flex-col bg-[#0d121f] rounded-tl-[2.5rem] overflow-hidden relative border-t border-l border-white/5">
             {/* Header Controls */}
-            <div className="bg-white border-b border-slate-200 px-6 py-4 shadow-sm z-20">
-                <div className="flex flex-col xl:flex-row items-center justify-between gap-4">
+            <div className="bg-slate-900/40 backdrop-blur-xl border-b border-white/5 px-6 md:px-8 py-5 z-20 sticky top-0">
+                <div className="flex flex-col xl:flex-row items-center justify-between gap-6">
                     {/* 1. Title & View Mode */}
                     <div className="flex items-center gap-6 w-full xl:w-auto justify-between xl:justify-start">
                         <div>
-                            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                                <BarChart3 className="w-6 h-6 text-indigo-600" />
+                            <h1 className="text-2xl font-black text-white flex items-center gap-3">
+                                <span className="p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
+                                    <BarChart3 className="w-6 h-6 text-indigo-400" />
+                                </span>
                                 MetricFlow
                             </h1>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Performance Analytics</p>
                         </div>
 
                         {/* View Mode Toggle */}
-                        <div className="bg-slate-100 p-1 rounded-lg flex items-center">
+                        <div className="bg-slate-950/50 p-1.5 rounded-xl border border-white/5 flex items-center">
                             <button
                                 onClick={() => setViewMode('dashboard')}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-bold transition-all ${viewMode === 'dashboard'
-                                    ? 'bg-white text-indigo-600 shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700'
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${viewMode === 'dashboard'
+                                    ? 'bg-slate-800 text-white shadow-lg border border-white/10'
+                                    : 'text-slate-500 hover:text-slate-300'
                                     }`}
                             >
-                                <LayoutDashboard className="w-4 h-4" />
+                                <LayoutDashboard className="w-3.5 h-3.5" />
                                 Dash
                             </button>
                             <button
                                 onClick={() => setViewMode('table')}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-bold transition-all ${viewMode === 'table'
-                                    ? 'bg-white text-indigo-600 shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700'
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${viewMode === 'table'
+                                    ? 'bg-slate-800 text-white shadow-lg border border-white/10'
+                                    : 'text-slate-500 hover:text-slate-300'
                                     }`}
                             >
-                                <Table className="w-4 h-4" />
+                                <Table className="w-3.5 h-3.5" />
                                 Tabela
                             </button>
                         </div>
@@ -816,14 +810,14 @@ export const MarketingDashboard: React.FC = () => {
                     <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto justify-end">
 
                         {/* Client & Date Group */}
-                        <div className="flex items-center gap-1 bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                        <div className="flex items-center gap-1 bg-slate-950/30 p-1.5 rounded-xl border border-white/5">
                             <div className="relative">
                                 <button
                                     onClick={() => setShowClientDropdown(!showClientDropdown)}
-                                    className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-100 rounded-lg hover:bg-indigo-100 transition-colors text-sm text-indigo-700 font-bold shadow-sm"
+                                    className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors text-xs text-indigo-300 font-bold uppercase tracking-wider shadow-sm"
                                 >
-                                    <Users className="w-4 h-4 text-indigo-500" />
-                                    <span className="text-left">
+                                    <Users className="w-3.5 h-3.5 text-indigo-400" />
+                                    <span className="text-left truncate max-w-[150px]">
                                         {clients.find(c => c.id === selectedClient)?.name || (clients.length === 0 ? 'Cadastre um cliente' : 'Selecione um cliente')}
                                     </span>
                                     <ChevronDown className="w-3 h-3 opacity-70" />
@@ -832,9 +826,9 @@ export const MarketingDashboard: React.FC = () => {
                                 {showClientDropdown && (
                                     <>
                                         <div className="fixed inset-0 z-40" onClick={() => setShowClientDropdown(false)} />
-                                        <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="absolute top-full left-0 mt-2 w-64 bg-[#0b101b] rounded-xl shadow-2xl border border-white/10 py-2 z-50 animate-in fade-in zoom-in-95 duration-200">
                                             {clients.length === 0 ? (
-                                                <div className="px-4 py-2 text-sm text-slate-400 italic">Nenhum cliente cadastrado</div>
+                                                <div className="px-4 py-2 text-xs text-slate-500 italic">Nenhum cliente cadastrado</div>
                                             ) : (
                                                 clients.map(client => (
                                                     <button
@@ -843,7 +837,7 @@ export const MarketingDashboard: React.FC = () => {
                                                             setSelectedClient(client.id);
                                                             setShowClientDropdown(false);
                                                         }}
-                                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-600 transition-colors ${selectedClient === client.id ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-600'}`}
+                                                        className={`w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-white/5 transition-colors ${selectedClient === client.id ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-400'}`}
                                                     >
                                                         {client.name}
                                                     </button>
@@ -854,14 +848,14 @@ export const MarketingDashboard: React.FC = () => {
                                 )}
                             </div>
 
-                            <div className="w-px h-4 bg-slate-200" />
+                            <div className="w-px h-4 bg-white/10" />
 
                             <div className="relative">
                                 <button
                                     onClick={() => setShowPresetDropdown(!showPresetDropdown)}
-                                    className="flex items-center gap-2 px-3 py-1 hover:bg-white rounded-lg transition-colors text-sm text-slate-600 font-medium"
+                                    className="flex items-center gap-2 px-3 py-2 hover:bg-white/5 rounded-lg transition-colors text-xs text-slate-400 font-bold uppercase tracking-wider"
                                 >
-                                    <Calendar className="w-4 h-4 text-slate-400" />
+                                    <Calendar className="w-3.5 h-3.5 text-slate-500" />
                                     <span>{selectedPresetLabel}</span>
                                     <ChevronDown className="w-3 h-3 opacity-50" />
                                 </button>
@@ -869,30 +863,30 @@ export const MarketingDashboard: React.FC = () => {
                                 {showPresetDropdown && (
                                     <>
                                         <div className="fixed inset-0 z-40" onClick={() => setShowPresetDropdown(false)} />
-                                        <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-50 grid grid-cols-1 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="absolute top-full right-0 mt-2 w-72 bg-[#0b101b] rounded-xl shadow-2xl border border-white/10 py-2 z-50 grid grid-cols-1 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                                             {datePresets.map(preset => (
                                                 <button
                                                     key={preset.key}
                                                     onClick={() => handlePresetChange(preset.key)}
-                                                    className={`text-left px-4 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-600 transition-colors ${selectedPreset === preset.key ? 'bg-indigo-50 text-indigo-600 font-bold' : 'text-slate-600'}`}
+                                                    className={`text-left px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-white/5 transition-colors ${selectedPreset === preset.key ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-400'}`}
                                                 >
                                                     {preset.label}
                                                 </button>
                                             ))}
-                                            <div className="border-t border-slate-100 mt-2 pt-2 px-4 pb-2">
-                                                <p className="text-[10px] uppercase font-bold text-slate-400 mb-2">Personalizado</p>
+                                            <div className="border-t border-white/10 mt-2 pt-3 px-4 pb-3 bg-slate-950/30">
+                                                <p className="text-[9px] uppercase font-black text-slate-500 mb-2">Personalizado</p>
                                                 <div className="flex items-center gap-2">
                                                     <input
                                                         type="date"
                                                         value={startDate}
                                                         onChange={(e) => { setStartDate(e.target.value); setSelectedPreset(''); }}
-                                                        className="w-full text-xs border-slate-200 rounded px-2 py-1"
+                                                        className="w-full text-xs bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-slate-300 focus:outline-none focus:border-indigo-500/50"
                                                     />
                                                     <input
                                                         type="date"
                                                         value={endDate}
                                                         onChange={(e) => { setEndDate(e.target.value); setSelectedPreset(''); }}
-                                                        className="w-full text-xs border-slate-200 rounded px-2 py-1"
+                                                        className="w-full text-xs bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-slate-300 focus:outline-none focus:border-indigo-500/50"
                                                     />
                                                 </div>
                                             </div>
@@ -904,12 +898,12 @@ export const MarketingDashboard: React.FC = () => {
 
                         {/* Granularity (Dashboard Only) */}
                         {viewMode === 'dashboard' && (
-                            <div className="flex bg-slate-100 p-1 rounded-lg">
+                            <div className="flex bg-slate-950/30 p-1.5 rounded-xl border border-white/5">
                                 {(['day', 'week', 'month'] as Granularity[]).map(g => (
                                     <button
                                         key={g}
                                         onClick={() => setGranularity(g)}
-                                        className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${granularity === g ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                        className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${granularity === g ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
                                     >
                                         {g === 'day' ? 'Dia' : g === 'week' ? 'Sem' : 'Mês'}
                                     </button>
@@ -927,26 +921,26 @@ export const MarketingDashboard: React.FC = () => {
                                             className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl hover:bg-indigo-500/20 transition-all border border-indigo-500/20"
                                             title="Novo Lead Manual"
                                         >
-                                            <Users className="w-5 h-5" />
+                                            <Users className="w-4 h-4" />
                                         </button>
                                         <button
                                             onClick={() => setIsManualConversionModalOpen(true)}
                                             className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl hover:bg-emerald-500/20 transition-all border border-emerald-500/20"
                                             title="Nova Venda Manual"
                                         >
-                                            <Activity className="w-5 h-5" />
+                                            <Activity className="w-4 h-4" />
                                         </button>
                                         <div className="w-px h-6 bg-white/10 mx-1" />
                                     </>
                                 )}
                                 <button
                                     onClick={() => setIsEditing(!isEditing)}
-                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all border ${isEditing
-                                        ? 'bg-white text-slate-900 border-white'
+                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${isEditing
+                                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                                         : 'bg-slate-800 text-slate-400 border-white/10 hover:bg-slate-700'
                                         }`}
                                 >
-                                    {isEditing ? <CheckCircle2 className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                                    {isEditing ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
                                     {isEditing ? 'FINALIZADO' : 'EDITAR DADOS'}
                                 </button>
                             </div>
@@ -954,12 +948,12 @@ export const MarketingDashboard: React.FC = () => {
 
                         <button
                             onClick={() => setIsTintimModalOpen(true)}
-                            className={`flex items-center gap-3 px-5 py-2.5 rounded-xl border transition-all text-xs font-black ${isIntegrated
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest ${isIntegrated
                                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
                                 : 'bg-slate-800 text-slate-500 border-white/5 hover:text-slate-300'
                                 }`}
                         >
-                            <Link className="w-4 h-4" />
+                            <Link className="w-3.5 h-3.5" />
                             {isIntegrated ? 'INTEGRADO' : 'CRM CONNECT'}
                         </button>
                     </div>
@@ -968,16 +962,16 @@ export const MarketingDashboard: React.FC = () => {
 
             <style>{`
                 .horizontal-scroll-container::-webkit-scrollbar {
-                    height: 12px;
+                    height: 10px;
                 }
                 .horizontal-scroll-container::-webkit-scrollbar-track {
-                    background: rgba(255,255,255,0.02);
+                    background: rgba(0,0,0,0.2);
                     border-radius: 0 0 20px 20px;
                 }
                 .horizontal-scroll-container::-webkit-scrollbar-thumb {
                     background-color: rgba(255,255,255,0.1);
                     border-radius: 20px;
-                    border: 3px solid transparent;
+                    border: 2px solid transparent;
                     background-clip: content-box;
                 }
                 .horizontal-scroll-container::-webkit-scrollbar-thumb:hover {
@@ -995,17 +989,17 @@ export const MarketingDashboard: React.FC = () => {
                             onMouseLeave={handleMouseLeave}
                             onMouseUp={handleMouseUp}
                             onMouseMove={handleMouseMove}
-                            className="horizontal-scroll-container bg-slate-900/40 backdrop-blur-2xl rounded-[2rem] border border-white/10 overflow-x-auto w-full pb-4 shadow-3xl"
+                            className="horizontal-scroll-container bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 overflow-x-auto w-full pb-0 shadow-2xl relative"
                             style={{ cursor: isEditing ? 'default' : (isDragging ? 'grabbing' : 'grab') }}
                         >
                             <table className="w-full border-collapse select-none" style={{ minWidth: '100%' }}>
                                 <thead>
-                                    <tr className="bg-slate-900/60 backdrop-blur-md">
-                                        <th className="sticky left-0 z-20 bg-slate-900 py-6 px-6 text-left font-black text-[10px] uppercase tracking-[0.3em] text-slate-500 min-w-[200px] border-r border-white/5 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)] pointer-events-none">
+                                    <tr className="bg-[#0b101b] border-b border-white/5">
+                                        <th className="sticky left-0 z-20 bg-[#0b101b] py-6 px-6 text-left font-black text-[10px] uppercase tracking-[0.3em] text-cyan-500/80 min-w-[200px] border-r border-white/5 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)] pointer-events-none">
                                             Métrica / Período
                                         </th>
                                         {tableData.map(d => (
-                                            <th key={d.dateKey} className="py-6 px-6 text-center font-black text-xs text-white uppercase tracking-widest min-w-[180px] border-l border-white/5 pointer-events-none">
+                                            <th key={d.dateKey} className="py-6 px-6 text-center font-black text-[10px] text-slate-400 uppercase tracking-[0.2em] min-w-[160px] border-l border-white/5 pointer-events-none">
                                                 {d.label}
                                             </th>
                                         ))}
@@ -1013,7 +1007,7 @@ export const MarketingDashboard: React.FC = () => {
                                 </thead>
                                 <tbody>
                                     {/* META ADS */}
-                                    <SectionHeader title="Meta Ads" color="bg-blue-50" />
+                                    <SectionHeader title="Meta Ads" color="border-l-blue-500" />
                                     <DataRow label="Leads Gerados" getter={d => d.meta.leads} editable channel="meta" metric="leads" />
                                     <DataRow label="Custo por Lead" getter={d => d.meta.leads > 0 ? d.meta.investment / d.meta.leads : 0} format={formatCurrency} />
                                     <DataRow label="Investimento" getter={d => d.meta.investment} format={formatCurrency} editable channel="meta" metric="investment" />
@@ -1022,7 +1016,7 @@ export const MarketingDashboard: React.FC = () => {
                                     <DataRow label="Taxa de Conversão" getter={d => d.meta.leads > 0 ? d.meta.conversions / d.meta.leads : 0} format={formatPercent} />
 
                                     {/* GOOGLE ADS */}
-                                    <SectionHeader title="Google Ads" color="bg-emerald-50" />
+                                    <SectionHeader title="Google Ads" color="border-l-emerald-500" />
                                     <DataRow label="Leads Gerados" getter={d => d.google.leads} editable channel="google" metric="leads" />
                                     <DataRow label="Custo por Lead" getter={d => d.google.leads > 0 ? d.google.investment / d.google.leads : 0} format={formatCurrency} />
                                     <DataRow label="Investimento" getter={d => d.google.investment} format={formatCurrency} editable channel="google" metric="investment" />
@@ -1031,19 +1025,19 @@ export const MarketingDashboard: React.FC = () => {
                                     <DataRow label="Taxa de Conversão" getter={d => d.google.leads > 0 ? d.google.conversions / d.google.leads : 0} format={formatPercent} />
 
                                     {/* SEM RASTREIO */}
-                                    <SectionHeader title="Sem Rastreio" color="bg-purple-50" />
+                                    <SectionHeader title="Sem Rastreio" color="border-l-purple-500" />
                                     <DataRow label="Leads Gerados" getter={d => d.direct.leads} editable channel="direct" metric="leads" />
                                     <DataRow label="Conversões" getter={d => d.direct.conversions} editable channel="direct" metric="conversions" />
                                     <DataRow label="Taxa de Conversão" getter={d => d.direct.leads > 0 ? d.direct.conversions / d.direct.leads : 0} format={formatPercent} />
 
                                     {/* GERAL */}
-                                    <SectionHeader title="Resumo Geral" color="bg-slate-100" />
-                                    <DataRow label="Total Leads" getter={d => d.total.leads} bg="bg-slate-50 font-bold" />
-                                    <DataRow label="Inv. Total" getter={d => d.total.investment} format={formatCurrency} bg="bg-slate-50 font-bold" />
-                                    <DataRow label="CPL Médio" getter={d => d.total.cpl} format={formatCurrency} bg="bg-slate-50" />
-                                    <DataRow label="Total Conversões" getter={d => d.total.conversions} bg="bg-slate-50" />
-                                    <DataRow label="Valor de Conversões" getter={d => d.total.revenue} format={formatCurrency} bg="bg-slate-50 font-bold" />
-                                    <DataRow label="Taxa Global" getter={d => d.total.rate} format={formatPercent} bg="bg-slate-50" />
+                                    <SectionHeader title="Resumo Geral" color="border-l-slate-200" />
+                                    <DataRow label="Total Leads" getter={d => d.total.leads} bg="bg-white/[0.03] font-bold" />
+                                    <DataRow label="Inv. Total" getter={d => d.total.investment} format={formatCurrency} bg="bg-white/[0.03] font-bold" />
+                                    <DataRow label="CPL Médio" getter={d => d.total.cpl} format={formatCurrency} bg="bg-white/[0.01]" />
+                                    <DataRow label="Total Conversões" getter={d => d.total.conversions} bg="bg-white/[0.01]" />
+                                    <DataRow label="Valor de Conversões" getter={d => d.total.revenue} format={formatCurrency} bg="bg-white/[0.03] font-bold" />
+                                    <DataRow label="Taxa Global" getter={d => d.total.rate} format={formatPercent} bg="bg-white/[0.01]" />
                                 </tbody>
                             </table>
                         </div>
@@ -1070,12 +1064,12 @@ export const MarketingDashboard: React.FC = () => {
 
             {/* Tintim Integration Modal */}
             {isTintimModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md">
-                    <div className="bg-slate-900 rounded-[2.5rem] shadow-3xl w-full max-w-2xl overflow-hidden border border-white/10 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+                    <div className="bg-[#0d121f] rounded-[2.5rem] shadow-3xl w-full max-w-2xl overflow-hidden border border-white/10 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">
                         {/* Modal Header */}
-                        <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                        <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
                             <div className="flex items-center gap-4">
-                                <div className="p-3 bg-indigo-500/10 text-indigo-400 rounded-2xl">
+                                <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-2xl">
                                     <Settings className="w-6 h-6" />
                                 </div>
                                 <div>
@@ -1084,7 +1078,7 @@ export const MarketingDashboard: React.FC = () => {
                                 </div>
                             </div>
                             <button onClick={() => setIsTintimModalOpen(false)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
-                                <X className="w-6 h-6 text-slate-500" />
+                                <X className="w-6 h-6 text-slate-500 hover:text-white" />
                             </button>
                         </div>
 
@@ -1099,7 +1093,7 @@ export const MarketingDashboard: React.FC = () => {
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="px-8 py-6 bg-white/[0.02] border-t border-white/5 flex items-center justify-end gap-4">
+                        <div className="px-8 py-6 bg-white/[0.01] border-t border-white/5 flex items-center justify-end gap-4">
                             <button
                                 onClick={() => setIsTintimModalOpen(false)}
                                 className="px-6 py-3 text-xs font-black text-slate-500 hover:text-white transition-all uppercase tracking-widest"
@@ -1108,7 +1102,7 @@ export const MarketingDashboard: React.FC = () => {
                             </button>
                             <button
                                 onClick={handleSaveTintimConfig}
-                                className="px-8 py-3 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-2xl text-xs font-black hover:scale-105 shadow-xl shadow-indigo-500/20 transition-all flex items-center gap-2"
+                                className="px-8 py-3 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-2xl text-xs font-black hover:scale-105 shadow-xl shadow-indigo-500/20 transition-all flex items-center gap-2 uppercase tracking-widest"
                             >
                                 <Check className="w-4 h-4" />
                                 CONSOLIDAR CONFIGURAÇÃO

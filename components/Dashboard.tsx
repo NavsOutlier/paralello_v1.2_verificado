@@ -500,7 +500,7 @@ export const Dashboard: React.FC = () => {
                 <Activity className="w-5 h-5 text-white" />
               </div>
               <div className="flex flex-col justify-center">
-                <img src="/blackback-text.png" alt="Blackback" className="h-6 w-auto object-contain mb-0.5 opacity-90 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" />
+                <img src="/blackback-text.png" alt="Blackback" className="h-8 w-auto object-contain mb-0.5 opacity-90 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" />
                 <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold leading-none pl-0.5">Dashboard</span>
               </div>
             </div>

@@ -398,7 +398,7 @@ export const DistortionCanvas: React.FC<DistortionCanvasProps> = ({
             )}
 
             {/* HUD */}
-            <div className="absolute bottom-6 left-6 z-50 flex flex-col gap-2">
+            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2">
                 <div className="bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/40 shadow-2xl flex items-center gap-5">
                     <div className="flex items-center gap-2">
                         <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />

@@ -306,7 +306,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             </div>
 
             {/* Floating Input Area (Pill Style) */}
-            <div className="p-6 relative z-20">
+            <div className={`relative z-20 px-6 pb-6 ${viewMode === 'distortion' ? 'pt-2' : 'pt-6'}`}>
                 <div className="max-w-4xl mx-auto">
                     <div className="relative group">
                         {/* Shadow and Background Glow */}

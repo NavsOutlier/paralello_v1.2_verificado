@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Building2, DollarSign, Users, TrendingUp, Plus, RefreshCw } from 'lucide-react';
+import { Building2, DollarSign, Users, TrendingUp, Plus, RefreshCw, Sparkles } from 'lucide-react';
 import { PLANS, PLAN_ARRAY } from '../../config/plans';
 import { Organization, PlanType } from '../../types';
 import { Button } from '../ui';
@@ -231,9 +231,9 @@ export const SuperAdminDashboard: React.FC = () => {
                 <div className="relative group flex items-center gap-4">
                     <div className="absolute -inset-10 bg-indigo-500/10 blur-[120px] rounded-full opacity-50 transition-opacity" />
                     <div className="flex flex-col">
-                        <img src="/blackback-text.png" alt="Blackback" className="h-10 w-auto object-contain mb-1 opacity-90 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" />
-                        <p className="relative text-cyan-400 font-black uppercase tracking-[0.3em] text-[10px] pl-1">
-                            Super Admin Core
+                        <h1 className="relative text-4xl font-black text-white tracking-tighter mb-2 italic">Super Admin <span className="text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">Core</span></h1>
+                        <p className="relative text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px] pl-1">
+                            Nível de Acesso: Segurança Máxima de Orquestração
                         </p>
                     </div>
                 </div>

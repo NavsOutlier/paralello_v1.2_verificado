@@ -293,14 +293,11 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
             )}
 
             <div className="max-w-7xl mx-auto space-y-10">
-                <div className="relative group flex items-center gap-4">
-                    <div className="absolute -inset-10 bg-indigo-500/10 blur-[120px] rounded-full opacity-50 group-hover:opacity-80 transition-opacity" />
-                    <div className="flex flex-col">
-                        <img src="/blackback-text.png" alt="Blackback" className="h-10 w-auto object-contain mb-1 opacity-90 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" />
-                        <p className="relative text-cyan-400 font-black uppercase tracking-[0.3em] text-[10px] pl-1">
-                            Gestor AI Core
-                        </p>
-                    </div>
+                <div className="flex flex-col">
+                    <h1 className="relative text-4xl font-black text-white tracking-tighter mb-1">Painel do Gestor <span className="text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">AI</span></h1>
+                    <p className="relative text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px] pl-1">
+                        Orquestração de ativos e capital humano em tempo real
+                    </p>
                 </div>
 
                 {/* Onboarding Checklist */}
@@ -427,7 +424,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 

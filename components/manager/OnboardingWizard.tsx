@@ -985,7 +985,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     Tudo Pronto! 🚀
                 </h2>
                 <p className="text-slate-500 max-w-sm mx-auto text-lg leading-relaxed">
-                    Sua organização está configurada e pronta para escalar com o Paralello.
+                    Sua organização está configurada e pronta para escalar com o Blackback.
                 </p>
             </div>
 
@@ -1054,7 +1054,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
                                 <Building2 className="w-6 h-6" />
                             </div>
-                            <span className="font-black text-slate-800 tracking-tighter text-xl">PARALELLO</span>
+                            <span className="font-black text-slate-800 tracking-tighter text-xl">BLACKBACK</span>
                         </div>
                         {window.innerWidth > 768 && (
                             <div className="flex gap-2">
@@ -1088,7 +1088,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     {/* Footer Info */}
                     <footer className="mt-12 text-center">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">
-                            {!isConfirmed ? 'Preparação do Setup' : `Onboarding Paralello • Passo ${step} de 6`}
+                            {!isConfirmed ? 'Preparação do Setup' : `Onboarding Blackback • Passo ${step} de 6`}
                         </p>
                     </footer>
                 </div>

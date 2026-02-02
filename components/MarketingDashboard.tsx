@@ -776,9 +776,11 @@ export const MarketingDashboard: React.FC = () => {
                                 <span className="p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
                                     <BarChart3 className="w-6 h-6 text-indigo-400" />
                                 </span>
-                                MetricFlow
+                                <div className="flex flex-col justify-center">
+                                    <img src="/blackback-text.png" alt="Blackback" className="h-6 w-auto object-contain mb-0.5 opacity-90 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" />
+                                    <span className="text-[10px] uppercase tracking-[0.2em] text-cyan-500 font-bold leading-none pl-0.5">MetricFlow</span>
+                                </div>
                             </h1>
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-1">Performance Analytics</p>
                         </div>
 
                         {/* View Mode Toggle */}

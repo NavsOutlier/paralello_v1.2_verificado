@@ -80,7 +80,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             <div className="w-6 h-6 bg-slate-900/50 rounded-md flex items-center justify-center shadow-inner">
               <Clock className="w-3 h-3" />
             </div>
-            <span className="text-[9px] font-black tracking-widest uppercase">Sistema Paralello</span>
+            <span className="text-[9px] font-black tracking-widest uppercase">Sistema Blackback</span>
           </div>
           <span className="text-[8px] font-bold text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded border border-indigo-500/10">#TAREFA</span>
         </div>

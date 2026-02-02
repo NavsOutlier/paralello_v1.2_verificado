@@ -163,11 +163,13 @@ export const WorkersIADashboard: React.FC = () => {
                             <div className="absolute inset-0 bg-violet-400 rounded-xl animate-ping opacity-20" />
                         </div>
                         <div>
-                            <h3 className="font-bold text-white flex items-center gap-2">
-                                Workers IA
-                                <Sparkles className="w-4 h-4 text-violet-400 animate-pulse" />
-                            </h3>
-                            <span className="text-xs text-violet-400/60">{clients.length} clientes conectados</span>
+                            <div className="flex flex-col justify-center">
+                                <img src="/blackback-text.png" alt="Blackback" className="h-5 w-auto object-contain mb-1 opacity-90" />
+                                <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest flex items-center gap-2 pl-0.5">
+                                    Workers IA <Sparkles className="w-3 h-3 animate-pulse" />
+                                </span>
+                            </div>
+                            <span className="text-[10px] text-slate-500 pl-0.5 mt-0.5 block">{clients.length} clientes conectados</span>
                         </div>
                     </div>
                     <div className="relative">

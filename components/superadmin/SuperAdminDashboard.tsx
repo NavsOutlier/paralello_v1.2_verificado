@@ -196,10 +196,10 @@ export const SuperAdminDashboard: React.FC = () => {
 
     if (loading && !isRefreshing) {
         return (
-            <div className="flex-1 flex items-center justify-center bg-transparent h-full relative z-10">
+            <div className="flex-1 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm h-full relative z-10">
                 <div className="relative z-10 flex flex-col items-center">
                     <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl shadow-2xl flex items-center justify-center text-white font-black text-2xl mb-6 animate-bounce">
-                        P
+                        B
                     </div>
                     <div className="text-cyan-400/50 text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Sincronizando Sistema...</div>
                 </div>
@@ -228,12 +228,14 @@ export const SuperAdminDashboard: React.FC = () => {
     return (
         <div className="flex-1 p-8 bg-transparent overflow-y-auto h-full custom-scrollbar relative z-10 animate-in fade-in duration-700">
             <div className="flex justify-between items-end mb-12">
-                <div className="relative group">
+                <div className="relative group flex items-center gap-4">
                     <div className="absolute -inset-10 bg-indigo-500/10 blur-[120px] rounded-full opacity-50 transition-opacity" />
-                    <h1 className="relative text-4xl font-black text-white tracking-tighter mb-2 italic">Super Admin <span className="text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">Core</span></h1>
-                    <p className="relative text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px]">
-                        Nível de Acesso: Segurança Máxima de Orquestração
-                    </p>
+                    <div className="flex flex-col">
+                        <img src="/blackback-text.png" alt="Blackback" className="h-10 w-auto object-contain mb-1 opacity-90 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" />
+                        <p className="relative text-cyan-400 font-black uppercase tracking-[0.3em] text-[10px] pl-1">
+                            Super Admin Core
+                        </p>
+                    </div>
                 </div>
                 <div className="flex gap-4">
                     <button

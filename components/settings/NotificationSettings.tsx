@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Save, Loader2, Bell, Mail, Monitor, Smartphone } from 'lucide-react';
+import { Save, Loader2, Bell, Mail, Monitor, Smartphone, Volume2 } from 'lucide-react';
 
 interface NotificationPrefs {
     email: boolean;
@@ -87,96 +87,105 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ orga
         });
     };
 
-    if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-indigo-600" /></div>;
+    if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-violet-500" /></div>;
 
     const prefs = settings.notification_preferences;
 
     return (
-        <div className="max-w-3xl">
-            <div className="mb-6">
-                <h2 className="text-xl font-bold text-slate-800">Canais de Notificação</h2>
-                <p className="text-sm text-slate-500 mt-1">Defina como a organização recebe alertas</p>
+        <div className="max-w-4xl space-y-6">
+            <div className="flex items-center gap-4 mb-8">
+                <div className="p-3 bg-indigo-500/10 rounded-2xl border border-indigo-500/20">
+                    <Bell className="w-8 h-8 text-indigo-400" />
+                </div>
+                <div>
+                    <h2 className="text-2xl font-bold text-white">Canais de Notificação</h2>
+                    <p className="text-sm text-slate-400 mt-1">Defina como a organização recebe alertas</p>
+                </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
-                <div className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+            <div className="bg-slate-900/40 backdrop-blur-xl rounded-2xl border border-white/5 divide-y divide-white/5 overflow-hidden shadow-xl">
+                <div className="p-6 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400 border border-blue-500/10">
                             <Mail className="w-5 h-5" />
                         </div>
                         <div>
-                            <h4 className="font-bold text-slate-800 text-sm">E-mail</h4>
-                            <p className="text-xs text-slate-500">Notificações automáticas por e-mail</p>
+                            <h4 className="font-bold text-white text-base">E-mail</h4>
+                            <p className="text-sm text-slate-400">Receba atualizações importantes direto na sua caixa de entrada</p>
                         </div>
                     </div>
                     <button
                         onClick={() => togglePref('email')}
-                        className={`w-12 h-6 rounded-full transition-all relative ${prefs.email ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                        className={`w-14 h-7 rounded-full transition-all relative ${prefs.email ? 'bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'bg-slate-700'}`}
                     >
-                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${prefs.email ? 'right-1' : 'left-1'}`} />
+                        <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all shadow-md ${prefs.email ? 'right-1' : 'left-1'}`} />
                     </button>
                 </div>
 
-                <div className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                <div className="p-6 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/10">
                             <Monitor className="w-5 h-5" />
                         </div>
                         <div>
-                            <h4 className="font-bold text-slate-800 text-sm">Browser (Push)</h4>
-                            <p className="text-xs text-slate-500">Alertas na área de trabalho</p>
+                            <h4 className="font-bold text-white text-base">Notificações Web</h4>
+                            <p className="text-sm text-slate-400">Pop-ups em tempo real enquanto você usa o sistema</p>
                         </div>
                     </div>
                     <button
                         onClick={() => togglePref('browser')}
-                        className={`w-12 h-6 rounded-full transition-all relative ${prefs.browser ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                        className={`w-14 h-7 rounded-full transition-all relative ${prefs.browser ? 'bg-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : 'bg-slate-700'}`}
                     >
-                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${prefs.browser ? 'right-1' : 'left-1'}`} />
+                        <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all shadow-md ${prefs.browser ? 'right-1' : 'left-1'}`} />
                     </button>
                 </div>
 
-                <div className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-amber-50 rounded-lg text-amber-600">
+                <div className="p-6 flex items-center justify-between hover:bg-white/[0.02] transition-colors opacity-60">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-amber-500/10 rounded-xl text-amber-500 border border-amber-500/10">
                             <Smartphone className="w-5 h-5" />
                         </div>
                         <div>
-                            <h4 className="font-bold text-slate-800 text-sm">Mobile App</h4>
-                            <p className="text-xs text-slate-500">Notificações no celular (em breve)</p>
+                            <div className="flex items-center gap-2">
+                                <h4 className="font-bold text-white text-base">Mobile App</h4>
+                                <span className="text-[10px] font-black bg-slate-800 text-slate-400 px-2 rounded border border-white/5 uppercase">Em Breve</span>
+                            </div>
+                            <p className="text-sm text-slate-400">Notificações push em seus dispositivos móveis</p>
                         </div>
                     </div>
                     <button
                         onClick={() => togglePref('mobile')}
-                        className={`w-12 h-6 rounded-full transition-all relative ${prefs.mobile ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                        disabled
+                        className={`w-14 h-7 rounded-full transition-all relative cursor-not-allowed ${prefs.mobile ? 'bg-amber-600' : 'bg-slate-700'}`}
                     >
-                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${prefs.mobile ? 'right-1' : 'left-1'}`} />
+                        <div className={`absolute top-1 w-5 h-5 bg-slate-400 rounded-full transition-all ${prefs.mobile ? 'right-1' : 'left-1'}`} />
                     </button>
                 </div>
 
-                <div className="p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
-                            <Bell className="w-5 h-5" />
+                <div className="p-6 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-violet-500/10 rounded-xl text-violet-400 border border-violet-500/10">
+                            <Volume2 className="w-5 h-5" />
                         </div>
                         <div>
-                            <h4 className="font-bold text-slate-800 text-sm">Daily Digest</h4>
-                            <p className="text-xs text-slate-500">Resumo diário de atividades pendentes</p>
+                            <h4 className="font-bold text-white text-base">Resumo Diário</h4>
+                            <p className="text-sm text-slate-400">Um email diário com todas as suas tarefas pendentes</p>
                         </div>
                     </div>
                     <button
                         onClick={() => togglePref('daily_digest')}
-                        className={`w-12 h-6 rounded-full transition-all relative ${prefs.daily_digest ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                        className={`w-14 h-7 rounded-full transition-all relative ${prefs.daily_digest ? 'bg-violet-600 shadow-[0_0_15px_rgba(124,58,237,0.4)]' : 'bg-slate-700'}`}
                     >
-                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${prefs.daily_digest ? 'right-1' : 'left-1'}`} />
+                        <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all shadow-md ${prefs.daily_digest ? 'right-1' : 'left-1'}`} />
                     </button>
                 </div>
             </div>
 
-            <div className="mt-6 flex justify-end">
+            <div className="flex justify-end">
                 <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50"
+                    className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-white/10"
                 >
                     {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     Salvar Alterações

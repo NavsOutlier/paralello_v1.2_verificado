@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TeamMember } from '../../types';
+import { UserPlus, X, Mail, User, Briefcase, Shield, CheckSquare, Users, MessageSquare, Zap, Bot } from 'lucide-react';
 
 interface TeamMemberFormModalProps {
     isOpen: boolean;
@@ -79,51 +80,67 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
-                <div className="p-6 border-b border-slate-200">
-                    <h2 className="text-xl font-semibold text-slate-800">
-                        {member ? 'Editar Membro' : 'Convidar Membro'}
-                    </h2>
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+            <div className="bg-[#0f172a] rounded-2xl shadow-2xl shadow-black/50 border border-white/10 max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+                <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-violet-500/10 rounded-lg border border-violet-500/20">
+                            <UserPlus className="w-5 h-5 text-violet-400" />
+                        </div>
+                        <h2 className="text-xl font-bold text-white">
+                            {member ? 'Editar Membro' : 'Convidar Membro'}
+                        </h2>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-white">
+                        <X className="w-5 h-5" />
+                    </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
-                                Nome *
+                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="md:col-span-2">
+                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                                Nome do Membro *
                             </label>
-                            <input
-                                type="text"
-                                required
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Ex: João Silva"
-                            />
+                            <div className="relative">
+                                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                <input
+                                    type="text"
+                                    required
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-slate-200 placeholder:text-slate-600 transition-all"
+                                    placeholder="Ex: Ana Souza"
+                                />
+                            </div>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
-                                Email *
+
+                        <div className="md:col-span-2">
+                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                                Email Corporativo *
                             </label>
-                            <input
-                                type="email"
-                                required
-                                disabled={!!member}
-                                value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-500"
-                                placeholder="email@exemplo.com"
-                            />
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                <input
+                                    type="email"
+                                    required
+                                    disabled={!!member}
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-slate-200 placeholder:text-slate-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    placeholder="ana@empresa.com"
+                                />
+                            </div>
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
-                            Especialidade
+                    <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                            Especialidade / Cargo
                         </label>
                         {!isCreatingSpecialty && availableSpecialties.length > 0 ? (
-                            <div className="flex gap-2">
+                            <div className="relative">
+                                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                 <select
                                     value={formData.jobTitle}
                                     onChange={(e) => {
@@ -134,25 +151,29 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                                             setFormData({ ...formData, jobTitle: e.target.value });
                                         }
                                     }}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                                    className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-slate-200 transition-all appearance-none cursor-pointer"
+                                    style={{ backgroundImage: 'none' }}
                                 >
-                                    <option value="">Selecione uma especialidade...</option>
+                                    <option value="" className="bg-slate-900">Selecione uma especialidade...</option>
                                     {availableSpecialties.map(specialty => (
-                                        <option key={specialty} value={specialty}>{specialty}</option>
+                                        <option key={specialty} value={specialty} className="bg-slate-900 text-white">{specialty}</option>
                                     ))}
-                                    <option value="new" className="text-purple-600 font-semibold">+ Criar nova...</option>
+                                    <option value="new" className="bg-slate-900 text-violet-400 font-bold">+ Criar nova...</option>
                                 </select>
                             </div>
                         ) : (
                             <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={formData.jobTitle}
-                                    onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
-                                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                    placeholder="Ex: Gestor de Tráfego"
-                                    autoFocus
-                                />
+                                <div className="relative flex-1">
+                                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                    <input
+                                        type="text"
+                                        value={formData.jobTitle}
+                                        onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
+                                        className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-slate-200 placeholder:text-slate-600 transition-all"
+                                        placeholder="Ex: Gestor de Tráfego"
+                                        autoFocus
+                                    />
+                                </div>
                                 {availableSpecialties.length > 0 && (
                                     <button
                                         type="button"
@@ -160,7 +181,7 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                                             setIsCreatingSpecialty(false);
                                             setFormData({ ...formData, jobTitle: '' });
                                         }}
-                                        className="px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg border border-slate-200"
+                                        className="px-4 py-2 text-sm font-bold text-slate-400 hover:text-white hover:bg-white/5 rounded-xl border border-white/5 transition-all"
                                     >
                                         Cancelar
                                     </button>
@@ -169,113 +190,90 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                         )}
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
-                            Função
+                    <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                            Nível de Acesso
                         </label>
-                        <select
-                            value={formData.role}
-                            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="viewer">Visualizador</option>
-                            <option value="member">Membro</option>
-                            <option value="manager">Gerente</option>
-                        </select>
-                        <p className="text-xs text-slate-500 mt-1">
-                            {formData.role === 'manager' && 'Acesso completo ao painel de gerenciamento'}
-                            {formData.role === 'member' && 'Pode gerenciar clientes e tarefas'}
-                            {formData.role === 'viewer' && 'Acesso apenas para visualização'}
-                        </p>
+                        <div className="relative">
+                            <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                            <select
+                                value={formData.role}
+                                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                                className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-slate-200 transition-all appearance-none cursor-pointer"
+                                style={{ backgroundImage: 'none' }}
+                            >
+                                <option value="viewer" className="bg-slate-900">Visualizador (Apenas leitura)</option>
+                                <option value="member" className="bg-slate-900">Membro (Operacional)</option>
+                                <option value="manager" className="bg-slate-900">Gerente (Acesso total)</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Permissões
+                    <div className="space-y-3 pt-2">
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
+                            Permissões Granulares
                         </label>
-
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="checkbox"
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <PermissionToggle
+                                label="Gerenciar Tarefas"
+                                icon={<CheckSquare className="w-4 h-4 text-emerald-400" />}
                                 checked={formData.canManageTasks}
-                                onChange={(e) => setFormData({ ...formData, canManageTasks: e.target.checked })}
-                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                onChange={(checked) => setFormData({ ...formData, canManageTasks: checked })}
                                 disabled={formData.role === 'manager'}
                             />
-                            <span className="text-sm text-slate-700">Gerenciar tarefas</span>
-                        </label>
-
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="checkbox"
+                            <PermissionToggle
+                                label="Gerenciar Clientes"
+                                icon={<Users className="w-4 h-4 text-blue-400" />}
                                 checked={formData.canManageClients}
-                                onChange={(e) => setFormData({ ...formData, canManageClients: e.target.checked })}
-                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                onChange={(checked) => setFormData({ ...formData, canManageClients: checked })}
                                 disabled={formData.role === 'manager'}
                             />
-                            <span className="text-sm text-slate-700">Gerenciar clientes</span>
-                        </label>
-
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="checkbox"
+                            <PermissionToggle
+                                label="Gerenciar Equipe"
+                                icon={<UserPlus className="w-4 h-4 text-violet-400" />}
                                 checked={formData.canManageTeam}
-                                onChange={(e) => setFormData({ ...formData, canManageTeam: e.target.checked })}
-                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                onChange={(checked) => setFormData({ ...formData, canManageTeam: checked })}
                                 disabled={formData.role === 'manager'}
                             />
-                            <span className="text-sm text-slate-700">Gerenciar equipe</span>
-                        </label>
-
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="checkbox"
+                            <PermissionToggle
+                                label="Gerenciar Marketing"
+                                icon={<Zap className="w-4 h-4 text-amber-400" />}
                                 checked={formData.canManageMarketing}
-                                onChange={(e) => setFormData({ ...formData, canManageMarketing: e.target.checked })}
-                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                onChange={(checked) => setFormData({ ...formData, canManageMarketing: checked })}
                                 disabled={formData.role === 'manager'}
                             />
-                            <span className="text-sm text-slate-700">Gerenciar marketing</span>
-                        </label>
-
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="checkbox"
+                            <PermissionToggle
+                                label="Gerenciar Automação"
+                                icon={<MessageSquare className="w-4 h-4 text-cyan-400" />}
                                 checked={formData.canManageAutomation}
-                                onChange={(e) => setFormData({ ...formData, canManageAutomation: e.target.checked })}
-                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                onChange={(checked) => setFormData({ ...formData, canManageAutomation: checked })}
                                 disabled={formData.role === 'manager'}
                             />
-                            <span className="text-sm text-slate-700">Gerenciar automações</span>
-                        </label>
-
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="checkbox"
+                            <PermissionToggle
+                                label="Gerenciar IA Agents"
+                                icon={<Bot className="w-4 h-4 text-pink-400" />}
                                 checked={formData.canManageAIAgents}
-                                onChange={(e) => setFormData({ ...formData, canManageAIAgents: e.target.checked })}
-                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                onChange={(checked) => setFormData({ ...formData, canManageAIAgents: checked })}
                                 disabled={formData.role === 'manager'}
                             />
-                            <span className="text-sm text-slate-700">Gerenciar AI Agents</span>
-                        </label>
+                        </div>
                     </div>
 
-                    <div className="flex gap-3 justify-end pt-4 border-t border-slate-200">
+                    <div className="flex gap-3 justify-end pt-6 border-t border-white/5">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                            className="px-6 py-2.5 text-sm font-bold text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
                             disabled={loading}
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
-                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                            className="px-8 py-2.5 bg-gradient-to-r from-violet-600 to-violet-500 text-white rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-violet-500/20 transition-all disabled:opacity-50 border border-white/10"
                             disabled={loading}
                         >
-                            {loading ? 'Salvando...' : member ? 'Salvar' : 'Convidar'}
+                            {loading ? 'Processando...' : member ? 'Salvar Alterações' : 'Enviar Convite'}
                         </button>
                     </div>
                 </form>
@@ -283,3 +281,22 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
         </div>
     );
 };
+
+const PermissionToggle = ({ label, icon, checked, onChange, disabled }: { label: string, icon: React.ReactNode, checked: boolean, onChange: (c: boolean) => void, disabled: boolean }) => (
+    <label className={`flex items-center gap-3 p-3 rounded-xl border border-white/5 transition-all ${checked && !disabled ? 'bg-slate-800/50 border-violet-500/30' : 'bg-slate-900/30 hover:bg-slate-800/50'} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${checked ? 'bg-violet-500 border-violet-500 text-white' : 'border-slate-600 bg-transparent'}`}>
+            {checked && <CheckSquare className="w-3.5 h-3.5" />}
+        </div>
+        <input
+            type="checkbox"
+            className="sr-only"
+            checked={checked}
+            onChange={(e) => onChange(e.target.checked)}
+            disabled={disabled}
+        />
+        <div className="flex items-center gap-2">
+            {icon}
+            <span className="text-sm font-medium text-slate-300 select-none">{label}</span>
+        </div>
+    </label>
+);

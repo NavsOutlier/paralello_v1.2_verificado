@@ -913,37 +913,55 @@ export const MarketingDashboard: React.FC = () => {
 
                         {/* Data Actions (Table Only) */}
                         {viewMode === 'table' && (
-                            <div className="flex items-center gap-3 pl-3 border-l border-white/10">
-                                {isIntegrated && (
-                                    <>
+                            <>
+                                {/* Table Granularity Filter */}
+                                <div className="flex bg-[#0f1623] p-1 rounded-lg border border-white/5 mr-2">
+                                    {(['day', 'week', 'month'] as Granularity[]).map(g => (
                                         <button
-                                            onClick={() => setIsManualLeadModalOpen(true)}
-                                            className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl hover:bg-indigo-500/20 transition-all border border-indigo-500/20"
-                                            title="Novo Lead Manual"
+                                            key={g}
+                                            onClick={() => setGranularity(g)}
+                                            className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-md transition-all ${granularity === g
+                                                ? 'bg-slate-700 text-white shadow-sm'
+                                                : 'text-slate-500 hover:text-slate-300'
+                                                }`}
                                         >
-                                            <Users className="w-4 h-4" />
+                                            {g === 'day' ? 'Dia' : g === 'week' ? 'Sem' : 'Mês'}
                                         </button>
-                                        <button
-                                            onClick={() => setIsManualConversionModalOpen(true)}
-                                            className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl hover:bg-emerald-500/20 transition-all border border-emerald-500/20"
-                                            title="Nova Venda Manual"
-                                        >
-                                            <Activity className="w-4 h-4" />
-                                        </button>
-                                        <div className="w-px h-6 bg-white/10 mx-1" />
-                                    </>
-                                )}
-                                <button
-                                    onClick={() => setIsEditing(!isEditing)}
-                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${isEditing
-                                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                                        : 'bg-slate-800 text-slate-400 border-white/10 hover:bg-slate-700'
-                                        }`}
-                                >
-                                    {isEditing ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
-                                    {isEditing ? 'FINALIZADO' : 'EDITAR DADOS'}
-                                </button>
-                            </div>
+                                    ))}
+                                </div>
+
+                                <div className="flex items-center gap-3 pl-3 border-l border-white/10">
+                                    {isIntegrated && (
+                                        <>
+                                            <button
+                                                onClick={() => setIsManualLeadModalOpen(true)}
+                                                className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl hover:bg-indigo-500/20 transition-all border border-indigo-500/20"
+                                                title="Novo Lead Manual"
+                                            >
+                                                <Users className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => setIsManualConversionModalOpen(true)}
+                                                className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl hover:bg-emerald-500/20 transition-all border border-emerald-500/20"
+                                                title="Nova Venda Manual"
+                                            >
+                                                <Activity className="w-4 h-4" />
+                                            </button>
+                                            <div className="w-px h-6 bg-white/10 mx-1" />
+                                        </>
+                                    )}
+                                    <button
+                                        onClick={() => setIsEditing(!isEditing)}
+                                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${isEditing
+                                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                            : 'bg-slate-800 text-slate-400 border-white/10 hover:bg-slate-700'
+                                            }`}
+                                    >
+                                        {isEditing ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                                        {isEditing ? 'FINALIZADO' : 'EDITAR DADOS'}
+                                    </button>
+                                </div>
+                            </>
                         )}
 
                         <button

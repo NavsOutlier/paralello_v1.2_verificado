@@ -89,10 +89,19 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, messageCount, onClick,
         { value: 'done', label: 'APROVADO', dot: 'bg-emerald-400' },
     ];
 
+    const priorityStyles = {
+        'high': { bg: 'bg-rose-500/5 hover:bg-rose-500/10', border: 'border-rose-500/10' },
+        'medium': { bg: 'bg-amber-500/5 hover:bg-amber-500/10', border: 'border-amber-500/10' },
+        'low': { bg: 'bg-emerald-500/5 hover:bg-emerald-500/10', border: 'border-emerald-500/10' },
+        'default': { bg: 'bg-slate-900/40 hover:bg-slate-800/60', border: 'border-white/5' }
+    };
+
+    const priorityConfig = task.priority ? priorityStyles[task.priority] : priorityStyles.default;
+
     return (
         <div
             onClick={onClick}
-            className={`group relative p-4 rounded-[16px] border cursor-pointer shadow-2xl transition-all duration-300 bg-slate-900/40 backdrop-blur-xl ${statusConfig.border} ${isArchived ? 'opacity-60 grayscale-[0.5]' : 'hover:border-cyan-500/30 hover:shadow-cyan-500/5 hover:-translate-y-1'}`}
+            className={`group relative p-4 rounded-[16px] border cursor-pointer shadow-2xl transition-all duration-300 backdrop-blur-xl ${priorityConfig.bg} ${isArchived ? 'opacity-60 grayscale-[0.5] border-white/5' : `${priorityConfig.border} hover:border-cyan-500/30 hover:shadow-cyan-500/5 hover:-translate-y-1`}`}
         >
             {/* Notification Badge */}
             {notificationCount > 0 && (

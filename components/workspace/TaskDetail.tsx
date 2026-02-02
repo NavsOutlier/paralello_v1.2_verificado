@@ -225,6 +225,14 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
         )
     }
 
+    const priorityStyles = {
+        'high': { bg: 'bg-rose-500/5', border: 'border-rose-500/10' },
+        'medium': { bg: 'bg-amber-500/5', border: 'border-amber-500/10' },
+        'low': { bg: 'bg-emerald-500/5', border: 'border-emerald-500/10' },
+        'default': { bg: 'bg-slate-900/40', border: 'border-white/5' }
+    };
+    const priorityConfig = priorityStyles[task.priority as keyof typeof priorityStyles] || priorityStyles.default;
+
     return (
         <div className="flex flex-col h-full bg-[#0a101d] relative">
             {/* Checklist Modal */}
@@ -376,7 +384,7 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
 
                 {/* Single Context Session */}
                 <div className="px-4 pb-4 pt-4">
-                    <div className={`p-4 rounded-[28px] border shadow-2xl space-y-4 transition-all group/card bg-slate-900/40 backdrop-blur-xl border-white/5`}>
+                    <div className={`p-4 rounded-[28px] border shadow-2xl space-y-4 transition-all group/card backdrop-blur-xl ${priorityConfig.bg} ${priorityConfig.border}`}>
                         <div className="space-y-3">
                             {/* Title & Status Row */}
                             <div className="flex items-start justify-between gap-4">
@@ -671,6 +679,6 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
                     </button>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };

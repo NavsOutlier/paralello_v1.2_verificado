@@ -598,7 +598,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                         <div className="text-center space-y-1">
                             <p className="text-white font-bold text-lg tracking-tight">Conexão Ativa</p>
                             <p className="text-slate-400 text-xs max-w-[240px] leading-relaxed">
-                                Para trocar de conexão, entre em contato com o suporte da <span className="text-indigo-400 font-bold">Paralello</span>.
+                                Para trocar de conexão, entre em contato com o suporte da <span className="text-indigo-400 font-bold">Blackback</span>.
                             </p>
                         </div>
                     </div>

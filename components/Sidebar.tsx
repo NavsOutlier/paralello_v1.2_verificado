@@ -31,8 +31,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
 
   return (
     <nav className="w-[80px] flex-shrink-0 bg-slate-900/40 backdrop-blur-xl border-r border-cyan-500/10 flex flex-col items-center py-6 z-20 overflow-y-auto overflow-x-hidden custom-scrollbar">
-      <div className="mb-8 w-11 h-11 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl shadow-lg shadow-indigo-500/20 flex items-center justify-center text-white font-black text-xl border border-white/10">
-        P
+      <div className="mb-8 w-14 h-14 flex items-center justify-center">
+        <img src="/blackback-icon-nobg.png" alt="Blackback" className="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(139,92,246,0.3)]" />
       </div>
 
       <div className="flex-1 w-full space-y-3">

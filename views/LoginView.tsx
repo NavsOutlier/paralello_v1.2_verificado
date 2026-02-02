@@ -32,20 +32,15 @@ export const LoginView: React.FC = () => {
 
             <div className="w-full max-w-md relative z-10 animate-in fade-in zoom-in-95 duration-700">
                 {/* Logo Section */}
-                <div className="flex justify-center mb-8">
-                    <div className="relative group">
-                        <div className="absolute inset-0 bg-indigo-500 blur-2xl opacity-20 group-hover:opacity-40 transition-opacity" />
-                        <div className="relative w-20 h-20 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-3xl shadow-2xl flex items-center justify-center text-white font-black text-4xl transform rotate-3 hover:rotate-0 transition-transform duration-500">
-                            P
-                        </div>
-                    </div>
+                <div className="flex justify-center mb-10">
+                    <img src="/blackback-logo.png" alt="Blackback" className="w-64 h-auto object-contain drop-shadow-[0_0_25px_rgba(139,92,246,0.3)]" />
                 </div>
 
                 {/* Login Card */}
                 <div className="bg-slate-900/40 backdrop-blur-2xl p-8 md:p-10 rounded-[2.5rem] border border-white/10 shadow-3xl shadow-black/50">
                     <div className="text-center mb-10">
                         <h2 className="text-3xl font-black text-white mb-2 tracking-tight">Bem-vindo</h2>
-                        <p className="text-slate-400 font-medium tracking-wide">Faça login para continuar no Paralello</p>
+                        <p className="text-slate-400 font-medium tracking-wide">Faça login para continuar no Blackback</p>
                     </div>
 
                     {error && (

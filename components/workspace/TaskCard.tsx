@@ -101,7 +101,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, messageCount, onClick,
     return (
         <div
             onClick={onClick}
-            className={`group relative p-4 rounded-[16px] border cursor-pointer shadow-2xl transition-all duration-300 backdrop-blur-xl ${priorityConfig.bg} ${isArchived ? 'opacity-60 grayscale-[0.5] border-white/5' : `${priorityConfig.border} hover:border-cyan-500/30 hover:shadow-cyan-500/5 hover:-translate-y-1`}`}
+            className={`group relative p-4 rounded-[16px] border cursor-pointer shadow-2xl transition-all duration-300 backdrop-blur-xl ${priorityConfig.bg} ${isStatusOpen ? 'z-50' : 'hover:z-10'} ${isArchived ? 'opacity-60 grayscale-[0.5] border-white/5' : `${priorityConfig.border} hover:border-cyan-500/30 hover:shadow-cyan-500/5 hover:-translate-y-1`}`}
         >
             {/* Notification Badge */}
             {notificationCount > 0 && (

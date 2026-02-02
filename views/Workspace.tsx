@@ -358,33 +358,42 @@ export const Workspace: React.FC = () => {
 
   if (loadingClients && !clients.length) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-slate-50">
-        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+      <div className="flex-1 flex items-center justify-center bg-transparent relative z-10">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center text-cyan-400 mb-4 animate-pulse">
+            <Loader2 className="w-6 h-6 animate-spin" />
+          </div>
+          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest animate-pulse">Sincronizando Workspace...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full w-full relative">
-      {/* Left Sidebar Toggle - Thin discrete strip */}
+    <div className="flex h-full w-full relative z-10 animate-in fade-in duration-1000">
+      {/* Left Sidebar Toggle - Ultra discrete premium strip */}
       <button
         onClick={() => setLeftSidebarVisible(!leftSidebarVisible)}
-        className={`absolute top-1/2 -translate-y-1/2 z-50 w-4 h-12 flex items-center justify-center bg-slate-100/80 hover:bg-indigo-100 border-y border-r border-slate-200/50 hover:border-indigo-200 rounded-r-md opacity-40 hover:opacity-100 transition-all duration-300 ${leftSidebarVisible ? 'left-[260px]' : 'left-0'
+        className={`absolute top-1/2 -translate-y-1/2 z-50 w-1.5 h-24 flex items-center justify-center bg-indigo-500/20 hover:bg-indigo-500/40 border border-white/5 rounded-full opacity-30 hover:opacity-100 transition-all duration-500 group ${leftSidebarVisible ? 'left-[260px] -translate-x-1/2' : 'left-2'
           }`}
-        title={leftSidebarVisible ? 'Esconder' : 'Mostrar'}
+        title={leftSidebarVisible ? 'Contrair Navegação' : 'Expandir Navegação'}
       >
-        <span className={`text-slate-500 text-[10px] font-bold transition-transform ${leftSidebarVisible ? '' : 'rotate-180'}`}>‹</span>
+        <div className="absolute left-full ml-4 px-3 py-1.5 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-lg text-[10px] font-black text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none uppercase tracking-widest">
+          {leftSidebarVisible ? 'Recolher' : 'Explorar'}
+        </div>
       </button>
 
-      {/* Right Sidebar Toggle - Thin discrete strip */}
+      {/* Right Sidebar Toggle - Ultra discrete premium strip */}
       <button
         onClick={() => setRightSidebarVisible(!rightSidebarVisible)}
-        className={`absolute top-1/2 -translate-y-1/2 z-50 w-4 h-12 flex items-center justify-center bg-slate-100/80 hover:bg-indigo-100 border-y border-l border-slate-200/50 hover:border-indigo-200 rounded-l-md opacity-40 hover:opacity-100 transition-all duration-300 ${rightSidebarVisible ? '' : 'right-0'
+        className={`absolute top-1/2 -translate-y-1/2 z-50 w-1.5 h-24 flex items-center justify-center bg-indigo-500/20 hover:bg-indigo-500/40 border border-white/5 rounded-full opacity-30 hover:opacity-100 transition-all duration-500 group ${rightSidebarVisible ? '' : 'right-2'
           }`}
-        style={rightSidebarVisible ? { right: `${rightSidebarWidth}px` } : undefined}
-        title={rightSidebarVisible ? 'Esconder' : 'Mostrar'}
+        style={rightSidebarVisible ? { right: `${rightSidebarWidth}px`, transform: 'translateX(50%)' } : undefined}
+        title={rightSidebarVisible ? 'Fechar Painel de Operações' : 'Abrir Painel de Operações'}
       >
-        <span className={`text-slate-500 text-[10px] font-bold transition-transform ${rightSidebarVisible ? '' : 'rotate-180'}`}>›</span>
+        <div className="absolute right-full mr-4 px-3 py-1.5 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-lg text-[10px] font-black text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none uppercase tracking-widest">
+          {rightSidebarVisible ? 'Esconder Ops' : 'Visualizar Ops'}
+        </div>
       </button>
 
       {/* Left Sidebar - EntityList */}
@@ -426,7 +435,7 @@ export const Workspace: React.FC = () => {
       {rightSidebarVisible && (
         <div
           onMouseDown={startResizing}
-          className={`w-1.5 h-full cursor-col-resize hover:bg-indigo-400/30 transition-colors flex-shrink-0 z-10 -ml-0.5 border-l border-r border-slate-200 ${isResizing ? 'bg-indigo-400/50' : ''}`}
+          className={`w-1.5 h-full cursor-col-resize hover:bg-cyan-400/30 transition-colors flex-shrink-0 z-10 -ml-0.5 border-l border-r border-cyan-500/10 ${isResizing ? 'bg-cyan-400/50' : ''}`}
         />
       )}
 
@@ -464,7 +473,7 @@ export const Workspace: React.FC = () => {
               onSelectTask={(t) => setSelectedTaskId(t ? t.id : null)}
             />
           ) : (
-            <div className="p-10 text-center text-slate-400">Selecione um cliente para ver tarefas.</div>
+            <div className="p-10 text-center text-slate-500">Selecione um cliente para ver tarefas.</div>
           )}
         </div>
       </div>

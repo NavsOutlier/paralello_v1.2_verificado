@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import {
   Activity, Users, CheckSquare, Clock, Loader2, AlertTriangle,
@@ -490,21 +490,18 @@ export const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 overflow-y-auto h-full">
+    <div className="flex-1 bg-transparent overflow-y-auto h-full relative">
       {/* Header - Premium Design */}
-      <div className="relative px-4 md:px-8 py-6 md:py-8 border-b border-slate-100/50 bg-white/60 backdrop-blur-xl sticky top-0 z-10">
-        {/* Background decoration */}
-        <div className="absolute top-0 right-0 w-96 h-32 bg-gradient-to-bl from-indigo-500/5 to-transparent rounded-bl-full" />
-
+      <div className="relative px-4 md:px-8 py-6 md:py-8 border-b border-cyan-500/10 bg-slate-900/40 backdrop-blur-xl sticky top-0 z-10">
         <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 border border-white/10">
                 <Activity className="w-5 h-5 text-white" />
               </div>
-              <h1 className="text-3xl font-black text-slate-800 tracking-tight">Dashboard</h1>
+              <h1 className="text-3xl font-black text-white tracking-tight">Dashboard</h1>
             </div>
-            <p className="text-sm text-slate-500 ml-[52px]">Visão geral da sua operação • <span className="font-medium text-indigo-600">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span></p>
+            <p className="text-sm text-slate-400 ml-[52px]">Visão geral da sua operação • <span className="font-medium text-cyan-400">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span></p>
           </div>
 
           {/* Filter Controls */}
@@ -522,8 +519,8 @@ export const Dashboard: React.FC = () => {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${showFilters
-                ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
+                ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
                 }`}
             >
               {showFilters ? (
@@ -546,15 +543,15 @@ export const Dashboard: React.FC = () => {
 
         {/* Filter Panel */}
         {showFilters && (
-          <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100 animate-in slide-in-from-top-2 duration-200">
+          <div className="mt-4 p-4 bg-slate-800/50 backdrop-blur-md rounded-xl border border-cyan-500/10 animate-in slide-in-from-top-2 duration-200">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Period Filter */}
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-2">Período</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-2">Período</label>
                 <select
                   value={periodFilter}
                   onChange={(e) => setPeriodFilter(e.target.value as PeriodFilter)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-cyan-500/10 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                 >
                   <option value="7d">Últimos 7 dias</option>
                   <option value="15d">Últimos 15 dias</option>
@@ -565,11 +562,11 @@ export const Dashboard: React.FC = () => {
 
               {/* Member Filter */}
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-2">Membro</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-2">Membro</label>
                 <select
                   value={memberFilter}
                   onChange={(e) => setMemberFilter(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-cyan-500/10 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                 >
                   <option value="all">Todos os membros</option>
                   {allMembers.map(m => (
@@ -580,11 +577,11 @@ export const Dashboard: React.FC = () => {
 
               {/* Client Filter */}
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-2">Cliente</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-2">Cliente</label>
                 <select
                   value={clientFilter}
                   onChange={(e) => setClientFilter(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-cyan-500/10 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                 >
                   <option value="all">Todos os clientes</option>
                   {allClients.map(c => (
@@ -595,11 +592,11 @@ export const Dashboard: React.FC = () => {
 
               {/* Role/Specialty Filter */}
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-2">Especialidade</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-2">Especialidade</label>
                 <select
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-cyan-500/10 text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
                 >
                   <option value="all">Todas as especialidades</option>
                   <option value="manager">Gestor</option>
@@ -619,7 +616,7 @@ export const Dashboard: React.FC = () => {
       <div className="p-8 space-y-8">
         {/* Review Tasks - Top Priority Section */}
         {reviewTasks.length > 0 && (
-          <div className="relative overflow-hidden rounded-2xl border border-violet-200 bg-gradient-to-r from-violet-50 to-purple-50">
+          <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-violet-500/5 backdrop-blur-xl">
             <div className="p-6">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-4">
@@ -627,8 +624,8 @@ export const Dashboard: React.FC = () => {
                     <Eye className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-black text-slate-800">Aguardando sua Aprovação! 👀</h2>
-                    <p className="text-sm text-slate-500">Estas tarefas estão prontas para revisão</p>
+                    <h2 className="text-xl font-black text-white">Aguardando sua Aprovação! 👀</h2>
+                    <p className="text-sm text-slate-400">Estas tarefas estão prontas para revisão</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -642,7 +639,7 @@ export const Dashboard: React.FC = () => {
                 {reviewTasks.slice(0, 6).map(task => (
                   <div
                     key={task.id}
-                    className="group relative bg-gradient-to-br from-violet-200 to-purple-200 rounded-2xl p-4 border border-violet-300/50 shadow-sm hover:shadow-lg hover:shadow-violet-200 transition-all hover:-translate-y-1"
+                    className="group relative bg-slate-900/60 backdrop-blur-md rounded-2xl p-4 border border-violet-500/20 shadow-sm hover:shadow-lg hover:shadow-violet-500/10 transition-all hover:-translate-y-1"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <span className="text-[10px] font-bold text-violet-600 bg-violet-100 px-2 py-1 rounded-lg uppercase tracking-wide">
@@ -682,7 +679,7 @@ export const Dashboard: React.FC = () => {
                         </button>
                       </div>
                     </div>
-                    <h4 className="text-sm font-bold text-slate-800 mb-2 line-clamp-2">
+                    <h4 className="text-sm font-bold text-white mb-2 line-clamp-2">
                       {task.title}
                     </h4>
                     {task.memberName && (
@@ -765,15 +762,15 @@ export const Dashboard: React.FC = () => {
 
         {/* Inactive Clients Alert */}
         {inactiveClients.length > 0 && (
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-amber-200/50 flex items-center justify-between">
+          <div className="bg-amber-500/5 backdrop-blur-xl rounded-2xl border border-amber-500/20 overflow-hidden">
+            <div className="px-6 py-4 border-b border-amber-500/10 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
                   <MessageCircle className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 className="font-bold text-amber-800">Clientes sem Engajamento</h2>
-                  <p className="text-xs text-amber-600">Sem mensagens há mais de 2 dias</p>
+                  <h2 className="font-bold text-amber-500">Clientes sem Engajamento</h2>
+                  <p className="text-xs text-amber-500/60">Sem mensagens há mais de 2 dias</p>
                 </div>
               </div>
               <span className="px-3 py-1 rounded-full bg-amber-200 text-amber-800 text-xs font-bold">
@@ -783,14 +780,14 @@ export const Dashboard: React.FC = () => {
             <div className="p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {inactiveClients.slice(0, 6).map(client => (
-                  <div key={client.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-amber-100">
+                  <div key={client.id} className="flex items-center justify-between p-3 bg-slate-900/40 rounded-xl border border-amber-500/10">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-orange-400 flex items-center justify-center text-white text-xs font-bold">
                         {client.name.charAt(0)}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-slate-800">{client.name}</p>
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-sm font-semibold text-white">{client.name}</p>
+                        <p className="text-[10px] text-slate-500">
                           {client.lastMessageAt ? formatDate(client.lastMessageAt) : 'Nunca interagiu'}
                         </p>
                       </div>
@@ -812,30 +809,25 @@ export const Dashboard: React.FC = () => {
         )}
 
         {/* Activity Chart - Premium Design */}
-        <div className="relative bg-white rounded-3xl border border-slate-100/50 shadow-xl shadow-slate-200/50 overflow-hidden">
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-indigo-500/5 to-violet-500/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-emerald-500/5 to-teal-500/5 rounded-full blur-3xl" />
-
-          <div className="relative px-8 py-5 border-b border-slate-100/50 flex items-center justify-between">
+        <div className="relative bg-slate-900/40 backdrop-blur-xl rounded-3xl border border-cyan-500/10 shadow-2xl shadow-black/20 overflow-hidden">
+          <div className="relative px-8 py-5 border-b border-cyan-500/10 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+              <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg border border-white/10 group">
                 <TrendingUp className="w-6 h-6 text-white" />
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 opacity-0 group-hover:opacity-100 blur-xl transition-opacity" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-slate-800">Volume de Atividades</h2>
-                <p className="text-sm text-slate-400">Últimos {periodDays} dias</p>
+                <h2 className="text-lg font-bold text-white">Volume de Atividades</h2>
+                <p className="text-sm text-slate-500">Últimos {periodDays} dias</p>
               </div>
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 shadow-sm" />
-                <span className="text-sm font-medium text-slate-600">Mensagens</span>
+                <div className="w-3 h-3 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
+                <span className="text-sm font-medium text-slate-400">Mensagens</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 shadow-sm" />
-                <span className="text-sm font-medium text-slate-600">Tarefas</span>
+                <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                <span className="text-sm font-medium text-slate-400">Tarefas</span>
               </div>
             </div>
           </div>
@@ -860,30 +852,30 @@ export const Dashboard: React.FC = () => {
                     <stop offset="100%" stopColor="#14b8a6" />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e2e8f0" strokeOpacity={0.5} />
+                <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#ffffff" strokeOpacity={0.05} />
                 <XAxis
                   dataKey="date"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 13, fill: '#64748b', fontWeight: 500 }}
+                  tick={{ fontSize: 13, fill: '#94a3b8', fontWeight: 500 }}
                   dy={10}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 13, fill: '#64748b', fontWeight: 500 }}
+                  tick={{ fontSize: 13, fill: '#94a3b8', fontWeight: 500 }}
                   dx={-10}
                 />
                 <Tooltip
                   contentStyle={{
                     borderRadius: '16px',
-                    border: 'none',
-                    boxShadow: '0 20px 40px -10px rgba(0,0,0,0.15)',
-                    backgroundColor: 'rgba(255,255,255,0.95)',
+                    border: '1px solid rgba(6, 182, 212, 0.1)',
+                    boxShadow: '0 20px 40px -10px rgba(0,0,0,0.5)',
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
                     backdropFilter: 'blur(10px)',
                     padding: '12px 16px'
                   }}
-                  labelStyle={{ fontWeight: 'bold', marginBottom: '8px', color: '#1e293b' }}
+                  labelStyle={{ fontWeight: 'bold', marginBottom: '8px', color: '#fff' }}
                   itemStyle={{ padding: '4px 0' }}
                 />
                 <Area
@@ -915,18 +907,15 @@ export const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* Overdue Tasks - Premium Design */}
-          <div className="lg:col-span-2 relative bg-white rounded-3xl border border-slate-100/50 shadow-xl shadow-slate-200/50 overflow-hidden">
-            {/* Background decoration */}
-            <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-red-500/5 to-rose-500/5 rounded-full blur-3xl" />
-
-            <div className="relative px-6 py-5 border-b border-slate-100/50 flex items-center justify-between">
+          <div className="lg:col-span-2 relative bg-slate-900/40 backdrop-blur-xl rounded-3xl border border-red-500/10 shadow-2xl shadow-black/20 overflow-hidden">
+            <div className="relative px-6 py-5 border-b border-red-500/10 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-200">
                   <AlertTriangle className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-800">Tarefas Atrasadas</h2>
-                  <p className="text-sm text-slate-400">Requerem atenção imediata</p>
+                  <h2 className="text-lg font-bold text-white">Tarefas Atrasadas</h2>
+                  <p className="text-sm text-slate-500">Requerem atenção imediata</p>
                 </div>
               </div>
               {overdueTasks.length > 0 && (
@@ -937,8 +926,8 @@ export const Dashboard: React.FC = () => {
             </div>
             <div className="relative p-5">
               {overdueTasks.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-                  <CheckCircle2 className="w-12 h-12 text-emerald-300 mb-2" />
+                <div className="flex flex-col items-center justify-center py-10 text-slate-500">
+                  <CheckCircle2 className="w-12 h-12 text-emerald-500/50 mb-2" />
                   <p className="text-sm font-medium">Nenhuma tarefa atrasada!</p>
                   <p className="text-xs">Excelente trabalho 🎉</p>
                 </div>
@@ -947,7 +936,7 @@ export const Dashboard: React.FC = () => {
                   {overdueTasks.map(task => {
                     const daysOverdue = getDaysOverdue(task.deadline!);
                     return (
-                      <div key={task.id} className="flex items-center justify-between p-3 rounded-xl bg-red-50/50 border border-red-100 hover:bg-red-50 transition-colors group">
+                      <div key={task.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-red-500/10 hover:border-red-500/30 transition-all group">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded uppercase">
@@ -957,7 +946,7 @@ export const Dashboard: React.FC = () => {
                               {task.priority === 'high' ? 'Alta' : task.priority === 'medium' ? 'Média' : 'Baixa'}
                             </span>
                           </div>
-                          <h4 className="text-sm font-semibold text-slate-800 truncate">{task.title}</h4>
+                          <h4 className="text-sm font-semibold text-white truncate">{task.title}</h4>
                         </div>
                         <div className="flex items-center gap-3 ml-4">
                           <div className="text-right">
@@ -980,18 +969,15 @@ export const Dashboard: React.FC = () => {
           </div>
 
           {/* Status Distribution - Premium Design */}
-          <div className="relative bg-white rounded-3xl border border-slate-100/50 shadow-xl shadow-slate-200/50 overflow-hidden group">
-            {/* Background decoration */}
-            <div className="absolute -top-16 -right-16 w-32 h-32 bg-gradient-to-br from-violet-500/10 to-purple-500/10 rounded-full blur-2xl group-hover:opacity-100 opacity-50 transition-opacity" />
-
-            <div className="relative px-6 py-5 border-b border-slate-100/50">
+          <div className="relative bg-slate-900/40 backdrop-blur-xl rounded-3xl border border-cyan-500/10 shadow-2xl shadow-black/20 overflow-hidden group">
+            <div className="relative px-6 py-5 border-b border-cyan-500/10">
               <div className="flex items-center gap-4">
                 <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-200">
                   <Target className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-800">Distribuição</h2>
-                  <p className="text-sm text-slate-400">Status das tarefas</p>
+                  <h2 className="text-lg font-bold text-white">Distribuição</h2>
+                  <p className="text-sm text-slate-500">Status das tarefas</p>
                 </div>
               </div>
             </div>
@@ -1018,7 +1004,7 @@ export const Dashboard: React.FC = () => {
                         <Cell
                           key={`cell-${index}`}
                           fill={entry.color}
-                          stroke="white"
+                          stroke="rgba(15, 23, 42, 0.5)"
                           strokeWidth={2}
                         />
                       ))}
@@ -1027,9 +1013,9 @@ export const Dashboard: React.FC = () => {
                       formatter={(value: number) => [`${value} tarefas`, '']}
                       contentStyle={{
                         borderRadius: '16px',
-                        border: 'none',
-                        boxShadow: '0 20px 40px -10px rgba(0,0,0,0.15)',
-                        backgroundColor: 'rgba(255,255,255,0.95)',
+                        border: '1px solid rgba(6, 182, 212, 0.1)',
+                        boxShadow: '0 20px 40px -10px rgba(0,0,0,0.5)',
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
                         backdropFilter: 'blur(10px)',
                         padding: '10px 14px'
                       }}
@@ -1039,13 +1025,13 @@ export const Dashboard: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-3 mt-4">
                 {statusDistribution.map(item => (
-                  <div key={item.name} className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors cursor-default">
+                  <div key={item.name} className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors cursor-default">
                     <div
                       className="w-3 h-3 rounded-full shadow-sm"
                       style={{ backgroundColor: item.color }}
                     />
-                    <span className="text-sm text-slate-600 flex-1">{item.name}</span>
-                    <span className="text-sm font-bold text-slate-800">{item.value}</span>
+                    <span className="text-sm text-slate-400 flex-1">{item.name}</span>
+                    <span className="text-sm font-bold text-white">{item.value}</span>
                   </div>
                 ))}
               </div>
@@ -1054,31 +1040,31 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Member Ranking */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+        <div className="bg-slate-900/40 backdrop-blur-xl rounded-2xl border border-cyan-500/10 shadow-2xl shadow-black/20 overflow-hidden">
+          <div className="px-6 py-4 border-b border-cyan-500/10">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
                 <Award className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="font-bold text-slate-800">Ranking de Produtividade</h2>
-                <p className="text-xs text-slate-400">Desempenho da equipe por tarefas concluídas</p>
+                <h2 className="font-bold text-white">Ranking de Produtividade</h2>
+                <p className="text-xs text-slate-500">Desempenho da equipe por tarefas concluídas</p>
               </div>
             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-100">
+                <tr className="border-b border-white/5">
                   <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">#</th>
                   <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Membro</th>
-                  <th className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Concluídas</th>
-                  <th className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Em Andamento</th>
-                  <th className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Tempo Médio</th>
-                  <th className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Clientes</th>
+                  <th className="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider px-6 py-3">Concluídas</th>
+                  <th className="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider px-6 py-3">Em Andamento</th>
+                  <th className="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider px-6 py-3">Tempo Médio</th>
+                  <th className="text-center text-xs font-semibold text-slate-400 uppercase tracking-wider px-6 py-3">Clientes</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-white/5">
                 {memberRanking.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
@@ -1105,8 +1091,8 @@ export const Dashboard: React.FC = () => {
                             {item.member.profile?.name?.charAt(0) || '?'}
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-slate-800">{item.member.profile?.name}</p>
-                            <p className="text-[10px] text-slate-400">{item.member.role === 'manager' ? 'Gestor' : 'Membro'}</p>
+                            <p className="text-sm font-semibold text-white">{item.member.profile?.name}</p>
+                            <p className="text-[10px] text-slate-500">{item.member.role === 'manager' ? 'Gestor' : 'Membro'}</p>
                           </div>
                         </div>
                       </td>
@@ -1156,21 +1142,21 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, subtitle, icon: Icon, gradient, highlight }) => (
-  <div className={`relative overflow-hidden rounded-2xl ${highlight ? 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200' : 'bg-white border-slate-100/50'} border p-6 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 group`}>
+  <div className={`relative overflow-hidden rounded-2xl ${highlight ? 'bg-red-500/10 border-red-500/20' : 'bg-slate-900/40 backdrop-blur-xl border-cyan-500/10'} border p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-cyan-500/5 hover:-translate-y-1 group`}>
     {/* Background decoration */}
-    <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full bg-gradient-to-br ${gradient} opacity-10 group-hover:opacity-20 transition-opacity blur-2xl`} />
+    <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full bg-gradient-to-br ${gradient} opacity-[0.05] group-hover:opacity-10 transition-opacity blur-2xl`} />
 
     <div className="relative flex items-center justify-between">
       <div className="space-y-1">
-        <p className="text-sm font-medium text-slate-500">{title}</p>
-        <h3 className={`text-4xl font-black tracking-tight ${highlight ? 'text-red-600' : 'text-slate-800'}`}>
+        <p className="text-sm font-medium text-slate-400">{title}</p>
+        <h3 className={`text-4xl font-black tracking-tight ${highlight ? 'text-red-400' : 'text-white'}`}>
           {value}
         </h3>
-        {subtitle && <p className="text-xs text-slate-400">{subtitle}</p>}
+        {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
       </div>
-      <div className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+      <div className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg border border-white/10 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
         <Icon className="w-7 h-7 text-white" />
-        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 blur-xl transition-opacity`} />
+        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-40 blur-xl transition-opacity`} />
       </div>
     </div>
 
@@ -1197,29 +1183,29 @@ interface MetricCardProps {
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ title, value, subtitle, icon: Icon, gradient, trend, highlight }) => (
-  <div className={`relative overflow-hidden rounded-2xl ${highlight ? 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200' : 'bg-white border-slate-100/50'} border p-6 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 group`}>
+  <div className={`relative overflow-hidden rounded-2xl ${highlight ? 'bg-red-500/10 border-red-500/20' : 'bg-slate-900/40 backdrop-blur-xl border-cyan-500/10'} border p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-cyan-500/5 hover:-translate-y-1 group`}>
     {/* Background decoration */}
-    <div className={`absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-gradient-to-br ${gradient} opacity-10 group-hover:opacity-20 transition-opacity blur-2xl`} />
+    <div className={`absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-gradient-to-br ${gradient} opacity-[0.05] group-hover:opacity-10 transition-opacity blur-2xl`} />
 
     <div className="relative flex items-start justify-between">
       <div className="flex-1 space-y-2">
-        <p className="text-sm font-medium text-slate-500">{title}</p>
+        <p className="text-sm font-medium text-slate-400">{title}</p>
         <div className="flex items-baseline gap-3">
-          <h3 className={`text-4xl font-black tracking-tight ${highlight ? 'text-red-600' : 'text-slate-800'}`}>
+          <h3 className={`text-4xl font-black tracking-tight ${highlight ? 'text-red-400' : 'text-white'}`}>
             {value}
           </h3>
           {trend && (
-            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${trend === 'up' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${trend === 'up' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
               {trend === 'up' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
               {trend === 'up' ? 'Bom' : 'Baixo'}
             </div>
           )}
         </div>
-        <p className="text-xs text-slate-400">{subtitle}</p>
+        <p className="text-xs text-slate-500">{subtitle}</p>
       </div>
-      <div className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+      <div className={`relative w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg border border-white/10 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
         <Icon className="w-7 h-7 text-white" />
-        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 blur-xl transition-opacity`} />
+        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-40 blur-xl transition-opacity`} />
       </div>
     </div>
 

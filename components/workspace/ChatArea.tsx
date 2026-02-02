@@ -92,25 +92,25 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
     if (!entity) {
         return (
-            <div className="flex-1 flex items-center justify-center bg-slate-50 text-slate-400">
+            <div className="flex-1 flex items-center justify-center bg-transparent text-slate-500">
                 Selecione um contato para carregar a conversa.
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col h-full bg-[#fdfdff] relative">
+        <div className="flex flex-col h-full bg-transparent relative">
             {/* Header - Standardized */}
-            <div className="flex-shrink-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between relative z-20 shadow-sm">
+            <div className="flex-shrink-0 bg-slate-900/40 backdrop-blur-xl border-b border-cyan-500/10 px-6 py-4 flex items-center justify-between relative z-20 shadow-lg">
                 <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-violet-600 rounded-full flex items-center justify-center text-white shadow-xl shadow-indigo-100 border-2 border-white">
+                    <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-violet-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 border border-white/10">
                         <span className="text-[15px] font-black">{entity.name.slice(0, 1).toUpperCase()}</span>
                     </div>
                     <div>
-                        <h2 className="text-[15px] font-black text-slate-900 tracking-tight leading-none mb-1">{entity.name}</h2>
+                        <h2 className="text-[15px] font-black text-white tracking-tight leading-none mb-1">{entity.name}</h2>
                         <div className="flex items-center gap-1.5">
                             <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${whatsappStatus === 'conectado' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                            <p className={`text-[10px] font-bold uppercase tracking-widest ${whatsappStatus === 'conectado' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                            <p className={`text-[10px] font-bold uppercase tracking-widest ${whatsappStatus === 'conectado' ? 'text-emerald-400' : 'text-slate-500'}`}>
                                 {entity.role === 'client'
                                     ? `WhatsApp ${whatsappStatus === 'conectado' ? 'Conectado' : (whatsappStatus || 'Desconectado')}`
                                     : entity.jobTitle || 'Equipe'}
@@ -120,26 +120,26 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 </div>
 
                 {/* Perspective Toggle - Disruptive Style */}
-                <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center p-1 bg-slate-100/50 backdrop-blur-sm border border-slate-200/30 rounded-full shadow-inner ring-1 ring-black/[0.03]">
+                <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center p-1 bg-slate-800/50 backdrop-blur-md border border-cyan-500/10 rounded-full shadow-inner ring-1 ring-white/5">
                     <button
                         onClick={() => setViewMode('standard')}
-                        className={`flex items-center gap-2 px-3 py-1 rounded-full transition-all duration-300 ${viewMode === 'standard'
-                            ? 'bg-white shadow-sm text-indigo-600'
-                            : 'text-slate-400 hover:text-slate-600'
+                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full transition-all duration-300 ${viewMode === 'standard'
+                            ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg'
+                            : 'text-slate-400 hover:text-slate-200'
                             }`}
                     >
-                        <LayoutGrid className="w-3 h-3" />
-                        <span className="text-[9px] font-black tracking-widest uppercase">Padrão</span>
+                        <LayoutGrid className="w-3.5 h-3.5" />
+                        <span className="text-[10px] font-black tracking-widest uppercase">Padrão</span>
                     </button>
                     <button
                         onClick={() => setViewMode('distortion')}
-                        className={`flex items-center gap-2 px-3 py-1 rounded-full transition-all duration-300 ${viewMode === 'distortion'
-                            ? 'bg-white shadow-sm text-emerald-600'
-                            : 'text-slate-400 hover:text-slate-600'
+                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full transition-all duration-300 ${viewMode === 'distortion'
+                            ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg'
+                            : 'text-slate-400 hover:text-slate-200'
                             }`}
                     >
-                        <Atom className={`w-3 h-3 ${viewMode === 'distortion' ? 'animate-spin-slow' : ''}`} />
-                        <span className="text-[9px] font-black tracking-widest uppercase">Distorção</span>
+                        <Atom className={`w-3.5 h-3.5 ${viewMode === 'distortion' ? 'animate-spin-slow' : ''}`} />
+                        <span className="text-[10px] font-black tracking-widest uppercase">Distorção</span>
                     </button>
                 </div>
 
@@ -156,20 +156,20 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             {/* Messages Area - Conditional Rendering */}
             <div className={`flex-1 min-h-0 overflow-hidden relative z-10 ${viewMode === 'standard' ? 'overflow-y-auto' : ''}`}>
                 {/* Mesh Gradient Background Blobs - Now inside scrollable area */}
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-100/30 rounded-full blur-[120px] pointer-events-none animate-pulse" />
-                <div className="absolute bottom-[-5%] right-[-5%] w-[35%] h-[35%] bg-emerald-50/40 rounded-full blur-[100px] pointer-events-none" />
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none animate-pulse" />
+                <div className="absolute bottom-[-5%] right-[-5%] w-[35%] h-[35%] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
                 {viewMode === 'standard' ? (
                     <div className="p-4 md:p-8 pt-0 space-y-12 scroll-smooth custom-scrollbar">
                         {/* Sticky Column Headers */}
-                        <div className="sticky top-0 z-30 grid grid-cols-1 md:grid-cols-3 gap-4 py-3 items-center bg-white/60 backdrop-blur-md border-b border-slate-100/50">
+                        <div className="sticky top-0 z-30 grid grid-cols-1 md:grid-cols-3 gap-4 py-3 items-center bg-slate-900/60 backdrop-blur-md border-b border-white/5">
                             <div className="hidden md:flex flex-col items-start px-2">
-                                <span className="text-[10px] font-black tracking-[0.2em] text-emerald-600 uppercase">CLIENTE</span>
+                                <span className="text-[10px] font-black tracking-[0.2em] text-emerald-400 uppercase">CLIENTE</span>
                             </div>
                             <div className="hidden md:flex flex-col items-center px-2">
                                 <span className="text-[10px] font-black tracking-[0.2em] text-indigo-400 uppercase">EQUIPE</span>
                             </div>
                             <div className="hidden md:flex flex-col items-end px-2">
-                                <span className="text-[10px] font-black tracking-[0.2em] text-indigo-600 uppercase">EU</span>
+                                <span className="text-[10px] font-black tracking-[0.2em] text-cyan-400 uppercase">EU</span>
                             </div>
                         </div>
                         {messages.length === 0 ? (
@@ -210,7 +210,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                                     <div
                                         key={message.id}
                                         ref={isHighlighted ? highlightedRef : null}
-                                        className={`grid grid-cols-1 md:grid-cols-3 w-full gap-4 transition-all duration-500 ${isHighlighted ? 'scale-[1.01] bg-indigo-50/20 rounded-2xl p-2' : ''}`}
+                                        className={`grid grid-cols-1 md:grid-cols-3 w-full gap-4 transition-all duration-500 ${isHighlighted ? 'scale-[1.01] bg-white/5 backdrop-blur-sm rounded-2xl p-2' : ''}`}
                                     >
                                         {/* Column 1: Client */}
                                         <div className="flex flex-col items-start w-full">
@@ -310,10 +310,10 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 <div className="max-w-4xl mx-auto">
                     <div className="relative group">
                         {/* Shadow and Background Glow */}
-                        <div className="absolute inset-0 bg-indigo-500/10 blur-xl rounded-full opacity-0 group-focus-within:opacity-100 transition-opacity duration-700" />
+                        <div className="absolute inset-0 bg-cyan-500/20 blur-2xl rounded-full opacity-0 group-focus-within:opacity-100 transition-opacity duration-700" />
 
-                        <div className="relative bg-white/80 backdrop-blur-xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2rem] p-2 flex items-end gap-2 ring-1 ring-black/[0.03]">
-                            <button className="flex items-center justify-center w-11 h-11 text-slate-400 hover:text-indigo-500 transition-colors rounded-full hover:bg-slate-50">
+                        <div className="relative bg-slate-800/60 backdrop-blur-2xl border border-white/5 shadow-2xl shadow-black/40 rounded-[2rem] p-2 flex items-end gap-2 ring-1 ring-white/10">
+                            <button className="flex items-center justify-center w-11 h-11 text-slate-500 hover:text-cyan-400 transition-colors rounded-full hover:bg-white/5">
                                 <Plus className="w-5 h-5" />
                             </button>
 
@@ -324,7 +324,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                                 placeholder="Fale com o cliente de forma assertiva..."
                                 disabled={isSending}
                                 rows={1}
-                                className="flex-1 bg-transparent border-none focus:ring-0 py-3 text-[14px] font-medium placeholder:text-slate-400/80 resize-none max-h-40 scrollbar-hide"
+                                className="flex-1 bg-transparent border-none focus:ring-0 py-3 text-[14px] font-medium text-slate-200 placeholder:text-slate-500 resize-none max-h-40 scrollbar-hide"
                                 style={{
                                     minHeight: '44px',
                                 }}
@@ -334,8 +334,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                                 onClick={handleSend}
                                 disabled={!inputText.trim() || isSending}
                                 className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 ${!inputText.trim() || isSending
-                                    ? 'bg-slate-100 text-slate-300'
-                                    : 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:scale-105 active:scale-95'
+                                    ? 'bg-slate-700 text-slate-500'
+                                    : 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/20 hover:scale-105 active:scale-95'
                                     }`}
                             >
                                 {isSending ? (

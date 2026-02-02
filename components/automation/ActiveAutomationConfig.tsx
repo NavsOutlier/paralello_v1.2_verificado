@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-    Sparkles, Clock, X, Save, Calendar, Users, CheckCircle2, Copy
+    Sparkles, Clock, X, Save, Calendar, Users, CheckCircle2, Copy, Loader2
 } from 'lucide-react';
 import { ActiveAutomation, WEEKDAYS } from '../../types/automation';
 import { ClientSelector } from './ClientSelector';
@@ -141,27 +141,27 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
             : 'Nova Automação Active';
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-[#0d121f] border border-white/10 rounded-3xl shadow-2xl shadow-black/50 w-full max-w-lg animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
+                <div className="flex items-center justify-between p-6 border-b border-white/5 sticky top-0 bg-[#0d121f] z-10">
                     <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-xl ${duplicateMode ? 'bg-orange-100' : 'bg-purple-100'}`}>
+                        <div className={`p-2.5 rounded-xl ${duplicateMode ? 'bg-orange-500/10 border border-orange-500/20' : 'bg-violet-500/10 border border-violet-500/20'}`}>
                             {duplicateMode ? (
-                                <Copy className="w-5 h-5 text-orange-600" />
+                                <Copy className="w-5 h-5 text-orange-400" />
                             ) : (
-                                <Sparkles className="w-5 h-5 text-purple-600" />
+                                <Sparkles className="w-5 h-5 text-violet-400" />
                             )}
                         </div>
                         <div>
-                            <h2 className="font-bold text-slate-800">{title}</h2>
+                            <h2 className="font-black text-white">{title}</h2>
                             {isEditing && clientName && (
-                                <p className="text-xs text-slate-500">Cliente: {clientName}</p>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Cliente: {clientName}</p>
                             )}
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
-                        <X className="w-5 h-5 text-slate-400" />
+                    <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl transition-colors">
+                        <X className="w-5 h-5 text-slate-500" />
                     </button>
                 </div>
 
@@ -170,10 +170,10 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                     {/* Client Selection */}
                     {!isEditing && (
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                                 Cliente(s)
                                 {duplicateMode && (
-                                    <span className="text-orange-500">(selecione destino)</span>
+                                    <span className="text-orange-400">(selecione destino)</span>
                                 )}
                             </label>
                             <ClientSelector
@@ -188,7 +188,7 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
 
                     {/* Name */}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                             Nome da Automação
                         </label>
                         <input
@@ -197,13 +197,13 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                             onChange={(e) => setName(e.target.value)}
                             placeholder="Ex: Atualização Semanal"
                             required
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                            className="w-full px-4 py-2.5 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-violet-500/30 focus:outline-none placeholder:text-slate-600"
                         />
                     </div>
 
                     {/* Weekdays */}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                             <Calendar className="w-3.5 h-3.5" />
                             Dias de Envio
                         </label>
@@ -213,12 +213,12 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                                     key={day.value}
                                     type="button"
                                     onClick={() => toggleWeekday(day.value)}
-                                    className={`p-2 rounded-lg text-center transition-all ${selectedWeekdays.includes(day.value)
-                                        ? 'bg-purple-100 border-2 border-purple-500 text-purple-700'
-                                        : 'bg-slate-50 border-2 border-transparent text-slate-600 hover:bg-slate-100'
+                                    className={`p-2 rounded-lg text-center transition-all border ${selectedWeekdays.includes(day.value)
+                                        ? 'bg-violet-500/10 border-violet-500/30 text-violet-400'
+                                        : 'bg-slate-900/50 border-white/5 text-slate-500 hover:bg-white/5'
                                         }`}
                                 >
-                                    <span className="text-[10px] font-bold uppercase">
+                                    <span className="text-[10px] font-black uppercase">
                                         {day.label.slice(0, 3)}
                                     </span>
                                 </button>
@@ -229,13 +229,13 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                     {/* Context Days & Approver */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                                 Dias de Contexto
                             </label>
                             <select
                                 value={contextDays}
                                 onChange={(e) => setContextDays(Number(e.target.value))}
-                                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                className="w-full px-4 py-2.5 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-violet-500/30 focus:outline-none"
                             >
                                 <option value={3}>Últimos 3 dias</option>
                                 <option value={7}>Últimos 7 dias</option>
@@ -244,13 +244,13 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                             </select>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                                 Responsável
                             </label>
                             <select
                                 value={assignedApprover}
                                 onChange={(e) => setAssignedApprover(e.target.value)}
-                                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                                className="w-full px-4 py-2.5 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-violet-500/30 focus:outline-none"
                             >
                                 <option value="">Selecione...</option>
                                 {teamMembers?.map(member => (
@@ -264,25 +264,25 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
 
                     {/* Custom AI Guidance */}
                     <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-600 flex items-center gap-1">
-                            <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                            <Sparkles className="w-3.5 h-3.5 text-violet-400" />
                             Direcionamento para IA (opcional)
                         </label>
                         <textarea
                             value={customPrompt}
                             onChange={(e) => setCustomPrompt(e.target.value)}
                             placeholder="Ex: Mencione a nova campanha de marketing. Seja mais formal. Pergunte sobre o projeto X..."
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none"
+                            className="w-full px-4 py-3 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-violet-500/30 focus:outline-none resize-none placeholder:text-slate-600"
                             rows={3}
                         />
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-[9px] text-slate-500 font-medium">
                             Instruções extras para a IA usar ao gerar as sugestões de mensagem.
                         </p>
                     </div>
 
                     {/* Info Box */}
-                    <div className="bg-purple-50 border border-purple-100 rounded-xl p-4">
-                        <p className="text-[11px] text-purple-800 leading-relaxed">
+                    <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-4">
+                        <p className="text-[11px] text-violet-300 leading-relaxed font-medium">
                             <strong>Como funciona:</strong> Nos dias selecionados, a IA analisará conversas,
                             tarefas e checklists dos últimos {contextDays} dias e sugerirá uma mensagem para enviar ao cliente.
                             O responsável revisa e aprova antes do envio.
@@ -291,8 +291,8 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
 
                     {/* Info for multiple selection */}
                     {selectedClientIds.length > 1 && (
-                        <div className="bg-purple-50 border border-purple-100 rounded-xl p-3">
-                            <p className="text-xs text-purple-700">
+                        <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-3">
+                            <p className="text-xs text-violet-300 font-medium">
                                 <strong>Nota:</strong> Será criada uma automação separada para cada um dos {selectedClientIds.length} clientes selecionados.
                             </p>
                         </div>
@@ -303,17 +303,23 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all"
+                            className="flex-1 py-3 bg-slate-800 border border-white/5 text-slate-400 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-white/5 transition-all"
                         >
                             Cancelar
                         </button>
                         <button
                             type="submit"
                             disabled={loading || selectedWeekdays.length === 0 || selectedClientIds.length === 0}
-                            className={`flex-1 py-3 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 ${duplicateMode ? 'bg-orange-600 hover:bg-orange-700' : 'bg-purple-600 hover:bg-purple-700'
+                            className={`flex-1 py-3 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg ${duplicateMode ? 'bg-gradient-to-br from-orange-500 to-amber-600 shadow-orange-500/20' : 'bg-gradient-to-br from-violet-500 to-indigo-600 shadow-violet-500/20'
                                 }`}
                         >
-                            {duplicateMode ? <Copy className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                            {loading ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : duplicateMode ? (
+                                <Copy className="w-4 h-4" />
+                            ) : (
+                                <Save className="w-4 h-4" />
+                            )}
                             {loading
                                 ? 'Salvando...'
                                 : duplicateMode

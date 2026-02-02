@@ -16,10 +16,10 @@ export const EntityList: React.FC<EntityListProps> = ({ clients, team, selectedI
     <div
       key={user.id}
       onClick={() => onSelect(user.id)}
-      className={`group flex items-center p-3 cursor-pointer border-l-4 transition-all hover:bg-slate-50 relative overflow-hidden ${selectedId === user.id
-        ? 'border-indigo-600 bg-indigo-50/50'
+      className={`group flex items-center p-3 cursor-pointer border-l-4 transition-all hover:bg-white/5 relative overflow-hidden ${selectedId === user.id
+        ? 'border-cyan-500 bg-cyan-500/10'
         : (user.unreadCount || 0) > 0
-          ? 'border-emerald-500 bg-emerald-50'
+          ? 'border-emerald-500 bg-emerald-500/5'
           : 'border-transparent'
         }`}
     >
@@ -31,7 +31,7 @@ export const EntityList: React.FC<EntityListProps> = ({ clients, team, selectedI
       </div>
       <div className="ml-3 flex-1 overflow-hidden">
         <div className="flex justify-between items-baseline">
-          <h4 className="text-sm font-medium text-slate-800 truncate">{user.name}</h4>
+          <h4 className={`text-sm font-medium truncate ${selectedId === user.id ? 'text-white' : 'text-slate-300 group-hover:text-white'}`}>{user.name}</h4>
           {(user.unreadCount || 0) > 0 && (
             <span className="bg-emerald-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
               {user.unreadCount}
@@ -39,24 +39,24 @@ export const EntityList: React.FC<EntityListProps> = ({ clients, team, selectedI
           )}
         </div>
         {user.jobTitle && (
-          <p className="text-[10px] text-indigo-500 font-medium -mt-0.5 mb-0.5 truncate uppercase tracking-tight">
+          <p className="text-[10px] text-cyan-400 font-medium -mt-0.5 mb-0.5 truncate uppercase tracking-tight">
             {user.jobTitle}
           </p>
         )}
-        <p className="text-xs text-slate-500 truncate">{user.lastMessage}</p>
+        <p className="text-xs text-slate-500 truncate group-hover:text-slate-400">{user.lastMessage}</p>
       </div>
     </div>
   );
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-slate-200">
-      <div className="p-4 border-b border-slate-100">
+    <div className="flex flex-col h-full bg-slate-900/40 backdrop-blur-xl border-r border-cyan-500/10">
+      <div className="p-4 border-b border-cyan-500/10">
         <div className="relative">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-500" />
           <input
             type="text"
             placeholder="Buscar..."
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className="w-full pl-9 pr-4 py-2 bg-slate-900/50 border border-cyan-500/10 rounded-lg text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           />

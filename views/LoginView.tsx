@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { PremiumBackground } from '../components/ui/PremiumBackground';
+import { Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
 
 export const LoginView: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -25,59 +27,86 @@ export const LoginView: React.FC = () => {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-slate-100">
-            <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
-                <div className="flex justify-center mb-6">
-                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg flex items-center justify-center text-white font-bold text-3xl">
-                        P
+        <div className="flex items-center justify-center min-h-screen relative overflow-hidden bg-[#0a0f1a] p-4 text-slate-200">
+            <PremiumBackground />
+
+            <div className="w-full max-w-md relative z-10 animate-in fade-in zoom-in-95 duration-700">
+                {/* Logo Section */}
+                <div className="flex justify-center mb-8">
+                    <div className="relative group">
+                        <div className="absolute inset-0 bg-indigo-500 blur-2xl opacity-20 group-hover:opacity-40 transition-opacity" />
+                        <div className="relative w-20 h-20 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-3xl shadow-2xl flex items-center justify-center text-white font-black text-4xl transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                            P
+                        </div>
                     </div>
                 </div>
 
-                <h2 className="text-2xl font-bold text-center text-slate-800 mb-2">Bem-vindo ao Paralello</h2>
-                <p className="text-center text-slate-500 mb-8">Faça login para continuar</p>
-
-                {error && (
-                    <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 text-sm font-medium">
-                        {error}
-                    </div>
-                )}
-
-                <form onSubmit={handleLogin} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">Email</label>
-                        <input
-                            type="email"
-                            required
-                            className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all"
-                            placeholder="seu@email.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                        />
+                {/* Login Card */}
+                <div className="bg-slate-900/40 backdrop-blur-2xl p-8 md:p-10 rounded-[2.5rem] border border-white/10 shadow-3xl shadow-black/50">
+                    <div className="text-center mb-10">
+                        <h2 className="text-3xl font-black text-white mb-2 tracking-tight">Bem-vindo</h2>
+                        <p className="text-slate-400 font-medium tracking-wide">Faça login para continuar no Paralello</p>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">Senha</label>
-                        <input
-                            type="password"
-                            required
-                            className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all"
-                            placeholder="••••••••"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
-                    </div>
+                    {error && (
+                        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-2xl mb-6 text-sm font-bold flex items-center gap-3 animate-shake">
+                            <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                            {error}
+                        </div>
+                    )}
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
-                    >
-                        {loading ? 'Entrando...' : 'Entrar'}
-                    </button>
-                </form>
+                    <form onSubmit={handleLogin} className="space-y-5">
+                        <div className="space-y-2">
+                            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">Email</label>
+                            <div className="relative group">
+                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
+                                <input
+                                    type="email"
+                                    required
+                                    className="w-full bg-slate-800/50 border border-white/5 rounded-2xl py-4 pl-12 pr-4 focus:bg-slate-800 focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/10 transition-all outline-none text-slate-200 placeholder:text-slate-600 font-medium"
+                                    placeholder="seu@email.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                />
+                            </div>
+                        </div>
 
-                <div className="mt-6 text-center text-xs text-slate-400">
-                    Não tem conta? Peça ao administrador.
+                        <div className="space-y-2">
+                            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">Senha</label>
+                            <div className="relative group">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-violet-400 transition-colors" />
+                                <input
+                                    type="password"
+                                    required
+                                    className="w-full bg-slate-800/50 border border-white/5 rounded-2xl py-4 pl-12 pr-4 focus:bg-slate-800 focus:border-violet-500/50 focus:ring-4 focus:ring-violet-500/10 transition-all outline-none text-slate-200 placeholder:text-slate-600 font-medium"
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-4 mt-4 bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-2 group"
+                        >
+                            {loading ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <>
+                                    Entrar
+                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                </>
+                            )}
+                        </button>
+                    </form>
+                </div>
+
+                <div className="mt-8 text-center">
+                    <p className="text-xs text-slate-500 font-bold tracking-widest uppercase">
+                        Não tem conta? <span className="text-white hover:text-cyan-400 cursor-pointer transition-colors">Peça ao administrador</span>
+                    </p>
                 </div>
             </div>
         </div>

@@ -154,29 +154,29 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
     const activeFilterCount = (statusFilter !== 'all' ? 1 : 0) + (assigneeFilter !== 'all' ? 1 : 0) + (tagFilter !== 'all' ? 1 : 0) + (priorityFilter !== 'all' ? 1 : 0);
 
     return (
-        <div className="flex flex-col h-full bg-slate-50/20">
+        <div className="flex flex-col h-full bg-slate-900/40 backdrop-blur-xl">
             {/* Header */}
-            <div className="flex flex-wrap items-center justify-between px-5 py-2.1 bg-white border-b border-slate-100 flex-none gap-4 min-w-0">
+            <div className="flex flex-wrap items-center justify-between px-5 py-3 bg-slate-900/40 backdrop-blur-md border-b border-cyan-500/10 flex-none gap-4 min-w-0">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 border border-slate-100">
+                        <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center text-cyan-400 border border-cyan-500/10 transition-all hover:scale-110">
                             <Folder className="w-4 h-4" />
                         </div>
-                        <h3 className="text-[16px] font-black text-slate-800 tracking-tight">Tasks do Projeto</h3>
+                        <h3 className="text-[16px] font-black text-white tracking-tight">Tasks do Projeto</h3>
                     </div>
 
                     {/* View Toggle */}
-                    <div className="flex items-center p-1 bg-slate-100/50 rounded-lg gap-1">
+                    <div className="flex items-center p-1 bg-slate-800 rounded-lg gap-1 border border-white/5 shadow-inner">
                         <button
                             onClick={() => setViewMode('list')}
-                            className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg text-white' : 'text-slate-400 hover:text-slate-200'}`}
                             title="Lista"
                         >
                             <List className="w-4 h-4" />
                         </button>
                         <button
                             onClick={() => setViewMode('board')}
-                            className={`p-1.5 rounded-md transition-all ${viewMode === 'board' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`p-1.5 rounded-md transition-all ${viewMode === 'board' ? 'bg-gradient-to-br from-cyan-500 to-blue-600 shadow-lg text-white' : 'text-slate-400 hover:text-slate-200'}`}
                             title="Quadro"
                         >
                             <LayoutGrid className="w-4 h-4" />
@@ -185,13 +185,13 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <span className="text-xs font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
+                    <span className="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/20">
                         {filteredTasks.length}
                     </span>
                     {canManage && (
                         <button
                             onClick={props.onManualCreate}
-                            className="flex items-center gap-2 bg-black text-white px-3.5 py-1.5 rounded-full font-bold text-[11.5px] hover:bg-black/80 transition-all active:scale-95"
+                            className="flex items-center gap-2 bg-gradient-to-br from-indigo-500 to-violet-600 text-white px-4 py-2 rounded-full font-black text-[11.5px] hover:scale-105 transition-all active:scale-95 shadow-lg shadow-indigo-500/20 border border-white/10"
                         >
                             <Plus className="w-3.5 h-3.5" />
                             Nova Task
@@ -203,21 +203,21 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
             {viewMode === 'list' ? (
                 <>
                     {/* Enhanced Filter Bar - 2 Rows */}
-                    <div className="flex flex-col bg-white/50 backdrop-blur-sm sticky top-0 z-10 border-b border-slate-50 shadow-sm relative flex-shrink-0">
+                    <div className="flex flex-col bg-slate-900/60 backdrop-blur-xl sticky top-0 z-10 border-b border-white/5 shadow-xl relative flex-shrink-0">
                         {/* Row 1: Search */}
-                        <div className="px-5 py-2 border-b border-slate-50/50">
+                        <div className="px-5 py-3 border-b border-white/5">
                             <div className="relative group w-full">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-hover:text-cyan-400 transition-colors" />
                                 <input
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Buscar tasks..."
-                                    className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 placeholder:text-slate-400 transition-all shadow-sm"
+                                    className="w-full pl-9 pr-3 py-2.5 bg-slate-950/50 border border-cyan-500/10 rounded-lg text-xs font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500/50 placeholder:text-slate-600 transition-all"
                                 />
                                 {searchQuery && (
-                                    <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-full transition-colors">
-                                        <X className="w-3 h-3 text-slate-400" />
+                                    <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-white/5 rounded-full transition-colors">
+                                        <X className="w-3 h-3 text-slate-500" />
                                     </button>
                                 )}
                             </div>
@@ -229,7 +229,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                             <div className="relative">
                                 <button
                                     onClick={() => setOpenFilter(openFilter === 'status' ? null : 'status')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-[11px] font-bold transition-all whitespace-nowrap shadow-sm ${statusFilter !== 'all' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200/60 text-slate-700 hover:border-slate-300'
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-[11px] font-black transition-all whitespace-nowrap shadow-lg ${statusFilter !== 'all' ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300' : 'bg-slate-800 border-white/5 text-slate-400 hover:text-slate-200 hover:border-white/10'
                                         }`}
                                 >
                                     {statusFilter === 'all' ? 'Status' : statusFilter === 'archived' ? 'Arquivadas' : statusFilter.toUpperCase()}
@@ -268,7 +268,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                             <div className="relative">
                                 <button
                                     onClick={() => setOpenFilter(openFilter === 'priority' ? null : 'priority')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-[11px] font-bold transition-all whitespace-nowrap shadow-sm ${priorityFilter !== 'all' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200/60 text-slate-700 hover:border-slate-300'
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-[11px] font-black transition-all whitespace-nowrap shadow-lg ${priorityFilter !== 'all' ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300' : 'bg-slate-800 border-white/5 text-slate-400 hover:text-slate-200 hover:border-white/10'
                                         }`}
                                 >
                                     {priorityFilter === 'all' ? 'Prioridade' : priorityFilter.charAt(0).toUpperCase() + priorityFilter.slice(1)}
@@ -277,18 +277,18 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                                 {openFilter === 'priority' && (
                                     <>
                                         <div className="fixed inset-0 z-40" onClick={() => setOpenFilter(null)} />
-                                        <div className="absolute top-full left-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100">
-                                            <div className="py-1">
-                                                <button onClick={() => { setPriorityFilter('all'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${priorityFilter === 'all' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>Todas</button>
-                                                <div className="h-px bg-slate-100 my-1" />
-                                                <button onClick={() => { setPriorityFilter('high'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 ${priorityFilter === 'high' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>
-                                                    <Flag className="w-3 h-3 text-red-500 fill-red-500" /> Alta
+                                        <div className="absolute top-full left-0 mt-3 w-48 bg-[#0d121f]/95 backdrop-blur-2xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                                            <div className="p-2 space-y-1">
+                                                <button onClick={() => { setPriorityFilter('all'); setOpenFilter(null); }} className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${priorityFilter === 'all' ? 'bg-indigo-500/20 text-indigo-300' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>Todas Níveis</button>
+                                                <div className="h-px bg-white/5 mx-2 my-1" />
+                                                <button onClick={() => { setPriorityFilter('high'); setOpenFilter(null); }} className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-3 ${priorityFilter === 'high' ? 'bg-rose-500/10 text-rose-400' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
+                                                    <Flag className="w-3.5 h-3.5 text-rose-500 fill-rose-500/20 shadow-[0_0_8px_rgba(244,63,94,0.3)]" /> Crítica
                                                 </button>
-                                                <button onClick={() => { setPriorityFilter('medium'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 ${priorityFilter === 'medium' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>
-                                                    <Flag className="w-3 h-3 text-amber-500 fill-amber-500" /> Média
+                                                <button onClick={() => { setPriorityFilter('medium'); setOpenFilter(null); }} className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-3 ${priorityFilter === 'medium' ? 'bg-amber-500/10 text-amber-400' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
+                                                    <Flag className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.3)]" /> Operacional
                                                 </button>
-                                                <button onClick={() => { setPriorityFilter('low'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 ${priorityFilter === 'low' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>
-                                                    <Flag className="w-3 h-3 text-emerald-500 fill-emerald-500" /> Baixa
+                                                <button onClick={() => { setPriorityFilter('low'); setOpenFilter(null); }} className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-3 ${priorityFilter === 'low' ? 'bg-emerald-500/10 text-emerald-400' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
+                                                    <Flag className="w-3.5 h-3.5 text-emerald-500 fill-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.3)]" /> Suporte
                                                 </button>
                                             </div>
                                         </div>
@@ -300,7 +300,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                             <div className="relative">
                                 <button
                                     onClick={() => setOpenFilter(openFilter === 'assignee' ? null : 'assignee')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-[11px] font-bold transition-all whitespace-nowrap shadow-sm ${assigneeFilter !== 'all' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200/60 text-slate-700 hover:border-slate-300'
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-[11px] font-black transition-all whitespace-nowrap shadow-lg ${assigneeFilter !== 'all' ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300' : 'bg-slate-800 border-white/5 text-slate-400 hover:text-slate-200 hover:border-white/10'
                                         }`}
                                 >
                                     {assigneeFilter === 'all' ? 'Responsável' : props.teamMembers.find(m => m.id === assigneeFilter)?.name.split(' ')[0] || 'Unknown'}
@@ -309,19 +309,24 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                                 {openFilter === 'assignee' && (
                                     <>
                                         <div className="fixed inset-0 z-40" onClick={() => setOpenFilter(null)} />
-                                        <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100">
-                                            <div className="max-h-64 overflow-y-auto py-1">
-                                                <button onClick={() => { setAssigneeFilter('all'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${assigneeFilter === 'all' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>Todos</button>
+                                        <div className="absolute top-full left-0 mt-3 w-64 bg-[#0d121f]/95 backdrop-blur-2xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                                            <div className="max-h-80 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                                                <button onClick={() => { setAssigneeFilter('all'); setOpenFilter(null); }} className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${assigneeFilter === 'all' ? 'bg-indigo-500/20 text-indigo-300' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>Todos Colaboradores</button>
+                                                <div className="h-px bg-white/5 mx-2 my-1" />
                                                 {props.teamMembers.map(member => (
                                                     <button
                                                         key={member.id}
                                                         onClick={() => { setAssigneeFilter(member.id); setOpenFilter(null); }}
-                                                        className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 ${assigneeFilter === member.id ? 'font-bold text-indigo-600 bg-indigo-50' : 'text-slate-600'}`}
+                                                        className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-3 ${assigneeFilter === member.id ? 'bg-indigo-500/10 text-indigo-300' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}
                                                     >
-                                                        <div className="w-4 h-4 rounded-full bg-slate-200 overflow-hidden">
-                                                            {member.avatar ? <img src={member.avatar} className="w-full h-full object-cover" /> : null}
+                                                        <div className="w-6 h-6 rounded-lg bg-slate-800 border border-white/10 overflow-hidden flex-shrink-0">
+                                                            {member.avatar ? <img src={member.avatar} className="w-full h-full object-cover" /> : (
+                                                                <div className="w-full h-full flex items-center justify-center text-[8px] font-black bg-indigo-500/20 text-indigo-400">
+                                                                    {member.name.charAt(0)}
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                        {member.name}
+                                                        <span className="truncate">{member.name}</span>
                                                     </button>
                                                 ))}
                                             </div>
@@ -334,7 +339,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                             <div className="relative">
                                 <button
                                     onClick={() => setOpenFilter(openFilter === 'tag' ? null : 'tag')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-[11px] font-bold transition-all whitespace-nowrap shadow-sm ${tagFilter !== 'all' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200/60 text-slate-700 hover:border-slate-300'
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-[11px] font-black transition-all whitespace-nowrap shadow-lg ${tagFilter !== 'all' ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300' : 'bg-slate-800 border-white/5 text-slate-400 hover:text-slate-200 hover:border-white/10'
                                         }`}
                                 >
                                     {tagFilter === 'all' ? 'Etiqueta' : `#${tagFilter}`}
@@ -373,7 +378,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto px-2.5 pb-4 pt-3 bg-slate-50/50">
+                    <div className="flex-1 overflow-y-auto px-2.5 pb-4 pt-4 bg-transparent custom-scrollbar">
                         {filteredTasks.length === 0 ? (
                             <div className="flex flex-col items-center justify-center mt-20 text-slate-400">
                                 {statusFilter === 'archived' ? (

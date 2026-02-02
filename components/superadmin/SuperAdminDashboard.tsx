@@ -196,10 +196,12 @@ export const SuperAdminDashboard: React.FC = () => {
 
     if (loading && !isRefreshing) {
         return (
-            <div className="flex-1 flex items-center justify-center bg-slate-50 h-full">
-                <div className="text-center">
-                    <RefreshCw className="w-12 h-12 text-indigo-500 animate-spin mx-auto mb-4" />
-                    <p className="text-slate-500">Carregando organizações...</p>
+            <div className="flex-1 flex items-center justify-center bg-transparent h-full relative z-10">
+                <div className="relative z-10 flex flex-col items-center">
+                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl shadow-2xl flex items-center justify-center text-white font-black text-2xl mb-6 animate-bounce">
+                        P
+                    </div>
+                    <div className="text-cyan-400/50 text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Sincronizando Sistema...</div>
                 </div>
             </div>
         );
@@ -208,10 +210,14 @@ export const SuperAdminDashboard: React.FC = () => {
     // Error state
     if (error) {
         return (
-            <div className="flex-1 flex items-center justify-center bg-slate-50 h-full">
-                <div className="text-center">
-                    <p className="text-red-500 mb-4">{error}</p>
-                    <Button onClick={loadOrganizations} icon={<RefreshCw className="w-4 h-4" />}>
+            <div className="flex-1 flex items-center justify-center bg-transparent h-full relative z-10">
+                <div className="text-center bg-slate-900/40 backdrop-blur-2xl p-10 rounded-[2.5rem] border border-red-500/20 shadow-2xl">
+                    <p className="text-red-400 font-bold mb-6 uppercase tracking-widest text-xs italic">{error}</p>
+                    <Button
+                        variant="outline"
+                        onClick={() => loadOrganizations(true)}
+                        className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                    >
                         Tentar Novamente
                     </Button>
                 </div>
@@ -220,40 +226,48 @@ export const SuperAdminDashboard: React.FC = () => {
     }
 
     return (
-        <div className="flex-1 p-8 bg-slate-50 overflow-y-auto h-full">
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-800">Super Admin</h1>
-                    <p className="text-slate-500 mt-1">Gerenciamento de organizações e planos</p>
+        <div className="flex-1 p-8 bg-transparent overflow-y-auto h-full custom-scrollbar relative z-10 animate-in fade-in duration-700">
+            <div className="flex justify-between items-end mb-12">
+                <div className="relative group">
+                    <div className="absolute -inset-10 bg-indigo-500/10 blur-[120px] rounded-full opacity-50 transition-opacity" />
+                    <h1 className="relative text-4xl font-black text-white tracking-tighter mb-2 italic">Super Admin <span className="text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">Core</span></h1>
+                    <p className="relative text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px]">
+                        Nível de Acesso: Segurança Máxima de Orquestração
+                    </p>
                 </div>
-                <div className="flex gap-3">
-                    <Button
-                        variant="secondary"
-                        icon={<RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />}
+                <div className="flex gap-4">
+                    <button
                         onClick={() => loadOrganizations()}
-                        title="Recarregar"
                         disabled={isRefreshing}
-                    />
-                    <Button
-                        icon={<Plus className="w-4 h-4" />}
-                        onClick={handleAddNew}
+                        className="p-4 bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-2xl text-slate-400 hover:text-cyan-400 transition-all shadow-xl active:scale-95"
                     >
-                        Nova Organização
-                    </Button>
+                        <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    </button>
+                    <button
+                        onClick={handleAddNew}
+                        className="flex items-center gap-3 px-8 py-4 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl text-white font-black text-xs uppercase tracking-widest shadow-[0_0_30px_rgba(99,102,241,0.3)] hover:shadow-[0_0_40px_rgba(99,102,241,0.5)] transition-all hover:-translate-y-1 active:scale-95"
+                    >
+                        <Plus className="w-4 h-4" />
+                        NOVA ORGANIZAÇÃO
+                    </button>
                 </div>
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-slate-200 mb-8">
+            <div className="flex gap-2 bg-slate-900/40 backdrop-blur-3xl p-1 rounded-2xl border border-white/5 shadow-2xl mb-12 w-fit">
                 <button
                     onClick={() => setActiveTab('organizations')}
-                    className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'organizations' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                    className={`px-8 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-xl ${activeTab === 'organizations'
+                        ? 'bg-white/10 text-white shadow-inner border border-white/10'
+                        : 'text-slate-500 hover:text-slate-300'}`}
                 >
                     Organizações
                 </button>
                 <button
                     onClick={() => setActiveTab('settings')}
-                    className={`px-6 py-3 text-sm font-bold transition-all border-b-2 ${activeTab === 'settings' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                    className={`px-8 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-xl ${activeTab === 'settings'
+                        ? 'bg-white/10 text-white shadow-inner border border-white/10'
+                        : 'text-slate-500 hover:text-slate-300'}`}
                 >
                     Configurações Globais
                 </button>
@@ -262,7 +276,7 @@ export const SuperAdminDashboard: React.FC = () => {
             {activeTab === 'organizations' ? (
                 <>
                     {/* Metrics */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
                         <MetricsCard
                             title="Total de Organizações"
                             value={totalOrgs}
@@ -273,7 +287,7 @@ export const SuperAdminDashboard: React.FC = () => {
                             title="Organizações Ativas"
                             value={activeOrgs}
                             icon={TrendingUp}
-                            color="bg-green-500"
+                            color="bg-emerald-500"
                             subtitle={`${((activeOrgs / totalOrgs) * 100).toFixed(0)}% do total`}
                         />
                         <MetricsCard
@@ -287,34 +301,37 @@ export const SuperAdminDashboard: React.FC = () => {
                             title="Membros da Equipe"
                             value={organizations.reduce((sum, o) => sum + o.stats.users, 0)}
                             icon={Users}
-                            color="bg-purple-500"
+                            color="bg-violet-500"
                         />
                     </div>
 
                     {/* Plan Distribution */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                            <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-sm font-semibold text-slate-600">BASIC</h3>
-                                <span className="text-2xl font-bold text-slate-800">{getPlanCount(PlanType.BASIC)}</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                        <div className="bg-slate-900/40 backdrop-blur-2xl p-8 rounded-[2rem] border border-white/5 shadow-2xl group hover:border-slate-500/20 transition-all">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Protocolo BASIC</h3>
+                                <span className="text-3xl font-black text-white">{getPlanCount(PlanType.BASIC)}</span>
                             </div>
-                            <div className="text-sm text-slate-500">$49/mês • {PLANS[PlanType.BASIC].maxUsers} usuários</div>
+                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">$49/mês • {PLANS[PlanType.BASIC].maxUsers} usuários</div>
                         </div>
 
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-indigo-100 border-2">
-                            <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-sm font-semibold text-indigo-600">PRO</h3>
-                                <span className="text-2xl font-bold text-indigo-600">{getPlanCount(PlanType.PRO)}</span>
+                        <div className="relative overflow-hidden bg-slate-900/60 backdrop-blur-2xl p-8 rounded-[2rem] border border-indigo-500/30 shadow-[0_0_40px_rgba(99,102,241,0.1)] group hover:border-indigo-500/50 transition-all">
+                            <div className="absolute top-0 right-0 p-2">
+                                <Sparkles className="w-5 h-5 text-indigo-400 opacity-20 group-hover:opacity-100 transition-opacity" />
                             </div>
-                            <div className="text-sm text-slate-500">$149/mês • {PLANS[PlanType.PRO].maxUsers} usuários</div>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">Protocolo PRO</h3>
+                                <span className="text-3xl font-black text-white drop-shadow-[0_0_10px_rgba(99,102,241,0.3)]">{getPlanCount(PlanType.PRO)}</span>
+                            </div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">$149/mês • {PLANS[PlanType.PRO].maxUsers} usuários</div>
                         </div>
 
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-purple-100 border-2">
-                            <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-sm font-semibold text-purple-600">ENTERPRISE</h3>
-                                <span className="text-2xl font-bold text-purple-600">{getPlanCount(PlanType.ENTERPRISE)}</span>
+                        <div className="bg-slate-900/40 backdrop-blur-2xl p-8 rounded-[2rem] border border-violet-500/20 shadow-2xl group hover:border-violet-500/40 transition-all">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-[10px] font-black text-violet-400 uppercase tracking-[0.3em]">Protocolo ENTERPRISE</h3>
+                                <span className="text-3xl font-black text-white">{getPlanCount(PlanType.ENTERPRISE)}</span>
                             </div>
-                            <div className="text-sm text-slate-500">$499/mês • Ilimitado</div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">$499/mês • Ilimitado</div>
                         </div>
                     </div>
 

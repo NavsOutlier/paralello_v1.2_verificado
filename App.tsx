@@ -13,6 +13,8 @@ import { UpdatePasswordView } from './views/UpdatePasswordView';
 import { MarketingDashboard } from './components/MarketingDashboard';
 import { AutomationTab } from './components/automation';
 import { WorkersIADashboard } from './components/workers-ia/WorkersIADashboard';
+import { PremiumBackground } from './components/ui/PremiumBackground';
+
 const AppContent: React.FC = () => {
   const { user, loading, isSuperAdmin, isManager } = useAuth();
   const [currentView, setCurrentView] = useState<ViewState | null>(() => {
@@ -108,8 +110,14 @@ const AppContent: React.FC = () => {
 
   if (loading || (user && currentView === null)) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-slate-100">
-        <div className="text-slate-400 font-medium animate-pulse">Carregando perfil...</div>
+      <div className="h-screen flex flex-col items-center justify-center bg-[#0a0f1a] relative overflow-hidden">
+        <PremiumBackground />
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl shadow-2xl flex items-center justify-center text-white font-black text-2xl mb-6 animate-bounce">
+            P
+          </div>
+          <div className="text-cyan-400/50 text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Sincronizando...</div>
+        </div>
       </div>
     );
   }
@@ -119,12 +127,14 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen w-screen bg-slate-100 font-sans">
+    <div className="flex h-screen w-screen bg-[#0a0f1a] font-sans relative overflow-hidden text-slate-200">
+      <PremiumBackground />
+
       {/* Reusable Sidebar Component */}
       {currentView && <Sidebar currentView={currentView} onViewChange={setCurrentView} />}
 
       {/* Main Content Area */}
-      <main className="flex-1 flex overflow-hidden relative">
+      <main className="flex-1 flex overflow-hidden relative z-10">
         {currentView === ViewState.DASHBOARD && <Dashboard />}
         {currentView === ViewState.WORKSPACE && <Workspace />}
         {currentView === ViewState.KANBAN && <Kanban />}
@@ -134,7 +144,7 @@ const AppContent: React.FC = () => {
         {currentView === ViewState.AUTOMATION && <AutomationTab />}
         {currentView === ViewState.WORKERS_IA && <WorkersIADashboard />}
         {isUpdatingPassword && (
-          <div className="absolute inset-0 z-[100] bg-white">
+          <div className="absolute inset-0 z-[100] bg-[#0a0f1a]">
             <UpdatePasswordView onSuccess={() => {
               setIsUpdatingPassword(false);
               window.location.hash = ''; // Clear hash

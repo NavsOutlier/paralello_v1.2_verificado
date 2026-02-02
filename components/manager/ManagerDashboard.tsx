@@ -25,73 +25,85 @@ export const ManagerDashboard: React.FC = () => {
     const canSeeTeam = isSuperAdmin || permissions?.can_manage_team;
 
     return (
-        <div className="flex-1 flex flex-col bg-slate-50">
+        <div className="flex-1 flex flex-col bg-transparent relative z-10">
             {/* Navigation Tabs */}
-            <div className="bg-white border-b border-slate-200">
-                <div className="flex gap-1 p-4">
+            <div className="bg-slate-900/40 backdrop-blur-3xl border-b border-white/5 px-8 py-5 shadow-2xl z-20">
+                <div className="flex gap-2 bg-white/5 p-1 rounded-2xl border border-white/5 shadow-inner w-fit">
                     <button
                         onClick={() => handleNavigate('overview')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'overview'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'text-slate-600 hover:bg-slate-100'
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'overview'
+                            ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg'
+                            : 'text-slate-500 hover:text-slate-300'
                             }`}
                     >
                         <LayoutDashboard className="w-4 h-4" />
-                        Visão Geral
+                        VISÃO GERAL
                     </button>
                     {canSeeClients && (
                         <button
                             onClick={() => handleNavigate('clients')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'clients'
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'text-slate-600 hover:bg-slate-100'
+                            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'clients'
+                                ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg'
+                                : 'text-slate-500 hover:text-slate-300'
                                 }`}
                         >
                             <Users className="w-4 h-4" />
-                            Clientes
+                            CLIENTES
                         </button>
                     )}
                     {canSeeTeam && (
                         <button
                             onClick={() => handleNavigate('team')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'team'
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'text-slate-600 hover:bg-slate-100'
+                            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'team'
+                                ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg'
+                                : 'text-slate-500 hover:text-slate-300'
                                 }`}
                         >
                             <UserPlus className="w-4 h-4" />
-                            Equipe
+                            EQUIPE
                         </button>
                     )}
                     <button
                         onClick={() => handleNavigate('settings')}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'settings'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'text-slate-600 hover:bg-slate-100'
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'settings'
+                            ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg'
+                            : 'text-slate-500 hover:text-slate-300'
                             }`}
                     >
                         <Settings className="w-4 h-4" />
-                        Configurações
+                        NÚCLEO
                     </button>
                 </div>
             </div>
 
-            {/* Content */}
-            {activeTab === 'overview' && <OverviewTab
-                onNavigate={handleNavigate as any}
-                canSeeClients={!!canSeeClients}
-                canSeeTeam={!!canSeeTeam}
-                isSuperAdmin={!!isSuperAdmin}
-            />}
-            {activeTab === 'clients' && canSeeClients && <ClientManagement />}
-            {activeTab === 'team' && canSeeTeam && <TeamManagement />}
-            {activeTab === 'settings' && organizationId && (
-                <SettingsPanel
-                    onBack={() => handleNavigate('overview')}
-                    organizationId={organizationId}
-                    initialTab={settingsInitialTab as any}
-                />
-            )}
+            {/* Content Area */}
+            <div className="flex-1 overflow-hidden relative">
+                {activeTab === 'overview' && <OverviewTab
+                    onNavigate={handleNavigate as any}
+                    canSeeClients={!!canSeeClients}
+                    canSeeTeam={!!canSeeTeam}
+                    isSuperAdmin={!!isSuperAdmin}
+                />}
+                {activeTab === 'clients' && canSeeClients && (
+                    <div className="h-full overflow-y-auto custom-scrollbar p-8">
+                        <ClientManagement />
+                    </div>
+                )}
+                {activeTab === 'team' && canSeeTeam && (
+                    <div className="h-full overflow-y-auto custom-scrollbar p-8">
+                        <TeamManagement />
+                    </div>
+                )}
+                {activeTab === 'settings' && organizationId && (
+                    <div className="h-full overflow-y-auto custom-scrollbar p-8">
+                        <SettingsPanel
+                            onBack={() => handleNavigate('overview')}
+                            organizationId={organizationId}
+                            initialTab={settingsInitialTab as any}
+                        />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
@@ -268,7 +280,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
     };
 
     return (
-        <div className="flex-1 p-6 overflow-y-auto">
+        <div className="flex-1 p-8 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Onboarding Wizard Overlay */}
             {showWizard && (
                 <OnboardingWizard
@@ -280,45 +292,54 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
                 />
             )}
 
-            <div className="max-w-6xl mx-auto">
-                <h1 className="text-3xl font-bold text-slate-800 mb-2">Painel do Gestor</h1>
-                <p className="text-slate-600 mb-8">
-                    Gerencie os ativos e a equipe da sua organização em tempo real.
-                </p>
+            <div className="max-w-7xl mx-auto space-y-10">
+                <div className="relative group">
+                    <div className="absolute -inset-10 bg-indigo-500/10 blur-[120px] rounded-full opacity-50 group-hover:opacity-80 transition-opacity" />
+                    <h1 className="relative text-4xl font-black text-white tracking-tighter mb-2">Painel do Gestor <span className="text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">AI</span></h1>
+                    <p className="relative text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px]">
+                        Orquestração de ativos e capital humano em tempo real
+                    </p>
+                </div>
 
-                {/* Onboarding Checklist - Only show if not loading */}
+                {/* Onboarding Checklist */}
                 {!loading && (
-                    <OnboardingChecklist
-                        stats={stats}
-                        onNavigate={(tab) => {
-                            if (tab === 'open_wizard') {
-                                setShowWizard(true);
-                            } else {
-                                onNavigate(tab);
-                            }
-                        }}
-                    />
+                    <div className="relative bg-slate-900/40 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/10 shadow-3xl overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
+                        <OnboardingChecklist
+                            stats={stats}
+                            onNavigate={(tab) => {
+                                if (tab === 'open_wizard') {
+                                    setShowWizard(true);
+                                } else {
+                                    onNavigate(tab);
+                                }
+                            }}
+                        />
+                    </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Clients Card */}
                     {canSeeClients && (
                         <div
                             onClick={() => onNavigate('clients')}
-                            className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg cursor-pointer hover:scale-[1.02] transition-transform"
+                            className="relative group overflow-hidden bg-slate-900/40 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/10 shadow-3xl cursor-pointer hover:scale-[1.02] transition-all hover:border-blue-500/30"
                         >
-                            <div className="flex items-start justify-between mb-4">
+                            <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="flex items-start justify-between mb-8">
                                 <div>
-                                    <h2 className="text-2xl font-bold mb-1">Clientes</h2>
-                                    <p className="text-blue-100">Base de clientes ativa</p>
+                                    <h2 className="text-xs font-black text-blue-400 uppercase tracking-[0.3em] mb-2">Engajamento</h2>
+                                    <p className="text-2xl font-black text-white">Base de Clientes</p>
                                 </div>
-                                <div className="p-3 bg-white/20 rounded-lg">
-                                    <Users className="w-8 h-8" />
+                                <div className="p-4 bg-blue-500/10 text-blue-400 rounded-2xl group-hover:rotate-12 transition-transform">
+                                    <Users className="w-10 h-10" />
                                 </div>
                             </div>
-                            <div className="flex items-end gap-2 text-4xl font-bold">
-                                {loading ? <Loader2 className="w-8 h-8 animate-spin" /> : stats.clients}
-                                <span className="text-lg font-normal text-blue-100">cadastrados</span>
+                            <div className="flex items-end gap-3">
+                                <span className="text-5xl font-black text-white tracking-tighter">
+                                    {loading ? <Loader2 className="w-10 h-10 animate-spin text-slate-700" /> : stats.clients}
+                                </span>
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Ativos no Sistema</span>
                             </div>
                         </div>
                     )}
@@ -327,32 +348,38 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
                     {canSeeTeam && (
                         <div
                             onClick={() => onNavigate('team')}
-                            className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg cursor-pointer hover:scale-[1.02] transition-transform"
+                            className="relative group overflow-hidden bg-slate-900/40 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/10 shadow-3xl cursor-pointer hover:scale-[1.02] transition-all hover:border-violet-500/30"
                         >
-                            <div className="flex items-start justify-between mb-4">
+                            <div className="absolute inset-0 bg-violet-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="flex items-start justify-between mb-8">
                                 <div>
-                                    <h2 className="text-2xl font-bold mb-1">Equipe</h2>
-                                    <p className="text-purple-100">Membros colaboradores</p>
+                                    <h2 className="text-xs font-black text-violet-400 uppercase tracking-[0.3em] mb-2">Capital Humano</h2>
+                                    <p className="text-2xl font-black text-white">Equipe Interna</p>
                                 </div>
-                                <div className="p-3 bg-white/20 rounded-lg">
-                                    <UserPlus className="w-8 h-8" />
+                                <div className="p-4 bg-violet-500/10 text-violet-400 rounded-2xl group-hover:rotate-12 transition-transform">
+                                    <UserPlus className="w-10 h-10" />
                                 </div>
                             </div>
-                            <div className="flex items-end gap-2 text-4xl font-bold">
-                                {loading ? <Loader2 className="w-8 h-8 animate-spin" /> : stats.members}
-                                <span className="text-lg font-normal text-purple-100">membros</span>
+                            <div className="flex items-end gap-3">
+                                <span className="text-5xl font-black text-white tracking-tighter">
+                                    {loading ? <Loader2 className="w-10 h-10 animate-spin text-slate-700" /> : stats.members}
+                                </span>
+                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Membros Integrados</span>
                             </div>
                         </div>
                     )}
                 </div>
 
                 {/* Quick Actions */}
-                <div className="mt-8 bg-white rounded-xl shadow-md p-6 border border-slate-200">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-slate-800">Ações Inteligentes</h3>
-                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Ordenado por uso</span>
+                <div className="bg-slate-900/40 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/10 shadow-3xl">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em] mb-1">Protocolos Rápidos</h3>
+                            <p className="text-lg font-black text-white">Ações Inteligentes</p>
+                        </div>
+                        <span className="text-[10px] font-black text-cyan-500 uppercase tracking-widest bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.1)]">ORDENADO POR USO</span>
                     </div>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-4">
                         {sortedActions.map((action) => (
                             <button
                                 key={action.id}
@@ -360,12 +387,12 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
                                     trackAction(action.id);
                                     onNavigate(action.targetTab as any, action.subTab);
                                 }}
-                                className={`flex items-center gap-2 px-4 py-2 ${action.color} ${action.hover} text-white rounded-lg transition-all shadow-sm active:scale-95`}
+                                className={`flex items-center gap-3 px-6 py-3.5 ${action.color.replace('bg-', 'bg-')}/10 border border-white/5 rounded-2xl transition-all hover:bg-white/5 group shadow-lg active:scale-95`}
                             >
-                                <action.icon className="w-4 h-4" />
-                                {action.label}
+                                <action.icon className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
+                                <span className="text-xs font-black text-slate-300 uppercase tracking-widest">{action.label}</span>
                                 {usageStats[action.id] > 0 && (
-                                    <span className="ml-1 w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[8px] font-black">
+                                    <span className="ml-2 px-2 py-0.5 rounded-full bg-white/10 text-[8px] font-black text-slate-100">
                                         {usageStats[action.id]}
                                     </span>
                                 )}
@@ -376,20 +403,23 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
 
                 {/* Engagement / Productivity Card */}
                 {!showWizard && !loading && (
-                    <div className="mt-8 relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 animate-pulse" />
-                        <div className="relative p-8 bg-white border-2 border-indigo-50 rounded-3xl shadow-xl shadow-indigo-100/20 flex flex-col md:flex-row items-center gap-6">
-                            <div className="w-16 h-16 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center text-white shadow-lg transform group-hover:rotate-6 transition-transform">
-                                <Sparkles className="w-8 h-8" />
+                    <div className="relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 animate-pulse rounded-[3rem]" />
+                        <div className="relative p-10 bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-[3rem] shadow-3xl flex flex-col md:flex-row items-center gap-8">
+                            <div className="w-20 h-20 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-[2rem] flex items-center justify-center text-white shadow-2xl transform group-hover:rotate-12 transition-all duration-500 border border-white/20">
+                                <Sparkles className="w-10 h-10 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
                             </div>
                             <div className="flex-1 text-center md:text-left">
-                                <h3 className="text-xl font-black text-slate-800 mb-2 tracking-tight">Status: Modo Lendário Ativado! 🥂</h3>
-                                <p className="text-slate-600 font-medium leading-relaxed italic">
+                                <h3 className="text-2xl font-black text-white mb-3 tracking-tighter uppercase italic">Status: Modo Lendário Ativado! 🥂</h3>
+                                <p className="text-slate-400 font-bold leading-relaxed italic text-sm">
                                     "{getWeeklyMessage()}"
                                 </p>
                             </div>
-                            <div className="flex gap-2">
-                                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-100 font-black">100% CONFIGURADO</Badge>
+                            <div className="flex flex-col items-end gap-2">
+                                <div className="px-5 py-2 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black tracking-[0.2em] shadow-[0_0_20px_rgba(52,211,153,0.1)]">
+                                    SISTEMA 100% OPERACIONAL
+                                </div>
+                                <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest text-right">Latência: 24ms</div>
                             </div>
                         </div>
                     </div>
@@ -398,3 +428,4 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
         </div>
     );
 };
+

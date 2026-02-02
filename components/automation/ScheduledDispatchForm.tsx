@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
     Calendar, Clock, Send, X, MessageSquare, Video, CreditCard, Bell, CalendarDays, Copy,
-    FileText, Bookmark
+    FileText, Bookmark, Loader2
 } from 'lucide-react';
 import { ScheduledMessage, MESSAGE_CATEGORIES } from '../../types/automation';
 import { ClientSelector } from './ClientSelector';
@@ -156,22 +156,22 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
 
     return (
         <>
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="bg-[#0d121f] border border-white/10 rounded-3xl shadow-2xl shadow-black/50 w-full max-w-lg animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
+                    <div className="flex items-center justify-between p-6 border-b border-white/5 sticky top-0 bg-[#0d121f] z-10">
                         <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-xl ${duplicateMode ? 'bg-orange-100' : 'bg-indigo-100'}`}>
+                            <div className={`p-2.5 rounded-xl ${duplicateMode ? 'bg-orange-500/10 border border-orange-500/20' : 'bg-indigo-500/10 border border-indigo-500/20'}`}>
                                 {duplicateMode ? (
-                                    <Copy className="w-5 h-5 text-orange-600" />
+                                    <Copy className="w-5 h-5 text-orange-400" />
                                 ) : (
-                                    <Send className="w-5 h-5 text-indigo-600" />
+                                    <Send className="w-5 h-5 text-indigo-400" />
                                 )}
                             </div>
                             <div>
-                                <h2 className="font-bold text-slate-800">{title}</h2>
+                                <h2 className="font-black text-white">{title}</h2>
                                 {isEditing && clientName && (
-                                    <p className="text-xs text-slate-500">Cliente: {clientName}</p>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Cliente: {clientName}</p>
                                 )}
                             </div>
                         </div>
@@ -179,13 +179,13 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
                             <button
                                 type="button"
                                 onClick={() => setShowTemplates(true)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors"
                             >
                                 <FileText className="w-3.5 h-3.5" />
-                                Usar Template
+                                Template
                             </button>
-                            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
-                                <X className="w-5 h-5 text-slate-400" />
+                            <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl transition-colors">
+                                <X className="w-5 h-5 text-slate-500" />
                             </button>
                         </div>
                     </div>
@@ -195,10 +195,10 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
                         {/* Client Selection */}
                         {!isEditing && (
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                                     Cliente(s)
                                     {duplicateMode && (
-                                        <span className="text-orange-500">(selecione destino)</span>
+                                        <span className="text-orange-400">(selecione destino)</span>
                                     )}
                                 </label>
                                 <ClientSelector
@@ -213,7 +213,7 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
 
                         {/* Category */}
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                                 Tipo de Mensagem
                             </label>
                             <div className="grid grid-cols-5 gap-2">
@@ -222,13 +222,13 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
                                         key={cat.value}
                                         type="button"
                                         onClick={() => setCategory(cat.value as ScheduledMessage['category'])}
-                                        className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all ${category === cat.value
-                                            ? 'bg-indigo-100 border-2 border-indigo-500 text-indigo-700'
-                                            : 'bg-slate-50 border-2 border-transparent hover:bg-slate-100 text-slate-600'
+                                        className={`p-3 rounded-xl flex flex-col items-center gap-1.5 transition-all border ${category === cat.value
+                                            ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400'
+                                            : 'bg-slate-900/50 border-white/5 hover:bg-white/5 text-slate-500'
                                             }`}
                                     >
                                         {getCategoryIcon(cat.value)}
-                                        <span className="text-[10px] font-bold uppercase tracking-tight">
+                                        <span className="text-[9px] font-black uppercase tracking-tight">
                                             {cat.label}
                                         </span>
                                     </button>
@@ -239,7 +239,7 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
                         {/* Date & Time */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                                     <Calendar className="w-3.5 h-3.5" />
                                     Data
                                 </label>
@@ -249,11 +249,11 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
                                     onChange={(e) => setScheduledDate(e.target.value)}
                                     min={new Date().toISOString().split('T')[0]}
                                     required
-                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    className="w-full px-4 py-2.5 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                                     <Clock className="w-3.5 h-3.5" />
                                     Horário
                                 </label>
@@ -262,7 +262,7 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
                                     value={scheduledTime}
                                     onChange={(e) => setScheduledTime(e.target.value)}
                                     required
-                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                    className="w-full px-4 py-2.5 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none"
                                 />
                             </div>
                         </div>
@@ -270,17 +270,17 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
                         {/* Message with Variable Insert */}
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                                     Mensagem
                                 </label>
                                 <button
                                     type="button"
                                     onClick={handleSaveAsTemplate}
                                     disabled={!message.trim()}
-                                    className="flex items-center gap-1 text-[10px] text-indigo-600 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-indigo-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <Bookmark className="w-3 h-3" />
-                                    Salvar como Template
+                                    Salvar Template
                                 </button>
                             </div>
 
@@ -299,14 +299,14 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
                                 placeholder="Digite a mensagem que será enviada..."
                                 rows={5}
                                 required
-                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
+                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none resize-none placeholder:text-slate-600"
                             />
                         </div>
 
                         {/* Info for multiple selection */}
                         {selectedClientIds.length > 1 && (
-                            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3">
-                                <p className="text-xs text-indigo-700">
+                            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3">
+                                <p className="text-xs text-indigo-300 font-medium">
                                     <strong>Nota:</strong> Será criado um disparo separado para cada um dos {selectedClientIds.length} clientes selecionados.
                                 </p>
                             </div>
@@ -317,17 +317,23 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all"
+                                className="flex-1 py-3 bg-slate-800 border border-white/5 text-slate-400 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-white/5 transition-all"
                             >
                                 Cancelar
                             </button>
                             <button
                                 type="submit"
                                 disabled={loading || !message.trim() || !scheduledDate || selectedClientIds.length === 0}
-                                className={`flex-1 py-3 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 ${duplicateMode ? 'bg-orange-600 hover:bg-orange-700' : 'bg-indigo-600 hover:bg-indigo-700'
+                                className={`flex-1 py-3 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg ${duplicateMode ? 'bg-gradient-to-br from-orange-500 to-amber-600 shadow-orange-500/20' : 'bg-gradient-to-br from-indigo-500 to-violet-600 shadow-indigo-500/20'
                                     }`}
                             >
-                                {duplicateMode ? <Copy className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                                {loading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : duplicateMode ? (
+                                    <Copy className="w-4 h-4" />
+                                ) : (
+                                    <Send className="w-4 h-4" />
+                                )}
                                 {loading
                                     ? 'Salvando...'
                                     : duplicateMode

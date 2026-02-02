@@ -12,9 +12,9 @@ import { TaskCreation } from './workspace/TaskCreation'; // Reusing the existing
 // Removed Headless UI imports to fix whitespace error
 
 const priorityConfig = {
-  high: { color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-200', label: 'Alta' },
-  medium: { color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-200', label: 'Média' },
-  low: { color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-200', label: 'Baixa' },
+  high: { color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20', label: 'Alta' },
+  medium: { color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', label: 'Média' },
+  low: { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', label: 'Baixa' },
 };
 
 const STAGE_COLORS = [
@@ -37,7 +37,7 @@ const DeleteStageButton = ({ onDelete }: { onDelete: () => void }) => {
     return (
       <button
         onClick={(e) => { e.stopPropagation(); onDelete(); }}
-        className="ml-2 px-3 py-1.5 bg-red-100 text-red-600 rounded-lg text-xs font-bold animate-in fade-in slide-in-from-right-2 hover:bg-red-200 transition-colors flex items-center gap-1.5"
+        className="ml-2 px-3 py-1.5 bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-lg text-xs font-bold animate-in fade-in slide-in-from-right-2 hover:bg-rose-500/30 transition-colors flex items-center gap-1.5"
       >
         <Trash2 className="w-3.5 h-3.5" />
         Confirmar?
@@ -48,7 +48,7 @@ const DeleteStageButton = ({ onDelete }: { onDelete: () => void }) => {
   return (
     <button
       onClick={(e) => { e.stopPropagation(); setConfirming(true); }}
-      className="ml-2 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+      className="ml-2 p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
       title="Excluir Coluna"
     >
       <Trash2 className="w-4 h-4" />
@@ -343,9 +343,9 @@ export const Kanban: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-slate-50">
+      <div className="flex-1 flex items-center justify-center bg-transparent">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+          <Loader2 className="w-10 h-10 text-cyan-500 animate-spin" />
           <p className="text-sm text-slate-500 font-medium">Carregando quadro...</p>
         </div>
       </div>
@@ -353,14 +353,14 @@ export const Kanban: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 min-h-0 min-w-0">
+    <div className="flex-1 flex flex-col h-full bg-transparent min-h-0 min-w-0">
       {/* Header */}
-      <div className="px-4 md:px-8 py-4 md:py-6 border-b border-slate-100 bg-white/80 backdrop-blur-sm relative z-20 flex-none">
+      <div className="px-4 md:px-8 py-4 md:py-6 border-b border-cyan-500/10 bg-slate-900/40 backdrop-blur-md relative z-20 flex-none">
         <div className="flex flex-wrap justify-between items-center gap-4">
           <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+            <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
               Quadro de Tarefas
-              <span className="text-xs font-bold px-2 py-1 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-100">
+              <span className="text-xs font-bold px-2.5 py-1 bg-indigo-500/10 text-indigo-300 rounded-full border border-indigo-500/20">
                 {tasks.length} total
               </span>
             </h1>
@@ -369,13 +369,12 @@ export const Kanban: React.FC = () => {
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => setIsEditingStages(!isEditingStages)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${isEditingStages ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black transition-all ${isEditingStages ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'bg-slate-800 text-slate-300 border border-white/5 hover:bg-slate-700'
                 }`}
             >
               <Settings2 className="w-4 h-4" />
               {isEditingStages ? 'Pronto' : 'Editar Etapas'}
             </button>
-            {/* Removed 'Nova Tarefa' button from here */}
           </div>
         </div>
       </div>
@@ -383,16 +382,12 @@ export const Kanban: React.FC = () => {
       {/* Kanban Board */}
       <div
         ref={scrollContainerRef}
-        className={`flex-1 overflow-x-auto overflow-y-hidden bg-[#f8fafc] ${isEditingStages ? 'cursor-default' : (isDraggingBoard ? 'cursor-grabbing' : 'cursor-grab')}
-          [&::-webkit-scrollbar]:h-4
-          [&::-webkit-scrollbar-track]:bg-slate-200
-          [&::-webkit-scrollbar-thumb]:bg-slate-400
+        className={`flex-1 overflow-x-auto overflow-y-hidden bg-transparent ${isEditingStages ? 'cursor-default' : (isDraggingBoard ? 'cursor-grabbing' : 'cursor-grab')}
+          [&::-webkit-scrollbar]:h-1.5
+          [&::-webkit-scrollbar-track]:bg-transparent
+          [&::-webkit-scrollbar-thumb]:bg-cyan-500/20
           [&::-webkit-scrollbar-thumb]:rounded-full
-          [&::-webkit-scrollbar-thumb]:border-4
-          [&::-webkit-scrollbar-thumb]:border-solid
-          [&::-webkit-scrollbar-thumb]:border-transparent
-          [&::-webkit-scrollbar-thumb]:bg-clip-content
-          hover:[&::-webkit-scrollbar-thumb]:bg-slate-500`}
+          hover:[&::-webkit-scrollbar-thumb]:bg-cyan-500/40`}
         onMouseDown={handleMouseDown}
         onMouseLeave={handleMouseLeave}
         onMouseUp={handleMouseUp}
@@ -407,9 +402,8 @@ export const Kanban: React.FC = () => {
             return (
               <div
                 key={stage.id}
-                className={`w-[85vw] sm:w-80 flex-shrink-0 flex flex-col group/stage rounded-b-2xl transition-colors ${isOver ? 'bg-indigo-50/50' : ''}`}
+                className={`w-[85vw] sm:w-80 flex-shrink-0 flex flex-col group/stage rounded-2xl transition-all duration-300 ${isOver ? 'bg-indigo-500/5 ring-2 ring-indigo-500/20 ring-inset' : 'bg-slate-900/40 backdrop-blur-xl border border-white/5'}`}
                 style={{
-                  backgroundColor: isOver ? undefined : `${stage.color}08`, // 5% opacity tint
                   borderTop: `4px solid ${stage.color}`
                 }}
                 onDragOver={(e) => handleDragOver(e, stage.id)}
@@ -422,18 +416,18 @@ export const Kanban: React.FC = () => {
                     {isEditingStages ? (
                       <div className="flex items-center gap-1 w-full">
                         {/* Arrows for Reordering */}
-                        <div className="flex mr-2 bg-slate-100 rounded-lg p-0.5">
+                        <div className="flex mr-2 bg-slate-800 rounded-lg p-0.5 border border-white/5">
                           <button
                             onClick={() => moveStage(stage.id, 'left')}
                             disabled={stages.findIndex(s => s.id === stage.id) === 0}
-                            className="p-1 hover:bg-white hover:shadow-sm rounded disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all text-slate-500"
+                            className="p-1 hover:bg-slate-700 hover:shadow-sm rounded disabled:opacity-20 transition-all text-slate-400"
                           >
                             <ArrowLeft className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => moveStage(stage.id, 'right')}
                             disabled={stages.findIndex(s => s.id === stage.id) === stages.length - 1}
-                            className="p-1 hover:bg-white hover:shadow-sm rounded disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all text-slate-500"
+                            className="p-1 hover:bg-slate-700 hover:shadow-sm rounded disabled:opacity-20 transition-all text-slate-400"
                           >
                             <ArrowRight className="w-3.5 h-3.5" />
                           </button>
@@ -444,8 +438,7 @@ export const Kanban: React.FC = () => {
                             type="text"
                             value={stageEditName}
                             onChange={(e) => setStageEditName(e.target.value)}
-                            // Add blur/enter handlers if needed, or keep simple for now
-                            className="flex-1 px-2 py-1 text-sm border border-indigo-300 rounded focus:ring-2 focus:ring-indigo-500 outline-none"
+                            className="flex-1 px-2 py-1 text-sm bg-slate-800 border border-indigo-500/30 rounded text-white focus:ring-2 focus:ring-indigo-500/50 outline-none"
                             placeholder="Nome da etapa"
                             autoFocus
                             onBlur={() => handleUpdateStage(stage.id)}
@@ -453,7 +446,7 @@ export const Kanban: React.FC = () => {
                           />
                         ) : (
                           <h3
-                            className="font-bold text-slate-700 text-sm truncate uppercase tracking-wider cursor-pointer hover:text-indigo-600 flex-1 border border-transparent hover:border-slate-200 px-1 py-0.5 rounded"
+                            className="font-black text-slate-300 text-sm truncate uppercase tracking-widest cursor-pointer hover:text-white flex-1 border border-transparent hover:border-white/10 px-2 py-1 rounded transition-all"
                             onClick={() => {
                               setEditingStageId(stage.id);
                               setStageEditName(stage.name);
@@ -469,11 +462,11 @@ export const Kanban: React.FC = () => {
                       </div>
                     ) : (
                       <div className="min-w-0 flex items-center gap-2">
-                        <h3 className="font-extrabold text-slate-700 text-sm uppercase tracking-tight truncate" style={{ color: stage.color }}>
+                        <h3 className="font-extrabold text-sm uppercase tracking-tighter truncate" style={{ color: stage.color }}>
                           {stage.name}
                         </h3>
                         <span
-                          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/60 border border-black/5"
+                          className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-800 border border-white/5"
                           style={{ color: stage.color }}
                         >
                           {stageTasks.length}
@@ -490,7 +483,7 @@ export const Kanban: React.FC = () => {
                           setSelectedStageForCreation(stage.id);
                           setIsTaskCreationOpen(true);
                         }}
-                        className="p-1.5 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-lg transition-colors"
+                        className="p-1.5 hover:bg-white/5 text-slate-500 hover:text-cyan-400 rounded-lg transition-all"
                         title="Adicionar tarefa nesta etapa"
                       >
                         <Plus className="w-4 h-4" />
@@ -504,7 +497,7 @@ export const Kanban: React.FC = () => {
                           setStageEditName(stage.name);
                           setStageEditColor(stage.color);
                         }}
-                        className="p-1.5 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-lg transition-colors"
+                        className="p-1.5 hover:bg-white/5 text-slate-500 hover:text-indigo-400 rounded-lg transition-all"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
@@ -514,7 +507,7 @@ export const Kanban: React.FC = () => {
 
                 {isEditingStages && isEditing && (
                   <div className="flex items-center gap-1 justify-center mt-2 pb-2">
-                    <div className="flex items-center gap-1.5 px-2 py-1.5 bg-white/50 rounded-full border border-slate-100">
+                    <div className="flex items-center gap-1.5 px-2 py-1.5 bg-slate-800/80 backdrop-blur-md rounded-full border border-white/10">
                       {STAGE_COLORS.map(c => (
                         <button
                           key={c}
@@ -530,7 +523,7 @@ export const Kanban: React.FC = () => {
                               console.error('Error updating color:', error);
                             }
                           }}
-                          className={`w-4 h-4 rounded-full border-2 transition-transform hover:scale-125 ${stage.color === c ? 'border-indigo-400 scale-110' : 'border-white'}`}
+                          className={`w-4 h-4 rounded-full border-2 transition-transform hover:scale-125 ${stage.color === c ? 'border-cyan-400 scale-110' : 'border-white/20'}`}
                           style={{ backgroundColor: c }}
                           title="Mudar cor"
                         />
@@ -541,7 +534,7 @@ export const Kanban: React.FC = () => {
 
                 {/* Column Body */}
                 <div
-                  className={`flex-1 rounded-2xl flex flex-col gap-4 p-2 transition-all duration-300 overflow-y-auto overflow-x-hidden custom-scrollbar ${isOver ? 'bg-indigo-50/50 ring-2 ring-indigo-200 ring-inset' : 'bg-transparent'
+                  className={`flex-1 flex flex-col gap-3 p-3 transition-all duration-300 overflow-y-auto overflow-x-hidden custom-scrollbar ${isOver ? 'bg-indigo-500/5 ring-1 ring-indigo-500/20 ring-inset' : 'bg-transparent'
                     }`}
                   style={{ minHeight: '150px', maxHeight: 'calc(100vh - 280px)' }}
                 >
@@ -555,30 +548,30 @@ export const Kanban: React.FC = () => {
                         draggable
                         onDragStart={(e) => handleDragStart(e, task.id)}
                         onDragEnd={() => setDraggedTaskId(null)}
-                        className={`group bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-100/50 hover:-translate-y-1 transition-all cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-40 scale-95 shadow-none' : ''
+                        className={`group bg-slate-900/60 backdrop-blur-xl rounded-2xl p-4 border border-white/5 shadow-2xl hover:shadow-cyan-500/10 hover:-translate-y-1 transition-all cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-40 scale-95 shadow-none' : ''
                           }`}
                       >
                         <div className="flex items-start justify-between mb-3 gap-2">
-                          <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg uppercase tracking-wider truncate max-w-[150px]">
+                          <span className="text-[10px] font-black text-cyan-400 bg-cyan-500/10 px-2.5 py-1.5 rounded-lg uppercase tracking-wider truncate max-w-[150px] border border-cyan-500/20">
                             {task.clientName}
                           </span>
-                          <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-50 rounded transition-all" onClick={() => window.location.href = `/?task=${task.id}`}>
-                            <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                          <button className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-white/5 rounded-lg transition-all" onClick={() => window.location.href = `/?task=${task.id}`}>
+                            <ExternalLink className="w-3.5 h-3.5 text-slate-500 hover:text-cyan-400" />
                           </button>
                         </div>
 
-                        <h4 className="text-[13px] font-bold text-slate-800 mb-4 leading-relaxed line-clamp-3">
+                        <h4 className="text-[13px] font-bold text-slate-200 mb-4 leading-relaxed line-clamp-3 group-hover:text-white transition-colors">
                           {task.title}
                         </h4>
 
-                        <div className="flex items-center justify-between mt-auto pt-3 border-t border-slate-50">
-                          <div className={`flex items-center gap-1 text-[10px] font-bold ${priority.color}`}>
+                        <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/5">
+                          <div className={`flex items-center gap-1.5 text-[10px] font-black tracking-widest uppercase ${priority.color}`}>
                             <Flag className="w-3 h-3 fill-current" />
                             {priority.label}
                           </div>
 
-                          <div className="flex items-center -space-x-1">
-                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white text-[9px] font-bold border-2 border-white">
+                          <div className="flex items-center -space-x-1.5">
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-500 to-indigo-500 flex items-center justify-center text-white text-[10px] font-black border-2 border-slate-900 shadow-lg">
                               {task.clientName?.charAt(0) || 'U'}
                             </div>
                           </div>
@@ -588,11 +581,11 @@ export const Kanban: React.FC = () => {
                   })}
 
                   {stageTasks.length === 0 && !isOver && (
-                    <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl py-8 opacity-40">
-                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-2">
-                        <Plus className="w-5 h-5 text-slate-300" />
+                    <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-white/5 rounded-2xl py-12 opacity-40">
+                      <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-2">
+                        <Plus className="w-5 h-5 text-slate-600" />
                       </div>
-                      <p className="text-[10px] font-bold text-slate-400">VAZIO</p>
+                      <p className="text-[10px] font-black text-slate-600 tracking-widest">VAZIO</p>
                     </div>
                   )}
                 </div>
@@ -603,17 +596,16 @@ export const Kanban: React.FC = () => {
           {isEditingStages && (
             <button
               onClick={handleAddStage}
-              className="w-[85vw] sm:w-80 flex-shrink-0 flex flex-col items-center justify-center border-4 border-dashed border-slate-200 rounded-[2rem] group hover:border-indigo-400 hover:bg-indigo-50/30 transition-all min-h-[200px] mb-4"
+              className="w-[85vw] sm:w-80 flex-shrink-0 flex flex-col items-center justify-center border-4 border-dashed border-white/5 rounded-[2rem] group hover:border-cyan-500/30 hover:bg-cyan-500/5 transition-all min-h-[300px] mb-4"
             >
-              <div className="w-14 h-14 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:rotate-90 transition-all duration-300">
-                <Plus className="w-6 h-6 text-indigo-500" />
+              <div className="w-14 h-14 rounded-2xl bg-slate-900/60 shadow-xl border border-white/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:rotate-90 transition-all duration-300">
+                <Plus className="w-6 h-6 text-cyan-400" />
               </div>
-              <p className="text-sm font-black text-slate-400 group-hover:text-indigo-600 transition-colors uppercase tracking-wider">Adicionar Coluna</p>
+              <p className="text-sm font-black text-slate-500 group-hover:text-cyan-400 transition-colors uppercase tracking-widest">Adicionar Coluna</p>
             </button>
           )}
         </div>
       </div>
-      {/* Task Creation Modal */}
       {/* Task Creation Modal */}
       {
         isTaskCreationOpen && (
@@ -626,7 +618,7 @@ export const Kanban: React.FC = () => {
 
             {/* Modal Panel */}
             <div className="flex min-h-full items-center justify-center p-4">
-              <div className="relative w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white shadow-xl transition-all h-[80vh] z-50">
+              <div className="relative w-full max-w-2xl transform overflow-hidden rounded-2xl bg-[#0a0f1a] shadow-2xl border border-white/10 transition-all h-[80vh] z-50">
                 <TaskCreation
                   draft={{ sourceMessage: { id: 'manual', content: '', senderId: user?.id || '', timestamp: new Date(), type: 'text' }, type: 'task' }}
                   existingTasks={tasks}

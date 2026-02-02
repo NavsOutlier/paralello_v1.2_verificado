@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../contexts/ToastContext';
-import { Lock, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
+import { PremiumBackground } from '../components/ui/PremiumBackground';
+import { Lock, Eye, EyeOff, Loader2, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export const UpdatePasswordView: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
     const [password, setPassword] = useState('');
@@ -43,61 +43,53 @@ export const UpdatePasswordView: React.FC<{ onSuccess: () => void }> = ({ onSucc
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center bg-slate-100 p-4 relative overflow-hidden">
-            {/* Background Decorations */}
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-700" />
+        <div className="min-h-screen w-full flex items-center justify-center bg-[#0a0f1a] p-4 relative overflow-hidden text-slate-200">
+            <PremiumBackground />
 
-            <div className="w-full max-w-md relative">
+            <div className="w-full max-w-md relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
                 {/* Card Container with Glassmorphism */}
-                <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-slate-200/50 border border-white p-8 md:p-10">
+                <div className="bg-slate-900/40 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 shadow-3xl shadow-black/50 p-8 md:p-10">
                     <div className="text-center mb-10">
-                        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-tr from-indigo-600 to-blue-500 rounded-2xl shadow-lg shadow-indigo-200 mb-6 group transition-transform hover:scale-105 duration-300">
-                            <Lock className="w-8 h-8 text-white group-hover:rotate-12 transition-transform" />
+                        <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-3xl shadow-2xl shadow-indigo-500/20 mb-8 group transition-transform hover:scale-105 duration-300">
+                            <Lock className="w-10 h-10 text-white group-hover:rotate-12 transition-transform" />
                         </div>
-                        <h1 className="text-3xl font-bold text-slate-900 mb-3 tracking-tight">Defina sua Senha</h1>
-                        <p className="text-slate-500 text-lg leading-relaxed">
-                            Para concluir seu cadastro, escolha uma senha segura para seus próximos acessos.
-                        </p>
+                        <h1 className="text-3xl font-black text-white mb-3 tracking-tight">Defina sua Senha</h1>
+                        <p className="text-slate-400 text-sm font-medium">Garanta a segurança da sua conta Nexus</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-slate-700 ml-1">Nova Senha</label>
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nova Senha</label>
                             <div className="relative group">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <Lock size={20} />
-                                </div>
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
                                 <input
                                     type={showPassword ? "text" : "password"}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 pl-12 pr-12 focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50/50 transition-all outline-none text-slate-800 placeholder:text-slate-300 font-medium"
+                                    className="w-full bg-slate-950/50 border border-white/5 rounded-2xl py-4 pl-12 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/50 transition-all placeholder:text-slate-700"
                                     required
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
                                 >
-                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                 </button>
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-slate-700 ml-1">Confirmar Senha</label>
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Confirmar Senha</label>
                             <div className="relative group">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors">
-                                    <Lock size={20} />
-                                </div>
+                                <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
                                 <input
                                     type={showPassword ? "text" : "password"}
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     placeholder="••••••••"
-                                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 pl-12 pr-12 focus:bg-white focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50/50 transition-all outline-none text-slate-800 placeholder:text-slate-300 font-medium"
+                                    className="w-full bg-slate-950/50 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/50 transition-all placeholder:text-slate-700"
                                     required
                                 />
                             </div>
@@ -106,25 +98,31 @@ export const UpdatePasswordView: React.FC<{ onSuccess: () => void }> = ({ onSucc
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl shadow-xl shadow-slate-200 transition-all active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 flex items-center justify-center gap-2 group"
+                            className="w-full bg-gradient-to-r from-indigo-600 to-violet-700 hover:from-indigo-500 hover:to-violet-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:hover:scale-100 group"
                         >
                             {loading ? (
                                 <Loader2 className="w-5 h-5 animate-spin" />
                             ) : (
                                 <>
-                                    Finalizar Cadastro
-                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    Atualizar Senha
+                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                 </>
                             )}
                         </button>
                     </form>
 
-                    <div className="mt-8 text-center">
-                        <p className="text-slate-400 text-sm flex items-center justify-center gap-2">
-                            Protegido por criptografia de ponta a ponta
+                    <div className="mt-8 pt-8 border-t border-white/5 text-center">
+                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em]">
+                            Nexus Security Protocol v2.5
                         </p>
                     </div>
                 </div>
+            </div>
+
+            {/* Background logic enhancement */}
+            <div className="fixed inset-0 pointer-events-none">
+                <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,rgba(79,70,229,0.15),transparent_50%)]" />
+                <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_80%_120%,rgba(139,92,246,0.1),transparent_50%)]" />
             </div>
         </div>
     );

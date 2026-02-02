@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
     Users, Calendar, Filter, Download, ArrowRight, Table, BarChart3, GripHorizontal, Pencil, CheckCircle2, LayoutDashboard,
-    Settings, ShieldCheck, Link, Activity, Check, X, Copy, ExternalLink, ChevronDown
+    Settings, ShieldCheck, Link, Activity, Check, X, Copy, ExternalLink, ChevronDown, Sparkles
 } from 'lucide-react';
 import { TintimIntegrationForm } from './manager/TintimIntegrationForm';
 import { ManualLeadModal } from './ManualLeadModal';
@@ -368,20 +368,19 @@ export const MarketingDashboard: React.FC = () => {
 
         if (!isEditing) {
             return (
-                <span className={value === 0 ? "text-slate-300" : "text-slate-700 font-semibold"}>
+                <span className={value === 0 ? "text-slate-500" : "text-white font-black"}>
                     {isMoney ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) : value}
                 </span>
             );
         }
 
-        // Lock cells for integrated clients (except investment)
         const isLocked = isIntegrated && metric !== 'investment';
 
         if (isLocked) {
             return (
-                <span className="text-slate-400 italic text-xs" title="Gerenciado pela Integração">
+                <span className="text-slate-500 italic text-xs flex items-center justify-center gap-1" title="Gerenciado pela Integração">
                     {isMoney ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) : value}
-                    <ShieldCheck className="w-3 h-3 inline ml-1 opacity-50" />
+                    <ShieldCheck className="w-3 h-3 text-cyan-500 opacity-50" />
                 </span>
             );
         }
@@ -392,18 +391,18 @@ export const MarketingDashboard: React.FC = () => {
                 value={localValue}
                 onChange={(e) => setLocalValue(e.target.value)}
                 onBlur={(e) => handleSaveCell(dateKey, channel, metric, e.target.value)}
-                className="w-20 text-center text-xs p-1 border border-indigo-200 rounded focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-indigo-50/50"
+                className="w-24 text-center text-xs p-1.5 bg-slate-800/50 border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500/50 focus:outline-none text-white font-black placeholder:text-slate-600 transition-all font-sans"
             />
         );
     };
 
     const DataRow = ({ label, channel, metric, getter, format = (v: any) => v, bg = '', editable = false }: any) => (
-        <tr className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${bg}`}>
-            <td className="sticky left-0 bg-white z-10 py-3 px-4 font-medium text-slate-700 text-sm border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+        <tr className={`border-b border-white/5 hover:bg-white/[0.02] transition-colors ${bg}`}>
+            <td className="sticky left-0 bg-slate-900 z-10 py-3.5 px-6 font-bold text-slate-400 text-xs uppercase tracking-widest border-r border-white/5 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)]">
                 {label}
             </td>
             {tableData.map((d) => (
-                <td key={d.dateKey} className="py-3 px-4 text-center text-sm text-slate-600 whitespace-nowrap min-w-[120px]">
+                <td key={d.dateKey} className="py-3.5 px-6 text-center text-sm font-medium text-slate-300 whitespace-nowrap min-w-[140px]">
                     {editable && channel && metric ? (
                         <EditableCell
                             value={getter(d)}
@@ -413,7 +412,7 @@ export const MarketingDashboard: React.FC = () => {
                             isMoney={metric === 'investment'}
                         />
                     ) : (
-                        format(getter(d))
+                        <span className="font-black">{format(getter(d))}</span>
                     )}
                 </td>
             ))}
@@ -648,13 +647,11 @@ export const MarketingDashboard: React.FC = () => {
 
     // Dashboard View Render Logic
     const renderDashboardView = () => {
-        // Calculate Totals from NEW tables (marketing_leads and marketing_conversions)
         const totalLeadsNew = leadsData.length;
         const totalConversionsNew = conversionsData.length;
         const totalRevenueNew = conversionsData.reduce((acc, c) => acc + (parseFloat(c.revenue) || 0), 0);
         const conversionRateNew = totalLeadsNew > 0 ? totalConversionsNew / totalLeadsNew : 0;
 
-        // Calculate Totals for Cards (from old table for backwards compatibility)
         const grandTotal = tableData.reduce((acc, curr) => ({
             leads: acc.leads + curr.total.leads,
             investment: acc.investment + curr.total.investment,
@@ -664,57 +661,50 @@ export const MarketingDashboard: React.FC = () => {
         const avgCpl = grandTotal.leads > 0 ? grandTotal.investment / grandTotal.leads : 0;
 
         return (
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                {/* New Metrics from Integration */}
+            <div className="flex-1 overflow-y-auto p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 custom-scrollbar">
+                {/* Real-time Integration Panel */}
                 {(totalLeadsNew > 0 || totalConversionsNew > 0) && (
-                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-200">
-                        <h4 className="text-sm font-bold text-indigo-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                            <Activity className="w-4 h-4" />
-                            Dados da Integração (Tempo Real)
+                    <div className="relative group overflow-hidden bg-slate-900/40 backdrop-blur-2xl p-8 rounded-[2rem] border border-white/10 shadow-3xl">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
+
+                        <h4 className="relative z-10 text-xs font-black text-cyan-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
+                            <Activity className="w-5 h-5 animate-pulse" />
+                            Dados da Integração em Tempo Real
                         </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div className="bg-white p-4 rounded-lg shadow-sm">
-                                <p className="text-xs font-semibold text-slate-500 uppercase">Leads (Integração)</p>
-                                <h3 className="text-2xl font-bold text-indigo-600 mt-1">{totalLeadsNew}</h3>
-                            </div>
-                            <div className="bg-white p-4 rounded-lg shadow-sm">
-                                <p className="text-xs font-semibold text-slate-500 uppercase">Vendas (Conversões)</p>
-                                <h3 className="text-2xl font-bold text-emerald-600 mt-1">{totalConversionsNew}</h3>
-                            </div>
-                            <div className="bg-white p-4 rounded-lg shadow-sm">
-                                <p className="text-xs font-semibold text-slate-500 uppercase">Receita Total</p>
-                                <h3 className="text-2xl font-bold text-green-600 mt-1">
-                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalRevenueNew)}
-                                </h3>
-                            </div>
-                            <div className="bg-white p-4 rounded-lg shadow-sm">
-                                <p className="text-xs font-semibold text-slate-500 uppercase">Taxa de Conversão</p>
-                                <h3 className="text-2xl font-bold text-purple-600 mt-1">
-                                    {new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1 }).format(conversionRateNew)}
-                                </h3>
-                            </div>
+
+                        <div className="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-6">
+                            {[
+                                { label: 'Leads (n8n)', val: totalLeadsNew, color: 'text-indigo-400', icon: Users },
+                                { label: 'Vendas (CRM)', val: totalConversionsNew, color: 'text-emerald-400', icon: Activity },
+                                { label: 'Receita Total', val: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalRevenueNew), color: 'text-cyan-400', icon: ExternalLink },
+                                { label: 'Taxa de Conversão', val: new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1 }).format(conversionRateNew), color: 'text-violet-400', icon: Sparkles }
+                            ].map((stat, i) => (
+                                <div key={i} className="bg-white/[0.03] border border-white/5 p-5 rounded-2xl hover:bg-white/[0.06] transition-all group/stat">
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center justify-between">
+                                        {stat.label}
+                                        <stat.icon className="w-3 h-3 opacity-30" />
+                                    </p>
+                                    <h3 className={`text-2xl font-black ${stat.color} group-hover/stat:scale-105 transition-transform origin-left`}>{stat.val}</h3>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}
 
-                {/* Overview Cards (from manual data) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                        <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Total Leads (Manual)</p>
-                        <h3 className="text-3xl font-bold text-slate-900 mt-2">{grandTotal.leads}</h3>
-                    </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                        <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Investimento Total</p>
-                        <h3 className="text-3xl font-bold text-slate-900 mt-2">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(grandTotal.investment)}</h3>
-                    </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                        <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Custo por Lead (Médio)</p>
-                        <h3 className="text-3xl font-bold text-slate-900 mt-2">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(avgCpl)}</h3>
-                    </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                        <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Conversões (Manual)</p>
-                        <h3 className="text-3xl font-bold text-emerald-600 mt-2">{grandTotal.conversions}</h3>
-                    </div>
+                {/* Manual Totals Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[
+                        { label: 'Leads Totais', val: grandTotal.leads, sub: 'Manual + n8n', color: 'text-white' },
+                        { label: 'Investimento', val: formatCurrency(grandTotal.investment), sub: 'Meta/Google', color: 'text-white' },
+                        { label: 'CPL Médio', val: formatCurrency(avgCpl), sub: 'Custo por Lead', color: 'text-cyan-400' },
+                        { label: 'Conversões', val: grandTotal.conversions, sub: 'Vendas Fechadas', color: 'text-emerald-400' }
+                    ].map((stat, i) => (
+                        <div key={i} className="relative bg-slate-900/40 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-2xl group hover:border-white/20 transition-all">
+                            <div className="absolute top-2 right-4 text-[10px] font-black text-slate-600 uppercase tracking-widest">{stat.sub}</div>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
+                            <h3 className={`text-3xl font-black ${stat.color}`}>{stat.val}</h3>
+                        </div>
+                    ))}
                 </div>
 
                 {/* Charts Area */}
@@ -929,96 +919,93 @@ export const MarketingDashboard: React.FC = () => {
 
                         {/* Data Actions (Table Only) */}
                         {viewMode === 'table' && (
-                            <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+                            <div className="flex items-center gap-3 pl-3 border-l border-white/10">
                                 {isIntegrated && (
                                     <>
                                         <button
                                             onClick={() => setIsManualLeadModalOpen(true)}
-                                            className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors border border-indigo-100"
+                                            className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl hover:bg-indigo-500/20 transition-all border border-indigo-500/20"
                                             title="Novo Lead Manual"
                                         >
-                                            <Users className="w-4 h-4" />
+                                            <Users className="w-5 h-5" />
                                         </button>
                                         <button
                                             onClick={() => setIsManualConversionModalOpen(true)}
-                                            className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors border border-emerald-100"
+                                            className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl hover:bg-emerald-500/20 transition-all border border-emerald-500/20"
                                             title="Nova Venda Manual"
                                         >
-                                            <Activity className="w-4 h-4" />
+                                            <Activity className="w-5 h-5" />
                                         </button>
-                                        <div className="w-px h-6 bg-slate-200 mx-1" />
+                                        <div className="w-px h-6 bg-white/10 mx-1" />
                                     </>
                                 )}
                                 <button
                                     onClick={() => setIsEditing(!isEditing)}
-                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${isEditing
-                                        ? 'bg-slate-800 text-white border-slate-800'
-                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black transition-all border ${isEditing
+                                        ? 'bg-white text-slate-900 border-white'
+                                        : 'bg-slate-800 text-slate-400 border-white/10 hover:bg-slate-700'
                                         }`}
                                 >
-                                    {isEditing ? <CheckCircle2 className="w-3 h-3" /> : <Pencil className="w-3 h-3" />}
-                                    {isEditing ? 'Pronto' : 'Editar'}
+                                    {isEditing ? <CheckCircle2 className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                                    {isEditing ? 'FINALIZADO' : 'EDITAR DADOS'}
                                 </button>
                             </div>
                         )}
 
-                        {/* Integration Settings */}
                         <button
                             onClick={() => setIsTintimModalOpen(true)}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all text-xs font-bold ${isIntegrated
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                                : 'bg-white text-slate-400 border-slate-200 hover:text-slate-600'
+                            className={`flex items-center gap-3 px-5 py-2.5 rounded-xl border transition-all text-xs font-black ${isIntegrated
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
+                                : 'bg-slate-800 text-slate-500 border-white/5 hover:text-slate-300'
                                 }`}
-                            title="Configurar Integração"
                         >
-                            <Link className="w-3 h-3" />
-                            {isIntegrated ? 'Tintim Ativo' : 'Conectar Tintim'}
+                            <Link className="w-4 h-4" />
+                            {isIntegrated ? 'INTEGRADO' : 'CRM CONNECT'}
                         </button>
                     </div>
                 </div>
             </div>
-            {/* Horizontal Scrollbar Styles */}
+
             <style>{`
                 .horizontal-scroll-container::-webkit-scrollbar {
-                    height: 16px;
+                    height: 12px;
                 }
                 .horizontal-scroll-container::-webkit-scrollbar-track {
-                    background: #e2e8f0;
-                    border-radius: 0 0 12px 12px;
+                    background: rgba(255,255,255,0.02);
+                    border-radius: 0 0 20px 20px;
                 }
                 .horizontal-scroll-container::-webkit-scrollbar-thumb {
-                    background-color: #94a3b8;
+                    background-color: rgba(255,255,255,0.1);
                     border-radius: 20px;
-                    border: 4px solid transparent;
+                    border: 3px solid transparent;
                     background-clip: content-box;
                 }
                 .horizontal-scroll-container::-webkit-scrollbar-thumb:hover {
-                    background-color: #64748b;
+                    background-color: rgba(255,255,255,0.2);
                 }
             `}</style>
 
             {
                 viewMode === 'dashboard' ? renderDashboardView() : (
                     /* Scrollable Table Area */
-                    <div className="flex-1 overflow-hidden p-4 flex flex-col relative w-full">
-                        {/* Scroll Hint overlay if needed, or just the container */}
+                    <div className="flex-1 overflow-hidden p-8 flex flex-col relative w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
                         <div
                             ref={scrollContainerRef}
                             onMouseDown={handleMouseDown}
                             onMouseLeave={handleMouseLeave}
                             onMouseUp={handleMouseUp}
                             onMouseMove={handleMouseMove}
-                            className="horizontal-scroll-container bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto w-full pb-2"
+                            className="horizontal-scroll-container bg-slate-900/40 backdrop-blur-2xl rounded-[2rem] border border-white/10 overflow-x-auto w-full pb-4 shadow-3xl"
                             style={{ cursor: isEditing ? 'default' : (isDragging ? 'grabbing' : 'grab') }}
                         >
                             <table className="w-full border-collapse select-none" style={{ minWidth: '100%' }}>
                                 <thead>
-                                    <tr className="bg-slate-900 text-white">
-                                        <th className="sticky left-0 z-20 bg-slate-900 py-4 px-4 text-left font-bold text-sm min-w-[200px] border-r border-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)] pointer-events-none">
+                                    <tr className="bg-slate-900/60 backdrop-blur-md">
+                                        <th className="sticky left-0 z-20 bg-slate-900 py-6 px-6 text-left font-black text-[10px] uppercase tracking-[0.3em] text-slate-500 min-w-[200px] border-r border-white/5 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)] pointer-events-none">
                                             Métrica / Período
                                         </th>
                                         {tableData.map(d => (
-                                            <th key={d.dateKey} className="py-4 px-4 text-center font-bold text-sm min-w-[180px] border-l border-slate-800 pointer-events-none">
+                                            <th key={d.dateKey} className="py-6 px-6 text-center font-black text-xs text-white uppercase tracking-widest min-w-[180px] border-l border-white/5 pointer-events-none">
                                                 {d.label}
                                             </th>
                                         ))}
@@ -1082,55 +1069,54 @@ export const MarketingDashboard: React.FC = () => {
             />
 
             {/* Tintim Integration Modal */}
-            {
-                isTintimModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
-                            {/* Modal Header */}
-                            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
-                                        <Settings className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-bold text-slate-900">Configurar Integração Tintim</h3>
-                                        <p className="text-xs text-slate-500">Conecte sua conta para automatizar os dados</p>
-                                    </div>
+            {isTintimModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md">
+                    <div className="bg-slate-900 rounded-[2.5rem] shadow-3xl w-full max-w-2xl overflow-hidden border border-white/10 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">
+                        {/* Modal Header */}
+                        <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-indigo-500/10 text-indigo-400 rounded-2xl">
+                                    <Settings className="w-6 h-6" />
                                 </div>
-                                <button onClick={() => setIsTintimModalOpen(false)} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
-                                    <X className="w-5 h-5 text-slate-400" />
-                                </button>
+                                <div>
+                                    <h3 className="text-xl font-black text-white tracking-tight">Arquitetura de Conexão</h3>
+                                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Sincronização com ecossistema Tintim</p>
+                                </div>
                             </div>
+                            <button onClick={() => setIsTintimModalOpen(false)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+                                <X className="w-6 h-6 text-slate-500" />
+                            </button>
+                        </div>
 
-                            {/* Modal Body */}
-                            <div className="flex-1 overflow-y-auto p-6">
-                                <TintimIntegrationForm
-                                    clientId={selectedClient}
-                                    clientName={clients.find(c => c.id === selectedClient)?.name}
-                                    config={tintimConfig}
-                                    onChange={setTintimConfig}
-                                />
-                            </div>
-                            {/* Modal Footer */}
-                            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
-                                <button
-                                    onClick={() => setIsTintimModalOpen(false)}
-                                    className="px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-800 transition-all font-sans"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={handleSaveTintimConfig}
-                                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all flex items-center gap-2"
-                                >
-                                    <Check className="w-4 h-4" />
-                                    Salvar Configurações
-                                </button>
-                            </div>
+                        {/* Modal Body */}
+                        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                            <TintimIntegrationForm
+                                clientId={selectedClient}
+                                clientName={clients.find(c => c.id === selectedClient)?.name}
+                                config={tintimConfig}
+                                onChange={setTintimConfig}
+                            />
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="px-8 py-6 bg-white/[0.02] border-t border-white/5 flex items-center justify-end gap-4">
+                            <button
+                                onClick={() => setIsTintimModalOpen(false)}
+                                className="px-6 py-3 text-xs font-black text-slate-500 hover:text-white transition-all uppercase tracking-widest"
+                            >
+                                CANCELAR
+                            </button>
+                            <button
+                                onClick={handleSaveTintimConfig}
+                                className="px-8 py-3 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-2xl text-xs font-black hover:scale-105 shadow-xl shadow-indigo-500/20 transition-all flex items-center gap-2"
+                            >
+                                <Check className="w-4 h-4" />
+                                CONSOLIDAR CONFIGURAÇÃO
+                            </button>
                         </div>
                     </div>
-                )
-            }
+                </div>
+            )}
         </div >
     );
 };

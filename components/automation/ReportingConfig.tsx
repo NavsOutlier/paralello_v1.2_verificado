@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-    BarChart3, Clock, X, Save, Calendar, Copy, FileText, Bookmark
+    BarChart3, Clock, X, Save, Calendar, Copy, FileText, Bookmark, Loader2
 } from 'lucide-react';
 import { ScheduledReport } from '../../types/automation';
 import { ClientSelector } from './ClientSelector';
@@ -215,22 +215,22 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
 
     return (
         <>
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="bg-[#0d121f] border border-white/10 rounded-3xl shadow-2xl shadow-black/50 w-full max-w-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-slate-100 sticky top-0 bg-white z-10">
+                    <div className="flex items-center justify-between p-6 border-b border-white/5 sticky top-0 bg-[#0d121f] z-10">
                         <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-xl ${duplicateMode ? 'bg-orange-100' : 'bg-emerald-100'}`}>
+                            <div className={`p-2.5 rounded-xl ${duplicateMode ? 'bg-orange-500/10 border border-orange-500/20' : 'bg-emerald-500/10 border border-emerald-500/20'}`}>
                                 {duplicateMode ? (
-                                    <Copy className="w-5 h-5 text-orange-600" />
+                                    <Copy className="w-5 h-5 text-orange-400" />
                                 ) : (
-                                    <BarChart3 className="w-5 h-5 text-emerald-600" />
+                                    <BarChart3 className="w-5 h-5 text-emerald-400" />
                                 )}
                             </div>
                             <div>
-                                <h2 className="font-bold text-slate-800">{title}</h2>
+                                <h2 className="font-black text-white">{title}</h2>
                                 {isEditing && clientName && (
-                                    <p className="text-xs text-slate-500">Cliente: {clientName}</p>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Cliente: {clientName}</p>
                                 )}
                             </div>
                         </div>
@@ -238,13 +238,13 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
                             <button
                                 type="button"
                                 onClick={() => setShowTemplates(true)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
                             >
                                 <FileText className="w-3.5 h-3.5" />
-                                Usar Template
+                                Template
                             </button>
-                            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
-                                <X className="w-5 h-5 text-slate-400" />
+                            <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-xl transition-colors">
+                                <X className="w-5 h-5 text-slate-500" />
                             </button>
                         </div>
                     </div>
@@ -254,10 +254,10 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
                         {/* Client Selection */}
                         {!isEditing && (
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                                     Cliente(s)
                                     {duplicateMode && (
-                                        <span className="text-orange-500">(selecione destino)</span>
+                                        <span className="text-orange-400">(selecione destino)</span>
                                     )}
                                 </label>
                                 <ClientSelector
@@ -272,7 +272,7 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
 
                         {/* Name */}
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                                 Nome do Relatório
                             </label>
                             <input
@@ -281,51 +281,51 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
                                 onChange={(e) => setName(e.target.value)}
                                 placeholder="Ex: Resumo Semanal"
                                 required
-                                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                                className="w-full px-4 py-2.5 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-emerald-500/30 focus:outline-none placeholder:text-slate-600"
                             />
                         </div>
 
                         {/* Frequency */}
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                                 Frequência
                             </label>
                             <div className="grid grid-cols-3 gap-2">
                                 <button
                                     type="button"
                                     onClick={() => setFrequency('daily')}
-                                    className={`p-3 rounded-xl border-2 transition-all text-center ${frequency === 'daily'
-                                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                                    className={`p-3 rounded-xl border transition-all text-center ${frequency === 'daily'
+                                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                                        : 'border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5'
                                         }`}
                                 >
                                     <Clock className="w-5 h-5 mx-auto mb-1" />
-                                    <span className="text-xs font-bold">Diário</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Diário</span>
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setFrequency('weekly')}
-                                    className={`p-3 rounded-xl border-2 transition-all text-center ${frequency === 'weekly'
-                                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                                    className={`p-3 rounded-xl border transition-all text-center ${frequency === 'weekly'
+                                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                                        : 'border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5'
                                         }`}
                                 >
                                     <Calendar className="w-5 h-5 mx-auto mb-1" />
-                                    <span className="text-xs font-bold">Semanal</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Semanal</span>
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setFrequency('monthly')}
-                                    className={`p-3 rounded-xl border-2 transition-all text-center ${frequency === 'monthly'
-                                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                                    className={`p-3 rounded-xl border transition-all text-center ${frequency === 'monthly'
+                                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                                        : 'border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5'
                                         }`}
                                 >
                                     <BarChart3 className="w-5 h-5 mx-auto mb-1" />
-                                    <span className="text-xs font-bold">Mensal</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Mensal</span>
                                 </button>
                             </div>
-                            <p className="text-[10px] text-slate-400 text-center">
+                            <p className="text-[9px] text-slate-500 text-center font-medium">
                                 {getFrequencyDescription()}
                             </p>
                         </div>
@@ -334,13 +334,13 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
                         <div className="grid grid-cols-2 gap-4">
                             {frequency === 'weekly' && (
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                                         Dia da Semana
                                     </label>
                                     <select
                                         value={weekday}
                                         onChange={(e) => setWeekday(Number(e.target.value))}
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                                        className="w-full px-4 py-2.5 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-emerald-500/30 focus:outline-none"
                                     >
                                         {WEEKDAYS.map(d => (
                                             <option key={d.value} value={d.value}>{d.label}</option>
@@ -351,13 +351,13 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
 
                             {frequency === 'monthly' && (
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                                         Dia do Mês (1-5)
                                     </label>
                                     <select
                                         value={dayOfMonth}
                                         onChange={(e) => setDayOfMonth(Number(e.target.value))}
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                                        className="w-full px-4 py-2.5 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-emerald-500/30 focus:outline-none"
                                     >
                                         {MONTHLY_DAYS.map(d => (
                                             <option key={d} value={d}>Dia {d}</option>
@@ -367,7 +367,7 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
                             )}
 
                             <div className={`space-y-2 ${frequency === 'daily' ? 'col-span-2' : ''}`}>
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
                                     <Clock className="w-3.5 h-3.5" />
                                     Horário de Envio
                                 </label>
@@ -376,7 +376,7 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
                                     value={timeOfDay}
                                     onChange={(e) => setTimeOfDay(e.target.value)}
                                     max="23:59"
-                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                                    className="w-full px-4 py-2.5 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-emerald-500/30 focus:outline-none"
                                 />
                             </div>
                         </div>
@@ -386,16 +386,16 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
                         {/* Template with Variable Insert */}
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                                     Template da Mensagem
                                 </label>
                                 <button
                                     type="button"
                                     onClick={handleSaveAsTemplate}
-                                    className="flex items-center gap-1 text-[10px] text-indigo-600 hover:underline"
+                                    className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-emerald-400 hover:underline"
                                 >
                                     <Bookmark className="w-3 h-3" />
-                                    Salvar como Template
+                                    Salvar Template
                                 </button>
                             </div>
 
@@ -411,14 +411,14 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
                                 value={template}
                                 onChange={(e) => setTemplate(e.target.value)}
                                 rows={6}
-                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-none"
+                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/5 rounded-xl text-sm font-mono text-slate-200 focus:ring-2 focus:ring-emerald-500/30 focus:outline-none resize-none placeholder:text-slate-600"
                             />
                         </div>
 
                         {/* Info for multiple selection */}
                         {selectedClientIds.length > 1 && (
-                            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
-                                <p className="text-xs text-emerald-700">
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
+                                <p className="text-xs text-emerald-300 font-medium">
                                     <strong>Nota:</strong> Será criado um relatório separado para cada um dos {selectedClientIds.length} clientes selecionados.
                                 </p>
                             </div>
@@ -429,17 +429,23 @@ export const ReportingConfig: React.FC<ReportingConfigProps> = ({
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all"
+                                className="flex-1 py-3 bg-slate-800 border border-white/5 text-slate-400 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-white/5 transition-all"
                             >
                                 Cancelar
                             </button>
                             <button
                                 type="submit"
                                 disabled={loading || selectedClientIds.length === 0}
-                                className={`flex-1 py-3 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 ${duplicateMode ? 'bg-orange-600 hover:bg-orange-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                                className={`flex-1 py-3 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg ${duplicateMode ? 'bg-gradient-to-br from-orange-500 to-amber-600 shadow-orange-500/20' : 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/20'
                                     }`}
                             >
-                                {duplicateMode ? <Copy className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                                {loading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : duplicateMode ? (
+                                    <Copy className="w-4 h-4" />
+                                ) : (
+                                    <Save className="w-4 h-4" />
+                                )}
                                 {loading
                                     ? 'Salvando...'
                                     : duplicateMode

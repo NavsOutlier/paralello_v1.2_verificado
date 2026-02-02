@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     MoreVertical, Pencil, Trash2, Power, PowerOff, Calendar,
-    Bot, Clock, AlertCircle
+    Bot, Clock, AlertCircle, Loader2
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { ActiveAutomation, WEEKDAYS } from '../../types/automation';
@@ -91,17 +91,19 @@ export const ActiveAutomationsList: React.FC<ActiveAutomationsListProps> = ({
     if (loading) {
         return (
             <div className="flex justify-center p-8">
-                <div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
+                <Loader2 className="w-5 h-5 text-cyan-400 animate-spin" />
             </div>
         );
     }
 
     if (automations.length === 0) {
         return (
-            <div className="bg-slate-50 rounded-xl p-8 text-center border-2 border-dashed border-slate-200">
-                <Bot className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500 font-medium">Nenhuma automação ativa</p>
-                <p className="text-xs text-slate-400 mt-1">
+            <div className="bg-slate-900/40 backdrop-blur-xl rounded-2xl p-8 text-center border border-dashed border-white/10">
+                <div className="w-14 h-14 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/5">
+                    <Bot className="w-7 h-7 text-slate-600" />
+                </div>
+                <p className="text-slate-400 font-black text-xs uppercase tracking-widest">Nenhuma automação ativa</p>
+                <p className="text-xs text-slate-500 mt-2 font-medium">
                     Crie uma automação para começar a receber sugestões.
                 </p>
             </div>
@@ -113,33 +115,38 @@ export const ActiveAutomationsList: React.FC<ActiveAutomationsListProps> = ({
             {automations.map(auto => (
                 <div
                     key={auto.id}
-                    className={`group relative bg-white border rounded-xl p-5 transition-all duration-200 
+                    className={`group relative bg-slate-900/40 backdrop-blur-xl border rounded-2xl p-5 transition-all duration-200 
                         ${auto.is_active
-                            ? 'border-slate-200 shadow-sm hover:shadow-md hover:border-purple-200 bg-gradient-to-br from-white to-slate-50/30'
-                            : 'border-slate-100 bg-slate-50 opacity-80'
+                            ? 'border-white/5 hover:border-cyan-500/20 shadow-lg'
+                            : 'border-white/5 opacity-60'
                         }`}
                 >
                     <div className="flex justify-between items-start gap-4">
                         <div className="flex-1 space-y-3">
                             <div>
-                                <div className="flex items-center gap-2 mb-1.5">
-                                    <h4 className={`font-bold text-base ${auto.is_active ? 'text-slate-800' : 'text-slate-500'}`}>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <h4 className={`font-black text-sm ${auto.is_active ? 'text-white' : 'text-slate-500'}`}>
                                         {auto.name}
                                     </h4>
                                     {!auto.is_active && (
-                                        <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-200 text-slate-500 rounded-full">
+                                        <span className="text-[9px] font-black px-2.5 py-1 bg-slate-700 text-slate-400 rounded-lg uppercase tracking-widest border border-white/5">
                                             PAUSADO
                                         </span>
                                     )}
+                                    {auto.is_active && (
+                                        <span className="text-[9px] font-black px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg uppercase tracking-widest border border-emerald-500/20">
+                                            ATIVO
+                                        </span>
+                                    )}
                                 </div>
-                                <div className="flex items-center gap-3 text-xs text-slate-500">
-                                    <div className="flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-md">
-                                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                                        <span>{getWeekdaysLabel(auto.weekdays)}</span>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <div className="flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded-lg border border-white/5">
+                                        <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{getWeekdaysLabel(auto.weekdays)}</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-md">
-                                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                                        <span>Contexto: <strong>{auto.context_days} dias</strong></span>
+                                    <div className="flex items-center gap-1.5 bg-slate-800 px-3 py-1.5 rounded-lg border border-white/5">
+                                        <Clock className="w-3.5 h-3.5 text-slate-500" />
+                                        <span className="text-[10px] font-bold text-slate-400">Contexto: <strong className="text-cyan-400">{auto.context_days} dias</strong></span>
                                     </div>
                                 </div>
                             </div>
@@ -150,9 +157,9 @@ export const ActiveAutomationsList: React.FC<ActiveAutomationsListProps> = ({
                             <button
                                 onClick={() => toggleStatus(auto)}
                                 title={auto.is_active ? "Pausar Automação" : "Ativar Automação"}
-                                className={`p-2 rounded-lg transition-colors ${auto.is_active
-                                        ? 'text-green-600 hover:bg-green-50 bg-green-50/50'
-                                        : 'text-slate-400 hover:bg-slate-200 hover:text-green-600'
+                                className={`p-2.5 rounded-xl transition-all ${auto.is_active
+                                    ? 'text-emerald-400 hover:bg-emerald-500/10 bg-emerald-500/5 border border-emerald-500/20'
+                                    : 'text-slate-500 hover:bg-white/5 hover:text-emerald-400 border border-white/5'
                                     }`}
                             >
                                 {auto.is_active ? <Power className="w-4 h-4" /> : <PowerOff className="w-4 h-4" />}
@@ -161,7 +168,7 @@ export const ActiveAutomationsList: React.FC<ActiveAutomationsListProps> = ({
                             <button
                                 onClick={() => onEdit(auto)}
                                 title="Editar Configurações"
-                                className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="p-2.5 text-slate-500 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-xl transition-all border border-white/5"
                             >
                                 <Pencil className="w-4 h-4" />
                             </button>
@@ -169,7 +176,7 @@ export const ActiveAutomationsList: React.FC<ActiveAutomationsListProps> = ({
                             <button
                                 onClick={() => handleDelete(auto.id)}
                                 title="Excluir Permanentemente"
-                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                className="p-2.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all border border-white/5"
                             >
                                 <Trash2 className="w-4 h-4" />
                             </button>
@@ -178,7 +185,7 @@ export const ActiveAutomationsList: React.FC<ActiveAutomationsListProps> = ({
 
                     {/* Active Indicator Strip */}
                     {auto.is_active && (
-                        <div className="absolute left-0 top-3 bottom-3 w-1 bg-purple-500 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute left-0 top-4 bottom-4 w-1 bg-gradient-to-b from-cyan-400 to-indigo-500 rounded-r-full" />
                     )}
                 </div>
             ))}

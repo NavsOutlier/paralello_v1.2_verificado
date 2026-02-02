@@ -462,10 +462,10 @@ export const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+      <div className="flex-1 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm min-h-screen z-50">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
-          <p className="text-sm text-slate-500 font-medium">Carregando dashboard...</p>
+          <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+          <p className="text-sm text-slate-400 font-medium">Carregando...</p>
         </div>
       </div>
     );
@@ -499,7 +499,10 @@ export const Dashboard: React.FC = () => {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 border border-white/10">
                 <Activity className="w-5 h-5 text-white" />
               </div>
-              <h1 className="text-3xl font-black text-white tracking-tight">Dashboard</h1>
+              <div className="flex flex-col justify-center">
+                <img src="/blackback-text.png" alt="Blackback" className="h-6 w-auto object-contain mb-0.5 opacity-90 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" />
+                <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold leading-none pl-0.5">Dashboard</span>
+              </div>
             </div>
             <p className="text-sm text-slate-400 ml-[52px]">Visão geral da sua operação • <span className="font-medium text-cyan-400">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</span></p>
           </div>

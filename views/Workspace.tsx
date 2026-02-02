@@ -442,7 +442,7 @@ export const Workspace: React.FC = () => {
       {/* Right Sidebar - TaskManager */}
       <div
         style={{ width: rightSidebarVisible ? `${rightSidebarWidth}px` : '0px' }}
-        className="flex-shrink-0 bg-slate-50 h-full overflow-hidden transition-all duration-300 ease-in-out"
+        className="flex-shrink-0 bg-[#0a101d] border-l border-white/5 h-full overflow-hidden transition-all duration-300 ease-in-out"
       >
         <div
           style={{ width: `${rightSidebarWidth}px` }}

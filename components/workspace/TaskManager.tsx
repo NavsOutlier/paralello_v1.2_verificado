@@ -238,25 +238,25 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                                 {openFilter === 'status' && (
                                     <>
                                         <div className="fixed inset-0 z-40" onClick={() => setOpenFilter(null)} />
-                                        <div className="absolute top-full left-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100">
-                                            <div className="py-1">
-                                                <button onClick={() => { setStatusFilter('all'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${statusFilter === 'all' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>Todos</button>
-                                                <div className="h-px bg-slate-100 my-1" />
-                                                <button onClick={() => { setStatusFilter('todo'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 ${statusFilter === 'todo' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>
-                                                    <div className="w-2 h-2 rounded-full bg-amber-400" /> Pendente
+                                        <div className="absolute top-full left-0 mt-2 w-48 bg-[#0d121f]/95 backdrop-blur-2xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100">
+                                            <div className="p-2 space-y-1">
+                                                <button onClick={() => { setStatusFilter('all'); setOpenFilter(null); }} className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${statusFilter === 'all' ? 'bg-indigo-500/20 text-indigo-300' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>Todos</button>
+                                                <div className="h-px bg-white/5 mx-2 my-1" />
+                                                <button onClick={() => { setStatusFilter('todo'); setOpenFilter(null); }} className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 ${statusFilter === 'todo' ? 'bg-amber-500/10 text-amber-400' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]" /> Pendente
                                                 </button>
-                                                <button onClick={() => { setStatusFilter('in-progress'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 ${statusFilter === 'in-progress' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>
-                                                    <div className="w-2 h-2 rounded-full bg-blue-400" /> Em Progresso
+                                                <button onClick={() => { setStatusFilter('in-progress'); setOpenFilter(null); }} className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 ${statusFilter === 'in-progress' ? 'bg-blue-500/10 text-blue-400' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.5)]" /> Em Progresso
                                                 </button>
-                                                <button onClick={() => { setStatusFilter('review'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 ${statusFilter === 'review' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>
-                                                    <div className="w-2 h-2 rounded-full bg-indigo-400" /> Revisão
+                                                <button onClick={() => { setStatusFilter('review'); setOpenFilter(null); }} className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 ${statusFilter === 'review' ? 'bg-violet-500/10 text-violet-400' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,0.5)]" /> Revisão
                                                 </button>
-                                                <button onClick={() => { setStatusFilter('done'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 ${statusFilter === 'done' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>
-                                                    <div className="w-2 h-2 rounded-full bg-emerald-400" /> Concluído
+                                                <button onClick={() => { setStatusFilter('done'); setOpenFilter(null); }} className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 ${statusFilter === 'done' ? 'bg-emerald-500/10 text-emerald-400' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" /> Concluído
                                                 </button>
-                                                <div className="h-px bg-slate-100 my-1" />
-                                                <button onClick={() => { setStatusFilter('archived'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 ${statusFilter === 'archived' ? 'font-bold text-rose-600' : 'text-slate-600'}`}>
-                                                    <Archive className="w-3 h-3" /> Arquivadas
+                                                <div className="h-px bg-white/5 mx-2 my-1" />
+                                                <button onClick={() => { setStatusFilter('archived'); setOpenFilter(null); }} className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 ${statusFilter === 'archived' ? 'bg-rose-500/10 text-rose-400' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
+                                                    <Archive className="w-3.5 h-3.5" /> Arquivadas
                                                 </button>
                                             </div>
                                         </div>
@@ -348,14 +348,14 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                                 {openFilter === 'tag' && (
                                     <>
                                         <div className="fixed inset-0 z-40" onClick={() => setOpenFilter(null)} />
-                                        <div className="absolute top-full left-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100">
-                                            <div className="max-h-64 overflow-y-auto py-1">
-                                                <button onClick={() => { setTagFilter('all'); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${tagFilter === 'all' ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>Todas</button>
+                                        <div className="absolute top-full left-0 mt-2 w-48 bg-[#0d121f]/95 backdrop-blur-2xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-100">
+                                            <div className="max-h-64 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                                                <button onClick={() => { setTagFilter('all'); setOpenFilter(null); }} className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${tagFilter === 'all' ? 'bg-indigo-500/20 text-indigo-300' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>Todas</button>
                                                 {uniqueTags.map(tag => (
                                                     <button
                                                         key={tag as string}
                                                         onClick={() => { setTagFilter(tag as string); setOpenFilter(null); }}
-                                                        className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-50 ${tagFilter === tag ? 'font-bold text-indigo-600 bg-indigo-50' : 'text-slate-600'}`}
+                                                        className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${tagFilter === tag ? 'bg-indigo-500/10 text-indigo-300' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}
                                                     >
                                                         #{tag}
                                                     </button>

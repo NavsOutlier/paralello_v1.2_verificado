@@ -12,11 +12,11 @@ interface KanbanBoardProps {
     onManualCreate: () => void;
 }
 
-const COLUMNS: { id: Task['status']; label: string; bg: string; border: string; dot: string }[] = [
-    { id: 'todo', label: 'PENDENTE', bg: 'bg-amber-50/50', border: 'border-amber-200/50', dot: 'bg-amber-400' },
-    { id: 'in-progress', label: 'EM PROGRESSO', bg: 'bg-blue-50/50', border: 'border-blue-200/50', dot: 'bg-blue-400' },
-    { id: 'review', label: 'REVISÃO', bg: 'bg-indigo-50/50', border: 'border-indigo-200/50', dot: 'bg-indigo-400' },
-    { id: 'done', label: 'CONCLUÍDO', bg: 'bg-emerald-50/50', border: 'border-emerald-200/50', dot: 'bg-emerald-400' },
+const COLUMNS: { id: Task['status']; label: string; bg: string; border: string; dot: string; shadow: string }[] = [
+    { id: 'todo', label: 'PENDENTE', bg: 'bg-amber-500/5', border: 'border-amber-500/20', dot: 'bg-amber-500', shadow: 'shadow-amber-500/10' },
+    { id: 'in-progress', label: 'EM PROGRESSO', bg: 'bg-blue-500/5', border: 'border-blue-500/20', dot: 'bg-blue-500', shadow: 'shadow-blue-500/10' },
+    { id: 'review', label: 'REVISÃO', bg: 'bg-violet-500/5', border: 'border-violet-500/20', dot: 'bg-violet-500', shadow: 'shadow-violet-500/10' },
+    { id: 'done', label: 'CONCLUÍDO', bg: 'bg-emerald-500/5', border: 'border-emerald-500/20', dot: 'bg-emerald-500', shadow: 'shadow-emerald-500/10' },
 ];
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -73,8 +73,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     };
 
     return (
-        <div className="flex-1 overflow-x-auto overflow-y-hidden bg-slate-50/50 p-2 sm:p-4 min-h-0">
-            <div className="flex h-full gap-4 w-max min-w-full">
+        <div className="flex-1 overflow-x-auto overflow-y-hidden bg-transparent p-4 min-h-0 custom-scrollbar">
+            <div className="flex h-full gap-5 w-max min-w-full">
                 {COLUMNS.map(column => {
                     const columnTasks = tasks.filter(t => t.status === column.id);
                     const isOver = dragOverColumn === column.id;
@@ -82,35 +82,37 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     return (
                         <div
                             key={column.id}
-                            className={`flex flex-col w-[85vw] sm:w-[300px] flex-shrink-0 h-full rounded-2xl transition-colors duration-200 ${isOver ? 'bg-indigo-50/80 ring-2 ring-indigo-200 ring-inset' : 'bg-slate-100/50'
+                            className={`flex flex-col w-[320px] flex-shrink-0 h-full rounded-[24px] transition-all duration-300 border backdrop-blur-sm ${isOver
+                                ? `bg-slate-900/80 ${column.border} ring-2 ring-opacity-30 shadow-2xl scale-[1.01]`
+                                : 'bg-slate-900/20 border-white/5 hover:bg-slate-900/30'
                                 }`}
                             onDragOver={(e) => handleDragOver(e, column.id)}
                             onDragLeave={handleDragLeave}
                             onDrop={(e) => handleDrop(e, column.id)}
                         >
                             {/* Column Header */}
-                            <div className={`p-3 flex items-center justify-between border-b ${column.border} ${column.bg} rounded-t-2xl`}>
-                                <div className="flex items-center gap-2">
-                                    <div className={`w-2 h-2 rounded-full ${column.dot}`} />
-                                    <span className="text-[11px] font-black tracking-widest text-slate-700 uppercase">
+                            <div className={`p-4 flex items-center justify-between border-b ${isOver ? column.border : 'border-white/5'} transition-colors`}>
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-2.5 h-2.5 rounded-full ${column.dot} shadow-[0_0_10px_rgba(0,0,0,0.5)]`} />
+                                    <span className={`text-[11px] font-black tracking-[0.2em] uppercase ${isOver ? 'text-white' : 'text-slate-400'}`}>
                                         {column.label}
                                     </span>
-                                    <span className="text-[10px] font-bold text-slate-400 bg-white/50 px-1.5 py-0.5 rounded-full">
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/5 ${column.bg} text-white`}>
                                         {columnTasks.length}
                                     </span>
                                 </div>
                                 {column.id === 'todo' && (
                                     <button
                                         onClick={onManualCreate}
-                                        className="p-1 hover:bg-white/60 rounded-full transition-colors text-slate-400 hover:text-indigo-600"
+                                        className="p-1.5 hover:bg-white/10 rounded-lg transition-all text-slate-500 hover:text-white"
                                     >
-                                        <Plus className="w-3.5 h-3.5" />
+                                        <Plus className="w-4 h-4" />
                                     </button>
                                 )}
                             </div>
 
                             {/* Column Content */}
-                            <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
                                 {columnTasks.map(task => {
                                     const currentAssigneeIds = task.assigneeIds || (task.assigneeId ? [task.assigneeId] : []);
                                     return (
@@ -119,7 +121,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                             draggable
                                             onDragStart={(e) => handleDragStart(e, task.id)}
                                             onDragEnd={handleDragEnd}
-                                            className={`transition-opacity duration-200 cursor-grab active:cursor-grabbing ${draggedTaskId === task.id ? 'opacity-40' : 'opacity-100'}`}
+                                            className={`transition-all duration-300 cursor-grab active:cursor-grabbing ${draggedTaskId === task.id ? 'opacity-30 scale-95 rotate-3 grayscale' : 'opacity-100 hover:scale-[1.02]'}`}
                                         >
                                             <TaskCard
                                                 task={task}
@@ -132,8 +134,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                     );
                                 })}
                                 {columnTasks.length === 0 && (
-                                    <div className="h-24 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-xl m-2 opacity-50">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vazio</span>
+                                    <div className={`h-32 flex flex-col items-center justify-center border-2 border-dashed rounded-2xl m-2 opacity-30 transition-colors ${isOver ? column.border : 'border-slate-800'}`}>
+                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Sem Atividades</span>
+                                        <div className={`w-1 h-1 rounded-full ${column.dot}`} />
                                     </div>
                                 )}
                             </div>

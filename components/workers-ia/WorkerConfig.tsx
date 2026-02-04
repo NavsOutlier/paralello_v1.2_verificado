@@ -93,7 +93,11 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                 body: {
                     action: 'delete_agent_instances',
                     organization_id: organizationId,
-                    agents: [{ id: currentAgent.id, name: currentAgent.name }]
+                    agents: [{
+                        id: currentAgent.id,
+                        name: currentAgent.name,
+                        token: myInstance?.instanceApiToken || ''
+                    }]
                 }
             });
 
@@ -114,10 +118,14 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
 
         } catch (err: any) {
             console.error('Error deleting connection:', err);
-            alert('Erro ao excluir conexão: ' + err.message);
+            // Show detailed error toast/alert
+            alert(`Erro ao excluir conexão: ${err.message}. Por favor, entre em contato com o suporte.`);
+
+            // Re-throw error so ConfirmModal knows to keep the modal open and stop loading state
+            throw err;
         } finally {
             setConnectingWs(false);
-            setShowDeleteConfirm(false);
+            // Do NOT close modal here. ConfirmModal will close it on success.
         }
     };
 

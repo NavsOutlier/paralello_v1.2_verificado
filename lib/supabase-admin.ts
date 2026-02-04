@@ -88,7 +88,30 @@ export async function deleteOrganization(id: string): Promise<void> {
             .select('id, name, instance_api_id, instance_api_token')
             .eq('organization_id', id);
 
-        // 2. Cleanup WhatsApp instances via Proxy (triggers n8n)
+        // 2. Fetch Agents for this organization (vector store cleanup)
+        const { data: agents } = await supabase
+            .from('workers_ia_agents')
+            .select('id, name')
+            .eq('organization_id', id);
+
+        // 3. Cleanup Agents via Proxy (triggers n8n)
+        if (agents && agents.length > 0) {
+            const { error: agentProxyError } = await supabase.functions.invoke('whatsapp-proxy-v2', {
+                body: {
+                    action: 'delete_agent_instances',
+                    organization_id: id,
+                    agents: agents
+                }
+            });
+
+            if (agentProxyError) {
+                console.warn('Agent cleanup failed (non-blocking):', agentProxyError);
+                // We choose NOT to block deletion on agent cleanup failure, unlike WhatsApp instances
+                // because vector stores are less critical/costly than active WhatsApp sessions.
+            }
+        }
+
+        // 4. Cleanup WhatsApp instances via Proxy (triggers n8n)
         // We WAIT for the response from n8n. If n8n returns 200 OK, the proxy returns data.
         // If n8n returns an error, the proxy returns an error in 'data.error' or 'proxyError'
         const { data: proxyResult, error: proxyError } = await supabase.functions.invoke('whatsapp-proxy-v2', {

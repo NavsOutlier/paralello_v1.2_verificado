@@ -10,6 +10,7 @@ import {
     Plus, Trash2, ToggleLeft, ToggleRight, Filter, MessageSquare,
     GripVertical, Layout, ChevronUp, ChevronDown, Palette, RotateCcw
 } from 'lucide-react';
+import { ConfirmModal } from '../ui/ConfirmModal';
 
 interface FunnelStage {
     id: string;
@@ -80,6 +81,45 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
     const { instances, createInstance, createGroup } = useWhatsApp(undefined, { agentId: agent?.id || currentAgent?.id });
     const [saving, setSaving] = useState(false);
     const [connectingWs, setConnectingWs] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+    const handleDeleteConnection = async () => {
+        if (!currentAgent?.id || !organizationId) return;
+
+        setConnectingWs(true); // Reuse loading state
+        try {
+            // 1. Send delete command to Proxy
+            const { error: proxyError } = await supabase.functions.invoke('whatsapp-proxy-v2', {
+                body: {
+                    action: 'delete_agent_instances',
+                    organization_id: organizationId,
+                    agents: [{ id: currentAgent.id, name: currentAgent.name }]
+                }
+            });
+
+            if (proxyError) {
+                throw new Error('Falha ao comunicar com servidor de instâncias: ' + proxyError.message);
+            }
+
+            // 2. Update local instance status to disconnected
+            if (myInstance?.id) {
+                await supabase.from('instances').update({
+                    status: 'disconnected',
+                    qrcode: null
+                }).eq('id', myInstance.id);
+            }
+
+            // 3. Notify user
+            showToast('Conexão excluída com sucesso', 'success');
+
+        } catch (err: any) {
+            console.error('Error deleting connection:', err);
+            alert('Erro ao excluir conexão: ' + err.message);
+        } finally {
+            setConnectingWs(false);
+            setShowDeleteConfirm(false);
+        }
+    };
 
     // Wizard Control (for modal mode)
     const [currentStep, setCurrentStep] = useState<WizardStep>('identity');
@@ -600,6 +640,18 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                             <p className="text-slate-400 text-xs max-w-[240px] leading-relaxed">
                                 Para trocar de conexão, entre em contato com o suporte da <span className="text-indigo-400 font-bold">Blackback</span>.
                             </p>
+                        </div>
+
+                        <div className="pt-4 border-t border-white/5 w-full flex justify-center">
+                            <button
+                                type="button"
+                                onClick={() => setShowDeleteConfirm(true)}
+                                disabled={connectingWs}
+                                className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors border border-rose-500/20 hover:border-rose-500/40"
+                            >
+                                {connectingWs ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                                Excluir Conexão
+                            </button>
                         </div>
                     </div>
                 ) : (
@@ -1346,6 +1398,17 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                         Salvar Alterações
                     </button>
                 </div>
+
+                {/* Modal de Confirmação de Exclusão */}
+                <ConfirmModal
+                    isOpen={showDeleteConfirm}
+                    onClose={() => setShowDeleteConfirm(false)}
+                    onConfirm={handleDeleteConnection}
+                    title="Excluir Conexão?"
+                    message={`Isso irá desconectar o WhatsApp e apagar a instância do Agente "${currentAgent?.name}" no servidor. Esta ação não pode ser desfeita.`}
+                    confirmLabel="Excluir Conexão"
+                    variant="danger"
+                />
             </div>
         );
     }
@@ -1541,6 +1604,17 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                     )}
                 </div>
             </div>
+
+            {/* Modal de Confirmação de Exclusão */}
+            <ConfirmModal
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={handleDeleteConnection}
+                title="Excluir Conexão?"
+                message={`Isso irá desconectar o WhatsApp e apagar a instância do Agente "${currentAgent?.name}" no servidor. Esta ação não pode ser desfeita.`}
+                confirmLabel="Excluir Conexão"
+                variant="danger"
+            />
         </div>
     );
 };

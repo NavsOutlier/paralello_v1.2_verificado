@@ -78,7 +78,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
     const { organizationId } = useAuth();
     const { showToast } = useToast();
     const [currentAgent, setCurrentAgent] = useState<WorkerAgent | undefined>(agent);
-    const { instances, createInstance, createGroup } = useWhatsApp(undefined, { agentId: agent?.id || currentAgent?.id });
+    const { instances, createInstance, createGroup, refreshInstances } = useWhatsApp(undefined, { agentId: agent?.id || currentAgent?.id });
     const [saving, setSaving] = useState(false);
     const [connectingWs, setConnectingWs] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -107,10 +107,9 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
 
             // 2. Update local instance status to disconnected
             if (myInstance?.id) {
-                await supabase.from('instances').update({
-                    status: 'disconnected',
-                    qrcode: null
-                }).eq('id', myInstance.id);
+                await supabase.from('instances').delete().eq('id', myInstance.id);
+                // Force UI refresh immediately
+                if (refreshInstances) await refreshInstances();
             }
 
             // 3. Notify user

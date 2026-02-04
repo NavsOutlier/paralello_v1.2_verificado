@@ -33,7 +33,7 @@ export const LoginView: React.FC = () => {
             <div className="w-full max-w-md relative z-10 animate-in fade-in zoom-in-95 duration-700">
                 {/* Logo Section */}
                 <div className="flex justify-center mb-10">
-                    <img src="/blackback-logo.png" alt="Blackback" className="w-64 h-auto object-contain drop-shadow-[0_0_25px_rgba(139,92,246,0.3)]" />
+                    <img src="/blackback-logo-login.png" alt="Blackback" className="w-64 h-auto object-contain drop-shadow-[0_0_25px_rgba(139,92,246,0.3)]" />
                 </div>
 
                 {/* Login Card */}

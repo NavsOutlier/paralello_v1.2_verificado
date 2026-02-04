@@ -97,8 +97,8 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                 }
             });
 
-            if (proxyError || proxyData?.error) {
-                throw new Error('Falha ao comunicar com servidor de instâncias: ' + (proxyError?.message || proxyData?.error));
+            if (proxyError || proxyData?.error || !proxyData?.success) {
+                throw new Error('Falha ao comunicar com servidor de instâncias: ' + (proxyError?.message || proxyData?.error || 'Erro desconhecido'));
             }
 
             // 2. Update local instance status to disconnected

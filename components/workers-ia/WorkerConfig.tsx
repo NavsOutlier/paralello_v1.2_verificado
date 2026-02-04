@@ -89,7 +89,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         setConnectingWs(true); // Reuse loading state
         try {
             // 1. Send delete command to Proxy
-            const { error: proxyError } = await supabase.functions.invoke('whatsapp-proxy-v2', {
+            const { data: proxyData, error: proxyError } = await supabase.functions.invoke('whatsapp-proxy-v2', {
                 body: {
                     action: 'delete_agent_instances',
                     organization_id: organizationId,
@@ -97,8 +97,8 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                 }
             });
 
-            if (proxyError) {
-                throw new Error('Falha ao comunicar com servidor de instâncias: ' + proxyError.message);
+            if (proxyError || proxyData?.error) {
+                throw new Error('Falha ao comunicar com servidor de instâncias: ' + (proxyError?.message || proxyData?.error));
             }
 
             // 2. Update local instance status to disconnected

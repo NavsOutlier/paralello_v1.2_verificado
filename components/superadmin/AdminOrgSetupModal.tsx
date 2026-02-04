@@ -75,50 +75,50 @@ export const AdminOrgSetupModal: React.FC<AdminOrgSetupModalProps> = ({
     if (!isOpen || !organization) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-                <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] shadow-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+                <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-indigo-100 rounded-xl">
-                            <RefreshCw className="w-5 h-5 text-indigo-600" />
+                        <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl">
+                            <RefreshCw className="w-5 h-5 text-indigo-400" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-slate-800">Setup Assistant</h2>
-                            <p className="text-xs text-slate-500 font-medium">{organization.name}</p>
+                            <h2 className="text-xl font-black text-white tracking-tight">Setup Assistant</h2>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">{organization.name}</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
-                        <X className="w-5 h-5 text-slate-400" />
+                    <button onClick={onClose} className="p-3 hover:bg-white/5 rounded-full transition-colors">
+                        <X className="w-5 h-5 text-slate-500" />
                     </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Dono (Owner)</span>
+                        <div className="p-5 bg-slate-950/40 rounded-3xl border border-white/5">
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Dono (Owner)</span>
                             <div className="flex items-center gap-2">
-                                <CheckCircle2 className={`w-4 h-4 ${organization.onboardingStatus?.isOwnerActive ? 'text-emerald-500' : 'text-slate-300'}`} />
-                                <span className="text-sm font-bold text-slate-700">
+                                <CheckCircle2 className={`w-4 h-4 ${organization.onboardingStatus?.isOwnerActive ? 'text-emerald-500' : 'text-slate-600'}`} />
+                                <span className={`text-sm font-bold ${organization.onboardingStatus?.isOwnerActive ? 'text-white' : 'text-slate-500'}`}>
                                     {organization.onboardingStatus?.isOwnerActive ? 'Já acessou o painel' : 'Aguardando primeiro acesso'}
                                 </span>
                             </div>
                         </div>
-                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">WhatsApp</span>
+                        <div className="p-5 bg-slate-950/40 rounded-3xl border border-white/5">
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">WhatsApp</span>
                             <div className="flex items-center gap-2">
-                                <div className={`w-2 h-2 rounded-full ${['connected', 'conectado'].includes(organization.onboardingStatus?.isWhatsAppConnected ? 'connected' : '') ? 'bg-emerald-50 animate-pulse' : 'bg-slate-300'}`} />
-                                <span className="text-sm font-bold text-slate-700">
+                                <div className={`w-2 h-2 rounded-full ${organization.onboardingStatus?.isWhatsAppConnected ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse' : 'bg-slate-600'}`} />
+                                <span className={`text-sm font-bold ${organization.onboardingStatus?.isWhatsAppConnected ? 'text-white' : 'text-slate-500'}`}>
                                     {organization.onboardingStatus?.isWhatsAppConnected ? 'Conectado e Operacional' : 'Desconectado'}
                                 </span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="h-px bg-slate-100" />
+                    <div className="h-px bg-white/5" />
 
                     <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                            <MessageSquare className="w-4 h-4 text-indigo-500" />
+                        <h3 className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-widest">
+                            <MessageSquare className="w-4 h-4 text-indigo-400" />
                             Canais de WhatsApp (Remoto)
                         </h3>
 
@@ -127,21 +127,21 @@ export const AdminOrgSetupModal: React.FC<AdminOrgSetupModalProps> = ({
                                 <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
                             </div>
                         ) : instances.length === 0 ? (
-                            <div className="text-center py-12 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-100">
-                                <p className="text-slate-400 text-sm font-medium">Nenhuma instância criada pelo cliente ainda.</p>
+                            <div className="text-center py-16 bg-slate-950/40 rounded-[2rem] border-2 border-dashed border-white/5">
+                                <p className="text-slate-500 text-sm font-bold">Nenhuma instância criada pelo cliente ainda.</p>
                             </div>
                         ) : (
                             <div className="space-y-4">
                                 {instances.map((inst) => (
-                                    <div key={inst.id} className="p-5 border border-slate-200 rounded-3xl bg-white shadow-sm hover:border-indigo-200 transition-all">
+                                    <div key={inst.id} className="p-6 border border-white/5 rounded-[2rem] bg-slate-950/40 hover:border-indigo-500/30 transition-all group/inst">
                                         <div className="flex items-start justify-between mb-4">
                                             <div className="flex items-center gap-3">
-                                                <div className={`p-2 rounded-xl ${['connected', 'conectado'].includes(inst.status) ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                                                    <MessageSquare className="w-4 h-4" />
+                                                <div className={`p-3 rounded-2xl ${['connected', 'conectado'].includes(inst.status) ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                                                    <MessageSquare className="w-5 h-5" />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-bold text-slate-800 text-sm">{inst.name}</h4>
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{inst.status}</span>
+                                                    <h4 className="font-black text-white text-sm group-hover/inst:text-cyan-400 transition-colors uppercase tracking-tight">{inst.name}</h4>
+                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{inst.status}</span>
                                                 </div>
                                             </div>
                                             <Badge variant={inst.status === 'conectado' ? 'success' : 'warning'}>
@@ -160,14 +160,14 @@ export const AdminOrgSetupModal: React.FC<AdminOrgSetupModalProps> = ({
                                                 </div>
                                             </div>
                                         ) : ['connected', 'conectado'].includes(inst.status) ? (
-                                            <div className="bg-emerald-50 rounded-2xl p-4 flex items-center justify-center gap-2 border border-emerald-100 text-emerald-700">
-                                                <CheckCircle2 className="w-4 h-4" />
-                                                <span className="text-xs font-bold">Tudo certo! Canal operando normalmente.</span>
+                                            <div className="bg-emerald-500/10 rounded-2xl p-5 flex items-center justify-center gap-3 border border-emerald-500/20 text-emerald-400">
+                                                <CheckCircle2 className="w-5 h-5" />
+                                                <span className="text-xs font-black uppercase tracking-widest">Tudo certo! Canal operando normalmente.</span>
                                             </div>
                                         ) : (
-                                            <div className="bg-slate-50 rounded-2xl p-4 flex items-center justify-center gap-2 text-slate-400">
-                                                <AlertCircle className="w-4 h-4" />
-                                                <span className="text-xs font-medium">Instância sem QR Code ou em processamento...</span>
+                                            <div className="bg-slate-950/50 rounded-2xl p-5 flex items-center justify-center gap-3 text-slate-500 border border-white/5">
+                                                <AlertCircle className="w-5 h-5" />
+                                                <span className="text-xs font-black uppercase tracking-widest">Instância sem QR Code ou em processamento...</span>
                                             </div>
                                         )}
                                     </div>
@@ -177,8 +177,8 @@ export const AdminOrgSetupModal: React.FC<AdminOrgSetupModalProps> = ({
                     </div>
                 </div>
 
-                <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-                    <Button variant="secondary" onClick={onClose} className="rounded-xl font-bold">
+                <div className="p-6 border-t border-white/5 bg-white/[0.02] flex justify-end gap-3">
+                    <Button variant="secondary" onClick={onClose} className="rounded-xl font-black uppercase tracking-widest text-[10px] bg-white/5 border-white/10 text-slate-300">
                         Fechar Painel
                     </Button>
                 </div>

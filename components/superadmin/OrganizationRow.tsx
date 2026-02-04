@@ -30,18 +30,18 @@ export const OrganizationRow: React.FC<OrganizationRowProps> = ({
     };
 
     return (
-        <tr className="border-b border-slate-200 hover:bg-slate-50 transition-all duration-200">
+        <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-all duration-300 group/row">
             {/* 1. Organização */}
             <td className="px-6 py-5">
                 <div className="flex flex-col gap-0.5">
-                    <span className="font-bold text-slate-900 line-clamp-1">{organization.name}</span>
+                    <span className="font-bold text-white line-clamp-1 group-hover/row:text-cyan-400 transition-colors">{organization.name}</span>
                     <span className="text-xs text-slate-400 font-medium">/{organization.slug}</span>
                 </div>
             </td>
 
             {/* 2. ID Column */}
             <td className="px-6 py-5">
-                <code className="text-[10px] bg-slate-50 text-slate-500 px-2 py-1 rounded-md font-mono border border-slate-100 shadow-sm" title={organization.id}>
+                <code className="text-[10px] bg-slate-950/50 text-slate-500 px-2 py-1 rounded-md font-mono border border-white/10" title={organization.id}>
                     {organization.id.substring(0, 2)}...{organization.id.substring(organization.id.length - 2)}
                 </code>
             </td>
@@ -67,7 +67,7 @@ export const OrganizationRow: React.FC<OrganizationRowProps> = ({
 
             {/* 6. Equipe */}
             <td className="px-6 py-5">
-                <div className="flex items-center gap-1.5 text-slate-700">
+                <div className="flex items-center gap-1.5 text-slate-300">
                     <span className="font-bold">{organization.stats.users}</span>
                     <span className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">membros</span>
                 </div>
@@ -75,7 +75,7 @@ export const OrganizationRow: React.FC<OrganizationRowProps> = ({
 
             {/* 7. Clientes */}
             <td className="px-6 py-5">
-                <div className="flex items-center gap-1.5 text-slate-700">
+                <div className="flex items-center gap-1.5 text-slate-300">
                     <span className="font-bold">{organization.stats.clients}</span>
                     <span className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">ativos</span>
                 </div>
@@ -94,7 +94,7 @@ export const OrganizationRow: React.FC<OrganizationRowProps> = ({
                         size="sm"
                         onClick={() => onOpenSetup(organization)}
                         title="Setup Assistant"
-                        className="bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100 font-bold text-[10px] h-8"
+                        className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20 font-bold text-[10px] h-8"
                     >
                         SETUP
                     </Button>
@@ -105,7 +105,7 @@ export const OrganizationRow: React.FC<OrganizationRowProps> = ({
                         icon={<Pencil className="w-3.5 h-3.5" />}
                         onClick={() => onEdit(organization)}
                         title="Editar"
-                        className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
+                        className="text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10"
                     />
                     <Button
                         variant="ghost"
@@ -113,7 +113,7 @@ export const OrganizationRow: React.FC<OrganizationRowProps> = ({
                         icon={<Power className="w-3.5 h-3.5" />}
                         onClick={() => onToggleStatus(organization)}
                         title={organization.status === 'active' ? 'Desativar' : 'Ativar'}
-                        className={organization.status === 'active' ? 'text-emerald-500 hover:bg-emerald-50' : 'text-slate-300 hover:text-emerald-500 hover:bg-emerald-50'}
+                        className={organization.status === 'active' ? 'text-emerald-500 hover:bg-emerald-500/10' : 'text-slate-600 hover:text-emerald-500 hover:bg-emerald-500/10'}
                     />
                     <Button
                         variant="ghost"
@@ -121,7 +121,7 @@ export const OrganizationRow: React.FC<OrganizationRowProps> = ({
                         icon={<Trash2 className="w-3.5 h-3.5" />}
                         onClick={() => onDelete(organization)}
                         title="Excluir"
-                        className="text-slate-300 hover:text-rose-600 hover:bg-rose-50"
+                        className="text-slate-600 hover:text-rose-500 hover:bg-rose-500/10"
                     />
                 </div>
             </td>

@@ -35,9 +35,9 @@ export const OrganizationTable: React.FC<OrganizationTableProps> = ({
     });
 
     return (
-        <Card className="overflow-hidden">
+        <div className="bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
             {/* Filters */}
-            <div className="p-4 border-b border-slate-200 bg-slate-50">
+            <div className="p-6 border-b border-white/5 bg-white/[0.02]">
                 <div className="flex gap-4 items-center">
                     {/* Search */}
                     <div className="flex-1 relative">
@@ -47,7 +47,7 @@ export const OrganizationTable: React.FC<OrganizationTableProps> = ({
                             placeholder="Buscar por nome ou slug..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                            className="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
                         />
                     </div>
 
@@ -55,7 +55,7 @@ export const OrganizationTable: React.FC<OrganizationTableProps> = ({
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value as any)}
-                        className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 bg-white"
+                        className="px-6 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500/30 text-slate-400 cursor-pointer hover:text-white transition-colors"
                     >
                         <option value="all">Todos os Status</option>
                         <option value="active">Ativos</option>
@@ -66,7 +66,7 @@ export const OrganizationTable: React.FC<OrganizationTableProps> = ({
                     <select
                         value={planFilter}
                         onChange={(e) => setPlanFilter(e.target.value as any)}
-                        className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 bg-white"
+                        className="px-6 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500/30 text-slate-400 cursor-pointer hover:text-white transition-colors"
                     >
                         <option value="all">Todos os Planos</option>
                         <option value={PlanType.BASIC}>Basic</option>
@@ -77,11 +77,11 @@ export const OrganizationTable: React.FC<OrganizationTableProps> = ({
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto custom-scrollbar">
                 <table className="w-full">
-                    <thead className="bg-slate-50 border-b border-slate-200">
+                    <thead className="bg-white/[0.03] border-b border-white/5">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                            <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
                                 Organização
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
@@ -110,7 +110,7 @@ export const OrganizationTable: React.FC<OrganizationTableProps> = ({
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white">
+                    <tbody className="divide-y divide-white/5">
                         {filteredOrganizations.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
@@ -136,10 +136,10 @@ export const OrganizationTable: React.FC<OrganizationTableProps> = ({
 
             {/* Results Count */}
             {filteredOrganizations.length > 0 && (
-                <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 text-sm text-slate-600">
+                <div className="px-8 py-4 border-t border-white/5 bg-white/[0.02] text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
                     Mostrando {filteredOrganizations.length} de {organizations.length} organizações
                 </div>
             )}
-        </Card>
+        </div>
     );
 };

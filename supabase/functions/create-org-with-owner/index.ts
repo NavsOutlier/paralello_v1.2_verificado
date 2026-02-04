@@ -35,59 +35,34 @@ serve(async (req) => {
             );
         }
 
-        // 1. Check if owner already exists or create new user
+        // 1. Ensure User exists and is invited (to trigger email notification)
         let userId: string;
 
-        const { data: { users }, error: listError } = await supabaseClient.auth.admin.listUsers();
-        // Simple verification (optimally use listUsers with filter if supported or try create)
-        // listUsers doesn't support email filter easily in older versions, but we can try createUser first.
-
-        const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
-            email: owner_email,
-            email_confirm: true,
-            user_metadata: { full_name: owner_name },
-            password: "TempPassword123!" // Set a temporary password to avoid error if password required
+        // Try to invite the user - this sends an email if they don't exist
+        // and returns the user if they already do.
+        const { data: inviteData, error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(owner_email, {
+            data: { full_name: owner_name }
         });
 
-        if (createError) {
-            // Assume user exists
-            // Find user by email in the list (fallback since retrieving by email via admin is tricky without scanning)
-            // If we have 'profiles', we can check there first which is faster.
+        if (inviteError) {
+            console.error("Invite error:", inviteError);
+            // If invite fails, they might already be a user. Try to find them.
             const { data: profile } = await supabaseClient
                 .from('profiles')
                 .select('id')
                 .eq('email', owner_email)
-                .single();
+                .maybeSingle();
 
             if (profile) {
                 userId = profile.id;
             } else {
-                // Fallback: This is slow but necessary if profile is missing but auth user exists
-                // (Or we could assume createError.message contained ID? No.)
-                // Let's try to find in auth.users by scanning (expensive but safe for now)
-                // Check if listUsers returns all? default is 50.
-                // If user not found in first 50, we might fail.
-                // Better approach: listUsers() with page? 
-                // Ideally we shouldn't be here often.
-                // Let's try to get the user via `supabaseClient.rpc` if a helper exists? No.
-
-                // Simplest fix: Just error out if we can't find the profile? 
-                // "User exists in Auth but not in Profiles - inconsistent state".
-                // We can try to upsert profile using the auth id if we knew it.
-                // But we don't know the ID.
-
-                // Wait, createError might be "User already registered". 
-                // If so, we assume they are in profiles. If not in profiles, we are stuck?
-                // Actually, Supabase `inviteUserByEmail` might return the user even if existing?
-                const { data: invitedUser, error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(owner_email);
-                if (invitedUser && invitedUser.user) {
-                    userId = invitedUser.user.id;
-                } else {
-                    return new Response(JSON.stringify({ error: `User exists but could not be retrieved: ${createError.message}` }), { status: 400, headers: corsHeaders });
-                }
+                return new Response(
+                    JSON.stringify({ error: `Could not create or find user: ${inviteError.message}` }),
+                    { status: 400, headers: corsHeaders }
+                );
             }
         } else {
-            userId = newUser.user.id;
+            userId = inviteData.user.id;
         }
 
         // 2. Ensure Profile exists and is updated

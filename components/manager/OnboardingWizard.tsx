@@ -387,31 +387,31 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         return (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
                 <div className="text-center space-y-2">
-                    <div className="inline-flex p-3 bg-indigo-100 text-indigo-600 rounded-2xl mb-2">
+                    <div className="inline-flex p-4 bg-indigo-500/10 text-indigo-400 rounded-2xl mb-2 border border-indigo-500/20">
                         <MessageSquare className="w-8 h-8" />
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-800">Conectar WhatsApp</h2>
-                    <p className="text-slate-500 max-w-sm mx-auto">
-                        Para automatizar seus atendimentos, precisamos conectar seu WhatsApp.
+                    <h2 className="text-3xl font-black text-white tracking-tight">Sincronizar Inteligência</h2>
+                    <p className="text-slate-400 max-w-sm mx-auto text-sm">
+                        Estabeleça a conexão com sua conta principal para orquestrar comunicações automatizadas.
                     </p>
                 </div>
 
                 {(!instance || (!instance.qrCode && !isConnected)) && (
-                    <div className="flex flex-col items-center gap-4 py-8">
-                        <div className="p-12 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50 text-center w-full max-w-sm flex flex-col items-center justify-center min-h-[220px]">
+                    <div className="flex flex-col items-center gap-6 py-8">
+                        <div className="p-12 border-2 border-dashed border-white/5 rounded-[40px] bg-white/[0.02] text-center w-full max-w-sm flex flex-col items-center justify-center min-h-[220px]">
                             {loading ? (
                                 <>
                                     <div className="relative">
                                         <Loader2 className="w-12 h-12 text-indigo-500 animate-spin mb-4" />
                                         <div className="absolute inset-0 bg-indigo-500/10 blur-xl animate-pulse rounded-full" />
                                     </div>
-                                    <p className="font-bold text-slate-800">Gerando seu QR Code...</p>
-                                    <p className="text-xs text-slate-400 mt-2 max-w-[200px]">Isso pode levar alguns segundos enquanto falamos com o WhatsApp.</p>
+                                    <p className="font-bold text-white">Codificando QR Code...</p>
+                                    <p className="text-xs text-slate-500 mt-2 max-w-[200px]">Estabelecendo túnel de conexão com os servidores do WhatsApp.</p>
                                 </>
                             ) : (
                                 <>
-                                    <Smartphone className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                                    <p className="text-sm text-slate-400 font-medium">Nenhuma conexão ativa</p>
+                                    <Smartphone className="w-12 h-12 text-slate-700 mx-auto mb-4" />
+                                    <p className="text-sm text-slate-500 font-bold uppercase tracking-widest">Aguardando Iniciação</p>
                                 </>
                             )}
                         </div>
@@ -428,9 +428,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                 )}
 
                 {isWaiting && instance.qrCode && (
-                    <Card className="p-8 border-indigo-200 bg-indigo-50/30 flex flex-col items-center gap-6 animate-in zoom-in-95 duration-500">
+                    <Card className="p-8 border-white/5 bg-white/[0.02] backdrop-blur-md flex flex-col items-center gap-8 animate-in zoom-in-95 duration-500 rounded-[40px]">
                         <div className="relative group">
-                            <div className="bg-white p-3 rounded-2xl border-2 border-indigo-100 shadow-xl transition-all group-hover:shadow-indigo-200">
+                            <div className="bg-white p-4 rounded-3xl shadow-2xl transition-all group-hover:shadow-indigo-500/20">
                                 <img src={instance.qrCode} alt="WhatsApp QR Code" className="w-48 h-48" />
                             </div>
                             <button
@@ -443,18 +443,18 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                             </button>
                         </div>
                         <div className="text-center">
-                            <p className="font-bold text-indigo-900">Aguardando leitura...</p>
-                            <p className="text-xs text-indigo-600 mt-1 mb-4">Abra o WhatsApp &gt; Dispositivos Conectados</p>
+                            <p className="font-black text-white tracking-tight text-lg mb-1">Aguardando Escaneamento</p>
+                            <p className="text-xs text-slate-500 mb-6">WhatsApp &gt; Configurações &gt; Dispositivos Conectados</p>
 
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleConnectWhatsApp}
                                 disabled={loading}
-                                className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100 font-bold"
+                                className="text-indigo-400 hover:text-white hover:bg-white/5 font-bold"
                             >
                                 {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                                Não apareceu? Gerar novo código
+                                Problemas técnicos? Solicitar novo código
                             </Button>
                         </div>
                     </Card>
@@ -462,12 +462,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
                 {isConnected && (
                     <div className="py-8 text-center space-y-6 animate-in zoom-in-95 duration-500">
-                        <div className="inline-flex p-4 bg-emerald-100 text-emerald-600 rounded-full">
+                        <div className="inline-flex p-5 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">
                             <CheckCircle2 className="w-12 h-12" />
                         </div>
                         <div className="space-y-1">
-                            <h3 className="text-xl font-bold text-slate-800">Conectado!</h3>
-                            <p className="text-sm text-slate-500">Sua conta está pronta para enviar mensagens.</p>
+                            <h3 className="text-2xl font-black text-white">Canal Estabelecido!</h3>
+                            <p className="text-sm text-slate-400">Sua conta está sincronizada e pronta para a missão.</p>
                         </div>
                         <Button
                             onClick={() => setStep(2)}
@@ -485,24 +485,24 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     const renderStep2 = () => (
         <div className="animate-in slide-in-from-right-8 fade-in duration-500">
             <div className="mb-8 flex flex-col items-center">
-                <div className="w-16 h-16 bg-emerald-100 rounded-3xl flex items-center justify-center text-emerald-600 mb-4 shadow-xl shadow-emerald-50">
+                <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-[24px] flex items-center justify-center text-emerald-400 mb-4 shadow-2xl shadow-emerald-900/10">
                     <UserPlus className="w-8 h-8" />
                 </div>
-                <h2 className="text-3xl font-black text-slate-800 tracking-tight text-center">Convidar Equipe 🤝</h2>
-                <p className="text-slate-500 mt-2 text-center max-w-sm text-sm leading-relaxed">
-                    Defina quem ajudará você na gestão, suas funções e permissões.
+                <h2 className="text-3xl font-black text-white tracking-tight text-center">Convocação de Agentes 🤝</h2>
+                <p className="text-slate-400 mt-2 text-center max-w-sm text-sm leading-relaxed">
+                    Defina quem terá acesso aos protocolos de gestão e quais serão suas autorizações.
                 </p>
             </div>
 
             <form onSubmit={handleInviteMembers} className="space-y-4">
                 <div className="space-y-4 max-h-[400px] overflow-y-auto px-1 custom-scrollbar">
                     {invitedMembers.map((member, idx) => (
-                        <div key={idx} className="p-5 bg-white border-2 border-slate-100 rounded-3xl relative group animate-in zoom-in-95 shadow-sm hover:border-indigo-100 transition-all">
+                        <div key={idx} className="p-6 bg-white/[0.02] border border-white/5 rounded-[32px] relative group animate-in zoom-in-95 shadow-lg hover:border-indigo-500/30 transition-all">
                             {invitedMembers.length > 1 && (
                                 <button
                                     type="button"
                                     onClick={() => removeMemberRow(idx)}
-                                    className="absolute -top-2 -right-2 w-8 h-8 bg-white border border-red-100 text-red-500 rounded-full flex items-center justify-center hover:bg-red-50 shadow-sm transition-all"
+                                    className="absolute -top-2 -right-2 w-8 h-8 bg-slate-900 border border-white/10 text-red-400 rounded-full flex items-center justify-center hover:bg-red-500/10 shadow-xl transition-all"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>
@@ -510,47 +510,47 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nome Completo</label>
+                                    <label className="text-[10px] font-black text-slate-600 uppercase ml-1 tracking-widest">Nome Completo</label>
                                     <input
                                         required
                                         type="text"
                                         value={member.name}
                                         onChange={(e) => updateMemberRow(idx, 'name', e.target.value)}
                                         placeholder="Ex: João Silva"
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium"
+                                        className="w-full px-4 py-2.5 bg-slate-950/40 border border-white/5 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium text-slate-200"
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Email de Convite</label>
+                                    <label className="text-[10px] font-black text-slate-600 uppercase ml-1 tracking-widest">Email de Convite</label>
                                     <input
                                         required
                                         type="email"
                                         value={member.email}
                                         onChange={(e) => updateMemberRow(idx, 'email', e.target.value)}
                                         placeholder="joao@suaagencia.com"
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium"
+                                        className="w-full px-4 py-2.5 bg-slate-950/40 border border-white/5 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium text-slate-200"
                                     />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Especialidade / Cargo</label>
+                                    <label className="text-[10px] font-black text-slate-600 uppercase ml-1 tracking-widest">Especialidade / Cargo</label>
                                     <input
                                         required
                                         type="text"
                                         value={member.jobTitle}
                                         onChange={(e) => updateMemberRow(idx, 'jobTitle', e.target.value)}
                                         placeholder="Ex: Gestor de Tráfego"
-                                        className="w-full px-4 py-2.5 bg-indigo-50/30 border border-indigo-100/50 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-bold text-indigo-700"
+                                        className="w-full px-4 py-2.5 bg-indigo-500/5 border border-indigo-500/20 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-bold text-indigo-400"
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Função no Sistema</label>
+                                    <label className="text-[10px] font-black text-slate-600 uppercase ml-1 tracking-widest">Função no Sistema</label>
                                     <select
                                         value={member.role}
                                         onChange={(e) => updateMemberRow(idx, 'role', e.target.value)}
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium"
+                                        className="w-full px-4 py-2.5 bg-slate-950/40 border border-white/5 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium text-slate-200"
                                     >
                                         <option value="member">Membro (Operacional)</option>
                                         <option value="manager">Gestor (Administrativo)</option>
@@ -558,8 +558,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                                 </div>
                             </div>
 
-                            <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
-                                <label className="text-[10px] font-black text-slate-400 uppercase block mb-3 ml-1">Permissões de Acesso</label>
+                            <div className="bg-white/[0.02] p-5 rounded-2xl border border-white/5">
+                                <label className="text-[10px] font-black text-slate-600 uppercase block mb-3 ml-1 tracking-widest">Permissões de Acesso</label>
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
                                     <label className="flex items-center gap-2 cursor-pointer group">
                                         <div className="relative flex items-center">
@@ -615,10 +615,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     <button
                         type="button"
                         onClick={addMemberRow}
-                        className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-dashed border-indigo-200 text-indigo-600 rounded-2xl hover:bg-indigo-50 hover:border-indigo-300 transition-all font-bold text-xs"
+                        className="flex items-center gap-2 px-6 py-4 bg-white/[0.02] border border-dashed border-white/10 text-slate-400 rounded-[24px] hover:bg-white/5 hover:border-indigo-500/30 transition-all font-bold text-[10px] uppercase tracking-widest"
                     >
                         <Plus className="w-4 h-4" />
-                        Adicionar outro membro
+                        Adicionar Novo Agente
                     </button>
                 </div>
 
@@ -626,7 +626,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     <Button
                         type="submit"
                         disabled={loading || invitedMembers.some(m => !m.email || !m.name)}
-                        className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-100 transition-all active:scale-[0.98] disabled:opacity-50"
+                        className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-2xl shadow-indigo-500/10 transition-all active:scale-[0.98] disabled:opacity-50"
                     >
                         {loading ? (
                             <Loader2 className="w-5 h-5 animate-spin mr-2" />
@@ -652,18 +652,18 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     const renderStep3 = () => (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="text-center space-y-2">
-                <div className="inline-flex p-3 bg-blue-100 text-blue-600 rounded-2xl mb-2">
+                <div className="inline-flex p-4 bg-white/5 text-blue-400 rounded-2xl mb-2 border border-white/10">
                     <Users className="w-8 h-8" />
                 </div>
-                <h2 className="text-3xl font-black text-slate-800">Primeiro Cliente</h2>
-                <p className="text-slate-500 max-w-sm mx-auto text-sm">
-                    Cadastre seu primeiro cliente e crie o grupo de atendimento automático.
+                <h2 className="text-3xl font-black text-white tracking-tight">Primeiro Ativo</h2>
+                <p className="text-slate-400 max-w-sm mx-auto text-sm">
+                    Cadastre o alvo principal da sua operação para iniciar a orquestração.
                 </p>
             </div>
 
-            <form onSubmit={handleCreateClient} className="space-y-4 max-w-sm mx-auto bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm">
+            <form onSubmit={handleCreateClient} className="space-y-6 max-w-sm mx-auto bg-white/[0.02] p-8 rounded-[40px] border border-white/5 shadow-2xl">
                 <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nome do Cliente</label>
+                    <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2 ml-1">Nome do Ativo</label>
                     <input
                         required
                         value={clientName}
@@ -675,56 +675,56 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                             }
                         }}
                         placeholder="Ex: Pedro Alvares"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium"
+                        className="w-full px-4 py-3 bg-slate-950/40 border border-white/5 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium text-slate-200"
                     />
                 </div>
                 <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">WhatsApp (55 + DDD + Número)</label>
+                    <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2 ml-1">WhatsApp (55 + DDD + Número)</label>
                     <input
                         value={clientPhone}
                         onChange={(e) => setClientPhone(e.target.value)}
                         placeholder="Ex: 5511999998888"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium"
+                        className="w-full px-4 py-3 bg-slate-950/40 border border-white/5 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium text-slate-200"
                     />
                 </div>
 
                 <div className="space-y-3">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Configuração do Grupo</label>
+                    <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2 ml-1">Configuração de Campo</label>
                     <div className="grid grid-cols-2 gap-2">
                         <button
                             type="button"
                             onClick={() => setGroupMode('create')}
-                            className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${groupMode === 'create'
-                                ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-inner'
-                                : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'
+                            className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${groupMode === 'create'
+                                ? 'border-blue-500 bg-blue-500/10 text-blue-400 shadow-2xl'
+                                : 'border-white/5 bg-slate-950/40 text-slate-600 hover:border-white/10'
                                 }`}
                         >
                             <Sparkles className="w-5 h-5" />
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Criar Novo</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Novo Grupo</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => setGroupMode('link')}
-                            className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${groupMode === 'link'
-                                ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-inner'
-                                : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'
+                            className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${groupMode === 'link'
+                                ? 'border-blue-500 bg-blue-500/10 text-blue-400 shadow-2xl'
+                                : 'border-white/5 bg-slate-950/40 text-slate-600 hover:border-white/10'
                                 }`}
                         >
                             <Users className="w-5 h-5" />
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Já Existente</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Existente</span>
                         </button>
                     </div>
                 </div>
 
                 {groupMode === 'create' && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nome do Grupo</label>
+                        <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2 ml-1">Nome da Célula de Operação</label>
                         <input
                             required
                             value={groupName}
                             onChange={(e) => setGroupName(e.target.value)}
                             placeholder="Ex: Suporte VIP - Pedro"
-                            className="w-full px-4 py-3 bg-indigo-50/50 border border-indigo-100 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-bold text-indigo-700"
+                            className="w-full px-4 py-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-bold text-indigo-400"
                         />
                     </div>
                 )}
@@ -732,14 +732,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                 {groupMode === 'link' && (
                     <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-2">
                         <div className="flex items-center justify-between ml-1">
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">ID do Grupo</label>
+                            <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest">Código da Célula (ID)</label>
                             <button
                                 type="button"
                                 onClick={() => setShowHelp(true)}
-                                className="text-[10px] font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1"
+                                className="text-[10px] font-bold text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1"
                             >
                                 <HelpCircle className="w-3 h-3" />
-                                COMO ACHAR?
+                                MANUAL DE EXTRAÇÃO
                             </button>
                         </div>
                         <input
@@ -747,20 +747,20 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                             value={whatsappGroupId}
                             onChange={(e) => setWhatsappGroupId(e.target.value)}
                             placeholder="123456789@g.us"
-                            className="w-full px-4 py-3 bg-white border-2 border-blue-100 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-mono text-sm"
+                            className="w-full px-4 py-3 bg-slate-950/60 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-mono text-sm text-blue-400"
                         />
                     </div>
                 )}
 
                 {isCreatingGroup ? (
-                    <Card className="p-6 bg-blue-50/50 border-blue-200 flex flex-col items-center gap-4 animate-pulse mt-4">
+                    <Card className="p-8 bg-blue-500/5 border-white/5 flex flex-col items-center gap-6 animate-pulse mt-6 rounded-[32px]">
                         <div className="relative">
-                            <div className="w-12 h-12 rounded-full border-4 border-blue-100 border-t-blue-600 animate-spin" />
+                            <div className="w-12 h-12 rounded-full border-4 border-blue-500/10 border-t-blue-500 animate-spin" />
                             <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-yellow-500 animate-bounce" />
                         </div>
                         <div className="text-center">
-                            <h3 className="text-blue-900 font-bold">Criando Grupo...</h3>
-                            <p className="text-blue-600 text-xs mt-1">Quase lá! Estamos configurando seu WhatsApp.</p>
+                            <h3 className="text-white font-black tracking-tight text-lg">Criando Célula...</h3>
+                            <p className="text-blue-400 text-xs mt-1">Configurando protocolos de comunicação.</p>
                         </div>
                     </Card>
                 ) : (
@@ -768,13 +768,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         <Button
                             type="submit"
                             disabled={loading || !clientName}
-                            className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl shadow-lg shadow-indigo-100 transition-all active:scale-[0.98] disabled:opacity-50 mt-4 uppercase tracking-wider text-sm"
+                            className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl shadow-2xl shadow-indigo-500/10 transition-all active:scale-[0.98] disabled:opacity-50 mt-6 uppercase tracking-wider text-sm"
                         >
                             {loading ? (
                                 <Loader2 className="w-5 h-5 animate-spin mr-2" />
                             ) : (
                                 <>
-                                    Próximo: Vincular Equipe
+                                    Vincular Operativos
                                     <ArrowRight className="ml-2 w-5 h-5" />
                                 </>
                             )}
@@ -782,9 +782,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         <button
                             type="button"
                             onClick={() => setStep(5)}
-                            className="text-[10px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest text-center py-2"
+                            className="text-[10px] font-black text-slate-600 hover:text-slate-400 transition-colors uppercase tracking-widest text-center py-2"
                         >
-                            Pular por enquanto
+                            Ignorar por enquanto
                         </button>
                     </>
                 )}
@@ -795,23 +795,23 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     const renderStep4 = () => (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="text-center space-y-2">
-                <div className="inline-flex p-3 bg-indigo-100 text-indigo-600 rounded-2xl mb-2">
+                <div className="inline-flex p-4 bg-white/5 text-indigo-400 rounded-2xl mb-2 border border-white/10">
                     <Activity className="w-8 h-8" />
                 </div>
-                <h2 className="text-3xl font-black text-slate-800">Integração Tintim</h2>
-                <p className="text-slate-500 max-w-sm mx-auto text-sm">
-                    Deseja integrar o Tintim para automatizar os dados de marketing deste cliente?
+                <h2 className="text-3xl font-black text-white tracking-tight">Integração de Marketing</h2>
+                <p className="text-slate-400 max-w-sm mx-auto text-sm">
+                    Deseja conectar os protocolos do Tintim para automatizar os dados deste ativo?
                 </p>
             </div>
 
             <div className="max-w-md mx-auto space-y-6">
-                <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
-                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="bg-white/[0.02] p-8 rounded-[40px] border border-white/5 shadow-2xl space-y-6">
+                    <div className="flex items-center justify-between p-5 bg-slate-950/40 rounded-2xl border border-white/5">
                         <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-lg ${hasTintim ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-200 text-slate-400'}`}>
+                            <div className={`p-2 rounded-lg ${hasTintim ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'bg-white/5 text-slate-600'}`}>
                                 <Activity className="w-5 h-5" />
                             </div>
-                            <span className="font-bold text-slate-700">Deseja integrar agora?</span>
+                            <span className="font-bold text-slate-300">Ativar Integração?</span>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                             <input
@@ -820,7 +820,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                                 checked={hasTintim}
                                 onChange={(e) => setHasTintim(e.target.checked)}
                             />
-                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                         </label>
                     </div>
 
@@ -841,7 +841,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     <Button
                         onClick={handleSaveTintim}
                         disabled={loading || (hasTintim && (!tintimConfig.customer_code || !tintimConfig.security_token))}
-                        className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-100 transition-all active:scale-[0.98] disabled:opacity-50"
+                        className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-2xl shadow-indigo-500/10 transition-all active:scale-[0.98] disabled:opacity-50"
                     >
                         {loading ? (
                             <Loader2 className="w-5 h-5 animate-spin mr-2" />
@@ -860,28 +860,28 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     const renderStep5 = () => (
         <div className="animate-in slide-in-from-right-8 fade-in duration-500">
             <div className="mb-10 flex flex-col items-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-3xl flex items-center justify-center text-blue-600 mb-6 shadow-xl shadow-blue-50">
+                <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/20 rounded-[24px] flex items-center justify-center text-blue-400 mb-6 shadow-2xl shadow-blue-900/10">
                     <UserCog className="w-8 h-8" />
                 </div>
-                <h2 className="text-4xl font-black text-slate-800 tracking-tight text-center">Quem atuará com o cliente?</h2>
-                <p className="text-slate-500 mt-3 text-center max-w-sm text-lg leading-relaxed">
-                    Selecione os membros da equipe que terão acesso ao atendimento deste cliente.
+                <h2 className="text-4xl font-black text-white tracking-tight text-center">Escalation Protocol</h2>
+                <p className="text-slate-400 mt-3 text-center max-w-sm text-lg leading-relaxed">
+                    Selecione os agentes autorizados para intervir na operação deste ativo.
                 </p>
             </div>
 
             <div className="space-y-3 max-h-[300px] overflow-y-auto px-1 mb-8">
                 {allTeamMembers.length === 0 ? (
-                    <div className="text-center py-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-300 mb-2" />
-                        <p className="text-sm text-slate-500 font-bold">Carregando sua equipe...</p>
+                    <div className="text-center py-10 bg-white/[0.02] rounded-3xl border-2 border-dashed border-white/5">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-700 mb-2" />
+                        <p className="text-sm text-slate-600 font-bold">Localizando operativos...</p>
                     </div>
                 ) : (
                     allTeamMembers.map((member) => (
                         <label
                             key={member.id}
-                            className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all cursor-pointer ${selectedMemberIds.includes(member.id)
-                                ? 'bg-blue-50 border-blue-200 shadow-md transform scale-[1.02]'
-                                : 'bg-white border-slate-100 hover:border-blue-100'
+                            className={`flex items-center gap-4 p-5 rounded-[24px] border-2 transition-all cursor-pointer ${selectedMemberIds.includes(member.id)
+                                ? 'bg-indigo-500/10 border-indigo-500/30 shadow-2xl transform scale-[1.02]'
+                                : 'bg-white/[0.02] border-white/5 hover:border-indigo-500/30'
                                 }`}
                         >
                             <div className="relative">
@@ -897,19 +897,19 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                                         }
                                     }}
                                 />
-                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedMemberIds.includes(member.id)
-                                    ? 'bg-blue-600 border-blue-600 text-white'
-                                    : 'border-slate-200 bg-white'
+                                <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${selectedMemberIds.includes(member.id)
+                                    ? 'bg-indigo-500 border-indigo-500 text-white'
+                                    : 'border-white/10 bg-slate-950'
                                     }`}>
                                     {selectedMemberIds.includes(member.id) && <Check className="w-3.5 h-3.5" />}
                                 </div>
                             </div>
                             <div className="flex-1">
-                                <p className="font-bold text-slate-800">{member.profile?.name || 'Membro'}</p>
-                                <p className="text-xs text-slate-500">{member.profile?.email}</p>
+                                <p className="font-bold text-white tracking-tight">{member.profile?.name || 'Agente'}</p>
+                                <p className="text-xs text-slate-500 font-mono uppercase tracking-tighter">{member.profile?.email}</p>
                             </div>
                             {member.job_title && (
-                                <Badge variant="outline" className="bg-white text-blue-600 border-blue-100">
+                                <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 font-black text-[10px] uppercase tracking-widest">
                                     {member.job_title}
                                 </Badge>
                             )}
@@ -921,7 +921,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             <Button
                 onClick={handleAssignMembers}
                 disabled={loading || allTeamMembers.length === 0}
-                className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-[0.98] disabled:opacity-50"
+                className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-2xl shadow-indigo-500/10 transition-all active:scale-[0.98] disabled:opacity-50"
             >
                 {loading ? (
                     <Loader2 className="w-5 h-5 animate-spin mr-2" />
@@ -937,30 +937,30 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
     const renderAdvisory = () => (
         <div className="text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="mx-auto w-20 h-20 bg-amber-100 rounded-[30px] flex items-center justify-center text-amber-600 shadow-xl shadow-amber-50">
+            <div className="mx-auto w-24 h-24 bg-amber-500/10 rounded-[32px] border border-amber-500/20 flex items-center justify-center text-amber-500 shadow-2xl shadow-amber-900/10">
                 <Smartphone className="w-10 h-10" />
             </div>
             <div className="space-y-3 font-sans">
-                <h2 className="text-3xl font-black text-slate-800 tracking-tight">Aviso Importante 📱</h2>
-                <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm max-w-sm mx-auto">
-                    <p className="text-slate-600 leading-relaxed font-medium text-sm">
-                        Para configurar sua automação agora, você precisará estar com o <span className="text-indigo-600 font-bold">celular em mãos</span> que você usa para falar com seus clientes para <span className="text-indigo-600 font-bold">escanear o QR Code</span>.
+                <h2 className="text-3xl font-black text-white tracking-tight">Protocolo de Iniciação 📱</h2>
+                <div className="bg-white/[0.02] backdrop-blur-md p-6 rounded-[32px] border border-white/5 shadow-sm max-w-sm mx-auto">
+                    <p className="text-slate-400 leading-relaxed font-medium text-sm">
+                        Para configurar sua automação agora, você precisará estar com o <span className="text-indigo-400 font-bold">celular em mãos</span> que você usa para falar com seus clientes para <span className="text-indigo-400 font-bold">escanear o QR Code</span>.
                     </p>
                 </div>
             </div>
             <div className="space-y-4 max-w-sm mx-auto">
                 <Button
                     onClick={() => setIsConfirmed(true)}
-                    className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl shadow-xl shadow-indigo-100 transition-all active:scale-[0.98] uppercase tracking-wider text-sm"
+                    className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl shadow-xl shadow-indigo-500/10 transition-all active:scale-[0.98] uppercase tracking-wider text-sm"
                 >
-                    Estou com o celular, quero iniciar a configuração!
+                    Iniciar Protocolo de Setup
                     <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
                 <button
                     onClick={onComplete}
-                    className="text-[10px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-[0.2em]"
+                    className="text-[10px] font-black text-slate-600 hover:text-slate-400 transition-colors uppercase tracking-[0.2em]"
                 >
-                    Configurar em outro momento
+                    Sincronizar em Outra Ocasião
                 </button>
             </div>
         </div>
@@ -970,43 +970,43 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         <div className="text-center space-y-10 py-4 animate-in zoom-in-95 fade-in duration-700">
             {/* Header com Brilho */}
             <div className="relative inline-block group">
-                <div className="absolute inset-0 bg-emerald-400 blur-[80px] opacity-30 group-hover:opacity-50 transition-opacity animate-pulse" />
-                <div className="relative p-8 bg-white rounded-[40px] shadow-2xl border border-emerald-100 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-500">
-                    <Sparkles className="w-16 h-16 text-emerald-500" />
-                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white p-1">
-                        <Check className="w-4 h-4" />
+                <div className="absolute inset-0 bg-emerald-500 blur-[80px] opacity-30 group-hover:opacity-50 transition-opacity animate-pulse" />
+                <div className="relative p-10 bg-white/[0.02] rounded-[48px] shadow-3xl border border-white/5 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-700">
+                    <Sparkles className="w-20 h-20 text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.5)]" />
+                    <div className="absolute -top-3 -right-3 w-10 h-10 bg-emerald-500 rounded-full border-4 border-slate-900 flex items-center justify-center text-white p-2 shadow-2xl">
+                        <Check className="w-5 h-5" />
                     </div>
                 </div>
             </div>
 
             {/* Títulos */}
             <div className="space-y-4">
-                <h2 className="text-4xl font-black text-slate-800 tracking-tight">
-                    Tudo Pronto! 🚀
+                <h2 className="text-4xl font-black text-white tracking-widest italic uppercase">
+                    Missão Cumprida! 🚀
                 </h2>
-                <p className="text-slate-500 max-w-sm mx-auto text-lg leading-relaxed">
-                    Sua organização está configurada e pronta para escalar com o Blackback.
+                <p className="text-slate-400 max-w-sm mx-auto text-lg leading-relaxed">
+                    Sua agência agora é uma estação tática de alta performance.
                 </p>
             </div>
 
             {/* Checklist de Sucesso */}
-            <div className="max-w-xs mx-auto space-y-3 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+            <div className="max-w-xs mx-auto space-y-4 bg-white/[0.02] p-8 rounded-[40px] border border-white/5 shadow-2xl">
                 {[
-                    'WhatsApp Conectado',
-                    'Equipe Convidada e Roles Atribuídos',
-                    'Primeiro Cliente Cadastrado',
-                    hasTintim ? 'Integração Tintim Concluída' : 'Setup do Cliente Concluído',
-                    'Acesso da Equipe Vinculado'
+                    'Conexão Tática Estabelecida',
+                    'Agentes Convocados e Autorizados',
+                    'Ficha de Ativo Registrada',
+                    hasTintim ? 'Briefing de Marketing Ativado' : 'Protocolo Inicial Concluído',
+                    'Orquestração Iniciada'
                 ].map((item, idx) => (
                     <div
                         key={idx}
                         className="flex items-center gap-3 animate-in slide-in-from-left-4 fade-in duration-500 fill-mode-both"
                         style={{ animationDelay: `${idx * 200}ms` }}
                     >
-                        <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                        <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
                             <Check className="w-3.5 h-3.5" />
                         </div>
-                        <span className="text-xs font-bold text-slate-600">{item}</span>
+                        <span className="text-xs font-black text-slate-300 uppercase tracking-widest">{item}</span>
                     </div>
                 ))}
             </div>
@@ -1015,11 +1015,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             <div className="max-w-sm mx-auto pt-4 px-8">
                 <Button
                     onClick={onComplete}
-                    className="w-full h-16 rounded-[24px] bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xl shadow-2xl shadow-indigo-200 active:scale-95 transition-all group overflow-hidden relative"
+                    className="w-full h-16 rounded-[28px] bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xl shadow-3xl shadow-indigo-500/20 active:scale-95 transition-all group overflow-hidden relative"
                 >
                     <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 skew-x-[-20deg]" />
-                    <span className="relative z-10 flex items-center justify-center">
-                        Ir para meu Painel
+                    <span className="relative z-10 flex items-center justify-center tracking-widest uppercase text-sm">
+                        Acessar Terminal
                         <ArrowRight className="w-6 h-6 ml-2" />
                     </span>
                 </Button>
@@ -1028,10 +1028,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     );
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-xl p-4">
-            <div className="w-full max-w-2xl bg-[#F8FAFC] rounded-[48px] shadow-2xl border border-white/50 overflow-hidden relative">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-xl p-4">
+            <div className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-[48px] shadow-3xl overflow-hidden relative animate-in fade-in zoom-in-95 duration-300">
                 {/* Progress Bar */}
-                <div className="absolute top-0 left-0 right-0 h-1.5 bg-slate-200">
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-white/5">
                     <div
                         className="h-full bg-indigo-500 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(99,102,241,0.5)]"
                         style={{ width: `${(step / 5) * 100}%` }}
@@ -1042,7 +1042,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     {/* Exit Button - Positioned in the top-right corner */}
                     <button
                         onClick={onComplete}
-                        className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all z-10"
+                        className="absolute top-8 right-8 p-3 text-slate-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all z-10"
                         title="Sair e configurar depois"
                     >
                         <X className="w-5 h-5" />
@@ -1050,18 +1050,18 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
                     {/* Header Controls */}
                     <div className="flex items-center justify-between mb-12">
-                        <div className="flex items-center gap-2">
-                            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400 shadow-lg">
                                 <Building2 className="w-6 h-6" />
                             </div>
-                            <span className="font-black text-slate-800 tracking-tighter text-xl">BLACKBACK</span>
+                            <span className="font-black text-white tracking-widest text-xl italic">BLACKBACK</span>
                         </div>
                         {window.innerWidth > 768 && (
                             <div className="flex gap-2">
                                 {[1, 2, 3, 4, 5, 6].map((s) => (
                                     <div
                                         key={s}
-                                        className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${step === s ? 'w-8 bg-indigo-600' : s < step ? 'bg-emerald-500' : 'bg-slate-200'
+                                        className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${step === s ? 'w-8 bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]' : s < step ? 'bg-emerald-500/50' : 'bg-white/5'
                                             }`}
                                     />
                                 ))}
@@ -1087,8 +1087,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
                     {/* Footer Info */}
                     <footer className="mt-12 text-center">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">
-                            {!isConfirmed ? 'Preparação do Setup' : `Onboarding Blackback • Passo ${step} de 6`}
+                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.4em]">
+                            {!isConfirmed ? 'Protocolo de Preparação' : `Operação Blackback • Fase ${step} de 6`}
                         </p>
                     </footer>
                 </div>

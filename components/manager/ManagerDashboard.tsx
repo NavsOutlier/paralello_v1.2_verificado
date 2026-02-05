@@ -280,7 +280,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
     };
 
     return (
-        <div className="flex-1 p-8 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="flex-1 h-full p-8 pb-20 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Onboarding Wizard Overlay */}
             {showWizard && (
                 <OnboardingWizard
@@ -302,7 +302,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
 
                 {/* Onboarding Checklist */}
                 {!loading && (
-                    <div className="relative bg-slate-900/40 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/10 shadow-3xl overflow-hidden group">
+                    <div className="relative bg-slate-900/40 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/10 shadow-3xl group">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
                         <OnboardingChecklist
                             stats={stats}

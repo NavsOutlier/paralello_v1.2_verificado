@@ -428,6 +428,7 @@ export const Workspace: React.FC = () => {
           distortionLabels={distortionLabels}
           setDistortionLabels={setDistortionLabels}
           whatsappStatus={activeWhatsappStatus}
+          rightPanelWidth={rightSidebarWidth}
         />
       </div>
 

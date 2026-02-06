@@ -61,6 +61,7 @@ interface ClientInfoDrawerProps {
     isOpen: boolean;
     onClose: () => void;
     client: Client | null;
+    width?: number;
 }
 
 const PRIORITY_CONFIG = {
@@ -82,7 +83,8 @@ const SERVICE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '
 export const ClientInfoDrawer: React.FC<ClientInfoDrawerProps> = ({
     isOpen,
     onClose,
-    client
+    client,
+    width = 440
 }) => {
     const { organizationId } = useAuth();
     const { showToast } = useToast();
@@ -255,7 +257,10 @@ export const ClientInfoDrawer: React.FC<ClientInfoDrawerProps> = ({
             />
 
             {/* Drawer */}
-            <div className={`fixed top-0 right-0 h-full w-full max-w-md bg-slate-900/95 backdrop-blur-2xl border-l border-white/10 shadow-2xl shadow-black/50 z-50 transform transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div
+                className={`fixed top-0 right-0 h-full bg-slate-900/95 backdrop-blur-2xl border-l border-white/10 shadow-2xl shadow-black/50 z-50 transform transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+                style={{ width: `${width}px` }}
+            >
                 {/* Header */}
                 <div className="p-6 border-b border-white/5 bg-gradient-to-r from-slate-900/50 to-slate-800/50">
                     <div className="flex items-start justify-between">

@@ -22,6 +22,7 @@ interface ChatAreaProps {
     distortionLabels?: any[];
     setDistortionLabels?: (labels: any[]) => void;
     whatsappStatus?: string;
+    rightPanelWidth?: number;
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({
@@ -37,7 +38,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     setDistortionPositions,
     distortionLabels = [],
     setDistortionLabels,
-    whatsappStatus = 'online'
+    whatsappStatus = 'online',
+    rightPanelWidth = 440
 }) => {
     const [inputText, setInputText] = useState('');
     const [isSending, setIsSending] = useState(false);
@@ -378,6 +380,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 isOpen={showClientInfo}
                 onClose={() => setShowClientInfo(false)}
                 client={clientForDrawer}
+                width={rightPanelWidth}
             />
         </>
     );

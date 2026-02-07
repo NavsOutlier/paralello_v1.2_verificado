@@ -28,7 +28,10 @@ export async function createOrganization(data: Partial<Organization>): Promise<O
             plan: data.plan,
             billing_document: data.billingDocument,
             billing_email: data.billingEmail,
-            activate_billing: data.activateBilling
+            activate_billing: data.activateBilling,
+            contracted_clients: data.contractedClients,
+            max_users: data.maxUsers,
+            billing_value: data.billingValue
         }
     });
 

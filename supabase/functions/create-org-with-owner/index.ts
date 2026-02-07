@@ -23,7 +23,18 @@ serve(async (req) => {
             }
         );
 
-        const { organization, owner_email, owner_name, plan, billing_document, billing_email, activate_billing } = await req.json();
+        const {
+            organization,
+            owner_email,
+            owner_name,
+            plan,
+            billing_document,
+            billing_email,
+            activate_billing,
+            contracted_clients,
+            max_users,
+            billing_value
+        } = await req.json();
 
         if (!organization?.name || !organization?.slug || !owner_email || !owner_name || !plan) {
             return new Response(
@@ -118,6 +129,9 @@ serve(async (req) => {
                 owner_email: owner_email,
                 billing_document: billing_document,
                 billing_email: billing_email,
+                contracted_clients: contracted_clients,
+                max_users: max_users,
+                billing_value: billing_value,
             })
             .select()
             .single();
@@ -179,6 +193,9 @@ serve(async (req) => {
                                 billing_email: orgData.billing_email,
                                 owner_name: orgData.owner_name,
                                 owner_email: orgData.owner_email,
+                                contracted_clients: orgData.contracted_clients,
+                                billing_value: orgData.billing_value,
+                                max_users: orgData.max_users,
                                 created_at: orgData.created_at
                             },
                             plan: orgData.plan

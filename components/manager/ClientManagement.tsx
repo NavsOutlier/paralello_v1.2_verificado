@@ -95,9 +95,9 @@ export const ClientManagement: React.FC = () => {
         if (!organizationId) return;
 
         // Check Limit for new clients
-        if (!selectedClient && !isSuperAdmin && plan) {
-            if (clients.length >= plan.max_clients) {
-                showToast(`Limite de clientes atingido (${plan.max_clients}). Faça upgrade do seu plano para cadastrar mais clientes.`, 'error');
+        if (!selectedClient && !isSuperAdmin && orgLimits) {
+            if (clients.length >= orgLimits.contractedClients) {
+                showToast(`Limite de clientes atingido (${orgLimits.contractedClients}). Faça upgrade do seu plano para cadastrar mais clientes.`, 'error');
                 return;
             }
         }
@@ -206,7 +206,7 @@ export const ClientManagement: React.FC = () => {
                                     <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white/5 rounded-full border border-white/5">
                                         <div className="w-1 h-1 rounded-full bg-cyan-400" />
                                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                            {plan.max_clients >= 999999 ? 'Ilimitado' : `Limite: ${plan.max_clients}`}
+                                            {orgLimits?.contractedClients && orgLimits.contractedClients >= 999999 ? 'Ilimitado' : `Limite: ${orgLimits?.contractedClients || 0}`}
                                         </span>
                                     </div>
                                 )}
@@ -215,7 +215,7 @@ export const ClientManagement: React.FC = () => {
                     </div>
                     {canManage && (
                         (() => {
-                            const clientLimit = orgLimits?.contractedClients || plan?.max_clients || 999999;
+                            const clientLimit = orgLimits?.contractedClients || 999999;
                             const isAtLimit = !isSuperAdmin && clients.length >= clientLimit;
 
                             if (isAtLimit) {

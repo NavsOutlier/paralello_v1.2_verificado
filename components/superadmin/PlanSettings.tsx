@@ -28,7 +28,6 @@ interface PlanConfig {
     base_price: number;
     price_per_client: number;
     max_users: number;
-    max_clients: number;
     trial_days: number;
     features: string[];
     modules: string[];
@@ -57,7 +56,6 @@ export const PlanSettings: React.FC = () => {
         base_price: 0,
         price_per_client: 0,
         max_users: 1,
-        max_clients: 50,
         trial_days: 7,
         features: [],
         modules: AVAILABLE_MODULES.map(m => m.id),
@@ -181,7 +179,6 @@ export const PlanSettings: React.FC = () => {
                 base_price: 0,
                 price_per_client: 0,
                 max_users: 1,
-                max_clients: 50,
                 trial_days: 7,
                 features: [],
                 modules: AVAILABLE_MODULES.map(m => m.id),
@@ -336,15 +333,6 @@ export const PlanSettings: React.FC = () => {
                                                 value={plan.max_users === 999999 ? '' : plan.max_users}
                                                 placeholder="Ilimitado"
                                                 onChange={(e) => handlePlanChange(plan.id, 'max_users', e.target.value ? Number(e.target.value) : 999999)}
-                                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm font-bold text-white focus:ring-2 focus:ring-indigo-500/30 outline-none"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Trial (Dias)</label>
-                                            <input
-                                                type="number"
-                                                value={plan.trial_days}
-                                                onChange={(e) => handlePlanChange(plan.id, 'trial_days', Number(e.target.value))}
                                                 className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm font-bold text-white focus:ring-2 focus:ring-indigo-500/30 outline-none"
                                             />
                                         </div>

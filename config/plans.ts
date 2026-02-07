@@ -15,7 +15,7 @@ export const PLANS: Record<PlanType, Plan> = {
         price: 397,
         pricePerClient: 0,
         maxUsers: 1,
-        maxClients: 50,
+
         features: [
             '1 usuário',
             'Até 50 clientes',
@@ -31,7 +31,7 @@ export const PLANS: Record<PlanType, Plan> = {
         price: 97,
         pricePerClient: 7,
         maxUsers: 10,
-        maxClients: Infinity,
+
         features: [
             'Até 10 usuários',
             'Clientes ilimitados',
@@ -49,7 +49,7 @@ export const PLANS: Record<PlanType, Plan> = {
         price: 297,
         pricePerClient: 5,
         maxUsers: Infinity,
-        maxClients: Infinity,
+
         features: [
             'Usuários ilimitados',
             'Clientes ilimitados',
@@ -62,6 +62,14 @@ export const PLANS: Record<PlanType, Plan> = {
             'Suporte 24/7',
             'Gestor de conta dedicado'
         ]
+    },
+    [PlanType.TINTIM]: {
+        id: PlanType.TINTIM,
+        name: 'TinTim',
+        price: 0,
+        pricePerClient: 0,
+        maxUsers: 999999,
+        features: ['Integração com TinTim']
     }
 };
 
@@ -71,7 +79,8 @@ export const PLANS: Record<PlanType, Plan> = {
 export const PLAN_LABELS: Record<PlanType, string> = {
     [PlanType.GESTOR_SOLO]: 'Gestor Solo',
     [PlanType.AGENCIA]: 'Agência',
-    [PlanType.ENTERPRISE]: 'Enterprise'
+    [PlanType.ENTERPRISE]: 'Enterprise',
+    [PlanType.TINTIM]: 'TinTim'
 };
 
 /**

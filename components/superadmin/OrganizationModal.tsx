@@ -18,7 +18,6 @@ interface PlanConfig {
     base_price: number;
     price_per_client: number;
     max_users: number;
-    max_clients: number;
     trial_days: number;
     features: string[];
     modules: string[];
@@ -27,9 +26,9 @@ interface PlanConfig {
 
 // Fallback plans if database not available
 const FALLBACK_PLANS: PlanConfig[] = [
-    { id: 'gestor_solo', name: 'Gestor Solo', base_price: 397, price_per_client: 0, max_users: 1, max_clients: 50, trial_days: 7, features: [], modules: ['dash', 'workspace', 'kanban'], is_active: true },
-    { id: 'agencia', name: 'Agência', base_price: 97, price_per_client: 7, max_users: 10, max_clients: 999999, trial_days: 7, features: [], modules: ['dash', 'workspace', 'kanban', 'marketing', 'automation'], is_active: true },
-    { id: 'enterprise', name: 'Enterprise', base_price: 297, price_per_client: 5, max_users: 999999, max_clients: 999999, trial_days: 14, features: [], modules: ['dash', 'workspace', 'kanban', 'marketing', 'automation', 'workers_ia', 'manager'], is_active: true },
+    { id: 'gestor_solo', name: 'Gestor Solo', base_price: 397, price_per_client: 0, max_users: 1, trial_days: 7, features: [], modules: ['dash', 'workspace', 'kanban'], is_active: true },
+    { id: 'agencia', name: 'Agência', base_price: 97, price_per_client: 7, max_users: 10, trial_days: 7, features: [], modules: ['dash', 'workspace', 'kanban', 'marketing', 'automation'], is_active: true },
+    { id: 'enterprise', name: 'Enterprise', base_price: 297, price_per_client: 5, max_users: 999999, trial_days: 14, features: [], modules: ['dash', 'workspace', 'kanban', 'marketing', 'automation', 'workers_ia', 'manager'], is_active: true },
 ];
 
 export const OrganizationModal: React.FC<OrganizationModalProps> = ({

@@ -165,8 +165,8 @@ serve(async (req) => {
             const n8nWebhookUrl = Deno.env.get("N8N_WEBHOOK_URL_CREATE_CUSTOMER");
             if (n8nWebhookUrl) {
                 try {
-                    console.log(`Triggering n8n webhook for org: ${orgData.id}`);
-                    await fetch(n8nWebhookUrl, {
+                    console.log(`Triggering n8n webhook for org: ${orgData.id} at URL: ${n8nWebhookUrl}`);
+                    const response = await fetch(n8nWebhookUrl, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
@@ -184,8 +184,14 @@ serve(async (req) => {
                             plan: orgData.plan
                         }),
                     });
-                } catch (webhookError) {
-                    console.error("Failed to trigger n8n webhook:", webhookError);
+
+                    if (!response.ok) {
+                        console.error(`n8n Webhook returned error status: ${response.status} ${response.statusText}`);
+                    } else {
+                        console.log("n8n Webhook triggered successfully");
+                    }
+                } catch (webhookError: any) {
+                    console.error("Failed to trigger n8n webhook (fetch error):", webhookError.message || webhookError);
                 }
             } else {
                 console.warn("N8N_WEBHOOK_URL_CREATE_CUSTOMER secret not set, skipping webhook.");

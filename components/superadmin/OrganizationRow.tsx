@@ -97,16 +97,26 @@ export const OrganizationRow: React.FC<OrganizationRowProps> = ({
                     <div className="flex items-center justify-between gap-4">
                         <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter w-12">Equipe</span>
                         <div className="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden w-20">
-                            <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${Math.min((organization.stats.users / 10) * 100, 100)}%` }} />
+                            <div
+                                className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+                                style={{ width: `${Math.min((organization.stats.users / (organization.maxUsers || 10)) * 100, 100)}%` }}
+                            />
                         </div>
-                        <span className="text-[10px] font-black text-slate-300 w-8 text-right">{organization.stats.users}/10</span>
+                        <span className="text-[10px] font-black text-slate-300 w-8 text-right">
+                            {organization.stats.users}/<span className="text-indigo-400">{organization.maxUsers || 10}</span>
+                        </span>
                     </div>
                     <div className="flex items-center justify-between gap-4">
                         <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter w-12">Clientes</span>
                         <div className="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden w-20">
-                            <div className="h-full bg-cyan-500 rounded-full" style={{ width: `${Math.min((organization.stats.clients / 50) * 100, 100)}%` }} />
+                            <div
+                                className="h-full bg-cyan-500 rounded-full transition-all duration-500"
+                                style={{ width: `${Math.min((organization.stats.clients / (organization.contractedClients || 50)) * 100, 100)}%` }}
+                            />
                         </div>
-                        <span className="text-[10px] font-black text-slate-300 w-8 text-right">{organization.stats.clients}/50</span>
+                        <span className="text-[10px] font-black text-slate-300 w-8 text-right">
+                            {organization.stats.clients}/<span className="text-cyan-400">{organization.contractedClients || 50}</span>
+                        </span>
                     </div>
                 </div>
             </td>

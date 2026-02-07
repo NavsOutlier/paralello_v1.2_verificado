@@ -8,7 +8,6 @@ interface PlanConfig {
     name: string;
     modules: string[];
     max_users: number;
-    max_clients: number;
 }
 
 interface OrganizationLimits {
@@ -33,8 +32,7 @@ export function useOrganizationPlan() {
                 id: 'super_admin',
                 name: 'Super Admin',
                 modules: Object.values(ViewState),
-                max_users: 999999,
-                max_clients: 999999
+                max_users: 999999
             });
             setOrgLimits({
                 contractedClients: 999999,

@@ -21,7 +21,6 @@ export interface Plan {
     price: number;
     pricePerClient: number;
     maxUsers: number;
-    maxClients: number;
     features: string[];
 }
 

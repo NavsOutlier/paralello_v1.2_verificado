@@ -45,6 +45,7 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
     const [ownerEmail, setOwnerEmail] = useState('');
     const [billingDocument, setBillingDocument] = useState('');
     const [billingEmail, setBillingEmail] = useState('');
+    const [billingPhone, setBillingPhone] = useState('');
     const [maxUsers, setMaxUsers] = useState<number | ''>(10);
     const [contractedClients, setContractedClients] = useState<number | ''>(10);
     const [activateBilling, setActivateBilling] = useState(false);
@@ -101,6 +102,7 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
             setOwnerEmail(organization.owner.email);
             setBillingDocument(organization.billingDocument || '');
             setBillingEmail(organization.billingEmail || '');
+            setBillingPhone(organization.billingPhone || '');
             setMaxUsers(organization.maxUsers || 10);
             setContractedClients(organization.contractedClients || 10);
         } else {
@@ -111,6 +113,7 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
             setOwnerEmail('');
             setBillingDocument('');
             setBillingEmail('');
+            setBillingPhone('');
             setMaxUsers(10);
             setContractedClients(10);
             setActivateBilling(false);
@@ -155,6 +158,7 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                 },
                 billingDocument,
                 billingEmail,
+                billingPhone,
                 maxUsers: maxUsers === '' ? undefined : maxUsers,
                 contractedClients: clients,
                 billingValue: totalValue,
@@ -262,6 +266,18 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                                 onChange={(e) => setBillingEmail(e.target.value)}
                                 className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
                                 placeholder="financeiro@empresa.com"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
+                                WhatsApp de Cobrança
+                            </label>
+                            <input
+                                type="text"
+                                value={billingPhone}
+                                onChange={(e) => setBillingPhone(e.target.value)}
+                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
+                                placeholder="5511999999999"
                             />
                         </div>
                     </div>

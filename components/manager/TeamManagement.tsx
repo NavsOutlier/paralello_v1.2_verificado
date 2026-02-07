@@ -6,11 +6,11 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useOrganizationPlan } from '../../hooks/useOrganizationPlan';
-import { UserPlus, Search, Edit2, Trash2, Shield, User, Eye, Loader2, MailPlus, Briefcase, Zap, Lock, Users } from 'lucide-react';
+import { UserPlus, Search, Edit2, Trash2, Shield, User, Eye, Loader2, MailPlus, Briefcase, Zap, Lock, Users, Rocket } from 'lucide-react';
 
 export const TeamManagement: React.FC = () => {
     const { organizationId, isSuperAdmin, permissions } = useAuth();
-    const { plan, loading: planLoading } = useOrganizationPlan();
+    const { plan, orgLimits, loading: planLoading, getUserUpgradeWhatsAppUrl } = useOrganizationPlan();
     const canManage = isSuperAdmin || permissions?.can_manage_team;
     const { showToast } = useToast();
     const [members, setMembers] = useState<TeamMember[]>([]);
@@ -306,27 +306,37 @@ export const TeamManagement: React.FC = () => {
                         </div>
                     </div>
                     {canManage && (
-                        <button
-                            onClick={() => {
-                                if (!isSuperAdmin && plan && members.length >= plan.max_users) {
-                                    showToast(`Seu plano permite até ${plan.max_users} usuários.`, 'info');
-                                    return;
-                                }
-                                setSelectedMember(undefined);
-                                setIsFormOpen(true);
-                            }}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all border border-white/10 ${!isSuperAdmin && plan && members.length >= plan.max_users
-                                ? 'bg-slate-800 text-slate-500 cursor-not-allowed grayscale'
-                                : 'bg-gradient-to-br from-violet-500 to-purple-600 text-white hover:scale-105 shadow-lg shadow-violet-500/20'
-                                }`}
-                        >
-                            {!isSuperAdmin && plan && members.length >= plan.max_users ? (
-                                <Lock className="w-4 h-4" />
-                            ) : (
-                                <UserPlus className="w-4 h-4" />
-                            )}
-                            Convidar Membro
-                        </button>
+                        (() => {
+                            const userLimit = plan?.max_users || 999999;
+                            const isAtLimit = !isSuperAdmin && members.length >= userLimit;
+
+                            if (isAtLimit) {
+                                return (
+                                    <a
+                                        href={getUserUpgradeWhatsAppUrl()}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all border border-amber-500/30 bg-gradient-to-br from-amber-500/20 to-orange-500/10 text-amber-400 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/20"
+                                    >
+                                        <Rocket className="w-4 h-4" />
+                                        Ir para o próximo nível 🚀
+                                    </a>
+                                );
+                            }
+
+                            return (
+                                <button
+                                    onClick={() => {
+                                        setSelectedMember(undefined);
+                                        setIsFormOpen(true);
+                                    }}
+                                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all border border-white/10 bg-gradient-to-br from-violet-500 to-purple-600 text-white hover:scale-105 shadow-lg shadow-violet-500/20"
+                                >
+                                    <UserPlus className="w-4 h-4" />
+                                    Convidar Membro
+                                </button>
+                            );
+                        })()
                     )}
                 </div>
 

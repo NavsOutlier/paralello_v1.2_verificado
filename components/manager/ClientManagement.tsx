@@ -8,11 +8,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useWhatsApp } from '../../hooks/useWhatsApp';
 import { useOrganizationPlan } from '../../hooks/useOrganizationPlan';
-import { Users, Plus, Search, Edit2, Trash2, Phone, Mail, Loader2, UserCog, MessageCircle, Briefcase, Lock } from 'lucide-react';
+import { Users, Plus, Search, Edit2, Trash2, Phone, Mail, Loader2, UserCog, MessageCircle, Briefcase, Lock, Rocket } from 'lucide-react';
 
 export const ClientManagement: React.FC = () => {
     const { organizationId, isSuperAdmin, permissions } = useAuth();
-    const { plan, loading: planLoading } = useOrganizationPlan();
+    const { plan, orgLimits, loading: planLoading, getClientUpgradeWhatsAppUrl } = useOrganizationPlan();
     const canManage = isSuperAdmin || permissions?.can_manage_clients;
     const { showToast } = useToast();
     const { createGroup } = useWhatsApp();
@@ -214,27 +214,37 @@ export const ClientManagement: React.FC = () => {
                         </div>
                     </div>
                     {canManage && (
-                        <button
-                            onClick={() => {
-                                if (!isSuperAdmin && plan && clients.length >= plan.max_clients) {
-                                    showToast(`Seu plano permite até ${plan.max_clients} clientes.`, 'info');
-                                    return;
-                                }
-                                setSelectedClient(undefined);
-                                setIsFormOpen(true);
-                            }}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all border border-white/10 ${!isSuperAdmin && plan && clients.length >= plan.max_clients
-                                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed grayscale'
-                                    : 'bg-gradient-to-br from-blue-500 to-cyan-600 text-white hover:scale-105 shadow-lg shadow-blue-500/20'
-                                }`}
-                        >
-                            {!isSuperAdmin && plan && clients.length >= plan.max_clients ? (
-                                <Lock className="w-4 h-4" />
-                            ) : (
-                                <Plus className="w-4 h-4" />
-                            )}
-                            Novo Cliente
-                        </button>
+                        (() => {
+                            const clientLimit = orgLimits?.contractedClients || plan?.max_clients || 999999;
+                            const isAtLimit = !isSuperAdmin && clients.length >= clientLimit;
+
+                            if (isAtLimit) {
+                                return (
+                                    <a
+                                        href={getClientUpgradeWhatsAppUrl()}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all border border-emerald-500/30 bg-gradient-to-br from-emerald-500/20 to-teal-500/10 text-emerald-400 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/20"
+                                    >
+                                        <Rocket className="w-4 h-4" />
+                                        Liberar mais clientes 🚀
+                                    </a>
+                                );
+                            }
+
+                            return (
+                                <button
+                                    onClick={() => {
+                                        setSelectedClient(undefined);
+                                        setIsFormOpen(true);
+                                    }}
+                                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all border border-white/10 bg-gradient-to-br from-blue-500 to-cyan-600 text-white hover:scale-105 shadow-lg shadow-blue-500/20"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Novo Cliente
+                                </button>
+                            );
+                        })()
                     )}
                 </div>
 

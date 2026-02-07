@@ -83,7 +83,6 @@ export async function updateOrganization(id: string, data: Partial<Organization>
         owner_email: data.owner?.email,
         billing_document: data.billingDocument,
         billing_email: data.billingEmail,
-        max_clients: data.maxClients,
         max_users: data.maxUsers,
         contracted_clients: data.contractedClients,
         billing_value: data.billingValue

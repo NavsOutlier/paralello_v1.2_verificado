@@ -22,7 +22,6 @@ interface DBOrganization {
     billing_phone?: string;
     asaas_status?: 'active' | 'past_due' | 'suspended' | 'canceled';
     trial_ends_at?: string;
-    max_clients?: number;
     max_users?: number;
     contracted_clients?: number;
     billing_value?: number;
@@ -88,7 +87,6 @@ class OrganizationRepositoryClass extends BaseRepository<DBOrganization> {
             billingPhone: dbOrg.billing_phone,
             asaasStatus: dbOrg.asaas_status,
             trialEndsAt: dbOrg.trial_ends_at ? new Date(dbOrg.trial_ends_at) : undefined,
-            maxClients: dbOrg.max_clients,
             maxUsers: dbOrg.max_users,
             contractedClients: dbOrg.contracted_clients,
             billingValue: dbOrg.billing_value,
@@ -180,7 +178,6 @@ class OrganizationRepositoryClass extends BaseRepository<DBOrganization> {
         billing_phone?: string;
         asaas_status?: 'active' | 'past_due' | 'suspended' | 'canceled';
         trial_ends_at?: string;
-        max_clients?: number;
         max_users?: number;
         contracted_clients?: number;
         billing_value?: number;

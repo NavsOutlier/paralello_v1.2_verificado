@@ -44,6 +44,10 @@ export interface Organization {
     activateBilling?: boolean;
     asaasStatus?: 'active' | 'past_due' | 'suspended' | 'canceled';
     trialEndsAt?: Date;
+    maxClients?: number;
+    maxUsers?: number;
+    contractedClients?: number;
+    billingValue?: number;
     stats: {
         users: number;
         clients: number;

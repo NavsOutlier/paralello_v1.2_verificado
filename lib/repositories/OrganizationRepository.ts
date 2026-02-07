@@ -22,6 +22,10 @@ interface DBOrganization {
     billing_phone?: string;
     asaas_status?: 'active' | 'past_due' | 'suspended' | 'canceled';
     trial_ends_at?: string;
+    max_clients?: number;
+    max_users?: number;
+    contracted_clients?: number;
+    billing_value?: number;
     instances?: Array<{ id: string; status: string }>;
 }
 
@@ -84,6 +88,10 @@ class OrganizationRepositoryClass extends BaseRepository<DBOrganization> {
             billingPhone: dbOrg.billing_phone,
             asaasStatus: dbOrg.asaas_status,
             trialEndsAt: dbOrg.trial_ends_at ? new Date(dbOrg.trial_ends_at) : undefined,
+            maxClients: dbOrg.max_clients,
+            maxUsers: dbOrg.max_users,
+            contractedClients: dbOrg.contracted_clients,
+            billingValue: dbOrg.billing_value,
             onboardingStatus: {
                 isOwnerInvited: true,
                 isOwnerActive: (dbOrg.stats_users || 0) > 0,
@@ -172,6 +180,10 @@ class OrganizationRepositoryClass extends BaseRepository<DBOrganization> {
         billing_phone?: string;
         asaas_status?: 'active' | 'past_due' | 'suspended' | 'canceled';
         trial_ends_at?: string;
+        max_clients?: number;
+        max_users?: number;
+        contracted_clients?: number;
+        billing_value?: number;
     }): Promise<void> {
         const { error } = await this.supabase
             .from(this.tableName)

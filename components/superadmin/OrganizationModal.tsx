@@ -44,10 +44,21 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
     const [ownerEmail, setOwnerEmail] = useState('');
     const [billingDocument, setBillingDocument] = useState('');
     const [billingEmail, setBillingEmail] = useState('');
+    const [maxClients, setMaxClients] = useState<number | ''>(50);
+    const [maxUsers, setMaxUsers] = useState<number | ''>(10);
+    const [contractedClients, setContractedClients] = useState<number | ''>(10);
     const [activateBilling, setActivateBilling] = useState(false);
     const [loading, setLoading] = useState(false);
     const [plans, setPlans] = useState<PlanConfig[]>(FALLBACK_PLANS);
     const [loadingPlans, setLoadingPlans] = useState(true);
+
+    // Calcula valor mensal baseado no plano e clientes contratados
+    const calculateTotalValue = () => {
+        const selectedPlan = plans.find(p => p.id === plan);
+        if (!selectedPlan) return 0;
+        const clients = typeof contractedClients === 'number' ? contractedClients : 0;
+        return selectedPlan.base_price + (selectedPlan.price_per_client * clients);
+    };
 
     // Load plans from database
     useEffect(() => {
@@ -90,6 +101,9 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
             setOwnerEmail(organization.owner.email);
             setBillingDocument(organization.billingDocument || '');
             setBillingEmail(organization.billingEmail || '');
+            setMaxClients(organization.maxClients || 50);
+            setMaxUsers(organization.maxUsers || 10);
+            setContractedClients(organization.contractedClients || organization.maxClients || 10);
         } else {
             setName('');
             setSlug('');
@@ -98,6 +112,9 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
             setOwnerEmail('');
             setBillingDocument('');
             setBillingEmail('');
+            setMaxClients(50);
+            setMaxUsers(10);
+            setContractedClients(10);
             setActivateBilling(false);
         }
     }, [organization, isOpen]);
@@ -123,6 +140,7 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
         setLoading(true);
 
         try {
+            const totalValue = calculateTotalValue();
             const data: Partial<Organization> = {
                 name,
                 slug,
@@ -133,6 +151,10 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                 },
                 billingDocument,
                 billingEmail,
+                maxClients: maxClients === '' ? undefined : maxClients,
+                maxUsers: maxUsers === '' ? undefined : maxUsers,
+                contractedClients: contractedClients === '' ? undefined : contractedClients,
+                billingValue: totalValue,
                 activateBilling
             };
 
@@ -241,6 +263,71 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                         </div>
                     </div>
 
+                    {/* Limites Contratados */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
+                                Limite de Clientes *
+                            </label>
+                            <input
+                                type="number"
+                                min={1}
+                                value={maxClients}
+                                onChange={(e) => setMaxClients(e.target.value === '' ? '' : Number(e.target.value))}
+                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
+                                placeholder="50"
+                                required
+                            />
+                            <p className="text-xs text-slate-500 mt-1">Quantos clientes essa organização pode gerenciar</p>
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
+                                Limite de Usuários
+                            </label>
+                            <input
+                                type="number"
+                                min={1}
+                                value={maxUsers}
+                                onChange={(e) => setMaxUsers(e.target.value === '' ? '' : Number(e.target.value))}
+                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
+                                placeholder="10"
+                            />
+                            <p className="text-xs text-slate-500 mt-1">Membros da equipe com acesso ao sistema</p>
+                        </div>
+                    </div>
+
+                    {/* Contrato de Clientes */}
+                    <div className="p-5 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 rounded-2xl border border-emerald-500/20">
+                        <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-4">Contrato de Clientes</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
+                                    Qtd. Clientes Contratados *
+                                </label>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    value={contractedClients}
+                                    onChange={(e) => setContractedClients(e.target.value === '' ? '' : Number(e.target.value))}
+                                    className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all font-bold"
+                                    placeholder="10"
+                                    required
+                                />
+                            </div>
+                            <div className="text-right">
+                                <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Valor Mensal</p>
+                                <p className="text-2xl font-black text-emerald-400">{formatCurrency(calculateTotalValue())}</p>
+                                <p className="text-[10px] text-slate-500 mt-1">
+                                    {(() => {
+                                        const selectedPlan = plans.find(p => p.id === plan);
+                                        if (!selectedPlan) return '';
+                                        return `Base: ${formatCurrency(selectedPlan.base_price)} + ${typeof contractedClients === 'number' ? contractedClients : 0} clientes × ${formatCurrency(selectedPlan.price_per_client)}`;
+                                    })()}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     {!organization && (
                         <div className="flex items-center gap-3 p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-xl group cursor-pointer hover:bg-indigo-500/10 transition-all" onClick={() => setActivateBilling(!activateBilling)}>
                             <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${activateBilling ? 'bg-indigo-500 border-indigo-500' : 'bg-slate-950/50 border-white/10 group-hover:border-indigo-500/50'}`}>
@@ -273,7 +360,14 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                                         <button
                                             key={planData.id}
                                             type="button"
-                                            onClick={() => setPlan(planData.id as PlanType)}
+                                            onClick={() => {
+                                                setPlan(planData.id as PlanType);
+                                                // Atualiza limites automaticamente ao mudar o plano
+                                                if (!organization) {
+                                                    setMaxClients(planData.max_clients || 50);
+                                                    setMaxUsers(planData.max_users || 10);
+                                                }
+                                            }}
                                             className={`relative p-4 rounded-xl border text-left transition-all ${isSelected
                                                 ? 'bg-emerald-500/10 border-emerald-500/30 ring-2 ring-emerald-500/20'
                                                 : 'bg-slate-800/30 border-white/5 hover:border-white/20 hover:bg-slate-800/50'

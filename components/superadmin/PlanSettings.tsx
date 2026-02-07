@@ -257,7 +257,7 @@ export const PlanSettings: React.FC = () => {
                             <div className="p-6 border-b border-white/5 bg-white/[0.02] flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div className="flex items-center gap-4">
                                     <div className={`p-3 rounded-2xl shadow-inner ${plan.id.includes('enterprise') ? 'bg-amber-500/20' :
-                                            plan.id.includes('agencia') ? 'bg-blue-500/20' : 'bg-slate-500/20'
+                                        plan.id.includes('agencia') ? 'bg-blue-500/20' : 'bg-slate-500/20'
                                         }`}>
                                         <Icon className="w-6 h-6 text-white" />
                                     </div>
@@ -340,6 +340,16 @@ export const PlanSettings: React.FC = () => {
                                             />
                                         </div>
                                         <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Limite Clientes</label>
+                                            <input
+                                                type="number"
+                                                value={plan.max_clients === 999999 ? '' : plan.max_clients}
+                                                placeholder="Ilimitado"
+                                                onChange={(e) => handlePlanChange(plan.id, 'max_clients', e.target.value ? Number(e.target.value) : 999999)}
+                                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm font-bold text-white focus:ring-2 focus:ring-indigo-500/30 outline-none"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Trial (Dias)</label>
                                             <input
                                                 type="number"
@@ -363,8 +373,8 @@ export const PlanSettings: React.FC = () => {
                                                     key={module.id}
                                                     onClick={() => toggleModule(plan.id, module.id)}
                                                     className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all gap-2 group ${isActive
-                                                            ? 'bg-indigo-500/20 border-indigo-500/30 text-white'
-                                                            : 'bg-slate-950/30 border-white/5 text-slate-500 hover:border-white/10'
+                                                        ? 'bg-indigo-500/20 border-indigo-500/30 text-white'
+                                                        : 'bg-slate-950/30 border-white/5 text-slate-500 hover:border-white/10'
                                                         }`}
                                                 >
                                                     <ModuleIcon className={`w-5 h-5 ${isActive ? 'text-indigo-400' : 'group-hover:text-slate-400'}`} />

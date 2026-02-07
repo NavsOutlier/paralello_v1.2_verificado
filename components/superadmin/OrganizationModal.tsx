@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, User, Building, Crown, Check, RefreshCw } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
 import { Organization, PlanType } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui';
@@ -37,6 +38,7 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
     onClose,
     onSave
 }) => {
+    const { showToast } = useToast();
     const [name, setName] = useState('');
     const [slug, setSlug] = useState('');
     const [plan, setPlan] = useState<PlanType>(PlanType.AGENCIA);
@@ -139,6 +141,11 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
         try {
             const totalValue = calculateTotalValue();
             const clients = contractedClients === '' ? undefined : contractedClients;
+            if (clients !== undefined && clients % 5 !== 0) {
+                showToast('A quantidade de clientes deve ser múltiplo de 5.', 'error');
+                return;
+            }
+
             const data: Partial<Organization> = {
                 name,
                 slug,
@@ -351,6 +358,13 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                                     step={5}
                                     value={contractedClients}
                                     onChange={(e) => setContractedClients(e.target.value === '' ? '' : Number(e.target.value))}
+                                    onBlur={(e) => {
+                                        if (e.target.value !== '') {
+                                            const val = Number(e.target.value);
+                                            const rounded = Math.max(5, Math.round(val / 5) * 5);
+                                            setContractedClients(rounded);
+                                        }
+                                    }}
                                     className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all font-bold"
                                     placeholder="10"
                                     required

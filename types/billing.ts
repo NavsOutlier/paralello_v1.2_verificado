@@ -30,8 +30,6 @@ export interface Invoice {
 
     // Valores
     amount: number;
-    plan_amount: number;
-    client_amount: number;
     client_count: number;
 
     // Status

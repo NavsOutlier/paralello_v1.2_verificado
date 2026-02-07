@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, User, Building, Crown, Check, RefreshCw } from 'lucide-react';
 import { Organization, PlanType } from '../../types';
+import { supabase } from '../../lib/supabase';
 import { Button } from '../ui';
 
 interface OrganizationModalProps {
@@ -10,6 +11,26 @@ interface OrganizationModalProps {
     onSave: (data: Partial<Organization>) => Promise<void>;
 }
 
+interface PlanConfig {
+    id: string;
+    name: string;
+    base_price: number;
+    price_per_client: number;
+    max_users: number;
+    max_clients: number;
+    trial_days: number;
+    features: string[];
+    modules: string[];
+    is_active: boolean;
+}
+
+// Fallback plans if database not available
+const FALLBACK_PLANS: PlanConfig[] = [
+    { id: 'gestor_solo', name: 'Gestor Solo', base_price: 397, price_per_client: 0, max_users: 1, max_clients: 50, trial_days: 7, features: [], modules: ['dash', 'workspace', 'kanban'], is_active: true },
+    { id: 'agencia', name: 'Agência', base_price: 97, price_per_client: 7, max_users: 10, max_clients: 999999, trial_days: 7, features: [], modules: ['dash', 'workspace', 'kanban', 'marketing', 'automation'], is_active: true },
+    { id: 'enterprise', name: 'Enterprise', base_price: 297, price_per_client: 5, max_users: 999999, max_clients: 999999, trial_days: 14, features: [], modules: ['dash', 'workspace', 'kanban', 'marketing', 'automation', 'workers_ia', 'manager'], is_active: true },
+];
+
 export const OrganizationModal: React.FC<OrganizationModalProps> = ({
     organization,
     isOpen,
@@ -18,10 +39,47 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
 }) => {
     const [name, setName] = useState('');
     const [slug, setSlug] = useState('');
-    const [plan, setPlan] = useState<PlanType>(PlanType.BASIC);
+    const [plan, setPlan] = useState<PlanType>(PlanType.AGENCIA);
     const [ownerName, setOwnerName] = useState('');
     const [ownerEmail, setOwnerEmail] = useState('');
+    const [billingDocument, setBillingDocument] = useState('');
+    const [billingEmail, setBillingEmail] = useState('');
+    const [activateBilling, setActivateBilling] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [plans, setPlans] = useState<PlanConfig[]>(FALLBACK_PLANS);
+    const [loadingPlans, setLoadingPlans] = useState(true);
+
+    // Load plans from database
+    useEffect(() => {
+        if (isOpen) {
+            loadPlans();
+        }
+    }, [isOpen]);
+
+    const loadPlans = async () => {
+        try {
+            setLoadingPlans(true);
+            const { data, error } = await supabase
+                .from('plan_configurations')
+                .select('*')
+                .eq('is_active', true)
+                .order('base_price');
+
+            if (error) {
+                console.log('Using fallback plans:', error.message);
+                setPlans(FALLBACK_PLANS);
+            } else if (data && data.length > 0) {
+                setPlans(data as PlanConfig[]);
+            } else {
+                setPlans(FALLBACK_PLANS);
+            }
+        } catch (err) {
+            console.log('Using fallback plans');
+            setPlans(FALLBACK_PLANS);
+        } finally {
+            setLoadingPlans(false);
+        }
+    };
 
     useEffect(() => {
         if (organization) {
@@ -30,12 +88,17 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
             setPlan(organization.plan);
             setOwnerName(organization.owner.name);
             setOwnerEmail(organization.owner.email);
+            setBillingDocument(organization.billingDocument || '');
+            setBillingEmail(organization.billingEmail || '');
         } else {
             setName('');
             setSlug('');
-            setPlan(PlanType.BASIC);
+            setPlan(PlanType.AGENCIA);
             setOwnerName('');
             setOwnerEmail('');
+            setBillingDocument('');
+            setBillingEmail('');
+            setActivateBilling(false);
         }
     }, [organization, isOpen]);
 
@@ -67,7 +130,10 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                 owner: {
                     name: ownerName,
                     email: ownerEmail
-                }
+                },
+                billingDocument,
+                billingEmail,
+                activateBilling
             };
 
             if (organization) {
@@ -83,11 +149,23 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
         }
     };
 
+    const getPlanIcon = (planId: string) => {
+        switch (planId) {
+            case 'enterprise': return Crown;
+            case 'agencia': return Building;
+            default: return User;
+        }
+    };
+
+    const formatCurrency = (value: number) => {
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    };
+
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] shadow-3xl max-w-md w-full mx-4 overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] shadow-3xl max-w-2xl w-full mx-4 overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between p-8 border-b border-white/5 bg-white/[0.02]">
                     <h2 className="text-xl font-black text-white tracking-tight">
@@ -135,20 +213,106 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                         )}
                     </div>
 
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
+                                CPF / CNPJ *
+                            </label>
+                            <input
+                                type="text"
+                                value={billingDocument}
+                                onChange={(e) => setBillingDocument(e.target.value)}
+                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
+                                placeholder="00.000.000/0001-00"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
+                                Email Financeiro
+                            </label>
+                            <input
+                                type="email"
+                                value={billingEmail}
+                                onChange={(e) => setBillingEmail(e.target.value)}
+                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
+                                placeholder="financeiro@empresa.com"
+                            />
+                        </div>
+                    </div>
+
+                    {!organization && (
+                        <div className="flex items-center gap-3 p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-xl group cursor-pointer hover:bg-indigo-500/10 transition-all" onClick={() => setActivateBilling(!activateBilling)}>
+                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${activateBilling ? 'bg-indigo-500 border-indigo-500' : 'bg-slate-950/50 border-white/10 group-hover:border-indigo-500/50'}`}>
+                                {activateBilling && <Check className="w-3.5 h-3.5 text-white" />}
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-sm font-bold text-white">Ativar Cobrança Imediata</span>
+                                <p className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">Disparar webhook para o n8n e criar cliente no Asaas agora.</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Plan Selection */}
                     <div>
-                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
+                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">
                             Plano *
                         </label>
-                        <select
-                            value={plan}
-                            onChange={(e) => setPlan(e.target.value as PlanType)}
-                            className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium appearance-none"
-                            required
-                        >
-                            <option value={PlanType.BASIC}>Basic - $49/mês</option>
-                            <option value={PlanType.PRO}>Pro - $149/mês</option>
-                            <option value={PlanType.ENTERPRISE}>Enterprise - $499/mês</option>
-                        </select>
+
+                        {loadingPlans ? (
+                            <div className="flex items-center justify-center py-8">
+                                <RefreshCw className="w-6 h-6 text-indigo-500 animate-spin" />
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                {plans.map((planData) => {
+                                    const Icon = getPlanIcon(planData.id);
+                                    const isSelected = plan === planData.id;
+
+                                    return (
+                                        <button
+                                            key={planData.id}
+                                            type="button"
+                                            onClick={() => setPlan(planData.id as PlanType)}
+                                            className={`relative p-4 rounded-xl border text-left transition-all ${isSelected
+                                                ? 'bg-emerald-500/10 border-emerald-500/30 ring-2 ring-emerald-500/20'
+                                                : 'bg-slate-800/30 border-white/5 hover:border-white/20 hover:bg-slate-800/50'
+                                                }`}
+                                        >
+                                            {isSelected && (
+                                                <div className="absolute top-2 right-2">
+                                                    <Check className="w-4 h-4 text-emerald-400" />
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className={`p-2 rounded-lg ${planData.id === 'enterprise' ? 'bg-amber-500/20' :
+                                                    planData.id === 'agencia' ? 'bg-blue-500/20' : 'bg-slate-500/20'
+                                                    }`}>
+                                                    <Icon className="w-4 h-4 text-white" />
+                                                </div>
+                                                <span className="font-bold text-white text-sm">{planData.name}</span>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <p className="text-lg font-black text-white">
+                                                    {formatCurrency(planData.base_price)}
+                                                    <span className="text-xs text-slate-400 font-normal">/mês</span>
+                                                </p>
+                                                {planData.price_per_client > 0 && (
+                                                    <p className="text-xs text-slate-400">
+                                                        + {formatCurrency(planData.price_per_client)}/cliente
+                                                    </p>
+                                                )}
+                                                <p className="text-xs text-slate-500">
+                                                    {planData.max_users >= 999999 ? 'Usuários ilimitados' : `Até ${planData.max_users} usuário${planData.max_users > 1 ? 's' : ''}`}
+                                                </p>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
 
                     <div className="border-t border-white/5 pt-6 mt-6">
@@ -199,7 +363,7 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                             type="submit"
                             variant="primary"
                             className="flex-1"
-                            disabled={loading}
+                            disabled={loading || loadingPlans}
                         >
                             {loading ? (organization ? 'Salvando...' : 'Criando...') : (organization ? 'Salvar' : 'Criar')}
                         </Button>

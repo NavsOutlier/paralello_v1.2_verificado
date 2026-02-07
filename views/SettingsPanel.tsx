@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Building2, Tag, Settings as SettingsIcon, CheckSquare, Users, Bell, Shield, MessageSquare, Menu } from 'lucide-react';
+import { ArrowLeft, Building2, Tag, Settings as SettingsIcon, CheckSquare, Users, Bell, Shield, MessageSquare, Menu, CreditCard } from 'lucide-react';
 import { OrganizationInfo } from '../components/settings/OrganizationInfo';
 import { TagManagement } from '../components/settings/TagManagement';
 import { WorkflowSettings } from '../components/settings/WorkflowSettings';
@@ -8,8 +8,9 @@ import { SpecialtySettings } from '../components/settings/SpecialtySettings';
 import { NotificationSettings } from '../components/settings/NotificationSettings';
 import { SecuritySettings } from '../components/settings/SecuritySettings';
 import { WhatsAppManager } from '../components/whatsapp/WhatsAppManager';
+import { BillingSettings } from '../components/settings/BillingSettings';
 
-type SettingsTab = 'info' | 'tags' | 'workflow' | 'templates' | 'specialties' | 'notifications' | 'security' | 'whatsapp';
+type SettingsTab = 'info' | 'tags' | 'workflow' | 'templates' | 'specialties' | 'notifications' | 'security' | 'whatsapp' | 'billing';
 
 interface SettingsPanelProps {
     onBack: () => void;
@@ -30,6 +31,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, organizati
         { id: 'specialties' as SettingsTab, label: 'Especialidades', icon: Users },
         { id: 'notifications' as SettingsTab, label: 'Notificações', icon: Bell },
         { id: 'security' as SettingsTab, label: 'Segurança', icon: Shield },
+        { id: 'billing' as SettingsTab, label: 'Assinatura', icon: CreditCard },
     ];
 
     return (
@@ -110,6 +112,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, organizati
                         {activeTab === 'specialties' && <SpecialtySettings organizationId={organizationId} />}
                         {activeTab === 'notifications' && <NotificationSettings organizationId={organizationId} />}
                         {activeTab === 'security' && <SecuritySettings organizationId={organizationId} />}
+                        {activeTab === 'billing' && <BillingSettings />}
                     </div>
                 </div>
             </div>

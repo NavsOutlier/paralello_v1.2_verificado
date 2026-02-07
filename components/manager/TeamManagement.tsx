@@ -5,10 +5,12 @@ import { TeamMemberFormModal } from './TeamMemberFormModal';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
-import { UserPlus, Search, Edit2, Trash2, Shield, User, Eye, Loader2, MailPlus, Briefcase, Zap } from 'lucide-react';
+import { useOrganizationPlan } from '../../hooks/useOrganizationPlan';
+import { UserPlus, Search, Edit2, Trash2, Shield, User, Eye, Loader2, MailPlus, Briefcase, Zap, Lock, Users } from 'lucide-react';
 
 export const TeamManagement: React.FC = () => {
     const { organizationId, isSuperAdmin, permissions } = useAuth();
+    const { plan, loading: planLoading } = useOrganizationPlan();
     const canManage = isSuperAdmin || permissions?.can_manage_team;
     const { showToast } = useToast();
     const [members, setMembers] = useState<TeamMember[]>([]);
@@ -111,6 +113,15 @@ export const TeamManagement: React.FC = () => {
 
     const handleSaveMember = async (memberData: Partial<TeamMember>) => {
         if (!organizationId) return;
+
+        // Check Limit for new members
+        if (!selectedMember && !isSuperAdmin && plan) {
+            if (members.length >= plan.max_users) {
+                showToast(`Limite de usuários atingido (${plan.max_users}). Faça upgrade do seu plano para adicionar mais membros.`, 'error');
+                return;
+            }
+        }
+
         setActionLoading(true);
         try {
             if (selectedMember) {
@@ -279,20 +290,41 @@ export const TeamManagement: React.FC = () => {
                         </div>
                         <div>
                             <h1 className="text-2xl font-black text-white tracking-tight">Equipe & Acessos</h1>
-                            <p className="text-sm text-slate-400 font-medium">
-                                <span className="text-violet-400 font-bold">{members.length}</span> {members.length === 1 ? 'membro ativo' : 'membros ativos'}
-                            </p>
+                            <div className="flex items-center gap-2">
+                                <p className="text-sm text-slate-400 font-medium">
+                                    <span className="text-violet-400 font-bold">{members.length}</span> {members.length === 1 ? 'membro ativo' : 'membros ativos'}
+                                </p>
+                                {plan && !isSuperAdmin && (
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white/5 rounded-full border border-white/5">
+                                        <div className="w-1 h-1 rounded-full bg-violet-400" />
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                            {plan.max_users >= 999999 ? 'Ilimitado' : `Limite: ${plan.max_users}`}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                     {canManage && (
                         <button
                             onClick={() => {
+                                if (!isSuperAdmin && plan && members.length >= plan.max_users) {
+                                    showToast(`Seu plano permite até ${plan.max_users} usuários.`, 'info');
+                                    return;
+                                }
                                 setSelectedMember(undefined);
                                 setIsFormOpen(true);
                             }}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-violet-500 to-purple-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:scale-105 transition-all shadow-lg shadow-violet-500/20 border border-white/10"
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all border border-white/10 ${!isSuperAdmin && plan && members.length >= plan.max_users
+                                ? 'bg-slate-800 text-slate-500 cursor-not-allowed grayscale'
+                                : 'bg-gradient-to-br from-violet-500 to-purple-600 text-white hover:scale-105 shadow-lg shadow-violet-500/20'
+                                }`}
                         >
-                            <UserPlus className="w-4 h-4" />
+                            {!isSuperAdmin && plan && members.length >= plan.max_users ? (
+                                <Lock className="w-4 h-4" />
+                            ) : (
+                                <UserPlus className="w-4 h-4" />
+                            )}
                             Convidar Membro
                         </button>
                     )}

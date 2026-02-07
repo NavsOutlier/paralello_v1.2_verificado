@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Building2, DollarSign, Users, TrendingUp, Plus, RefreshCw, Sparkles } from 'lucide-react';
+import { Building2, DollarSign, Users, TrendingUp, Plus, RefreshCw, Sparkles, CreditCard } from 'lucide-react';
 import { PLANS, PLAN_ARRAY } from '../../config/plans';
 import { Organization, PlanType } from '../../types';
 import { Button } from '../ui';
 import { MetricsCard } from './MetricsCard';
 import { OrganizationTable } from './OrganizationTable';
 import { OrganizationModal } from './OrganizationModal';
+import { OrganizationDrawer } from './OrganizationDrawer';
 import { AdminOrgSetupModal } from './AdminOrgSetupModal';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { useToast } from '../../contexts/ToastContext';
 import { SystemSettings } from './SystemSettings';
+import { BillingDashboard } from './BillingDashboard';
+import { PlanSettings } from './PlanSettings';
 import {
     fetchOrganizations,
     createOrganization,
@@ -25,6 +28,7 @@ export const SuperAdminDashboard: React.FC = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
     const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
+    const [drawerOpen, setDrawerOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSetupOpen, setIsSetupOpen] = useState(false);
     const [setupOrg, setSetupOrg] = useState<Organization | null>(null);
@@ -32,7 +36,7 @@ export const SuperAdminDashboard: React.FC = () => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [deletingOrg, setDeletingOrg] = useState<Organization | null>(null);
-    const [activeTab, setActiveTab] = useState<'organizations' | 'settings'>('organizations');
+    const [activeTab, setActiveTab] = useState<'organizations' | 'billing' | 'settings'>('organizations');
     const { showToast } = useToast();
 
     // Load organizations on mount
@@ -107,6 +111,11 @@ export const SuperAdminDashboard: React.FC = () => {
     const handleEdit = (org: Organization) => {
         setEditingOrg(org);
         setModalOpen(true);
+    };
+
+    const handleSelectOrg = (org: Organization) => {
+        setSelectedOrg(org);
+        setDrawerOpen(true);
     };
 
     const handleToggleStatus = async (org: Organization) => {
@@ -266,6 +275,15 @@ export const SuperAdminDashboard: React.FC = () => {
                     Organizações
                 </button>
                 <button
+                    onClick={() => setActiveTab('billing')}
+                    className={`px-8 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-xl flex items-center gap-2 ${activeTab === 'billing'
+                        ? 'bg-white/10 text-white shadow-inner border border-white/10'
+                        : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                    <CreditCard className="w-4 h-4" />
+                    Billing
+                </button>
+                <button
                     onClick={() => setActiveTab('settings')}
                     className={`px-8 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-xl ${activeTab === 'settings'
                         ? 'bg-white/10 text-white shadow-inner border border-white/10'
@@ -311,10 +329,10 @@ export const SuperAdminDashboard: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
                         <div className="bg-slate-900/40 backdrop-blur-2xl p-8 rounded-[2rem] border border-white/5 shadow-2xl group hover:border-slate-500/20 transition-all">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Protocolo BASIC</h3>
-                                <span className="text-3xl font-black text-white">{getPlanCount(PlanType.BASIC)}</span>
+                                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Gestor Solo</h3>
+                                <span className="text-3xl font-black text-white">{getPlanCount(PlanType.GESTOR_SOLO)}</span>
                             </div>
-                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">$49/mês • {PLANS[PlanType.BASIC].maxUsers} usuários</div>
+                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">R$397/mês • {PLANS[PlanType.GESTOR_SOLO].maxUsers} usuário</div>
                         </div>
 
                         <div className="relative overflow-hidden bg-slate-900/60 backdrop-blur-2xl p-8 rounded-[2rem] border border-indigo-500/30 shadow-[0_0_40px_rgba(99,102,241,0.1)] group hover:border-indigo-500/50 transition-all">
@@ -322,10 +340,10 @@ export const SuperAdminDashboard: React.FC = () => {
                                 <Sparkles className="w-5 h-5 text-indigo-400 opacity-20 group-hover:opacity-100 transition-opacity" />
                             </div>
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">Protocolo PRO</h3>
-                                <span className="text-3xl font-black text-white drop-shadow-[0_0_10px_rgba(99,102,241,0.3)]">{getPlanCount(PlanType.PRO)}</span>
+                                <h3 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">Agência</h3>
+                                <span className="text-3xl font-black text-white drop-shadow-[0_0_10px_rgba(99,102,241,0.3)]">{getPlanCount(PlanType.AGENCIA)}</span>
                             </div>
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">$149/mês • {PLANS[PlanType.PRO].maxUsers} usuários</div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">R$97/mês + R$7/cliente • {PLANS[PlanType.AGENCIA].maxUsers} usuários</div>
                         </div>
 
                         <div className="bg-slate-900/40 backdrop-blur-2xl p-8 rounded-[2rem] border border-violet-500/20 shadow-2xl group hover:border-violet-500/40 transition-all">
@@ -333,7 +351,7 @@ export const SuperAdminDashboard: React.FC = () => {
                                 <h3 className="text-[10px] font-black text-violet-400 uppercase tracking-[0.3em]">Protocolo ENTERPRISE</h3>
                                 <span className="text-3xl font-black text-white">{getPlanCount(PlanType.ENTERPRISE)}</span>
                             </div>
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">$499/mês • Ilimitado</div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">R$297/mês + R$5/cliente • Ilimitado</div>
                         </div>
                     </div>
 
@@ -341,14 +359,20 @@ export const SuperAdminDashboard: React.FC = () => {
                     <OrganizationTable
                         organizations={organizations}
                         onEdit={handleEdit}
+                        onSelect={handleSelectOrg}
                         onToggleStatus={handleToggleStatus}
                         onChangePlan={handleChangePlan}
                         onOpenSetup={handleOpenSetup}
                         onDelete={handleDelete}
                     />
                 </>
+            ) : activeTab === 'billing' ? (
+                <BillingDashboard />
             ) : (
-                <SystemSettings />
+                <div className="space-y-8">
+                    <PlanSettings />
+                    <SystemSettings />
+                </div>
             )}
 
             {/* Modal */}
@@ -357,6 +381,13 @@ export const SuperAdminDashboard: React.FC = () => {
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}
                 onSave={handleSave}
+            />
+
+            <OrganizationDrawer
+                isOpen={drawerOpen}
+                onClose={() => setDrawerOpen(false)}
+                organization={selectedOrg}
+                onEdit={handleEdit}
             />
 
             <AdminOrgSetupModal

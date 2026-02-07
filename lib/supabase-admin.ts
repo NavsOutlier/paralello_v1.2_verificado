@@ -25,7 +25,10 @@ export async function createOrganization(data: Partial<Organization>): Promise<O
             },
             owner_email: data.owner?.email,
             owner_name: data.owner?.name,
-            plan: data.plan
+            plan: data.plan,
+            billing_document: data.billingDocument,
+            billing_email: data.billingEmail,
+            activate_billing: data.activateBilling
         }
     });
 
@@ -58,6 +61,8 @@ export async function createOrganization(data: Partial<Organization>): Promise<O
         slug: data.slug || '',
         plan: data.plan as PlanType,
         status: 'active',
+        billingDocument: data.billingDocument,
+        billingEmail: data.billingEmail,
         createdAt: new Date(),
         owner: {
             name: data.owner?.name || '',
@@ -75,7 +80,9 @@ export async function updateOrganization(id: string, data: Partial<Organization>
         name: data.name,
         plan: data.plan,
         owner_name: data.owner?.name,
-        owner_email: data.owner?.email
+        owner_email: data.owner?.email,
+        billing_document: data.billingDocument,
+        billing_email: data.billingEmail
     });
 }
 

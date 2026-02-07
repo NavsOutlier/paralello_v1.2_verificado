@@ -7,6 +7,7 @@ import { OrganizationRow } from './OrganizationRow';
 interface OrganizationTableProps {
     organizations: Organization[];
     onEdit: (org: Organization) => void;
+    onSelect: (org: Organization) => void;
     onToggleStatus: (org: Organization) => void;
     onChangePlan: (org: Organization) => void;
     onOpenSetup: (org: Organization) => void;
@@ -16,6 +17,7 @@ interface OrganizationTableProps {
 export const OrganizationTable: React.FC<OrganizationTableProps> = ({
     organizations,
     onEdit,
+    onSelect,
     onToggleStatus,
     onChangePlan,
     onOpenSetup,
@@ -69,8 +71,8 @@ export const OrganizationTable: React.FC<OrganizationTableProps> = ({
                         className="px-6 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-xs font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500/30 text-slate-400 cursor-pointer hover:text-white transition-colors"
                     >
                         <option value="all">Todos os Planos</option>
-                        <option value={PlanType.BASIC}>Basic</option>
-                        <option value={PlanType.PRO}>Pro</option>
+                        <option value={PlanType.GESTOR_SOLO}>Gestor Solo</option>
+                        <option value={PlanType.AGENCIA}>Agência</option>
                         <option value={PlanType.ENTERPRISE}>Enterprise</option>
                     </select>
                 </div>
@@ -82,30 +84,21 @@ export const OrganizationTable: React.FC<OrganizationTableProps> = ({
                     <thead className="bg-white/[0.03] border-b border-white/5">
                         <tr>
                             <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                                Organização
+                                Org & Identidade
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                ID
+                            <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                                Assinatura
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                Plano
+                            <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                                Saúde & Status
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                Status (Acesso)
+                            <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                                Uso (Membros/Clientes)
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                WhatsApp
+                            <th className="px-6 py-4 text-left text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                                Ciclo
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                Equipe
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                Clientes
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                                Criado em
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                            <th className="px-6 py-4 text-right text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
                                 Ações
                             </th>
                         </tr>
@@ -123,6 +116,7 @@ export const OrganizationTable: React.FC<OrganizationTableProps> = ({
                                     key={org.id}
                                     organization={org}
                                     onEdit={onEdit}
+                                    onSelect={onSelect}
                                     onToggleStatus={onToggleStatus}
                                     onChangePlan={onChangePlan}
                                     onOpenSetup={onOpenSetup}

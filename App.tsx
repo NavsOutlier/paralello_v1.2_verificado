@@ -14,6 +14,7 @@ import { MarketingDashboard } from './components/MarketingDashboard';
 import { AutomationTab } from './components/automation';
 import { WorkersIADashboard } from './components/workers-ia/WorkersIADashboard';
 import { PremiumBackground } from './components/ui/PremiumBackground';
+import { RestrictedModule } from './components/ui/RestrictedModule';
 
 const AppContent: React.FC = () => {
   const { user, loading, isSuperAdmin, isManager } = useAuth();
@@ -135,14 +136,42 @@ const AppContent: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 flex overflow-hidden relative z-10">
-        {currentView === ViewState.DASHBOARD && <Dashboard />}
-        {currentView === ViewState.WORKSPACE && <Workspace />}
-        {currentView === ViewState.KANBAN && <Kanban />}
-        {currentView === ViewState.MANAGER && <ManagerDashboard />}
+        {currentView === ViewState.DASHBOARD && (
+          <RestrictedModule moduleId={ViewState.DASHBOARD} title="Métricas & Insights">
+            <Dashboard />
+          </RestrictedModule>
+        )}
+        {currentView === ViewState.WORKSPACE && (
+          <RestrictedModule moduleId={ViewState.WORKSPACE} title="Workspace de Conversas">
+            <Workspace />
+          </RestrictedModule>
+        )}
+        {currentView === ViewState.KANBAN && (
+          <RestrictedModule moduleId={ViewState.KANBAN} title="Gestão de Projetos">
+            <Kanban />
+          </RestrictedModule>
+        )}
+        {currentView === ViewState.MANAGER && (
+          <RestrictedModule moduleId={ViewState.MANAGER} title="Gestão de Clientes e Time">
+            <ManagerDashboard />
+          </RestrictedModule>
+        )}
         {currentView === ViewState.SUPERADMIN && <SuperAdminDashboard />}
-        {currentView === ViewState.MARKETING && <MarketingDashboard />}
-        {currentView === ViewState.AUTOMATION && <AutomationTab />}
-        {currentView === ViewState.WORKERS_IA && <WorkersIADashboard />}
+        {currentView === ViewState.MARKETING && (
+          <RestrictedModule moduleId={ViewState.MARKETING} title="Metas & Conversão">
+            <MarketingDashboard />
+          </RestrictedModule>
+        )}
+        {currentView === ViewState.AUTOMATION && (
+          <RestrictedModule moduleId={ViewState.AUTOMATION} title="Automações de Fluxo">
+            <AutomationTab />
+          </RestrictedModule>
+        )}
+        {currentView === ViewState.WORKERS_IA && (
+          <RestrictedModule moduleId={ViewState.WORKERS_IA} title="Blackback Workers IA">
+            <WorkersIADashboard />
+          </RestrictedModule>
+        )}
         {isUpdatingPassword && (
           <div className="absolute inset-0 z-[100] bg-[#0a0f1a]">
             <UpdatePasswordView onSuccess={() => {

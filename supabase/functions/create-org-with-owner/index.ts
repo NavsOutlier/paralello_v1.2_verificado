@@ -23,7 +23,7 @@ serve(async (req) => {
             }
         );
 
-        const { organization, owner_email, owner_name, plan } = await req.json();
+        const { organization, owner_email, owner_name, plan, billing_document, billing_email, activate_billing } = await req.json();
 
         if (!organization?.name || !organization?.slug || !owner_email || !owner_name || !plan) {
             return new Response(
@@ -116,6 +116,8 @@ serve(async (req) => {
                 status: "active",
                 owner_name: owner_name,
                 owner_email: owner_email,
+                billing_document: billing_document,
+                billing_email: billing_email,
             })
             .select()
             .single();
@@ -157,6 +159,38 @@ serve(async (req) => {
             .update({ organization_id: orgData.id })
             .eq('id', userId)
             .is('organization_id', null);
+
+        // 5. Trigger n8n Webhook if requested
+        if (activate_billing) {
+            const n8nWebhookUrl = Deno.env.get("N8N_WEBHOOK_URL_CREATE_CUSTOMER");
+            if (n8nWebhookUrl) {
+                try {
+                    console.log(`Triggering n8n webhook for org: ${orgData.id}`);
+                    await fetch(n8nWebhookUrl, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            event: "org_created_with_billing",
+                            organization: {
+                                id: orgData.id,
+                                name: orgData.name,
+                                slug: orgData.slug,
+                                billing_document: orgData.billing_document,
+                                billing_email: orgData.billing_email,
+                                owner_name: orgData.owner_name,
+                                owner_email: orgData.owner_email,
+                                created_at: orgData.created_at
+                            },
+                            plan: orgData.plan
+                        }),
+                    });
+                } catch (webhookError) {
+                    console.error("Failed to trigger n8n webhook:", webhookError);
+                }
+            } else {
+                console.warn("N8N_WEBHOOK_URL_CREATE_CUSTOMER secret not set, skipping webhook.");
+            }
+        }
 
         return new Response(
             JSON.stringify({ organizationId: orgData.id }),

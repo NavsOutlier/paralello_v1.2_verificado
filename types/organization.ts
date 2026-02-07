@@ -3,11 +3,11 @@
  */
 
 /**
- * Plan Type Enum
+ * Plan Type Enum - Aligned with billing system
  */
 export enum PlanType {
-    BASIC = 'basic',
-    PRO = 'pro',
+    GESTOR_SOLO = 'gestor_solo',
+    AGENCIA = 'agencia',
     ENTERPRISE = 'enterprise'
 }
 
@@ -18,6 +18,7 @@ export interface Plan {
     id: PlanType;
     name: string;
     price: number;
+    pricePerClient: number;
     maxUsers: number;
     maxClients: number;
     features: string[];
@@ -37,6 +38,12 @@ export interface Organization {
         name: string;
         email: string;
     };
+    billingDocument?: string;
+    billingEmail?: string;
+    billingPhone?: string;
+    activateBilling?: boolean;
+    asaasStatus?: 'active' | 'past_due' | 'suspended' | 'canceled';
+    trialEndsAt?: Date;
     stats: {
         users: number;
         clients: number;

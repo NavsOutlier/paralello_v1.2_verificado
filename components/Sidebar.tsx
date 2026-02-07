@@ -2,7 +2,9 @@ import React from 'react';
 import { LayoutDashboard, MessageSquare, KanbanSquare, Users, LogOut, Shield, BarChart3, Zap, Briefcase } from 'lucide-react';
 import { ViewState } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useOrganizationPlan } from '../hooks/useOrganizationPlan';
 import { Avatar, NotificationCenter } from './ui';
+import { Lock } from 'lucide-react';
 
 interface SidebarProps {
   currentView: ViewState;
@@ -11,23 +13,35 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) => {
   const { signOut, user, isSuperAdmin, isManager, permissions } = useAuth();
+  const { hasModule } = useOrganizationPlan();
 
-  const NavItem = ({ view, icon: Icon, label }: { view: ViewState, icon: any, label: string }) => (
-    <button
-      onClick={() => onViewChange(view)}
-      className={`flex flex-col items-center justify-center w-full py-4 space-y-1 transition-all relative group ${currentView === view
-        ? 'text-violet-400'
-        : 'text-slate-500 hover:text-slate-300'
-        }`}
-      title={label}
-    >
-      {currentView === view && (
-        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-violet-600 rounded-r-lg" />
-      )}
-      <Icon className={`w-6 h-6 transition-transform group-hover:scale-110 ${currentView === view ? 'drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]' : ''}`} />
-      <span className={`text-[10px] font-bold tracking-tight ${currentView === view ? 'text-white' : ''}`}>{label}</span>
-    </button>
-  );
+  const NavItem = ({ view, icon: Icon, label }: { view: ViewState, icon: any, label: string }) => {
+    const isLocked = !isSuperAdmin && !hasModule(view);
+
+    return (
+      <button
+        onClick={() => onViewChange(view)}
+        className={`flex flex-col items-center justify-center w-full py-4 space-y-1 transition-all relative group ${currentView === view
+          ? 'text-violet-400'
+          : 'text-slate-500 hover:text-slate-300'
+          }`}
+        title={label}
+      >
+        {currentView === view && (
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-violet-600 rounded-r-lg" />
+        )}
+        <div className="relative">
+          <Icon className={`w-6 h-6 transition-transform group-hover:scale-110 ${currentView === view ? 'drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]' : ''}`} />
+          {isLocked && (
+            <div className="absolute -top-1 -right-1 bg-slate-900 rounded-full p-0.5 border border-white/5">
+              <Lock className="w-2 h-2 text-slate-400" />
+            </div>
+          )}
+        </div>
+        <span className={`text-[10px] font-bold tracking-tight ${currentView === view ? 'text-white' : ''}`}>{label}</span>
+      </button>
+    );
+  };
 
   return (
     <nav className="w-[80px] flex-shrink-0 bg-slate-900/40 backdrop-blur-xl border-r border-cyan-500/10 flex flex-col items-center py-6 z-20 overflow-y-auto overflow-x-hidden custom-scrollbar">

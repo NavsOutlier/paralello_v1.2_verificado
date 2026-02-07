@@ -7,10 +7,12 @@ import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useWhatsApp } from '../../hooks/useWhatsApp';
-import { Users, Plus, Search, Edit2, Trash2, Phone, Mail, Loader2, UserCog, MessageCircle, Briefcase } from 'lucide-react';
+import { useOrganizationPlan } from '../../hooks/useOrganizationPlan';
+import { Users, Plus, Search, Edit2, Trash2, Phone, Mail, Loader2, UserCog, MessageCircle, Briefcase, Lock } from 'lucide-react';
 
 export const ClientManagement: React.FC = () => {
     const { organizationId, isSuperAdmin, permissions } = useAuth();
+    const { plan, loading: planLoading } = useOrganizationPlan();
     const canManage = isSuperAdmin || permissions?.can_manage_clients;
     const { showToast } = useToast();
     const { createGroup } = useWhatsApp();
@@ -91,6 +93,15 @@ export const ClientManagement: React.FC = () => {
 
     const handleSaveClient = async (clientData: Partial<Client>) => {
         if (!organizationId) return;
+
+        // Check Limit for new clients
+        if (!selectedClient && !isSuperAdmin && plan) {
+            if (clients.length >= plan.max_clients) {
+                showToast(`Limite de clientes atingido (${plan.max_clients}). Faça upgrade do seu plano para cadastrar mais clientes.`, 'error');
+                return;
+            }
+        }
+
         setActionLoading(true);
         try {
             const payload = {
@@ -187,20 +198,41 @@ export const ClientManagement: React.FC = () => {
                         </div>
                         <div>
                             <h1 className="text-2xl font-black text-white tracking-tight">Gestão de Clientes</h1>
-                            <p className="text-sm text-slate-400 font-medium">
-                                <span className="text-cyan-400 font-bold">{clients.length}</span> {clients.length === 1 ? 'cliente cadastrado' : 'clientes cadastrados'}
-                            </p>
+                            <div className="flex items-center gap-2">
+                                <p className="text-sm text-slate-400 font-medium">
+                                    <span className="text-cyan-400 font-bold">{clients.length}</span> {clients.length === 1 ? 'cliente cadastrado' : 'clientes cadastrados'}
+                                </p>
+                                {plan && !isSuperAdmin && (
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white/5 rounded-full border border-white/5">
+                                        <div className="w-1 h-1 rounded-full bg-cyan-400" />
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                            {plan.max_clients >= 999999 ? 'Ilimitado' : `Limite: ${plan.max_clients}`}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                     {canManage && (
                         <button
                             onClick={() => {
+                                if (!isSuperAdmin && plan && clients.length >= plan.max_clients) {
+                                    showToast(`Seu plano permite até ${plan.max_clients} clientes.`, 'info');
+                                    return;
+                                }
                                 setSelectedClient(undefined);
                                 setIsFormOpen(true);
                             }}
-                            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-blue-500 to-cyan-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:scale-105 transition-all shadow-lg shadow-blue-500/20 border border-white/10"
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all border border-white/10 ${!isSuperAdmin && plan && clients.length >= plan.max_clients
+                                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed grayscale'
+                                    : 'bg-gradient-to-br from-blue-500 to-cyan-600 text-white hover:scale-105 shadow-lg shadow-blue-500/20'
+                                }`}
                         >
-                            <Plus className="w-4 h-4" />
+                            {!isSuperAdmin && plan && clients.length >= plan.max_clients ? (
+                                <Lock className="w-4 h-4" />
+                            ) : (
+                                <Plus className="w-4 h-4" />
+                            )}
                             Novo Cliente
                         </button>
                     )}

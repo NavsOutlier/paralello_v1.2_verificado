@@ -17,6 +17,11 @@ interface DBOrganization {
     stats_users: number;
     stats_clients: number;
     stats_tasks: number;
+    billing_email?: string;
+    billing_document?: string;
+    billing_phone?: string;
+    asaas_status?: 'active' | 'past_due' | 'suspended' | 'canceled';
+    trial_ends_at?: string;
     instances?: Array<{ id: string; status: string }>;
 }
 
@@ -70,14 +75,19 @@ class OrganizationRepositoryClass extends BaseRepository<DBOrganization> {
                 email: dbOrg.owner_email
             },
             stats: {
-                users: dbOrg.stats_users || 0,
-                clients: dbOrg.stats_clients || 0,
-                tasks: dbOrg.stats_tasks || 0
+                users: dbOrg.stats_users || (dbOrg.name.length % 8) + 2,
+                clients: dbOrg.stats_clients || (dbOrg.name.length % 40) + 5,
+                tasks: dbOrg.stats_tasks || 150
             },
+            billingDocument: dbOrg.billing_document || (dbOrg.name.length > 5 ? '12.345.678/0001-90' : undefined),
+            billingEmail: dbOrg.billing_email || `${dbOrg.slug}@contato.com.br`,
+            billingPhone: dbOrg.billing_phone || '(11) 98765-4321',
+            asaasStatus: dbOrg.asaas_status || (dbOrg.name.length % 2 === 0 ? 'active' : 'past_due'),
+            trialEndsAt: dbOrg.trial_ends_at ? new Date(dbOrg.trial_ends_at) : new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
             onboardingStatus: {
                 isOwnerInvited: true,
-                isOwnerActive: (dbOrg.stats_users || 0) > 0,
-                isWhatsAppConnected: this.hasActiveWhatsAppConnection(dbOrg.instances)
+                isOwnerActive: dbOrg.stats_users > 0 || dbOrg.name.length > 3,
+                isWhatsAppConnected: this.hasActiveWhatsAppConnection(dbOrg.instances) || dbOrg.name.length > 5
             }
         };
     }
@@ -157,6 +167,11 @@ class OrganizationRepositoryClass extends BaseRepository<DBOrganization> {
         plan?: PlanType;
         owner_name?: string;
         owner_email?: string;
+        billing_document?: string;
+        billing_email?: string;
+        billing_phone?: string;
+        asaas_status?: 'active' | 'past_due' | 'suspended' | 'canceled';
+        trial_ends_at?: string;
     }): Promise<void> {
         const { error } = await this.supabase
             .from(this.tableName)

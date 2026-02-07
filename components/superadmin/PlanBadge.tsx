@@ -8,14 +8,14 @@ interface PlanBadgeProps {
 }
 
 const planVariantMap: Record<PlanType, BadgeVariant> = {
-    [PlanType.BASIC]: 'default',
-    [PlanType.PRO]: 'primary',
+    [PlanType.GESTOR_SOLO]: 'default',
+    [PlanType.AGENCIA]: 'primary',
     [PlanType.ENTERPRISE]: 'success',
 };
 
 const planNameMap: Record<PlanType, string> = {
-    [PlanType.BASIC]: 'Basic',
-    [PlanType.PRO]: 'Pro',
+    [PlanType.GESTOR_SOLO]: 'Gestor Solo',
+    [PlanType.AGENCIA]: 'Agência',
     [PlanType.ENTERPRISE]: 'Enterprise',
 };
 

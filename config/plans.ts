@@ -1,34 +1,41 @@
 import { PlanType, Plan } from '../types';
 
 /**
- * Plan Configurations
+ * Plan Configurations - Aligned with Billing System
  * 
- * Central configuration for all subscription plans.
+ * Preços em R$ (BRL)
+ * - Gestor Solo: R$397/mês (1 usuário, até 50 clientes)
+ * - Agência: R$97/mês + R$7/cliente (até 10 usuários)
+ * - Enterprise: R$297/mês + R$5/cliente (usuários ilimitados)
  */
 export const PLANS: Record<PlanType, Plan> = {
-    [PlanType.BASIC]: {
-        id: PlanType.BASIC,
-        name: 'Basic',
-        price: 49,
-        maxUsers: 3,
+    [PlanType.GESTOR_SOLO]: {
+        id: PlanType.GESTOR_SOLO,
+        name: 'Gestor Solo',
+        price: 397,
+        pricePerClient: 0,
+        maxUsers: 1,
         maxClients: 50,
         features: [
-            'Até 3 usuários',
+            '1 usuário',
             'Até 50 clientes',
             'WhatsApp integrado',
             'Kanban de tarefas',
+            'Templates de checklist',
             'Suporte por email'
         ]
     },
-    [PlanType.PRO]: {
-        id: PlanType.PRO,
-        name: 'Pro',
-        price: 149,
+    [PlanType.AGENCIA]: {
+        id: PlanType.AGENCIA,
+        name: 'Agência',
+        price: 97,
+        pricePerClient: 7,
         maxUsers: 10,
-        maxClients: 200,
+        maxClients: Infinity,
         features: [
             'Até 10 usuários',
-            'Até 200 clientes',
+            'Clientes ilimitados',
+            'R$7/cliente adicional',
             'WhatsApp integrado',
             'Kanban de tarefas',
             'Templates de checklist',
@@ -39,12 +46,14 @@ export const PLANS: Record<PlanType, Plan> = {
     [PlanType.ENTERPRISE]: {
         id: PlanType.ENTERPRISE,
         name: 'Enterprise',
-        price: 499,
+        price: 297,
+        pricePerClient: 5,
         maxUsers: Infinity,
         maxClients: Infinity,
         features: [
             'Usuários ilimitados',
             'Clientes ilimitados',
+            'R$5/cliente adicional',
             'WhatsApp integrado',
             'Kanban de tarefas',
             'Templates de checklist',
@@ -54,6 +63,15 @@ export const PLANS: Record<PlanType, Plan> = {
             'Gestor de conta dedicado'
         ]
     }
+};
+
+/**
+ * Plan labels for display
+ */
+export const PLAN_LABELS: Record<PlanType, string> = {
+    [PlanType.GESTOR_SOLO]: 'Gestor Solo',
+    [PlanType.AGENCIA]: 'Agência',
+    [PlanType.ENTERPRISE]: 'Enterprise'
 };
 
 /**
@@ -68,6 +86,14 @@ export function getPlan(planType: PlanType): Plan {
  */
 export function getPlanPrice(planType: PlanType): number {
     return PLANS[planType].price;
+}
+
+/**
+ * Calculate monthly amount based on plan and client count
+ */
+export function calculatePlanAmount(planType: PlanType, clientCount: number): number {
+    const plan = PLANS[planType];
+    return plan.price + (plan.pricePerClient * clientCount);
 }
 
 /**

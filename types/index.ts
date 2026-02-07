@@ -21,3 +21,6 @@ export * from './task';
 
 // Kanban domain
 export * from './kanban';
+
+// Billing domain
+export * from './billing';

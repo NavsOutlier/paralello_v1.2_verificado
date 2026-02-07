@@ -15,7 +15,6 @@ interface DBOrganization {
     owner_name: string;
     owner_email: string;
     stats_users: number;
-    stats_clients: number;
     stats_tasks: number;
     billing_email?: string;
     billing_document?: string;
@@ -79,7 +78,7 @@ class OrganizationRepositoryClass extends BaseRepository<DBOrganization> {
             },
             stats: {
                 users: dbOrg.stats_users || 0,
-                clients: dbOrg.stats_clients || 0,
+                clients: 0,
                 tasks: dbOrg.stats_tasks || 0
             },
             billingDocument: dbOrg.billing_document,

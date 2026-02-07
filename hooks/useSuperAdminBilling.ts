@@ -57,7 +57,7 @@ export const useSuperAdminBilling = (): SuperAdminBillingData & SuperAdminBillin
                 .from('subscriptions')
                 .select(`
           *,
-          organizations!inner(name, owner_email)
+          organizations!inner(name, owner_email, plan, billing_value, contracted_clients)
         `)
                 .order('created_at', { ascending: false });
 
@@ -82,10 +82,13 @@ export const useSuperAdminBilling = (): SuperAdminBillingData & SuperAdminBillin
             };
 
             mappedSubs.forEach((sub: any) => {
+                const plan = sub.organizations?.plan;
+                const billingValue = sub.organizations?.billing_value || 0;
+
                 // Contar por status
                 if (sub.status === 'active') {
                     newMetrics.activeSubscriptions++;
-                    newMetrics.totalMRR += sub.monthly_amount || 0;
+                    newMetrics.totalMRR += Number(billingValue);
                 } else if (sub.status === 'trialing') {
                     newMetrics.trialingCount++;
                 } else if (sub.status === 'past_due') {
@@ -95,8 +98,8 @@ export const useSuperAdminBilling = (): SuperAdminBillingData & SuperAdminBillin
                 }
 
                 // Contar por plano
-                if (sub.plan in newMetrics.planDistribution) {
-                    newMetrics.planDistribution[sub.plan as keyof typeof newMetrics.planDistribution]++;
+                if (plan && plan in newMetrics.planDistribution) {
+                    newMetrics.planDistribution[plan as keyof typeof newMetrics.planDistribution]++;
                 }
             });
 

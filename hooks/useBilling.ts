@@ -36,7 +36,10 @@ export const useBilling = (): BillingData & BillingActions => {
             // Buscar subscription
             const { data: subData, error: subError } = await supabase
                 .from('subscriptions')
-                .select('*')
+                .select(`
+                    *,
+                    organizations!inner(plan, billing_value, contracted_clients)
+                `)
                 .eq('organization_id', organizationId)
                 .single();
 
@@ -82,22 +85,25 @@ export const useBilling = (): BillingData & BillingActions => {
             const clientCount = count || 0;
             const newAmount = calculateMonthlyAmount(newPlan, clientCount);
 
-            // Atualizar subscription
+            // Atualizar na tabela organizations (fonte única de verdade)
             const { error } = await supabase
-                .from('subscriptions')
+                .from('organizations')
                 .update({
                     plan: newPlan,
-                    monthly_amount: newAmount,
+                    billing_value: newAmount,
                 })
-                .eq('organization_id', organizationId);
+                .eq('id', organizationId);
 
             if (error) throw error;
 
-            // Atualizar estado local
+            // Atualizar estado local (simulando o join)
             setSubscription(prev => prev ? {
                 ...prev,
-                plan: newPlan,
-                monthly_amount: newAmount,
+                organizations: {
+                    ...(prev as any).organizations,
+                    plan: newPlan,
+                    billing_value: newAmount,
+                }
             } : null);
 
             return { success: true };

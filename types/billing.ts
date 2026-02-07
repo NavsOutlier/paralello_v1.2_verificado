@@ -7,10 +7,7 @@ export type PaymentStatus = 'pending' | 'confirmed' | 'overdue' | 'refunded';
 export interface Subscription {
     id: string;
     organization_id: string;
-    plan: BillingPlan;
     status: BillingStatus;
-    client_count: number;
-    monthly_amount: number;
 
     // Asaas
     asaas_customer_id: string | null;

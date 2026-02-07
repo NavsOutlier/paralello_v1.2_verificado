@@ -78,7 +78,8 @@ export const SubscriptionPanel: React.FC<SubscriptionPanelProps> = ({ className 
         window.open(url, '_blank');
     };
 
-    const PlanIcon = getPlanIcon(subscription.plan);
+    const orgData = (subscription as any).organizations;
+    const PlanIcon = getPlanIcon(orgData?.plan);
 
     return (
         <div className={`bg-slate-900/40 backdrop-blur-xl rounded-2xl border border-white/5 overflow-hidden ${className}`}>
@@ -99,7 +100,7 @@ export const SubscriptionPanel: React.FC<SubscriptionPanelProps> = ({ className 
                         </div>
                         <div>
                             <h3 className="text-lg font-bold text-white">
-                                {PLAN_LABELS[subscription.plan]}
+                                {PLAN_LABELS[orgData?.plan as BillingPlan]}
                             </h3>
                             <span className={`text-xs font-semibold uppercase tracking-wider ${isPastDue ? 'text-red-400' : isTrialing ? 'text-amber-400' : 'text-emerald-400'
                                 }`}>
@@ -143,7 +144,7 @@ export const SubscriptionPanel: React.FC<SubscriptionPanelProps> = ({ className 
                             Valor Mensal
                         </div>
                         <p className="text-2xl font-bold text-white">
-                            {formatCurrency(subscription.monthly_amount)}
+                            {formatCurrency(orgData?.billing_value || 0)}
                         </p>
                     </div>
 
@@ -153,7 +154,7 @@ export const SubscriptionPanel: React.FC<SubscriptionPanelProps> = ({ className 
                             Clientes Ativos
                         </div>
                         <p className="text-2xl font-bold text-white">
-                            {subscription.client_count}
+                            {orgData?.contracted_clients || 0}
                         </p>
                     </div>
                 </div>

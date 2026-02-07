@@ -267,164 +267,163 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                             </div>
                             <span className="text-sm font-bold text-white">Ativar Cobrança</span>
                         </div>
-                        </div>
                     )}
 
-            {/* Plan Selection */}
-            <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">
-                    Plano *
-                </label>
-
-                {loadingPlans ? (
-                    <div className="flex items-center justify-center py-8">
-                        <RefreshCw className="w-6 h-6 text-indigo-500 animate-spin" />
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {plans.map((planData) => {
-                            const Icon = getPlanIcon(planData.id);
-                            const isSelected = plan === planData.id;
-
-                            return (
-                                <button
-                                    key={planData.id}
-                                    type="button"
-                                    onClick={() => {
-                                        setPlan(planData.id as PlanType);
-                                        // Atualiza limite de usuários ao mudar o plano
-                                        if (!organization) {
-                                            setMaxUsers(planData.max_users || 10);
-                                        }
-                                    }}
-                                    className={`relative p-4 rounded-xl border text-left transition-all ${isSelected
-                                        ? 'bg-emerald-500/10 border-emerald-500/30 ring-2 ring-emerald-500/20'
-                                        : 'bg-slate-800/30 border-white/5 hover:border-white/20 hover:bg-slate-800/50'
-                                        }`}
-                                >
-                                    {isSelected && (
-                                        <div className="absolute top-2 right-2">
-                                            <Check className="w-4 h-4 text-emerald-400" />
-                                        </div>
-                                    )}
-
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className={`p-2 rounded-lg ${planData.id === 'enterprise' ? 'bg-amber-500/20' :
-                                            planData.id === 'agencia' ? 'bg-blue-500/20' : 'bg-slate-500/20'
-                                            }`}>
-                                            <Icon className="w-4 h-4 text-white" />
-                                        </div>
-                                        <span className="font-bold text-white text-sm">{planData.name}</span>
-                                    </div>
-
-                                    <div className="space-y-1">
-                                        <p className="text-lg font-black text-white">
-                                            {formatCurrency(planData.base_price)}
-                                            <span className="text-xs text-slate-400 font-normal">/mês</span>
-                                        </p>
-                                        {planData.price_per_client > 0 && (
-                                            <p className="text-xs text-slate-400">
-                                                + {formatCurrency(planData.price_per_client)}/cliente
-                                            </p>
-                                        )}
-                                        <p className="text-xs text-slate-500">
-                                            {planData.max_users >= 999999 ? 'Usuários ilimitados' : `Até ${planData.max_users} usuário${planData.max_users > 1 ? 's' : ''}`}
-                                        </p>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
-
-            {/* Contrato de Clientes */}
-            <div className="p-5 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 rounded-2xl border border-emerald-500/20">
-                <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-4">Contrato de Clientes</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                    {/* Plan Selection */}
                     <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
-                            Qtd. Clientes Contratados *
+                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">
+                            Plano *
                         </label>
-                        <input
-                            type="number"
-                            min={5}
-                            step={5}
-                            value={contractedClients}
-                            onChange={(e) => setContractedClients(e.target.value === '' ? '' : Number(e.target.value))}
-                            className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all font-bold"
-                            placeholder="10"
-                            required
-                        />
-                    </div>
-                    <div className="text-right">
-                        <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Valor Mensal</p>
-                        <p className="text-2xl font-black text-emerald-400">{formatCurrency(calculateTotalValue())}</p>
-                        <p className="text-[10px] text-slate-500 mt-1">
-                            {(() => {
-                                const selectedPlan = plans.find(p => p.id === plan);
-                                if (!selectedPlan) return '';
-                                return `Base: ${formatCurrency(selectedPlan.base_price)} + ${typeof contractedClients === 'number' ? contractedClients : 0} clientes × ${formatCurrency(selectedPlan.price_per_client)}`;
-                            })()}
-                        </p>
-                    </div>
-                </div>
-            </div>
 
-            <div className="border-t border-white/5 pt-6 mt-6">
-                <h3 className="text-[10px] font-black text-indigo-400/80 uppercase tracking-[0.3em] mb-4">Informações do Owner</h3>
+                        {loadingPlans ? (
+                            <div className="flex items-center justify-center py-8">
+                                <RefreshCw className="w-6 h-6 text-indigo-500 animate-spin" />
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                {plans.map((planData) => {
+                                    const Icon = getPlanIcon(planData.id);
+                                    const isSelected = plan === planData.id;
 
-                <div className="space-y-3">
-                    <div>
-                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
-                            Nome *
-                        </label>
-                        <input
-                            type="text"
-                            value={ownerName}
-                            onChange={(e) => setOwnerName(e.target.value)}
-                            className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
-                            placeholder="João Silva"
-                            required
-                        />
+                                    return (
+                                        <button
+                                            key={planData.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setPlan(planData.id as PlanType);
+                                                // Atualiza limite de usuários ao mudar o plano
+                                                if (!organization) {
+                                                    setMaxUsers(planData.max_users || 10);
+                                                }
+                                            }}
+                                            className={`relative p-4 rounded-xl border text-left transition-all ${isSelected
+                                                ? 'bg-emerald-500/10 border-emerald-500/30 ring-2 ring-emerald-500/20'
+                                                : 'bg-slate-800/30 border-white/5 hover:border-white/20 hover:bg-slate-800/50'
+                                                }`}
+                                        >
+                                            {isSelected && (
+                                                <div className="absolute top-2 right-2">
+                                                    <Check className="w-4 h-4 text-emerald-400" />
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className={`p-2 rounded-lg ${planData.id === 'enterprise' ? 'bg-amber-500/20' :
+                                                    planData.id === 'agencia' ? 'bg-blue-500/20' : 'bg-slate-500/20'
+                                                    }`}>
+                                                    <Icon className="w-4 h-4 text-white" />
+                                                </div>
+                                                <span className="font-bold text-white text-sm">{planData.name}</span>
+                                            </div>
+
+                                            <div className="space-y-1">
+                                                <p className="text-lg font-black text-white">
+                                                    {formatCurrency(planData.base_price)}
+                                                    <span className="text-xs text-slate-400 font-normal">/mês</span>
+                                                </p>
+                                                {planData.price_per_client > 0 && (
+                                                    <p className="text-xs text-slate-400">
+                                                        + {formatCurrency(planData.price_per_client)}/cliente
+                                                    </p>
+                                                )}
+                                                <p className="text-xs text-slate-500">
+                                                    {planData.max_users >= 999999 ? 'Usuários ilimitados' : `Até ${planData.max_users} usuário${planData.max_users > 1 ? 's' : ''}`}
+                                                </p>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
 
-                    <div>
-                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
-                            Email *
-                        </label>
-                        <input
-                            type="email"
-                            value={ownerEmail}
-                            onChange={(e) => setOwnerEmail(e.target.value)}
-                            className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
-                            placeholder="joao@acme.com"
-                            required
-                        />
+                    {/* Contrato de Clientes */}
+                    <div className="p-5 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 rounded-2xl border border-emerald-500/20">
+                        <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-4">Contrato de Clientes</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
+                                    Qtd. Clientes Contratados *
+                                </label>
+                                <input
+                                    type="number"
+                                    min={5}
+                                    step={5}
+                                    value={contractedClients}
+                                    onChange={(e) => setContractedClients(e.target.value === '' ? '' : Number(e.target.value))}
+                                    className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all font-bold"
+                                    placeholder="10"
+                                    required
+                                />
+                            </div>
+                            <div className="text-right">
+                                <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Valor Mensal</p>
+                                <p className="text-2xl font-black text-emerald-400">{formatCurrency(calculateTotalValue())}</p>
+                                <p className="text-[10px] text-slate-500 mt-1">
+                                    {(() => {
+                                        const selectedPlan = plans.find(p => p.id === plan);
+                                        if (!selectedPlan) return '';
+                                        return `Base: ${formatCurrency(selectedPlan.base_price)} + ${typeof contractedClients === 'number' ? contractedClients : 0} clientes × ${formatCurrency(selectedPlan.price_per_client)}`;
+                                    })()}
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            {/* Actions */}
-            <div className="flex gap-4 pt-6">
-                <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={onClose}
-                    className="flex-1 bg-white/5 border-white/10 text-slate-300"
-                >
-                    Cancelar
-                </Button>
-                <Button
-                    type="submit"
-                    variant="primary"
-                    className="flex-1"
-                    disabled={loading || loadingPlans}
-                >
-                    {loading ? (organization ? 'Salvando...' : 'Criando...') : (organization ? 'Salvar' : 'Criar')}
-                </Button>
-            </div>
-        </form>
+                    <div className="border-t border-white/5 pt-6 mt-6">
+                        <h3 className="text-[10px] font-black text-indigo-400/80 uppercase tracking-[0.3em] mb-4">Informações do Owner</h3>
+
+                        <div className="space-y-3">
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
+                                    Nome *
+                                </label>
+                                <input
+                                    type="text"
+                                    value={ownerName}
+                                    onChange={(e) => setOwnerName(e.target.value)}
+                                    className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
+                                    placeholder="João Silva"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
+                                    Email *
+                                </label>
+                                <input
+                                    type="email"
+                                    value={ownerEmail}
+                                    onChange={(e) => setOwnerEmail(e.target.value)}
+                                    className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
+                                    placeholder="joao@acme.com"
+                                    required
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-4 pt-6">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={onClose}
+                            className="flex-1 bg-white/5 border-white/10 text-slate-300"
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="primary"
+                            className="flex-1"
+                            disabled={loading || loadingPlans}
+                        >
+                            {loading ? (organization ? 'Salvando...' : 'Criando...') : (organization ? 'Salvar' : 'Criar')}
+                        </Button>
+                    </div>
+                </form>
             </div >
         </div >
     );

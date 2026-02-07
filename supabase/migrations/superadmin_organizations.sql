@@ -21,7 +21,10 @@ BEGIN
     SELECT 1 FROM information_schema.columns 
     WHERE table_name = 'organizations' AND column_name = 'plan'
   ) THEN
-    ALTER TABLE organizations ADD COLUMN plan TEXT NOT NULL DEFAULT 'pro' CHECK (plan IN ('basic', 'pro', 'enterprise'));
+    ALTER TABLE organizations ADD COLUMN plan TEXT NOT NULL DEFAULT 'agencia';
+  ELSE
+    -- Se a coluna já existe, removemos a constraint antiga para permitir novos planos
+    ALTER TABLE organizations DROP CONSTRAINT IF EXISTS organizations_plan_check;
   END IF;
 END $$;
 

@@ -8,7 +8,8 @@
 export enum PlanType {
     GESTOR_SOLO = 'gestor_solo',
     AGENCIA = 'agencia',
-    ENTERPRISE = 'enterprise'
+    ENTERPRISE = 'enterprise',
+    TINTIM = 'tintim'
 }
 
 /**

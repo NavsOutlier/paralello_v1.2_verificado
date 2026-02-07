@@ -159,7 +159,20 @@ export async function deleteOrganization(id: string): Promise<void> {
             throw new Error(`Exclusão cancelada: Não foi possível limpar as instâncias no WhatsApp (${finalError}).`);
         }
 
-        // 3. Delete from database
+        // 5. Cleanup Auth users via Edge Function
+        // This removes users from Supabase Auth if they don't have other memberships
+        console.log('Starting Auth user cleanup for organization');
+        const { error: authCleanupError } = await supabase.functions.invoke('cleanup-org-auth', {
+            body: { organization_id: id }
+        });
+
+        if (authCleanupError) {
+            console.warn('Auth user cleanup failed (non-blocking):', authCleanupError);
+            // We treat this as non-blocking to ensure the organization can still be deleted
+            // even if there's a minor error in the cleanup function.
+        }
+
+        // 6. Delete from database
         // Only reached if proxy returned success (no error in proxyError AND no error in result)
         console.log('Cleanup successful, proceeding with DB deletion');
         await OrganizationRepository.delete(id);

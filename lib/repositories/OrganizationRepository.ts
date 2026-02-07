@@ -75,19 +75,19 @@ class OrganizationRepositoryClass extends BaseRepository<DBOrganization> {
                 email: dbOrg.owner_email
             },
             stats: {
-                users: dbOrg.stats_users || (dbOrg.name.length % 8) + 2,
-                clients: dbOrg.stats_clients || (dbOrg.name.length % 40) + 5,
-                tasks: dbOrg.stats_tasks || 150
+                users: dbOrg.stats_users || 0,
+                clients: dbOrg.stats_clients || 0,
+                tasks: dbOrg.stats_tasks || 0
             },
-            billingDocument: dbOrg.billing_document || (dbOrg.name.length > 5 ? '12.345.678/0001-90' : undefined),
-            billingEmail: dbOrg.billing_email || `${dbOrg.slug}@contato.com.br`,
-            billingPhone: dbOrg.billing_phone || '(11) 98765-4321',
-            asaasStatus: dbOrg.asaas_status || (dbOrg.name.length % 2 === 0 ? 'active' : 'past_due'),
-            trialEndsAt: dbOrg.trial_ends_at ? new Date(dbOrg.trial_ends_at) : new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+            billingDocument: dbOrg.billing_document,
+            billingEmail: dbOrg.billing_email,
+            billingPhone: dbOrg.billing_phone,
+            asaasStatus: dbOrg.asaas_status,
+            trialEndsAt: dbOrg.trial_ends_at ? new Date(dbOrg.trial_ends_at) : undefined,
             onboardingStatus: {
                 isOwnerInvited: true,
-                isOwnerActive: dbOrg.stats_users > 0 || dbOrg.name.length > 3,
-                isWhatsAppConnected: this.hasActiveWhatsAppConnection(dbOrg.instances) || dbOrg.name.length > 5
+                isOwnerActive: (dbOrg.stats_users || 0) > 0,
+                isWhatsAppConnected: this.hasActiveWhatsAppConnection(dbOrg.instances)
             }
         };
     }

@@ -81,33 +81,24 @@ export const useSuperAdminBilling = (): SuperAdminBillingData & SuperAdminBillin
                 planDistribution: { gestor_solo: 0, agencia: 0, enterprise: 0 },
             };
 
-            // Fallback para dados fictícios caso o banco esteja vazio
-            if (mappedSubs.length === 0) {
-                newMetrics.activeSubscriptions = 12;
-                newMetrics.totalMRR = 4850;
-                newMetrics.trialingCount = 5;
-                newMetrics.pastDueCount = 2;
-                newMetrics.planDistribution = { gestor_solo: 8, agencia: 4, enterprise: 0 };
-            } else {
-                mappedSubs.forEach((sub: any) => {
-                    // Contar por status
-                    if (sub.status === 'active') {
-                        newMetrics.activeSubscriptions++;
-                        newMetrics.totalMRR += sub.monthly_amount || 0;
-                    } else if (sub.status === 'trialing') {
-                        newMetrics.trialingCount++;
-                    } else if (sub.status === 'past_due') {
-                        newMetrics.pastDueCount++;
-                    } else if (sub.status === 'suspended') {
-                        newMetrics.suspendedCount++;
-                    }
+            mappedSubs.forEach((sub: any) => {
+                // Contar por status
+                if (sub.status === 'active') {
+                    newMetrics.activeSubscriptions++;
+                    newMetrics.totalMRR += sub.monthly_amount || 0;
+                } else if (sub.status === 'trialing') {
+                    newMetrics.trialingCount++;
+                } else if (sub.status === 'past_due') {
+                    newMetrics.pastDueCount++;
+                } else if (sub.status === 'suspended') {
+                    newMetrics.suspendedCount++;
+                }
 
-                    // Contar por plano
-                    if (sub.plan in newMetrics.planDistribution) {
-                        newMetrics.planDistribution[sub.plan as keyof typeof newMetrics.planDistribution]++;
-                    }
-                });
-            }
+                // Contar por plano
+                if (sub.plan in newMetrics.planDistribution) {
+                    newMetrics.planDistribution[sub.plan as keyof typeof newMetrics.planDistribution]++;
+                }
+            });
 
             setMetrics(newMetrics);
 
@@ -125,36 +116,10 @@ export const useSuperAdminBilling = (): SuperAdminBillingData & SuperAdminBillin
 
             if (overdueError) throw overdueError;
 
-            const mappedOverdue = (overdue || []).map((inv: any) => ({
+            setOverdueInvoices((overdue || []).map((inv: any) => ({
                 ...inv,
                 organization_name: inv.organizations?.name || 'N/A',
-            }));
-
-            // Fallback para faturas fictícias
-            if (mappedOverdue.length === 0) {
-                setOverdueInvoices([
-                    {
-                        id: 'inv_mock_1',
-                        organization_id: 'org1',
-                        organization_name: 'Agência Alpha (MOCK)',
-                        amount: 450,
-                        status: 'overdue',
-                        due_date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-                        asaas_invoice_url: '#'
-                    },
-                    {
-                        id: 'inv_mock_2',
-                        organization_id: 'org2',
-                        organization_name: 'Gestor Solo XP (MOCK)',
-                        amount: 197,
-                        status: 'overdue',
-                        due_date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
-                        asaas_invoice_url: '#'
-                    }
-                ] as any);
-            } else {
-                setOverdueInvoices(mappedOverdue);
-            }
+            })));
 
         } catch (err) {
             console.error('Erro ao buscar dados de billing (super admin):', err);

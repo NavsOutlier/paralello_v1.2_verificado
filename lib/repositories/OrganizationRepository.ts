@@ -98,7 +98,7 @@ class OrganizationRepositoryClass extends BaseRepository<DBOrganization> {
     }
 
     /**
-     * Fetch all organizations with instances
+     * Fetch all organizations with instances and client counts
      */
     async findWithInstances(): Promise<Organization[]> {
         const { data, error } = await this.supabase
@@ -113,7 +113,24 @@ class OrganizationRepositoryClass extends BaseRepository<DBOrganization> {
 
         if (!data) return [];
 
-        return data.map(org => this.mapToOrganization(org));
+        // Fetch client counts for these orgs
+        const orgIds = data.map(o => o.id);
+        const { data: clientCounts } = await this.supabase
+            .from('clients')
+            .select('organization_id')
+            .in('organization_id', orgIds)
+            .is('deleted_at', null);
+
+        const countsMap = (clientCounts || []).reduce((acc: Record<string, number>, curr: any) => {
+            acc[curr.organization_id] = (acc[curr.organization_id] || 0) + 1;
+            return acc;
+        }, {});
+
+        return data.map(org => {
+            const mapped = this.mapToOrganization(org);
+            mapped.stats.clients = countsMap[org.id] || 0;
+            return mapped;
+        });
     }
 
     /**
@@ -131,7 +148,16 @@ class OrganizationRepositoryClass extends BaseRepository<DBOrganization> {
             return null;
         }
 
-        return this.mapToOrganization(data);
+        // Fetch client count
+        const { count } = await this.supabase
+            .from('clients')
+            .select('id', { count: 'exact', head: true })
+            .eq('organization_id', id)
+            .is('deleted_at', null);
+
+        const mapped = this.mapToOrganization(data);
+        mapped.stats.clients = count || 0;
+        return mapped;
     }
 
     /**

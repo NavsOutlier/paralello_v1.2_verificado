@@ -23,6 +23,7 @@ serve(async (req) => {
             }
         );
 
+        const body = await req.json();
         const {
             organization,
             owner_email,
@@ -30,12 +31,80 @@ serve(async (req) => {
             plan,
             billing_document,
             billing_email,
+            billing_phone,
             activate_billing,
             contracted_clients,
             max_users,
-            billing_value
-        } = await req.json();
+            billing_value,
+            // New: for confirming a pending payment
+            action,
+            pending_payment_id
+        } = body;
 
+        // =====================================================
+        // ACTION: Confirm pending payment and create org
+        // =====================================================
+        if (action === 'confirm_pending_payment' && pending_payment_id) {
+            console.log(`Confirming pending payment: ${pending_payment_id}`);
+
+            // Get the pending payment
+            const { data: pendingPayment, error: pendingError } = await supabaseClient
+                .from('pending_payments')
+                .select('*')
+                .eq('id', pending_payment_id)
+                .eq('status', 'confirmed')
+                .single();
+
+            if (pendingError || !pendingPayment) {
+                return new Response(
+                    JSON.stringify({ error: "Pending payment not found or not confirmed" }),
+                    { status: 400, headers: corsHeaders }
+                );
+            }
+
+            // Extract org data and Asaas IDs from pending payment
+            const orgData = pendingPayment.org_data;
+            const asaasCustomerId = pendingPayment.asaas_customer_id;
+            const asaasSubscriptionId = pendingPayment.asaas_subscription_id;
+
+            // Now create the actual organization using the stored data
+            return await createOrganizationFromData(
+                supabaseClient,
+                orgData,
+                corsHeaders,
+                pendingPayment.id,
+                asaasCustomerId,
+                asaasSubscriptionId
+            );
+        }
+
+        // =====================================================
+        // ACTION: Cancel pending payment
+        // =====================================================
+        if (action === 'cancel_pending_payment' && pending_payment_id) {
+            console.log(`Canceling pending payment: ${pending_payment_id}`);
+
+            const { error } = await supabaseClient
+                .from('pending_payments')
+                .update({ status: 'canceled' })
+                .eq('id', pending_payment_id);
+
+            if (error) {
+                return new Response(
+                    JSON.stringify({ error: "Failed to cancel pending payment" }),
+                    { status: 400, headers: corsHeaders }
+                );
+            }
+
+            return new Response(
+                JSON.stringify({ success: true }),
+                { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+            );
+        }
+
+        // =====================================================
+        // NORMAL FLOW: Create org (with or without billing)
+        // =====================================================
         if (!organization?.name || !organization?.slug || !owner_email || !owner_name || !plan) {
             return new Response(
                 JSON.stringify({ error: "Missing required fields (name, slug, owner_email, owner_name, plan)" }),
@@ -46,182 +115,152 @@ serve(async (req) => {
             );
         }
 
-        // 1. Ensure User exists and is invited (to trigger email notification)
-        let userId: string;
+        // If billing is activated, create a pending payment first
+        if (activate_billing) {
+            console.log("Creating pending payment for billing activation flow...");
 
-        // Try to invite the user - this sends an email if they don't exist
-        // and returns the user if they already do.
-        const { data: inviteData, error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(owner_email, {
-            data: { full_name: owner_name }
-        });
+            // Store all org data for later creation
+            const orgDataToStore = {
+                organization,
+                owner_email,
+                owner_name,
+                plan,
+                billing_document,
+                billing_email,
+                billing_phone,
+                contracted_clients,
+                max_users,
+                billing_value
+            };
 
-        if (inviteError) {
-            console.error("Invite error:", inviteError);
-            // If invite fails, they might already be a user. Try to find them.
-            const { data: profile } = await supabaseClient
-                .from('profiles')
-                .select('id')
-                .eq('email', owner_email)
-                .maybeSingle();
+            // Get the authenticated user ID (caller)
+            const authHeader = req.headers.get('Authorization');
+            let createdBy = null;
+            if (authHeader) {
+                try {
+                    const token = authHeader.replace('Bearer ', '');
+                    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+                    if (!userError && user) {
+                        createdBy = user.id;
+                    } else {
+                        console.warn("Could not validate user from token:", userError);
+                    }
+                } catch (e) {
+                    console.warn("Error parsing auth header:", e);
+                }
+            }
 
-            if (profile) {
-                userId = profile.id;
-            } else {
+            // Create pending payment record
+            // Use service role client for this operation to avoid RLS issues if auth fails
+            const { data: pendingPayment, error: pendingError } = await supabaseClient
+                .from('pending_payments')
+                .insert({
+                    org_data: orgDataToStore,
+                    status: 'pending',
+                    created_by: createdBy
+                })
+                .select()
+                .single();
+
+            if (pendingError) {
+                console.error("Failed to create pending payment:", pendingError);
                 return new Response(
-                    JSON.stringify({ error: `Could not create or find user: ${inviteError.message}` }),
+                    JSON.stringify({ error: "Failed to create pending payment" }),
                     { status: 400, headers: corsHeaders }
                 );
             }
-        } else {
-            userId = inviteData.user.id;
-        }
 
-        // 2. Ensure Profile exists and is updated
-        // Table: profiles (id, name, email, ...)
-        const { data: existingProfile, error: checkError } = await supabaseClient
-            .from('profiles')
-            .select('id')
-            .eq('id', userId)
-            .maybeSingle();
-
-        if (checkError) {
-            console.error("Profile check error:", checkError);
-            throw new Error(`Failed to check profile: ${checkError.message}`);
-        }
-
-        if (existingProfile) {
-            const { error: updateError } = await supabaseClient
-                .from('profiles')
-                .update({
-                    name: owner_name,
-                    email: owner_email,
-                })
-                .eq('id', userId);
-
-            if (updateError) {
-                console.error("Profile update error:", updateError);
-                throw new Error(`Failed to update profile: ${updateError.message}`);
-            }
-        } else {
-            const { error: insertError } = await supabaseClient
-                .from('profiles')
-                .insert({
-                    id: userId,
-                    name: owner_name,
-                    email: owner_email,
-                });
-
-            if (insertError) {
-                console.error("Profile insert error:", insertError);
-                throw new Error(`Failed to insert profile: ${insertError.message}`);
-            }
-        }
-
-        // 3. Create Organization
-        const { data: orgData, error: orgError } = await supabaseClient
-            .from("organizations")
-            .insert({
-                name: organization.name,
-                slug: organization.slug,
-                plan: plan,
-                status: "active",
-                owner_name: owner_name,
-                owner_email: owner_email,
-                billing_document: billing_document,
-                billing_email: billing_email,
-                contracted_clients: contracted_clients,
-                max_users: max_users,
-                billing_value: billing_value,
-            })
-            .select()
-            .single();
-
-        if (orgError) throw orgError;
-
-        // 4. Add Member (Owner)
-        // Table: team_members (not organization_members)
-        // Columns: organization_id, profile_id (not user_id), role, status, permissions
-        const { error: memberError } = await supabaseClient
-            .from("team_members")
-            .insert({
-                organization_id: orgData.id,
-                profile_id: userId,
-                role: "manager", // Highest role available
-                status: "active",
-                job_title: "Owner",
-                permissions: {
-                    can_manage_clients: true,
-                    can_manage_tasks: true,
-                    can_manage_team: true,
-                    can_manage_marketing: true,
-                    can_manage_automation: true,
-                    can_manage_ai_agents: true
-                }
-            });
-
-        if (memberError) {
-            console.error("Member insert error:", memberError);
-            // Clean up org?
-            await supabaseClient.from("organizations").delete().eq("id", orgData.id);
-            throw new Error(`Failed to add owner to team: ${memberError.message}`);
-        }
-
-        // Optional: Update profile organization_id to this new one?
-        // Only if they don't have one?
-        await supabaseClient
-            .from('profiles')
-            .update({ organization_id: orgData.id })
-            .eq('id', userId)
-            .is('organization_id', null);
-
-        // 5. Trigger n8n Webhook if requested
-        if (activate_billing) {
+            // Now call n8n to create the Asaas customer and payment
             const n8nWebhookUrl = Deno.env.get("N8N_WEBHOOK_URL_CREATE_CUSTOMER");
+            let paymentUrl = null;
+            let asaasPaymentId = null;
+            let asaasCustomerId = null;
+
             if (n8nWebhookUrl) {
                 try {
-                    console.log(`Triggering n8n webhook for org: ${orgData.id} at URL: ${n8nWebhookUrl}`);
+                    console.log(`Triggering n8n webhook for pending payment: ${pendingPayment.id}`);
                     const response = await fetch(n8nWebhookUrl, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            event: "org_created_with_billing",
+                            event: "create_pending_payment",
+                            pending_payment_id: pendingPayment.id,
                             organization: {
-                                id: orgData.id,
-                                name: orgData.name,
-                                slug: orgData.slug,
-                                billing_document: orgData.billing_document,
-                                billing_email: orgData.billing_email,
-                                owner_name: orgData.owner_name,
-                                owner_email: orgData.owner_email,
-                                contracted_clients: orgData.contracted_clients,
-                                billing_value: orgData.billing_value,
-                                max_users: orgData.max_users,
-                                created_at: orgData.created_at
+                                name: organization.name,
+                                slug: organization.slug,
+                                billing_document: billing_document,
+                                billing_email: billing_email,
+                                billing_phone: billing_phone,
+                                owner_name: owner_name,
+                                owner_email: owner_email,
+                                contracted_clients: contracted_clients,
+                                billing_value: billing_value,
+                                max_users: max_users
                             },
-                            plan: orgData.plan
+                            plan: plan
                         }),
                     });
 
-                    if (!response.ok) {
-                        console.error(`n8n Webhook returned error status: ${response.status} ${response.statusText}`);
+                    if (response.ok) {
+                        const webhookResult = await response.json();
+                        console.log("n8n webhook response:", webhookResult);
+
+                        paymentUrl = webhookResult.payment_url || webhookResult.invoiceUrl || null;
+                        asaasPaymentId = webhookResult.asaas_payment_id || webhookResult.paymentId || null;
+                        asaasCustomerId = webhookResult.asaas_customer_id || webhookResult.customerId || null;
+                        const asaasSubscriptionId = webhookResult.asaas_subscription_id || webhookResult.subscriptionId || null;
+
+                        // Update pending payment with Asaas info
+                        if (paymentUrl || asaasPaymentId || asaasSubscriptionId) {
+                            await supabaseClient
+                                .from('pending_payments')
+                                .update({
+                                    payment_url: paymentUrl,
+                                    asaas_payment_id: asaasPaymentId,
+                                    asaas_subscription_id: asaasSubscriptionId,
+                                    asaas_customer_id: asaasCustomerId
+                                })
+                                .eq('id', pendingPayment.id);
+                        }
                     } else {
-                        console.log("n8n Webhook triggered successfully");
+                        console.error(`n8n Webhook error: ${response.status}`);
                     }
                 } catch (webhookError: any) {
-                    console.error("Failed to trigger n8n webhook (fetch error):", webhookError.message || webhookError);
+                    console.error("n8n webhook error:", webhookError.message);
                 }
-            } else {
-                console.warn("N8N_WEBHOOK_URL_CREATE_CUSTOMER secret not set, skipping webhook.");
             }
+
+            // Return the pending payment info to frontend
+            return new Response(
+                JSON.stringify({
+                    pending_payment_id: pendingPayment.id,
+                    payment_url: paymentUrl,
+                    status: 'pending'
+                }),
+                {
+                    headers: { ...corsHeaders, "Content-Type": "application/json" },
+                    status: 200,
+                }
+            );
         }
 
-        return new Response(
-            JSON.stringify({ organizationId: orgData.id }),
-            {
-                headers: { ...corsHeaders, "Content-Type": "application/json" },
-                status: 200,
-            }
-        );
+        // =====================================================
+        // NO BILLING: Create org directly (original flow)
+        // =====================================================
+        const orgDataForDirect = {
+            organization,
+            owner_email,
+            owner_name,
+            plan,
+            billing_document,
+            billing_email,
+            billing_phone,
+            contracted_clients,
+            max_users,
+            billing_value
+        };
+
+        return await createOrganizationFromData(supabaseClient, orgDataForDirect, corsHeaders, null);
 
     } catch (error: any) {
         console.error(error);
@@ -231,3 +270,142 @@ serve(async (req) => {
         });
     }
 });
+
+// =====================================================
+// Helper: Create organization from stored data
+// =====================================================
+async function createOrganizationFromData(
+    supabaseClient: any,
+    orgData: any,
+    corsHeaders: any,
+    pendingPaymentId: string | null,
+    asaasCustomerId?: string | null,
+    asaasSubscriptionId?: string | null
+) {
+    const {
+        organization,
+        owner_email,
+        owner_name,
+        plan,
+        billing_document,
+        billing_email,
+        billing_phone,
+        contracted_clients,
+        max_users,
+        billing_value
+    } = orgData;
+
+    // 1. Ensure User exists and is invited
+    let userId: string;
+
+    const { data: inviteData, error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(owner_email, {
+        data: { full_name: owner_name }
+    });
+
+    if (inviteError) {
+        console.error("Invite error:", inviteError);
+        const { data: profile } = await supabaseClient
+            .from('profiles')
+            .select('id')
+            .eq('email', owner_email)
+            .maybeSingle();
+
+        if (profile) {
+            userId = profile.id;
+        } else {
+            throw new Error(`Could not create or find user: ${inviteError.message}`);
+        }
+    } else {
+        userId = inviteData.user.id;
+    }
+
+    // 2. Ensure Profile exists
+    const { data: existingProfile } = await supabaseClient
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+
+    if (existingProfile) {
+        await supabaseClient
+            .from('profiles')
+            .update({ name: owner_name, email: owner_email })
+            .eq('id', userId);
+    } else {
+        await supabaseClient
+            .from('profiles')
+            .insert({ id: userId, name: owner_name, email: owner_email });
+    }
+
+    // 3. Create Organization
+    const { data: newOrg, error: orgError } = await supabaseClient
+        .from("organizations")
+        .insert({
+            name: organization.name,
+            slug: organization.slug,
+            plan: plan,
+            status: "active",
+            owner_name: owner_name,
+            owner_email: owner_email,
+            billing_document: billing_document,
+            billing_email: billing_email,
+            billing_phone: billing_phone,
+            contracted_clients: contracted_clients,
+            max_users: max_users,
+            billing_value: billing_value,
+            asaas_customer_id: asaasCustomerId,
+            asaas_subscription_id: asaasSubscriptionId
+        })
+        .select()
+        .single();
+
+    if (orgError) throw orgError;
+
+    // 4. Add Member (Owner)
+    const { error: memberError } = await supabaseClient
+        .from("team_members")
+        .insert({
+            organization_id: newOrg.id,
+            profile_id: userId,
+            role: "manager",
+            status: "active",
+            job_title: "Owner",
+            permissions: {
+                can_manage_clients: true,
+                can_manage_tasks: true,
+                can_manage_team: true,
+                can_manage_marketing: true,
+                can_manage_automation: true,
+                can_manage_ai_agents: true
+            }
+        });
+
+    if (memberError) {
+        console.error("Member insert error:", memberError);
+        await supabaseClient.from("organizations").delete().eq("id", newOrg.id);
+        throw new Error(`Failed to add owner to team: ${memberError.message}`);
+    }
+
+    // 5. Update profile organization_id
+    await supabaseClient
+        .from('profiles')
+        .update({ organization_id: newOrg.id })
+        .eq('id', userId)
+        .is('organization_id', null);
+
+    // 6. Delete the pending payment if it was a confirmed flow
+    if (pendingPaymentId) {
+        await supabaseClient
+            .from('pending_payments')
+            .delete()
+            .eq('id', pendingPaymentId);
+    }
+
+    return new Response(
+        JSON.stringify({ organizationId: newOrg.id }),
+        {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+        }
+    );
+}

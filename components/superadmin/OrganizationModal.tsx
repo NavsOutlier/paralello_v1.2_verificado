@@ -4,6 +4,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { Organization, PlanType } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui';
+import { PaymentPendingModal } from './PaymentPendingModal';
 
 interface OrganizationModalProps {
     organization?: Organization | null;
@@ -52,6 +53,12 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
     const [loading, setLoading] = useState(false);
     const [plans, setPlans] = useState<PlanConfig[]>(FALLBACK_PLANS);
     const [loadingPlans, setLoadingPlans] = useState(true);
+
+    // Payment pending state
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [pendingPaymentId, setPendingPaymentId] = useState('');
+    const [paymentUrl, setPaymentUrl] = useState('');
+
 
     // Calcula valor mensal baseado no plano e clientes contratados
     const calculateTotalValue = () => {
@@ -145,9 +152,46 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
             const clients = contractedClients === '' ? undefined : contractedClients;
             if (clients !== undefined && clients % 5 !== 0) {
                 showToast('A quantidade de clientes deve ser múltiplo de 5.', 'error');
+                setLoading(false);
                 return;
             }
 
+            // If creating new org with billing, use the pending payment flow
+            if (!organization && activateBilling) {
+                const { data: response, error } = await supabase.functions.invoke('create-org-with-owner', {
+                    body: {
+                        organization: { name, slug },
+                        owner_email: ownerEmail,
+                        owner_name: ownerName,
+                        plan,
+                        billing_document: billingDocument,
+                        billing_email: billingEmail,
+                        billing_phone: billingPhone,
+                        activate_billing: true,
+                        contracted_clients: clients,
+                        max_users: maxUsers === '' ? undefined : maxUsers,
+                        billing_value: totalValue
+                    }
+                });
+
+                if (error) {
+                    console.error('Error creating pending payment:', error);
+                    showToast('Erro ao iniciar pagamento', 'error');
+                    setLoading(false);
+                    return;
+                }
+
+                if (response?.pending_payment_id) {
+                    // Show the payment modal
+                    setPendingPaymentId(response.pending_payment_id);
+                    setPaymentUrl(response.payment_url || 'Link será atualizado pelo n8n...');
+                    setShowPaymentModal(true);
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            // Normal flow (editing or creating without billing)
             const data: Partial<Organization> = {
                 name,
                 slug,
@@ -162,7 +206,7 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                 maxUsers: maxUsers === '' ? undefined : maxUsers,
                 contractedClients: clients,
                 billingValue: totalValue,
-                activateBilling
+                activateBilling: false // Don't trigger billing for direct create
             };
 
             if (organization) {
@@ -173,10 +217,49 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
             onClose();
         } catch (error) {
             console.error('Error in OrganizationModal handleSubmit:', error);
+            showToast('Erro ao salvar organização', 'error');
         } finally {
             setLoading(false);
         }
     };
+
+    // Handle payment confirmed - create the actual organization
+    const handlePaymentConfirmed = async () => {
+        setLoading(true);
+        try {
+            const { data: response, error } = await supabase.functions.invoke('create-org-with-owner', {
+                body: {
+                    action: 'confirm_pending_payment',
+                    pending_payment_id: pendingPaymentId
+                }
+            });
+
+            if (error || response?.error) {
+                console.error('Error confirming payment:', error || response?.error);
+                showToast('Erro ao criar organização após pagamento', 'error');
+                return;
+            }
+
+            showToast('Organização criada com sucesso!', 'success');
+            setShowPaymentModal(false);
+            onClose();
+            // Trigger refresh of organization list
+            window.location.reload();
+        } catch (err) {
+            console.error('Error in handlePaymentConfirmed:', err);
+            showToast('Erro ao finalizar criação', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Handle payment modal close (cancel)
+    const handlePaymentModalClose = () => {
+        setShowPaymentModal(false);
+        setPendingPaymentId('');
+        setPaymentUrl('');
+    };
+
 
     const getPlanIcon = (planId: string) => {
         switch (planId) {
@@ -193,267 +276,280 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] shadow-3xl max-w-2xl w-full mx-4 overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
-                {/* Header */}
-                <div className="flex items-center justify-between p-8 border-b border-white/5 bg-white/[0.02]">
-                    <h2 className="text-xl font-black text-white tracking-tight">
-                        {organization ? 'Editar Organização' : 'Nova Organização'}
-                    </h2>
-                    <button
-                        onClick={onClose}
-                        className="text-slate-400 hover:text-slate-600 transition-colors"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                    <div>
-                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
-                            Nome da Organização *
-                        </label>
-                        <input
-                            type="text"
-                            value={name}
-                            onChange={(e) => handleNameChange(e.target.value)}
-                            className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
-                            placeholder="Ex: Acme Corporation"
-                            required
-                        />
+        <>
+            <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50">
+                <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] shadow-3xl max-w-2xl w-full mx-4 overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-8 border-b border-white/5 bg-white/[0.02]">
+                        <h2 className="text-xl font-black text-white tracking-tight">
+                            {organization ? 'Editar Organização' : 'Nova Organização'}
+                        </h2>
+                        <button
+                            onClick={onClose}
+                            className="text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
                     </div>
 
-                    <div>
-                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
-                            Slug {organization && '(não editável)'}
-                        </label>
-                        <input
-                            type="text"
-                            value={slug}
-                            onChange={(e) => setSlug(e.target.value)}
-                            className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                            placeholder="acme-corporation"
-                            disabled={!!organization}
-                            required
-                        />
-                        {!organization && (
-                            <p className="text-xs text-slate-500 mt-1">Gerado automaticamente do nome</p>
-                        )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Form */}
+                    <form onSubmit={handleSubmit} className="p-8 space-y-6">
                         <div>
                             <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
-                                CPF / CNPJ *
+                                Nome da Organização *
                             </label>
                             <input
                                 type="text"
-                                value={billingDocument}
-                                onChange={(e) => setBillingDocument(e.target.value)}
+                                value={name}
+                                onChange={(e) => handleNameChange(e.target.value)}
                                 className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
-                                placeholder="00.000.000/0001-00"
+                                placeholder="Ex: Acme Corporation"
                                 required
                             />
                         </div>
+
                         <div>
                             <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
-                                Email Financeiro
-                            </label>
-                            <input
-                                type="email"
-                                value={billingEmail}
-                                onChange={(e) => setBillingEmail(e.target.value)}
-                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
-                                placeholder="financeiro@empresa.com"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
-                                WhatsApp de Cobrança
+                                Slug {organization && '(não editável)'}
                             </label>
                             <input
                                 type="text"
-                                value={billingPhone}
-                                onChange={(e) => setBillingPhone(e.target.value)}
-                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
-                                placeholder="5511999999999"
+                                value={slug}
+                                onChange={(e) => setSlug(e.target.value)}
+                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                placeholder="acme-corporation"
+                                disabled={!!organization}
+                                required
                             />
+                            {!organization && (
+                                <p className="text-xs text-slate-500 mt-1">Gerado automaticamente do nome</p>
+                            )}
                         </div>
-                    </div>
 
-                    {!organization && (
-                        <div className="flex items-center gap-3 p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-xl group cursor-pointer hover:bg-indigo-500/10 transition-all" onClick={() => setActivateBilling(!activateBilling)}>
-                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${activateBilling ? 'bg-indigo-500 border-indigo-500' : 'bg-slate-950/50 border-white/10 group-hover:border-indigo-500/50'}`}>
-                                {activateBilling && <Check className="w-3.5 h-3.5 text-white" />}
-                            </div>
-                            <span className="text-sm font-bold text-white">Ativar Cobrança</span>
-                        </div>
-                    )}
-
-                    {/* Plan Selection */}
-                    <div>
-                        <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">
-                            Plano *
-                        </label>
-
-                        {loadingPlans ? (
-                            <div className="flex items-center justify-center py-8">
-                                <RefreshCw className="w-6 h-6 text-indigo-500 animate-spin" />
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                {plans.map((planData) => {
-                                    const Icon = getPlanIcon(planData.id);
-                                    const isSelected = plan === planData.id;
-
-                                    return (
-                                        <button
-                                            key={planData.id}
-                                            type="button"
-                                            onClick={() => {
-                                                setPlan(planData.id as PlanType);
-                                                // Atualiza limite de usuários ao mudar o plano
-                                                if (!organization) {
-                                                    setMaxUsers(planData.max_users || 10);
-                                                }
-                                            }}
-                                            className={`relative p-4 rounded-xl border text-left transition-all ${isSelected
-                                                ? 'bg-emerald-500/10 border-emerald-500/30 ring-2 ring-emerald-500/20'
-                                                : 'bg-slate-800/30 border-white/5 hover:border-white/20 hover:bg-slate-800/50'
-                                                }`}
-                                        >
-                                            {isSelected && (
-                                                <div className="absolute top-2 right-2">
-                                                    <Check className="w-4 h-4 text-emerald-400" />
-                                                </div>
-                                            )}
-
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <div className={`p-2 rounded-lg ${planData.id === 'enterprise' ? 'bg-amber-500/20' :
-                                                    planData.id === 'agencia' ? 'bg-blue-500/20' : 'bg-slate-500/20'
-                                                    }`}>
-                                                    <Icon className="w-4 h-4 text-white" />
-                                                </div>
-                                                <span className="font-bold text-white text-sm">{planData.name}</span>
-                                            </div>
-
-                                            <div className="space-y-1">
-                                                <p className="text-lg font-black text-white">
-                                                    {formatCurrency(planData.base_price)}
-                                                    <span className="text-xs text-slate-400 font-normal">/mês</span>
-                                                </p>
-                                                {planData.price_per_client > 0 && (
-                                                    <p className="text-xs text-slate-400">
-                                                        + {formatCurrency(planData.price_per_client)}/cliente
-                                                    </p>
-                                                )}
-                                                <p className="text-xs text-slate-500">
-                                                    {planData.max_users >= 999999 ? 'Usuários ilimitados' : `Até ${planData.max_users} usuário${planData.max_users > 1 ? 's' : ''}`}
-                                                </p>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Contrato de Clientes */}
-                    <div className="p-5 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 rounded-2xl border border-emerald-500/20">
-                        <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-4">Contrato de Clientes</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                            <div>
-                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
-                                    Qtd. Clientes Contratados *
-                                </label>
-                                <input
-                                    type="number"
-                                    min={5}
-                                    step={5}
-                                    value={contractedClients}
-                                    onChange={(e) => setContractedClients(e.target.value === '' ? '' : Number(e.target.value))}
-                                    onBlur={(e) => {
-                                        if (e.target.value !== '') {
-                                            const val = Number(e.target.value);
-                                            const rounded = Math.max(5, Math.round(val / 5) * 5);
-                                            setContractedClients(rounded);
-                                        }
-                                    }}
-                                    className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all font-bold"
-                                    placeholder="10"
-                                    required
-                                />
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Valor Mensal</p>
-                                <p className="text-2xl font-black text-emerald-400">{formatCurrency(calculateTotalValue())}</p>
-                                <p className="text-[10px] text-slate-500 mt-1">
-                                    {(() => {
-                                        const selectedPlan = plans.find(p => p.id === plan);
-                                        if (!selectedPlan) return '';
-                                        return `Base: ${formatCurrency(selectedPlan.base_price)} + ${typeof contractedClients === 'number' ? contractedClients : 0} clientes × ${formatCurrency(selectedPlan.price_per_client)}`;
-                                    })()}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="border-t border-white/5 pt-6 mt-6">
-                        <h3 className="text-[10px] font-black text-indigo-400/80 uppercase tracking-[0.3em] mb-4">Informações do Owner</h3>
-
-                        <div className="space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
-                                    Nome *
+                                    CPF / CNPJ *
                                 </label>
                                 <input
                                     type="text"
-                                    value={ownerName}
-                                    onChange={(e) => setOwnerName(e.target.value)}
+                                    value={billingDocument}
+                                    onChange={(e) => setBillingDocument(e.target.value)}
                                     className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
-                                    placeholder="João Silva"
+                                    placeholder="00.000.000/0001-00"
                                     required
                                 />
                             </div>
-
                             <div>
                                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
-                                    Email *
+                                    Email Financeiro
                                 </label>
                                 <input
                                     type="email"
-                                    value={ownerEmail}
-                                    onChange={(e) => setOwnerEmail(e.target.value)}
+                                    value={billingEmail}
+                                    onChange={(e) => setBillingEmail(e.target.value)}
                                     className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
-                                    placeholder="joao@acme.com"
-                                    required
+                                    placeholder="financeiro@empresa.com"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
+                                    WhatsApp de Cobrança
+                                </label>
+                                <input
+                                    type="text"
+                                    value={billingPhone}
+                                    onChange={(e) => setBillingPhone(e.target.value)}
+                                    className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
+                                    placeholder="5511999999999"
                                 />
                             </div>
                         </div>
-                    </div>
 
-                    {/* Actions */}
-                    <div className="flex gap-4 pt-6">
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={onClose}
-                            className="flex-1 bg-white/5 border-white/10 text-slate-300"
-                        >
-                            Cancelar
-                        </Button>
-                        <Button
-                            type="submit"
-                            variant="primary"
-                            className="flex-1"
-                            disabled={loading || loadingPlans}
-                        >
-                            {loading ? (organization ? 'Salvando...' : 'Criando...') : (organization ? 'Salvar' : 'Criar')}
-                        </Button>
-                    </div>
-                </form>
+                        {!organization && (
+                            <div className="flex items-center gap-3 p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-xl group cursor-pointer hover:bg-indigo-500/10 transition-all" onClick={() => setActivateBilling(!activateBilling)}>
+                                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${activateBilling ? 'bg-indigo-500 border-indigo-500' : 'bg-slate-950/50 border-white/10 group-hover:border-indigo-500/50'}`}>
+                                    {activateBilling && <Check className="w-3.5 h-3.5 text-white" />}
+                                </div>
+                                <span className="text-sm font-bold text-white">Ativar Cobrança</span>
+                            </div>
+                        )}
+
+                        {/* Plan Selection */}
+                        <div>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">
+                                Plano *
+                            </label>
+
+                            {loadingPlans ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <RefreshCw className="w-6 h-6 text-indigo-500 animate-spin" />
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    {plans.map((planData) => {
+                                        const Icon = getPlanIcon(planData.id);
+                                        const isSelected = plan === planData.id;
+
+                                        return (
+                                            <button
+                                                key={planData.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setPlan(planData.id as PlanType);
+                                                    // Atualiza limite de usuários ao mudar o plano
+                                                    if (!organization) {
+                                                        setMaxUsers(planData.max_users || 10);
+                                                    }
+                                                }}
+                                                className={`relative p-4 rounded-xl border text-left transition-all ${isSelected
+                                                    ? 'bg-emerald-500/10 border-emerald-500/30 ring-2 ring-emerald-500/20'
+                                                    : 'bg-slate-800/30 border-white/5 hover:border-white/20 hover:bg-slate-800/50'
+                                                    }`}
+                                            >
+                                                {isSelected && (
+                                                    <div className="absolute top-2 right-2">
+                                                        <Check className="w-4 h-4 text-emerald-400" />
+                                                    </div>
+                                                )}
+
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <div className={`p-2 rounded-lg ${planData.id === 'enterprise' ? 'bg-amber-500/20' :
+                                                        planData.id === 'agencia' ? 'bg-blue-500/20' : 'bg-slate-500/20'
+                                                        }`}>
+                                                        <Icon className="w-4 h-4 text-white" />
+                                                    </div>
+                                                    <span className="font-bold text-white text-sm">{planData.name}</span>
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                    <p className="text-lg font-black text-white">
+                                                        {formatCurrency(planData.base_price)}
+                                                        <span className="text-xs text-slate-400 font-normal">/mês</span>
+                                                    </p>
+                                                    {planData.price_per_client > 0 && (
+                                                        <p className="text-xs text-slate-400">
+                                                            + {formatCurrency(planData.price_per_client)}/cliente
+                                                        </p>
+                                                    )}
+                                                    <p className="text-xs text-slate-500">
+                                                        {planData.max_users >= 999999 ? 'Usuários ilimitados' : `Até ${planData.max_users} usuário${planData.max_users > 1 ? 's' : ''}`}
+                                                    </p>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Contrato de Clientes */}
+                        <div className="p-5 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 rounded-2xl border border-emerald-500/20">
+                            <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-4">Contrato de Clientes</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
+                                        Qtd. Clientes Contratados *
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min={5}
+                                        step={5}
+                                        value={contractedClients}
+                                        onChange={(e) => setContractedClients(e.target.value === '' ? '' : Number(e.target.value))}
+                                        onBlur={(e) => {
+                                            if (e.target.value !== '') {
+                                                const val = Number(e.target.value);
+                                                const rounded = Math.max(5, Math.round(val / 5) * 5);
+                                                setContractedClients(rounded);
+                                            }
+                                        }}
+                                        className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all font-bold"
+                                        placeholder="10"
+                                        required
+                                    />
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Valor Mensal</p>
+                                    <p className="text-2xl font-black text-emerald-400">{formatCurrency(calculateTotalValue())}</p>
+                                    <p className="text-[10px] text-slate-500 mt-1">
+                                        {(() => {
+                                            const selectedPlan = plans.find(p => p.id === plan);
+                                            if (!selectedPlan) return '';
+                                            return `Base: ${formatCurrency(selectedPlan.base_price)} + ${typeof contractedClients === 'number' ? contractedClients : 0} clientes × ${formatCurrency(selectedPlan.price_per_client)}`;
+                                        })()}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="border-t border-white/5 pt-6 mt-6">
+                            <h3 className="text-[10px] font-black text-indigo-400/80 uppercase tracking-[0.3em] mb-4">Informações do Owner</h3>
+
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
+                                        Nome *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={ownerName}
+                                        onChange={(e) => setOwnerName(e.target.value)}
+                                        className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
+                                        placeholder="João Silva"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
+                                        Email *
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={ownerEmail}
+                                        onChange={(e) => setOwnerEmail(e.target.value)}
+                                        className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all font-medium"
+                                        placeholder="joao@acme.com"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-4 pt-6">
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={onClose}
+                                className="flex-1 bg-white/5 border-white/10 text-slate-300"
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                className="flex-1"
+                                disabled={loading || loadingPlans}
+                            >
+                                {loading ? (organization ? 'Salvando...' : 'Criando...') : (organization ? 'Salvar' : 'Criar')}
+                            </Button>
+                        </div>
+                    </form>
+                </div >
             </div >
-        </div >
+
+            {/* Payment Pending Modal */}
+            <PaymentPendingModal
+                isOpen={showPaymentModal}
+                pendingPaymentId={pendingPaymentId}
+                paymentUrl={paymentUrl}
+                orgName={name}
+                amount={calculateTotalValue()}
+                onClose={handlePaymentModalClose}
+                onConfirmed={handlePaymentConfirmed}
+            />
+        </>
     );
 };

@@ -97,6 +97,38 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
 
     if (!isOpen) return null;
 
+    if (status === 'confirmed') {
+        return (
+            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[60]">
+                <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] shadow-3xl max-w-lg w-full mx-4 overflow-hidden animate-in zoom-in-95 duration-300">
+                    <div className="p-12 flex flex-col items-center text-center space-y-6">
+                        <div className="w-24 h-24 rounded-full bg-emerald-500/20 flex items-center justify-center animate-bounce-subtle">
+                            <Check className="w-12 h-12 text-emerald-400" />
+                        </div>
+
+                        <div className="space-y-2">
+                            <h2 className="text-3xl font-black text-white">Pagamento Confirmado!</h2>
+                            <p className="text-slate-400">
+                                A organização <strong>{orgName}</strong> foi criada com sucesso e já está pronta para uso.
+                            </p>
+                        </div>
+
+                        <div className="w-full pt-4">
+                            <Button
+                                type="button"
+                                variant="primary"
+                                onClick={onConfirmed}
+                                className="w-full py-6 text-lg font-black bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 shadow-xl shadow-emerald-500/20"
+                            >
+                                Acessar Painel
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-[60]">
             <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] shadow-3xl max-w-lg w-full mx-4 overflow-hidden animate-in zoom-in-95 duration-200">
@@ -129,8 +161,8 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
                                 <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
                             </div>
                         </div>
-                        <p className="text-sm text-slate-400 mt-4">
-                            Aguardando confirmação do pagamento...
+                        <p className="text-sm text-slate-400 mt-4 text-center px-8">
+                            Aguardando confirmação do pagamento... Isso pode levar alguns minutos.
                         </p>
                     </div>
 
@@ -185,10 +217,10 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
                     <div className="flex items-start gap-3 p-4 bg-red-500/5 border border-red-500/20 rounded-xl">
                         <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
                         <div>
-                            <p className="text-sm font-bold text-red-400">Atenção</p>
+                            <p className="text-sm font-bold text-red-400 uppercase tracking-wider">Atenção</p>
                             <p className="text-xs text-slate-400 mt-1">
                                 Se você fechar esta janela antes do pagamento ser confirmado,
-                                a organização <strong>não será criada</strong> e o pagamento será cancelado.
+                                a organização <strong>não será criada</strong>.
                             </p>
                         </div>
                     </div>
@@ -201,7 +233,7 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
                         variant="secondary"
                         onClick={handleCancel}
                         disabled={canceling}
-                        className="w-full bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20"
+                        className="w-full bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20 rounded-2xl py-4"
                     >
                         {canceling ? 'Cancelando...' : 'Cancelar e Fechar'}
                     </Button>

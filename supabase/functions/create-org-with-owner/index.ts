@@ -165,7 +165,11 @@ serve(async (req) => {
             if (pendingError) {
                 console.error("Failed to create pending payment:", pendingError);
                 return new Response(
-                    JSON.stringify({ error: "Failed to create pending payment" }),
+                    JSON.stringify({
+                        error: "Failed to create pending payment",
+                        details: pendingError,
+                        payload_sent: orgDataToStore
+                    }),
                     { status: 400, headers: corsHeaders }
                 );
             }

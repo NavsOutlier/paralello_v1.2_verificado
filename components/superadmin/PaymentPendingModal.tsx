@@ -44,10 +44,14 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
                 },
                 (payload) => {
                     const newStatus = payload.new.status;
+
+                    // Avoid duplicate processing
+                    if (status === 'confirmed' || status === 'completed') return;
+
                     setStatus(newStatus);
 
                     if (newStatus === 'confirmed') {
-                        showToast('Pagamento confirmado!', 'success');
+                        showToast('Pagamento confirmado! Criando organização...', 'success');
                         onConfirmed();
                     }
                 }
@@ -57,7 +61,7 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [isOpen, pendingPaymentId, onConfirmed, showToast]);
+    }, [isOpen, pendingPaymentId, onConfirmed, showToast, status]);
 
     const handleCopy = async () => {
         try {
@@ -116,11 +120,11 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
                         <div className="w-full pt-4">
                             <Button
                                 type="button"
-                                variant="primary"
-                                onClick={onConfirmed}
-                                className="w-full py-6 text-lg font-black bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 shadow-xl shadow-emerald-500/20"
+                                variant="secondary"
+                                onClick={onClose}
+                                className="w-full py-4 text-lg font-bold bg-white/5 border-white/10 hover:bg-white/10"
                             >
-                                Acessar Painel
+                                Fechar
                             </Button>
                         </div>
                     </div>

@@ -116,24 +116,7 @@ export const useSuperAdminBilling = (): SuperAdminBillingData & SuperAdminBillin
 
             setMetrics(newMetrics);
 
-            // Buscar invoices vencidas
-            const today = new Date().toISOString().split('T')[0];
-            const { data: overdue, error: overdueError } = await supabase
-                .from('invoices')
-                .select(`
-          *,
-          organizations!inner(name)
-        `)
-                .in('status', ['pending', 'overdue'])
-                .lt('due_date', today)
-                .order('due_date', { ascending: true });
-
-            if (overdueError) throw overdueError;
-
-            setOverdueInvoices((overdue || []).map((inv: any) => ({
-                ...inv,
-                organization_name: inv.organizations?.name || 'N/A',
-            })));
+            setOverdueInvoices([]);
 
         } catch (err) {
             console.error('Erro ao buscar dados de billing (super admin):', err);
@@ -143,13 +126,34 @@ export const useSuperAdminBilling = (): SuperAdminBillingData & SuperAdminBillin
         }
     }, []);
 
-    const extendTrial = useCallback(async (subscriptionId: string, days: number) => {
-        // NOTA: Como removemos a tabela subscriptions e trial_ends_at não existe na organizations, 
-        // essa funcionalidade precisa ser repensada ou movida para metadados da organização se for crítica.
-        // Por enquanto, vamos simular sucesso ou desativar.
-        console.warn('Extensão de trial temporariamente desabilitada na nova arquitetura');
-        return { success: true };
-    }, []);
+    const extendTrial = useCallback(async (organizationId: string, days: number) => {
+        try {
+            // Buscar data atual do fim do trial
+            const { data: org, error: fetchError } = await supabase
+                .from('organizations')
+                .select('trial_ends_at')
+                .eq('id', organizationId)
+                .single();
+
+            if (fetchError) throw fetchError;
+
+            const currentEnd = org.trial_ends_at ? new Date(org.trial_ends_at) : new Date();
+            const newEnd = new Date(currentEnd.getTime() + days * 24 * 60 * 60 * 1000);
+
+            const { error: updateError } = await supabase
+                .from('organizations')
+                .update({ trial_ends_at: newEnd.toISOString() })
+                .eq('id', organizationId);
+
+            if (updateError) throw updateError;
+
+            await fetchData();
+            return { success: true };
+        } catch (err: any) {
+            console.error('Erro ao estender trial:', err);
+            return { success: false, error: err.message };
+        }
+    }, [fetchData]);
 
     const suspendOrg = useCallback(async (organizationId: string) => {
         try {

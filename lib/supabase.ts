@@ -13,5 +13,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Requests will fail, but the app won't white-screen immediately.
 export const supabase = createClient(
   supabaseUrl || 'https://fhfamquilobeoibqfhwh.supabase.co',
-  supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoZmFtcXVpbG9iZW9pYnFmaHdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxMjE0ODksImV4cCI6MjA4MjY5NzQ4OX0.pHhokXv_POA3oWfG3GuJ9W3SEBoD6dyykiAIGF2gzSM'
+  supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoZmFtcXVpbG9iZW9pYnFmaHdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxMjE0ODksImV4cCI6MjA4MjY5NzQ4OX0.pHhokXv_POA3oWfG3GuJ9W3SEBoD6dyykiAIGF2gzSM',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  }
 );

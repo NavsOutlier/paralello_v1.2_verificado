@@ -393,11 +393,14 @@ async function createOrganizationFromData(
         .eq('id', userId)
         .is('organization_id', null);
 
-    // 6. Delete the pending payment if it was a confirmed flow
+    // 6. Update the pending payment instead of deleting it
     if (pendingPaymentId) {
         await supabaseClient
             .from('pending_payments')
-            .delete()
+            .update({
+                status: 'completed',
+                organization_id: newOrg.id
+            })
             .eq('id', pendingPaymentId);
     }
 

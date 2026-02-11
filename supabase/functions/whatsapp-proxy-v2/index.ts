@@ -38,12 +38,16 @@ Deno.serve(async (req: Request) => {
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
         // Validate JWT and get user
-        const token = authHeader.replace("Bearer ", "");
+        const token = authHeader.replace(/^[Bb]earer\s+/, "");
         const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
         if (userError || !user) {
+            console.error("[whatsapp-proxy-v2] Auth validation failed:", userError?.message || "User not found");
             return new Response(
-                JSON.stringify({ error: "Invalid or expired token" }),
+                JSON.stringify({
+                    error: "Invalid or expired token",
+                    details: userError?.message || "User not found"
+                }),
                 { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
         }

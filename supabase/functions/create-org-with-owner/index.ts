@@ -344,7 +344,9 @@ async function createOrganizationFromData(
             name: organization.name,
             slug: organization.slug,
             plan: plan,
-            status: "active",
+            status: "trialing", // Start as trialing (30-day money back guarantee period)
+            trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // Paid for the first month
             owner_name: owner_name,
             owner_email: owner_email,
             billing_document: billing_document,
@@ -352,7 +354,7 @@ async function createOrganizationFromData(
             billing_phone: billing_phone,
             contracted_clients: contracted_clients,
             max_users: max_users,
-            billing_value: billing_value,
+            billing_value: billing_value || 0,
             asaas_customer_id: asaasCustomerId,
             asaas_subscription_id: asaasSubscriptionId
         })

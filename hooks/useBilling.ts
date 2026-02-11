@@ -33,21 +33,31 @@ export const useBilling = (): BillingData & BillingActions => {
             setLoading(true);
             setError(null);
 
-            // Buscar subscription
-            const { data: subData, error: subError } = await supabase
-                .from('subscriptions')
-                .select(`
-                    *,
-                    organizations!inner(plan, billing_value, contracted_clients)
-                `)
-                .eq('organization_id', organizationId)
+            // Buscar dados da organização (nova fonte de verdade para billing)
+            const { data: orgData, error: orgError } = await supabase
+                .from('organizations')
+                .select('plan, billing_value, contracted_clients, max_users, status, asaas_customer_id, asaas_subscription_id, created_at')
+                .eq('id', organizationId)
                 .single();
 
-            if (subError && subError.code !== 'PGRST116') {
-                throw subError;
-            }
+            if (orgError) throw orgError;
 
-            setSubscription(subData as Subscription | null);
+            // Mapear para o formato Subscription esperado pela UI
+            const subscriptionData: Subscription = {
+                plan: orgData.plan,
+                status: (orgData.status as any) || 'active',
+                billing_value: orgData.billing_value || 0,
+                contracted_clients: orgData.contracted_clients || 0,
+                max_users: orgData.max_users || 0,
+                asaas_customer_id: orgData.asaas_customer_id,
+                asaas_subscription_id: orgData.asaas_subscription_id,
+                created_at: orgData.created_at,
+                // Campos virtuais
+                current_period_end: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString(), // Simulação
+                trial_ends_at: null
+            };
+
+            setSubscription(subscriptionData);
 
             // Buscar invoices (últimas 12)
             const { data: invData, error: invError } = await supabase
@@ -69,8 +79,8 @@ export const useBilling = (): BillingData & BillingActions => {
     }, [organizationId]);
 
     const changePlan = useCallback(async (newPlan: BillingPlan) => {
-        if (!organizationId || !subscription) {
-            return { success: false, error: 'Organização ou subscription não encontrada' };
+        if (!organizationId) {
+            return { success: false, error: 'Organização não encontrada' };
         }
 
         try {
@@ -90,20 +100,17 @@ export const useBilling = (): BillingData & BillingActions => {
                 .from('organizations')
                 .update({
                     plan: newPlan,
-                    billing_value: newAmount,
+                    billing_value: newAmount, // este campo precisa existir na tabela organizations no banco, se não existir vai falhar
                 })
                 .eq('id', organizationId);
 
             if (error) throw error;
 
-            // Atualizar estado local (simulando o join)
+            // Atualizar estado local
             setSubscription(prev => prev ? {
                 ...prev,
-                organizations: {
-                    ...(prev as any).organizations,
-                    plan: newPlan,
-                    billing_value: newAmount,
-                }
+                plan: newPlan,
+                billing_value: newAmount
             } : null);
 
             return { success: true };
@@ -111,21 +118,21 @@ export const useBilling = (): BillingData & BillingActions => {
             console.error('Erro ao trocar plano:', err);
             return { success: false, error: 'Erro ao trocar plano' };
         }
-    }, [organizationId, subscription]);
+    }, [organizationId]);
 
     useEffect(() => {
         fetchBilling();
 
         if (!organizationId) return;
 
-        // Realtime para subscriptions
-        const subChannel = supabase
-            .channel(`subscription-${organizationId}`)
+        // Realtime para organizations (dados de plano/status)
+        const orgChannel = supabase
+            .channel(`org-billing-${organizationId}`)
             .on('postgres_changes', {
-                event: '*',
+                event: 'UPDATE',
                 schema: 'public',
-                table: 'subscriptions',
-                filter: `organization_id=eq.${organizationId}`
+                table: 'organizations',
+                filter: `id=eq.${organizationId}`
             }, fetchBilling)
             .subscribe();
 
@@ -141,7 +148,7 @@ export const useBilling = (): BillingData & BillingActions => {
             .subscribe();
 
         return () => {
-            supabase.removeChannel(subChannel);
+            supabase.removeChannel(orgChannel);
             supabase.removeChannel(invChannel);
         };
     }, [fetchBilling, organizationId]);

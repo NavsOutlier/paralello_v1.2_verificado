@@ -24,11 +24,12 @@ export const BillingDashboard: React.FC = () => {
     const {
         metrics,
         overdueInvoices,
+        subscriptions, // Add this
         loading,
         refreshData,
     } = useSuperAdminBilling();
 
-    const [expandedSection, setExpandedSection] = useState<'overdue' | null>('overdue');
+    const [expandedSection, setExpandedSection] = useState<'overdue' | 'trials' | null>('overdue');
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -164,6 +165,75 @@ export const BillingDashboard: React.FC = () => {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Trials em Andamento (Novo) */}
+            <div className="bg-slate-900/40 backdrop-blur-xl rounded-2xl border border-white/5 overflow-hidden">
+                <button
+                    onClick={() => setExpandedSection(expandedSection === 'trials' ? null : 'trials')}
+                    className="w-full p-6 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-amber-500/20 rounded-xl">
+                            <Clock className="w-5 h-5 text-amber-400" />
+                        </div>
+                        <div className="text-left">
+                            <h3 className="text-lg font-bold text-white">Monitor de Trials (Garantia 30 dias)</h3>
+                            <p className="text-sm text-slate-400">
+                                {metrics.trialingCount} clientes em período de garantia
+                            </p>
+                        </div>
+                    </div>
+                    {expandedSection === 'trials' ? (
+                        <ChevronUp className="w-5 h-5 text-slate-400" />
+                    ) : (
+                        <ChevronDown className="w-5 h-5 text-slate-400" />
+                    )}
+                </button>
+
+                {expandedSection === 'trials' && (
+                    <div className="border-t border-white/5 divide-y divide-white/5">
+                        {subscriptions
+                            .filter(sub => sub.status === 'trialing')
+                            .sort((a, b) => {
+                                const dateA = a.trial_ends_at ? new Date(a.trial_ends_at).getTime() : 0;
+                                const dateB = b.trial_ends_at ? new Date(b.trial_ends_at).getTime() : 0;
+                                return dateA - dateB; // Ordem crescente (quem acaba antes primeiro)
+                            })
+                            .map((sub) => {
+                                const daysLeft = sub.trial_ends_at
+                                    ? Math.ceil((new Date(sub.trial_ends_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                                    : 0;
+                                const isUrgent = daysLeft <= 7;
+
+                                return (
+                                    <div key={sub.id} className="p-4 flex items-center justify-between hover:bg-white/[0.02]">
+                                        <div>
+                                            <p className="font-medium text-white">{sub.organization_name}</p>
+                                            <div className="flex items-center gap-3 text-sm text-slate-400 mt-1">
+                                                <span>{sub.organization_email}</span>
+                                                <span className="w-1 h-1 rounded-full bg-slate-600"></span>
+                                                <span>{PLAN_LABELS[sub.plan as keyof typeof PLAN_LABELS]}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <div className={`px-3 py-1 rounded-full text-xs font-bold border ${isUrgent
+                                                ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                                                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                                }`}>
+                                                {daysLeft > 0 ? `${daysLeft} dias restantes` : 'Expirado'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        {metrics.trialingCount === 0 && (
+                            <div className="p-8 text-center text-slate-500">
+                                Nenhum cliente em período de trial no momento.
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

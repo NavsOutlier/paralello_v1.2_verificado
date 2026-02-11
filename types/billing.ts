@@ -4,24 +4,24 @@ export type BillingPlan = 'gestor_solo' | 'agencia' | 'enterprise';
 export type BillingStatus = 'trialing' | 'active' | 'past_due' | 'suspended' | 'canceled';
 export type PaymentStatus = 'pending' | 'confirmed' | 'overdue' | 'refunded';
 
-export interface Subscription {
-    id: string;
-    organization_id: string;
+export interface OrganizationSubscription {
+    plan: string;
     status: BillingStatus;
+    billing_value: number;
+    contracted_clients: number;
+    max_users: number;
+    asaas_customer_id?: string;
+    asaas_subscription_id?: string;
+    created_at?: string;
 
-    // Asaas
-    asaas_customer_id: string | null;
-    asaas_subscription_id: string | null;
-
-    // Datas
-    trial_ends_at: string | null;
-    current_period_start: string | null;
-    current_period_end: string | null;
-    canceled_at: string | null;
-
-    created_at: string | null;
-    updated_at: string | null;
+    // Virtual fields for compatibility
+    id?: string;
+    organization_id?: string;
+    current_period_end?: string;
+    trial_ends_at?: string;
 }
+
+export type Subscription = OrganizationSubscription;
 
 export interface Invoice {
     id: string;

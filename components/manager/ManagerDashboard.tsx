@@ -304,10 +304,25 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
                             <span className="animate-pulse bg-white/10 rounded h-10 w-64 block" />
                         ) : (
                             <>
-                                {plan?.id === 'gestor_solo' && 'Painel Gestor Solo'}
-                                {plan?.id === 'agencia' && 'Painel Agência'}
-                                {plan?.id === 'enterprise' && 'Painel Enterprise'}
-                                {(!plan || !['gestor_solo', 'agencia', 'enterprise'].includes(plan.id)) && 'Painel do Gestor'}
+                                Painel{' '}
+                                {plan?.id === 'gestor_solo' && (
+                                    <span className="text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">
+                                        Gestor Solo
+                                    </span>
+                                )}
+                                {plan?.id === 'agencia' && (
+                                    <span className="text-violet-400 drop-shadow-[0_0_10px_rgba(167,139,250,0.5)]">
+                                        Agência
+                                    </span>
+                                )}
+                                {plan?.id === 'enterprise' && (
+                                    <span className="text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]">
+                                        Enterprise
+                                    </span>
+                                )}
+                                {(!plan || !['gestor_solo', 'agencia', 'enterprise'].includes(plan.id)) && (
+                                    <span>do Gestor</span>
+                                )}
                             </>
                         )}
                     </h1>

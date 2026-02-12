@@ -8,6 +8,7 @@ import { Users, UserPlus, LayoutDashboard, Loader2, Settings, MessageSquare, Spa
 import { OnboardingChecklist } from './OnboardingChecklist';
 import { OnboardingWizard } from './OnboardingWizard';
 import { Badge } from '../ui';
+import { useOrganizationPlan } from '../../hooks/useOrganizationPlan';
 
 type Tab = 'overview' | 'clients' | 'team' | 'settings';
 
@@ -117,8 +118,12 @@ interface OverviewTabProps {
 
 const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, canSeeTeam, isSuperAdmin }) => {
     const { organizationId } = useAuth();
+    const { plan, loading: planLoading } = useOrganizationPlan();
     const [stats, setStats] = useState({ clients: 0, members: 0, hasWhatsApp: false });
-    const [loading, setLoading] = useState(true);
+    const [statsLoading, setStatsLoading] = useState(true);
+
+    // Combine loadings or use specific ones depending on section
+    const loading = statsLoading || planLoading;
 
     useEffect(() => {
         if (!organizationId) return;
@@ -157,7 +162,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
     const fetchStats = async () => {
         if (!organizationId) return;
         try {
-            setLoading(true);
+            setStatsLoading(true);
             const [clientsRes, membersRes, whatsappRes] = await Promise.all([
                 supabase
                     .from('clients')
@@ -185,7 +190,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
         } catch (error) {
             console.error('Error fetching dashboard stats:', error);
         } finally {
-            setLoading(false);
+            setStatsLoading(false);
         }
     };
 
@@ -294,7 +299,18 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
 
             <div className="max-w-7xl mx-auto space-y-10">
                 <div className="flex flex-col">
-                    <h1 className="relative text-4xl font-black text-white tracking-tighter mb-1">Painel do Gestor <span className="text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">AI</span></h1>
+                    <h1 className="relative text-4xl font-black text-white tracking-tighter mb-1">
+                        {loading ? (
+                            <span className="animate-pulse bg-white/10 rounded h-10 w-64 block" />
+                        ) : (
+                            <>
+                                {plan?.id === 'gestor_solo' && 'Painel Gestor Solo'}
+                                {plan?.id === 'agencia' && 'Painel Agência'}
+                                {plan?.id === 'enterprise' && 'Painel Enterprise'}
+                                {(!plan || !['gestor_solo', 'agencia', 'enterprise'].includes(plan.id)) && 'Painel do Gestor'}
+                            </>
+                        )}
+                    </h1>
                     <p className="relative text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px] pl-1">
                         Orquestração de ativos e capital humano em tempo real
                     </p>

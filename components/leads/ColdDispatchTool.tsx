@@ -1,268 +1,268 @@
-import React, { useState } from 'react';
-import { Send, Plus, Trash2, Code, Phone, Globe, MessageSquare, AlertCircle, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Send, Loader2, AlertCircle, Phone, Code, Fingerprint, ChevronDown, Terminal, CheckCircle2, X, Tag, Users, AlignLeft } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 
-interface TemplateVariable {
-    key: string;
-    value: string;
+interface ColdDispatchToolProps {
+    preselectedClientId?: string;
 }
 
-export const ColdDispatchTool: React.FC = () => {
+interface SenderNumber {
+    id: string;
+    name: string;
+    phone_number_id: string;
+    sender_phone?: string;
+}
+
+interface LeadTemplate {
+    id: string;
+    name: string;
+    template_name: string;
+    category: 'marketing' | 'utility' | 'authentication';
+    content: string;
+    status: 'pending' | 'approved' | 'rejected';
+}
+
+export const ColdDispatchTool: React.FC<ColdDispatchToolProps> = ({ preselectedClientId }) => {
+    const { organizationId, user } = useAuth();
     const [loading, setLoading] = useState(false);
-    const [templateName, setTemplateName] = useState('');
-    const [language, setLanguage] = useState('pt_BR');
-    const [category, setCategory] = useState<'marketing' | 'utility' | 'authentication'>('marketing');
-    const [targets, setTargets] = useState('');
-    const [variables, setVariables] = useState<TemplateVariable[]>([]);
+    const [fetchingData, setFetchingData] = useState(false);
+
+    // Config Lists
+    const [availableNumbers, setAvailableNumbers] = useState<SenderNumber[]>([]);
+    const [availableTemplates, setAvailableTemplates] = useState<LeadTemplate[]>([]);
+    const [selectedClientName, setSelectedClientName] = useState('');
+
+    // Selection State
+    const [selectedTemplateName, setSelectedTemplateName] = useState('');
+    const [selectedPhoneId, setSelectedPhoneId] = useState('');
+    const [targetPhone, setTargetPhone] = useState('');
+
+    // Response State
     const [responseLog, setResponseLog] = useState<any>(null);
+    const [showPreview, setShowPreview] = useState(false);
 
-    const handleAddVariable = () => {
-        setVariables([...variables, { key: '', value: '' }]);
-    };
-
-    const handleRemoveVariable = (index: number) => {
-        setVariables(variables.filter((_, i) => i !== index));
-    };
-
-    const handleVariableChange = (index: number, field: 'key' | 'value', value: string) => {
-        const newVars = [...variables];
-        newVars[index][field] = value;
-        setVariables(newVars);
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setResponseLog(null);
-
-        try {
-            // Process targets
-            const targetList = targets
-                .split(/[\n,]+/)
-                .map(t => t.trim().replace(/\D/g, '')) // Remove non-digits
-                .filter(t => t.length >= 10); // Simple validation
-
-            if (targetList.length === 0) {
-                alert('Nenhum número válido encontrado.');
-                setLoading(false);
+    // Fetch client data
+    useEffect(() => {
+        const fetchAll = async () => {
+            if (!preselectedClientId || !organizationId) {
+                setAvailableNumbers([]);
+                setAvailableTemplates([]);
+                setSelectedClientName('');
                 return;
             }
 
-            // Prepare payload
-            const payload = {
-                template_name: templateName,
-                language,
-                category,
-                targets: targetList,
-                variables: variables.reduce((acc, curr) => {
-                    if (curr.key) acc[curr.key] = curr.value;
-                    return acc;
-                }, {} as Record<string, string>)
+            setFetchingData(true);
+
+            // Fetch ONLY APPROVED templates for dispatch
+            const [clientRes, numbersRes, templatesRes] = await Promise.all([
+                supabase.from('clients').select('name').eq('id', preselectedClientId).single(),
+                supabase.from('leads_sender_numbers').select('*').eq('client_id', preselectedClientId),
+                supabase.from('leads_templates')
+                    .select('*')
+                    .eq('client_id', preselectedClientId)
+                    .eq('status', 'approved') // Only approved ones!
+            ]);
+
+            if (clientRes.data) setSelectedClientName(clientRes.data.name);
+
+            if (numbersRes.data) {
+                setAvailableNumbers(numbersRes.data);
+                if (numbersRes.data.length > 0) setSelectedPhoneId(numbersRes.data[0].id);
+                else setSelectedPhoneId('');
+            }
+
+            if (templatesRes.data) {
+                setAvailableTemplates(templatesRes.data);
+                if (templatesRes.data.length > 0) setSelectedTemplateName(templatesRes.data[0].template_name);
+                else setSelectedTemplateName('');
+            }
+
+            setFetchingData(false);
+        };
+
+        fetchAll();
+    }, [preselectedClientId, organizationId]);
+
+    // Group approved templates
+    const groupedTemplates = useMemo(() => {
+        const groups = {
+            marketing: [] as LeadTemplate[],
+            utility: [] as LeadTemplate[],
+            authentication: [] as LeadTemplate[]
+        };
+        availableTemplates.forEach(t => {
+            const cat = t.category || 'marketing';
+            if (groups[cat]) groups[cat].push(t);
+        });
+        return groups;
+    }, [availableTemplates]);
+
+    // Selectors
+    const currentSender = useMemo(() => availableNumbers.find(n => n.id === selectedPhoneId), [availableNumbers, selectedPhoneId]);
+    const currentTemplate = useMemo(() => availableTemplates.find(t => t.template_name === selectedTemplateName), [availableTemplates, selectedTemplateName]);
+
+    // Payload Preview
+    const webhookPayloadPreview = useMemo(() => {
+        let cleanToPhone = targetPhone.replace(/\D/g, '');
+        if (cleanToPhone.length >= 10 && !cleanToPhone.startsWith('55')) {
+            cleanToPhone = '55' + cleanToPhone;
+        }
+
+        return {
+            source: "paralello_leads",
+            type: "cold_dispatch",
+            payload: {
+                client_id: preselectedClientId || "CLIENTE_NAO_SELECIONADO",
+                organization_id: organizationId || "ORG_NAO_SELECIONADA",
+                user_id: user?.id || "USER_NAO_IDENTIFICADO",
+                client_name: selectedClientName || "NOME_DO_CLIENTE",
+                sender_target: currentSender?.sender_phone || currentSender?.phone_number_id || "SENDER_NAO_CONFIGURADO",
+                template_name: selectedTemplateName || "TEMPLATE_NAO_SELECIONADO",
+                language: "pt_BR",
+                category: currentTemplate?.category || "marketing",
+                to: cleanToPhone || "AGUARDANDO_TELEFONE",
+                components: [],
+                phone_number_id: currentSender?.phone_number_id || "ID_NAO_SELECIONADO",
+                template_content: currentTemplate?.content || ""
+            }
+        };
+    }, [selectedTemplateName, currentSender, targetPhone, preselectedClientId, organizationId, user, selectedClientName, currentTemplate]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!preselectedClientId) return;
+        setLoading(true);
+        setResponseLog(null);
+        setShowPreview(true);
+
+        try {
+            let cleanPhone = targetPhone.replace(/\D/g, '');
+            if (cleanPhone.length >= 10 && !cleanPhone.startsWith('55')) cleanPhone = '55' + cleanPhone;
+
+            const actualPayload = {
+                client_id: preselectedClientId,
+                organization_id: organizationId,
+                user_id: user?.id,
+                client_name: selectedClientName,
+                template_name: selectedTemplateName,
+                phone_number_id: currentSender?.phone_number_id,
+                sender_target: currentSender?.sender_phone || currentSender?.phone_number_id,
+                targets: [cleanPhone],
+                language: 'pt_BR',
+                category: currentTemplate?.category || 'marketing',
+                variables: {}
             };
 
-            const { data, error } = await supabase.functions.invoke('dispatch-cold-leads', {
-                body: payload
-            });
-
+            const { data, error } = await supabase.functions.invoke('dispatch-cold-leads', { body: actualPayload });
             if (error) throw error;
             setResponseLog(data);
-
         } catch (err: any) {
-            console.error('Dispatch error:', err);
-            alert(`Erro ao enviar: ${err.message}`);
+            setResponseLog({ error: err.message, status: 'failed' });
         } finally {
             setLoading(false);
         }
     };
 
+    if (fetchingData) return (
+        <div className="flex flex-col items-center justify-center p-20 animate-pulse">
+            <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mb-4" />
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sincronizando dados...</p>
+        </div>
+    );
+
+    const hasNumbers = availableNumbers.length > 0;
+    const hasTemplates = availableTemplates.length > 0;
+
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-[#0f172a]/40 border border-white/5 rounded-3xl p-8 backdrop-blur-xl">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
-                        <Send className="w-6 h-6 text-indigo-400" />
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-white">Disparo Frio (Cold Dispatch)</h2>
-                        <p className="text-slate-400 text-sm">Envie templates da API Oficial para uma lista de contatos.</p>
-                    </div>
+        <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+            {(!hasNumbers || !hasTemplates) && (
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-3xl p-10 text-center space-y-4 backdrop-blur-xl">
+                    <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
+                    <h3 className="text-white font-black uppercase tracking-tight text-sm">Ação Necessária: {selectedClientName}</h3>
+                    <p className="text-[10px] text-slate-400 max-w-sm mx-auto uppercase tracking-widest font-bold leading-relaxed">
+                        {!hasNumbers ? "Este cliente não possui números cadastrados." : "Este cliente não possui templates APROVADOS para uso."}
+                        <br />Vá em configurações para ajustar.
+                    </p>
                 </div>
+            )}
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Template Config */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                                <Code className="w-3.5 h-3.5" />
-                                Nome do Template
-                            </label>
-                            <input
-                                type="text"
-                                value={templateName}
-                                onChange={(e) => setTemplateName(e.target.value)}
-                                placeholder="ex: hello_world"
-                                required
-                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none placeholder:text-slate-600"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                                <Globe className="w-3.5 h-3.5" />
-                                Idioma
-                            </label>
-                            <select
-                                value={language}
-                                onChange={(e) => setLanguage(e.target.value)}
-                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none appearance-none"
-                            >
-                                <option value="pt_BR">Português (BR)</option>
-                                <option value="en_US">Inglês (US)</option>
-                                <option value="es_ES">Espanhol</option>
-                            </select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                                <MessageSquare className="w-3.5 h-3.5" />
-                                Categoria
-                            </label>
-                            <select
-                                value={category}
-                                onChange={(e) => setCategory(e.target.value as any)}
-                                className="w-full px-4 py-3 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none appearance-none"
-                            >
-                                <option value="marketing">Marketing</option>
-                                <option value="utility">Utilidade</option>
-                                <option value="authentication">Autenticação</option>
-                            </select>
-                        </div>
+            <div className={`${(!hasNumbers || !hasTemplates) ? 'opacity-30 pointer-events-none' : ''} bg-[#0f172a]/40 border border-white/5 rounded-3xl p-10 backdrop-blur-xl shadow-2xl relative overflow-hidden transition-all divide-y divide-white/5`}>
+                <div className="pb-10">
+                    <div className="mb-10 text-center">
+                        <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tight">Painel de Disparo</h2>
+                        <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest">Cliente: {selectedClientName}</p>
                     </div>
 
-                    {/* Targets */}
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                            <Phone className="w-3.5 h-3.5" />
-                            Lista de Contatos (um por linha ou separado por vírgula)
-                        </label>
-                        <textarea
-                            value={targets}
-                            onChange={(e) => setTargets(e.target.value)}
-                            placeholder="5511999999999&#10;5521988888888"
-                            rows={5}
-                            required
-                            className="w-full px-4 py-3 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none resize-none placeholder:text-slate-600 font-mono"
-                        />
-                        <p className="text-xs text-slate-500">
-                            * Apenas números (DDD + Número). O código do país (55) é recomendado.
-                        </p>
-                    </div>
-
-                    {/* Dynamic Variables */}
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                Variáveis Dinâmicas (Opcional)
+                    <form onSubmit={handleSubmit} className="space-y-8">
+                        {/* TEMPLATE */}
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                <Tag className="w-4 h-4 text-violet-400" /> Template Ativo
                             </label>
-                            <button
-                                type="button"
-                                onClick={handleAddVariable}
-                                className="text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-indigo-300 flex items-center gap-1"
-                            >
-                                <Plus className="w-3 h-3" />
-                                Adicionar Variável
-                            </button>
-                        </div>
-
-                        {variables.length > 0 ? (
-                            <div className="space-y-2">
-                                {variables.map((variable, index) => (
-                                    <div key={index} className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={variable.key}
-                                            onChange={(e) => handleVariableChange(index, 'key', e.target.value)}
-                                            placeholder="Chave (ex: nome)"
-                                            className="flex-1 px-3 py-2 bg-slate-950/50 border border-white/5 rounded-lg text-sm text-slate-200 focus:ring-1 focus:ring-indigo-500/30 focus:outline-none"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={variable.value}
-                                            onChange={(e) => handleVariableChange(index, 'value', e.target.value)}
-                                            placeholder="Valor"
-                                            className="flex-1 px-3 py-2 bg-slate-950/50 border border-white/5 rounded-lg text-sm text-slate-200 focus:ring-1 focus:ring-indigo-500/30 focus:outline-none"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveVariable(index)}
-                                            className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ))}
+                            <div className="relative group">
+                                <select
+                                    value={selectedTemplateName}
+                                    onChange={(e) => setSelectedTemplateName(e.target.value)}
+                                    className="w-full px-6 py-4 bg-slate-950/40 border border-white/10 rounded-2xl text-slate-200 focus:ring-2 focus:ring-violet-500/30 font-bold appearance-none cursor-pointer transition-all"
+                                >
+                                    {groupedTemplates.marketing.map(t => <option key={t.id} value={t.template_name}>{t.name} (MARKETING)</option>)}
+                                    {groupedTemplates.utility.map(t => <option key={t.id} value={t.template_name}>{t.name} (UTILIDADE)</option>)}
+                                    {groupedTemplates.authentication.map(t => <option key={t.id} value={t.template_name}>{t.name} (AUTENTICAÇÃO)</option>)}
+                                </select>
+                                <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 pointer-events-none" />
                             </div>
-                        ) : (
-                            <div className="p-4 rounded-xl bg-slate-900/30 border border-white/5 text-center">
-                                <p className="text-sm text-slate-500">Nenhuma variável configurada.</p>
+                        </div>
+
+                        {/* PREVIEW */}
+                        {currentTemplate && (
+                            <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-5 animate-in fade-in slide-in-from-top-2">
+                                <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                    <CheckCircle2 className="w-3 h-3" /> Template Aprovado - Prévia:
+                                </p>
+                                <p className="text-[11px] text-slate-300 leading-relaxed italic whitespace-pre-wrap font-medium">
+                                    {currentTemplate.content || 'Sem texto cadastrado.'}
+                                </p>
                             </div>
                         )}
-                    </div>
 
-                    {/* Submit */}
-                    <div className="pt-4 flex justify-end">
-                        <button
-                            type="submit"
-                            disabled={loading || !templateName || !targets}
-                            className="px-6 py-3 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-xl font-bold uppercase tracking-wide text-xs shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    Enviando...
-                                </>
-                            ) : (
-                                <>
-                                    <Send className="w-4 h-4" />
-                                    Enviar Disparos
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </form>
-
-                {/* Response Log */}
-                {responseLog && (
-                    <div className="mt-8 pt-6 border-t border-white/5 animate-in slide-in-from-top-4">
-                        <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                            <AlertCircle className="w-4 h-4 text-emerald-400" />
-                            Relatório de Envio
-                        </h3>
-                        <div className="bg-black/50 rounded-xl p-4 font-mono text-xs text-slate-300 overflow-x-auto border border-white/5 space-y-2">
-                            <div className="grid grid-cols-2 gap-4 mb-2">
-                                <div className="p-2 bg-emerald-500/10 rounded border border-emerald-500/20 text-emerald-400 text-center">
-                                    <span className="block text-lg font-black">{responseLog.dispatched}</span>
-                                    <span className="text-[10px] uppercase">Sucessos</span>
-                                </div>
-                                <div className="p-2 bg-red-500/10 rounded border border-red-500/20 text-red-400 text-center">
-                                    <span className="block text-lg font-black">{responseLog.failed_count}</span>
-                                    <span className="text-[10px] uppercase">Falhas</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Remetente</label>
+                                <div className="relative">
+                                    <select
+                                        value={selectedPhoneId}
+                                        onChange={(e) => setSelectedPhoneId(e.target.value)}
+                                        className="w-full px-5 py-4 bg-slate-950/40 border border-white/10 rounded-2xl text-slate-200 focus:ring-2 focus:ring-cyan-500/30 font-bold appearance-none cursor-pointer transition-all"
+                                    >
+                                        {availableNumbers.map(n => <option key={n.id} value={n.id}>{n.name}</option>)}
+                                    </select>
+                                    <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                                 </div>
                             </div>
 
-                            {responseLog.errors && responseLog.errors.length > 0 && (
-                                <div className="mt-2">
-                                    <p className="text-red-400 font-bold mb-1">Erros:</p>
-                                    <ul className="list-disc list-inside space-y-1 text-red-300/80">
-                                        {responseLog.errors.map((err: string, i: number) => (
-                                            <li key={i}>{err}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Telefone Destino</label>
+                                <input
+                                    type="text"
+                                    value={targetPhone}
+                                    onChange={(e) => setTargetPhone(e.target.value)}
+                                    placeholder="(00) 00000-0000"
+                                    required
+                                    className="w-full px-5 py-4 bg-slate-950/40 border border-white/10 rounded-2xl text-slate-200 focus:ring-2 focus:ring-indigo-500/30 font-bold placeholder:text-slate-800"
+                                />
+                            </div>
                         </div>
-                    </div>
-                )}
+
+                        <button
+                            type="submit"
+                            disabled={loading || !hasTemplates}
+                            className="w-full py-5 bg-gradient-to-br from-indigo-600 to-violet-700 hover:from-indigo-500 hover:to-violet-600 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-3 border border-white/10"
+                        >
+                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-4 h-4" /> Enviar Mensagem Aprovada</>}
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     );

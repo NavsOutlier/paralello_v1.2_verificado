@@ -128,8 +128,30 @@ export const LeadsConfig: React.FC<LeadsConfigProps> = ({ selectedClientId }) =>
             status: 'pending'
         }]);
 
-        if (err) setError(err.code === '23505' ? 'Este nome já está em uso.' : err.message);
-        else setNewTemplate({ name: '', category: 'marketing', language: 'pt_BR', content: '' });
+        if (err) {
+            setError(err.code === '23505' ? 'Este nome já está em uso.' : err.message);
+        } else {
+            // Chamada para a Edge Function para criação no Meta (via n8n)
+            try {
+                await supabase.functions.invoke('dispatch-cold-leads', {
+                    body: {
+                        action: 'create_template',
+                        template_name: technicalName,
+                        content: newTemplate.content,
+                        category: newTemplate.category,
+                        language: newTemplate.language,
+                        phone_number_id: activeNumber?.phone_number_id,
+                        sender_phone: activeNumber?.sender_phone,
+                        client_id: selectedClientId,
+                        organization_id: organizationId
+                    }
+                });
+            } catch (e) {
+                console.error('Falha ao acionar n8n para criação:', e);
+            }
+
+            setNewTemplate({ name: '', category: 'marketing', language: 'pt_BR', content: '' });
+        }
         setSaving(false);
     };
 

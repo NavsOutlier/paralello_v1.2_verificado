@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, MessageSquare, KanbanSquare, Users, LogOut, Shield, BarChart3, Zap, Briefcase } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, KanbanSquare, Users, LogOut, Shield, BarChart3, Zap, Briefcase, Target } from 'lucide-react';
 import { ViewState } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrganizationPlan } from '../hooks/useOrganizationPlan';
@@ -66,6 +66,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
             <NavItem view={ViewState.AUTOMATION} icon={Zap} label="Automação" />
 
             <NavItem view={ViewState.WORKERS_IA} icon={Briefcase} label="Workers" />
+            <NavItem view={ViewState.LEADS} icon={Target} label="Leads" />
 
             {/* Manager/Team Management - Visible only to authorized members */}
             {(isManager || permissions?.can_manage_clients || permissions?.can_manage_team) && (

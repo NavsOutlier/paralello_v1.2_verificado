@@ -15,6 +15,7 @@ import { AutomationTab } from './components/automation';
 import { WorkersIADashboard } from './components/workers-ia/WorkersIADashboard';
 import { PremiumBackground } from './components/ui/PremiumBackground';
 import { RestrictedModule } from './components/ui/RestrictedModule';
+import { LeadsDashboard } from './components/leads/LeadsDashboard';
 
 const AppContent: React.FC = () => {
   const { user, loading, isSuperAdmin, isManager } = useAuth();
@@ -170,6 +171,11 @@ const AppContent: React.FC = () => {
         {currentView === ViewState.WORKERS_IA && (
           <RestrictedModule moduleId={ViewState.WORKERS_IA} title="Blackback Workers IA">
             <WorkersIADashboard />
+          </RestrictedModule>
+        )}
+        {currentView === ViewState.LEADS && (
+          <RestrictedModule moduleId={ViewState.LEADS} title="Gestão de Leads">
+            <LeadsDashboard />
           </RestrictedModule>
         )}
         {isUpdatingPassword && (

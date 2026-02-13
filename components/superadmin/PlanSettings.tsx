@@ -16,7 +16,8 @@ import {
     Zap,
     Briefcase,
     Users,
-    X
+    X,
+    Target
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../contexts/ToastContext';
@@ -42,6 +43,7 @@ const AVAILABLE_MODULES = [
     { id: ViewState.AUTOMATION, label: 'Automação', icon: Zap },
     { id: ViewState.WORKERS_IA, label: 'Workers', icon: Briefcase },
     { id: ViewState.MANAGER, label: 'Gestão', icon: Users },
+    { id: ViewState.LEADS, label: 'Leads', icon: Target },
 ];
 
 export const PlanSettings: React.FC = () => {

@@ -87,6 +87,9 @@ function generateMockData(level: DrillLevel, startDate: string, endDate: string,
             { id: 'ad_001b1', name: 'Single Image - Casa Térrea', adset_id: 'as_001b', adset_name: 'Guarulhos 30-55', campaign_id: 'camp_001', campaign_name: 'Captação Leads - Imóveis SP', status: 'ACTIVE' },
             { id: 'ad_001b2', name: 'Vídeo Depoimento Cliente', adset_id: 'as_001b', adset_name: 'Guarulhos 30-55', campaign_id: 'camp_001', campaign_name: 'Captação Leads - Imóveis SP', status: 'ACTIVE' },
         ],
+        as_001c: [
+            { id: 'ad_001c1', name: 'Foto Fachada Noturna', adset_id: 'as_001c', adset_name: 'ABC Paulista 28-50', campaign_id: 'camp_001', campaign_name: 'Captação Leads - Imóveis SP', status: 'PAUSED' }
+        ],
         as_002a: [
             { id: 'ad_002a1', name: 'DPA - Produtos Visitados', adset_id: 'as_002a', adset_name: 'Visitantes 7 dias', campaign_id: 'camp_002', campaign_name: 'Remarketing - Visitantes Site', status: 'ACTIVE' },
             { id: 'ad_002a2', name: 'Cupom 15% OFF Retorno', adset_id: 'as_002a', adset_name: 'Visitantes 7 dias', campaign_id: 'camp_002', campaign_name: 'Remarketing - Visitantes Site', status: 'ACTIVE' },
@@ -94,9 +97,36 @@ function generateMockData(level: DrillLevel, startDate: string, endDate: string,
         as_002b: [
             { id: 'ad_002b1', name: 'Urgência - Últimas Unidades', adset_id: 'as_002b', adset_name: 'Carrinho Abandonado', campaign_id: 'camp_002', campaign_name: 'Remarketing - Visitantes Site', status: 'ACTIVE' },
         ],
+        as_003a: [
+            { id: 'ad_003a1', name: 'Vídeo Lifestyle Verão v1', adset_id: 'as_003a', adset_name: 'Mulheres 18-35 Brasil', campaign_id: 'camp_003', campaign_name: 'Branding - Lançamento Verão', status: 'ACTIVE' },
+            { id: 'ad_003a2', name: 'Vídeo Lifestyle Verão v2', adset_id: 'as_003a', adset_name: 'Mulheres 18-35 Brasil', campaign_id: 'camp_003', campaign_name: 'Branding - Lançamento Verão', status: 'ACTIVE' },
+        ],
+        as_003b: [
+            { id: 'ad_003b1', name: 'Foto Produto Hero', adset_id: 'as_003b', adset_name: 'Homens 25-45 Sudeste', campaign_id: 'camp_003', campaign_name: 'Branding - Lançamento Verão', status: 'ACTIVE' },
+        ],
+        as_004a: [
+            { id: 'ad_004a1', name: 'Post Blog: 5 Dicas', adset_id: 'as_004a', adset_name: 'Interesse: Marketing Digital', campaign_id: 'camp_004', campaign_name: 'Tráfego - Blog Posts', status: 'PAUSED' },
+            { id: 'ad_004a2', name: 'Post Blog: Tendências 2026', adset_id: 'as_004a', adset_name: 'Interesse: Marketing Digital', campaign_id: 'camp_004', campaign_name: 'Tráfego - Blog Posts', status: 'PAUSED' },
+        ],
         as_005a: [
             { id: 'ad_005a1', name: 'Black Friday - 50% OFF', adset_id: 'as_005a', adset_name: 'Compradores Top 10%', campaign_id: 'camp_005', campaign_name: 'Vendas - Black Friday 2026', status: 'ACTIVE' },
             { id: 'ad_005a2', name: 'Countdown Timer BF', adset_id: 'as_005a', adset_name: 'Compradores Top 10%', campaign_id: 'camp_005', campaign_name: 'Vendas - Black Friday 2026', status: 'ACTIVE' },
+        ],
+        as_005b: [
+            { id: 'ad_005b1', name: 'Carrossel Produtos BF', adset_id: 'as_005b', adset_name: 'Engajados Redes Sociais', campaign_id: 'camp_005', campaign_name: 'Vendas - Black Friday 2026', status: 'ACTIVE' },
+        ],
+        as_005c: [
+            { id: 'ad_005c1', name: 'Email MKT - Oferta Exclusiva', adset_id: 'as_005c', adset_name: 'Newsletter Abridores', campaign_id: 'camp_005', campaign_name: 'Vendas - Black Friday 2026', status: 'ACTIVE' },
+        ],
+        as_006a: [
+            { id: 'ad_006a1', name: 'Imagem Estilo de Vida', adset_id: 'as_006a', adset_name: 'Lookalike 1% Compradores', campaign_id: 'camp_006', campaign_name: 'Lookalike - Compradores', status: 'ACTIVE' },
+        ],
+        as_006b: [
+            { id: 'ad_006b1', name: 'Vídeo Depoimento Curto', adset_id: 'as_006b', adset_name: 'Lookalike 3% Leads', campaign_id: 'camp_006', campaign_name: 'Lookalike - Compradores', status: 'ACTIVE' },
+        ],
+        as_007a: [
+            { id: 'ad_007a1', name: 'Story Enquete', adset_id: 'as_007a', adset_name: 'Stories Feed 18-30', campaign_id: 'camp_007', campaign_name: 'Stories - Promoção Flash', status: 'PAUSED' },
+            { id: 'ad_007a2', name: 'Story Link Sticker', adset_id: 'as_007a', adset_name: 'Stories Feed 18-30', campaign_id: 'camp_007', campaign_name: 'Stories - Promoção Flash', status: 'PAUSED' },
         ],
     };
 

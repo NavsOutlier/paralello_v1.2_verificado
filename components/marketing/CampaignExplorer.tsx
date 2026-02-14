@@ -169,12 +169,10 @@ export const CampaignExplorer: React.FC<CampaignExplorerProps> = ({
 
     // ========== Handlers ==========
     const toggleSelection = (id: string) => {
-        setCurrentSelection(prev => {
-            const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
-            return next;
-        });
+        const next = new Set<string>(currentSelection);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        setCurrentSelection(next);
     };
 
     const toggleAllSelection = () => {
@@ -493,13 +491,14 @@ export const CampaignExplorer: React.FC<CampaignExplorerProps> = ({
                                     <tbody>
                                         {filteredData.map(item => {
                                             const itemMetrics = getActiveMetricsFor(item.id);
+                                            const isSelected = currentSelection.has(item.id);
                                             return (
                                                 <React.Fragment key={item.id}>
-                                                    <tr className={`border-b border-white/5 transition-colors ${currentSelection.has(item.id) ? 'bg-cyan-900/10' : 'bg-white/[0.02]'}`}>
-                                                        <td className="sticky left-0 z-10 bg-[#0b101b] py-3.5 px-5 border-r border-white/5">
-                                                            <input type="checkbox" checked={currentSelection.has(item.id)} onChange={() => toggleSelection(item.id)} className="rounded border-slate-600 bg-slate-800 text-cyan-500" />
+                                                    <tr className={`border-b border-white/5 transition-colors group ${isSelected ? 'bg-cyan-950/40 border-l-2 border-l-cyan-500' : 'bg-transparent hover:bg-white/[0.02] border-l-2 border-l-transparent'}`}>
+                                                        <td className={`sticky left-0 z-10 py-3.5 px-5 border-r border-white/5 transition-colors ${isSelected ? 'bg-[#0f1f33]' : 'bg-[#0b101b]'}`}>
+                                                            <input type="checkbox" checked={isSelected} onChange={() => toggleSelection(item.id)} className="rounded border-slate-600 bg-slate-800 text-cyan-500" />
                                                         </td>
-                                                        <td className="sticky left-[45px] z-10 bg-[#0b101b] py-3.5 px-5 border-r border-white/5">
+                                                        <td className={`sticky left-[45px] z-10 py-3.5 px-5 border-r border-white/5 transition-colors ${isSelected ? 'bg-[#0f1f33]' : 'bg-[#0b101b]'}`}>
                                                             <div className="flex items-center gap-2.5">
                                                                 <button onClick={() => toggleMetrics(item.id)} className="p-0.5 hover:bg-white/5 rounded transition-colors flex-shrink-0">
                                                                     {expandedMetrics.has(item.id) ? <ChevronDown className="w-3.5 h-3.5 text-cyan-400" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-500" />}
@@ -517,13 +516,36 @@ export const CampaignExplorer: React.FC<CampaignExplorerProps> = ({
                                                                 <LevelIcon className="w-3.5 h-3.5 text-cyan-500 flex-shrink-0" />
                                                                 <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.status === 'ACTIVE' ? 'bg-emerald-400' : item.status === 'PAUSED' ? 'bg-amber-400' : 'bg-slate-600'}`} />
 
-                                                                {level !== 'ads' ? (
-                                                                    <button onClick={() => handleDrillDown(item)} className="text-xs font-bold text-white hover:text-cyan-300 truncate max-w-[180px] text-left transition-colors" title={item.name}>
-                                                                        {item.name}
-                                                                    </button>
-                                                                ) : (
-                                                                    <span className="text-xs font-bold text-white truncate max-w-[180px]" title={item.name}>{item.name}</span>
-                                                                )}
+                                                                <div className="flex flex-col min-w-0">
+                                                                    {level !== 'ads' ? (
+                                                                        <button onClick={() => handleDrillDown(item)} className="text-xs font-bold text-white hover:text-cyan-300 truncate max-w-[180px] text-left transition-colors leading-tight" title={item.name}>
+                                                                            {item.name}
+                                                                        </button>
+                                                                    ) : (
+                                                                        <span className="text-xs font-bold text-white truncate max-w-[180px] leading-tight" title={item.name}>{item.name}</span>
+                                                                    )}
+
+                                                                    {level === 'adsets' && item.campaign_name && (
+                                                                        <span className="text-[9px] text-slate-500 truncate max-w-[180px] flex items-center gap-1 mt-0.5 leading-none" title={`Campanha: ${item.campaign_name}`}>
+                                                                            <Target className="w-2.5 h-2.5 opacity-60" /> {item.campaign_name}
+                                                                        </span>
+                                                                    )}
+
+                                                                    {level === 'ads' && (
+                                                                        <div className="flex flex-col gap-0.5 mt-0.5">
+                                                                            {item.adset_name && (
+                                                                                <span className="text-[9px] text-slate-500 truncate max-w-[180px] flex items-center gap-1 leading-none" title={`Conjunto: ${item.adset_name}`}>
+                                                                                    <Layers className="w-2.5 h-2.5 opacity-60" /> {item.adset_name}
+                                                                                </span>
+                                                                            )}
+                                                                            {item.campaign_name && (
+                                                                                <span className="text-[8px] text-slate-600 truncate max-w-[180px] flex items-center gap-1 ml-0.5 opacity-50 leading-none" title={`Campanha: ${item.campaign_name}`}>
+                                                                                    <Target className="w-2 h-2 opacity-50" /> {item.campaign_name}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </td>
                                                         {periods.map(p => {
@@ -532,9 +554,9 @@ export const CampaignExplorer: React.FC<CampaignExplorerProps> = ({
                                                         })}
                                                     </tr>
                                                     {expandedMetrics.has(item.id) && itemMetrics.map(metric => (
-                                                        <tr key={`${item.id}_${metric.key}`} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
-                                                            <td className="sticky left-0 bg-[#0b101b] z-10 border-r border-white/5"></td>
-                                                            <td className="sticky left-[45px] bg-[#0b101b] z-10 py-2.5 px-5 border-r border-white/5">
+                                                        <tr key={`${item.id}_${metric.key}`} className={`border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors ${isSelected ? 'bg-cyan-950/20 border-l-2 border-l-cyan-500/30' : 'bg-transparent border-l-2 border-l-transparent'}`}>
+                                                            <td className={`sticky left-0 z-10 border-r border-white/5 transition-colors ${isSelected ? 'bg-[#0b1826]' : 'bg-[#0b101b]'}`}></td>
+                                                            <td className={`sticky left-[45px] z-10 py-2.5 px-5 border-r border-white/5 transition-colors ${isSelected ? 'bg-[#0b1826]' : 'bg-[#0b101b]'}`}>
                                                                 <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] pl-8">{metric.label}</span>
                                                             </td>
                                                             {periods.map(p => {

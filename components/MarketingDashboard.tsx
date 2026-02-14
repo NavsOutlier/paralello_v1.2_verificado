@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
     Users, Calendar, Filter, Download, ArrowRight, Table, BarChart3, GripHorizontal, Pencil, CheckCircle2, LayoutDashboard,
-    Settings, ShieldCheck, Link, Activity, Check, X, Copy, ExternalLink, ChevronDown, Sparkles, Plus
+    Settings, ShieldCheck, Link, Activity, Check, X, Copy, ExternalLink, ChevronDown, Sparkles, Plus, Target
 } from 'lucide-react';
 import { TintimIntegrationForm } from './manager/TintimIntegrationForm';
 import { ManualLeadModal } from './ManualLeadModal';
@@ -13,6 +13,7 @@ import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
     BarChart, Bar
 } from 'recharts';
+import { CampaignExplorer } from './marketing/CampaignExplorer';
 
 interface Client {
     id: string;
@@ -65,7 +66,8 @@ export const MarketingDashboard: React.FC = () => {
     // Preset Date Filter
     // Preset Date Filter
     const [selectedPreset, setSelectedPreset] = useState('last7');
-    const [viewMode, setViewMode] = useState<'table' | 'dashboard'>('dashboard');
+    const [viewMode, setViewMode] = useState<'geral' | 'campaigns'>('geral');
+    const [geralSubView, setGeralSubView] = useState<'dashboard' | 'table'>('dashboard');
     const [showPresetDropdown, setShowPresetDropdown] = useState(false);
     const [showClientDropdown, setShowClientDropdown] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -786,24 +788,24 @@ export const MarketingDashboard: React.FC = () => {
                         {/* View Mode Toggle */}
                         <div className="bg-slate-950/50 p-1.5 rounded-xl border border-white/5 flex items-center">
                             <button
-                                onClick={() => setViewMode('dashboard')}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${viewMode === 'dashboard'
+                                onClick={() => setViewMode('geral')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${viewMode === 'geral'
                                     ? 'bg-slate-800 text-white shadow-lg border border-white/10'
                                     : 'text-slate-500 hover:text-slate-300'
                                     }`}
                             >
-                                <LayoutDashboard className="w-3.5 h-3.5" />
-                                Dash
+                                <BarChart3 className="w-3.5 h-3.5" />
+                                Geral
                             </button>
                             <button
-                                onClick={() => setViewMode('table')}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${viewMode === 'table'
+                                onClick={() => setViewMode('campaigns')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${viewMode === 'campaigns'
                                     ? 'bg-slate-800 text-white shadow-lg border border-white/10'
                                     : 'text-slate-500 hover:text-slate-300'
                                     }`}
                             >
-                                <Table className="w-3.5 h-3.5" />
-                                Tabela
+                                <Target className="w-3.5 h-3.5" />
+                                Campanhas
                             </button>
                         </div>
                     </div>
@@ -1000,70 +1002,108 @@ export const MarketingDashboard: React.FC = () => {
             `}</style>
 
             {
-                viewMode === 'dashboard' ? renderDashboardView() : (
-                    /* Scrollable Table Area */
-                    <div className="flex-1 overflow-hidden p-8 flex flex-col relative w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
-                        <div
-                            ref={scrollContainerRef}
-                            onMouseDown={handleMouseDown}
-                            onMouseLeave={handleMouseLeave}
-                            onMouseUp={handleMouseUp}
-                            onMouseMove={handleMouseMove}
-                            className="horizontal-scroll-container bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 overflow-x-auto w-full pb-0 shadow-2xl relative"
-                            style={{ cursor: isEditing ? 'default' : (isDragging ? 'grabbing' : 'grab') }}
-                        >
-                            <table className="w-full border-collapse select-none" style={{ minWidth: '100%' }}>
-                                <thead>
-                                    <tr className="bg-[#0b101b] border-b border-white/5">
-                                        <th className="sticky left-0 z-20 bg-[#0b101b] py-6 px-6 text-left font-black text-[10px] uppercase tracking-[0.3em] text-cyan-500/80 min-w-[200px] border-r border-white/5 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)] pointer-events-none">
-                                            Métrica / Período
-                                        </th>
-                                        {tableData.map(d => (
-                                            <th key={d.dateKey} className="py-6 px-6 text-center font-black text-[10px] text-slate-400 uppercase tracking-[0.2em] min-w-[160px] border-l border-white/5 pointer-events-none">
-                                                {d.label}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {/* META ADS */}
-                                    <SectionHeader title="Meta Ads" color="border-l-blue-500" />
-                                    <DataRow label="Leads Gerados" getter={d => d.meta.leads} editable channel="meta" metric="leads" />
-                                    <DataRow label="Custo por Lead" getter={d => d.meta.leads > 0 ? d.meta.investment / d.meta.leads : 0} format={formatCurrency} />
-                                    <DataRow label="Investimento" getter={d => d.meta.investment} format={formatCurrency} editable channel="meta" metric="investment" />
-                                    <DataRow label="Conversões" getter={d => d.meta.conversions} editable channel="meta" metric="conversions" />
-                                    <DataRow label="Valor de Conversões" getter={d => d.meta.revenue} format={formatCurrency} editable channel="meta" metric="revenue" />
-                                    <DataRow label="Taxa de Conversão" getter={d => d.meta.leads > 0 ? d.meta.conversions / d.meta.leads : 0} format={formatPercent} />
-
-                                    {/* GOOGLE ADS */}
-                                    <SectionHeader title="Google Ads" color="border-l-emerald-500" />
-                                    <DataRow label="Leads Gerados" getter={d => d.google.leads} editable channel="google" metric="leads" />
-                                    <DataRow label="Custo por Lead" getter={d => d.google.leads > 0 ? d.google.investment / d.google.leads : 0} format={formatCurrency} />
-                                    <DataRow label="Investimento" getter={d => d.google.investment} format={formatCurrency} editable channel="google" metric="investment" />
-                                    <DataRow label="Conversões" getter={d => d.google.conversions} editable channel="google" metric="conversions" />
-                                    <DataRow label="Valor de Conversões" getter={d => d.google.revenue} format={formatCurrency} editable channel="google" metric="revenue" />
-                                    <DataRow label="Taxa de Conversão" getter={d => d.google.leads > 0 ? d.google.conversions / d.google.leads : 0} format={formatPercent} />
-
-                                    {/* SEM RASTREIO */}
-                                    <SectionHeader title="Sem Rastreio" color="border-l-purple-500" />
-                                    <DataRow label="Leads Gerados" getter={d => d.direct.leads} editable channel="direct" metric="leads" />
-                                    <DataRow label="Conversões" getter={d => d.direct.conversions} editable channel="direct" metric="conversions" />
-                                    <DataRow label="Taxa de Conversão" getter={d => d.direct.leads > 0 ? d.direct.conversions / d.direct.leads : 0} format={formatPercent} />
-
-                                    {/* GERAL */}
-                                    <SectionHeader title="Resumo Geral" color="border-l-slate-200" />
-                                    <DataRow label="Total Leads" getter={d => d.total.leads} bg="bg-white/[0.03] font-bold" />
-                                    <DataRow label="Inv. Total" getter={d => d.total.investment} format={formatCurrency} bg="bg-white/[0.03] font-bold" />
-                                    <DataRow label="CPL Médio" getter={d => d.total.cpl} format={formatCurrency} bg="bg-white/[0.01]" />
-                                    <DataRow label="Total Conversões" getter={d => d.total.conversions} bg="bg-white/[0.01]" />
-                                    <DataRow label="Valor de Conversões" getter={d => d.total.revenue} format={formatCurrency} bg="bg-white/[0.03] font-bold" />
-                                    <DataRow label="Taxa Global" getter={d => d.total.rate} format={formatPercent} bg="bg-white/[0.01]" />
-                                </tbody>
-                            </table>
+                viewMode === 'campaigns' ? (
+                    <CampaignExplorer
+                        organizationId={organizationId}
+                        clientId={selectedClient}
+                        startDate={startDate}
+                        endDate={endDate}
+                    />
+                ) : (
+                    /* ========= GERAL VIEW ========= */
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        {/* Sub-view toggle: Dash / Tabela */}
+                        <div className="flex items-center justify-between px-6 md:px-8 py-3 bg-white/[0.01] border-b border-white/5">
+                            <div />
+                            <div className="bg-slate-950/50 p-1 rounded-lg border border-white/5 flex items-center">
+                                <button
+                                    onClick={() => setGeralSubView('dashboard')}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${geralSubView === 'dashboard'
+                                        ? 'bg-slate-700 text-white shadow-sm border border-white/10'
+                                        : 'text-slate-500 hover:text-slate-300'
+                                        }`}
+                                >
+                                    <LayoutDashboard className="w-3 h-3" />
+                                    Dash
+                                </button>
+                                <button
+                                    onClick={() => setGeralSubView('table')}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${geralSubView === 'table'
+                                        ? 'bg-slate-700 text-white shadow-sm border border-white/10'
+                                        : 'text-slate-500 hover:text-slate-300'
+                                        }`}
+                                >
+                                    <Table className="w-3 h-3" />
+                                    Tabela
+                                </button>
+                            </div>
                         </div>
+
+                        {geralSubView === 'dashboard' ? renderDashboardView() : (
+                            /* Scrollable Table Area */
+                            <div className="flex-1 overflow-hidden p-8 flex flex-col relative w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                <div
+                                    ref={scrollContainerRef}
+                                    onMouseDown={handleMouseDown}
+                                    onMouseLeave={handleMouseLeave}
+                                    onMouseUp={handleMouseUp}
+                                    onMouseMove={handleMouseMove}
+                                    className="horizontal-scroll-container bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 overflow-x-auto w-full pb-0 shadow-2xl relative"
+                                    style={{ cursor: isEditing ? 'default' : (isDragging ? 'grabbing' : 'grab') }}
+                                >
+                                    <table className="w-full border-collapse select-none" style={{ minWidth: '100%' }}>
+                                        <thead>
+                                            <tr className="bg-[#0b101b] border-b border-white/5">
+                                                <th className="sticky left-0 z-20 bg-[#0b101b] py-6 px-6 text-left font-black text-[10px] uppercase tracking-[0.3em] text-cyan-500/80 min-w-[200px] border-r border-white/5 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)] pointer-events-none">
+                                                    Métrica / Período
+                                                </th>
+                                                {tableData.map(d => (
+                                                    <th key={d.dateKey} className="py-6 px-6 text-center font-black text-[10px] text-slate-400 uppercase tracking-[0.2em] min-w-[160px] border-l border-white/5 pointer-events-none">
+                                                        {d.label}
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {/* META ADS */}
+                                            <SectionHeader title="Meta Ads" color="border-l-blue-500" />
+                                            <DataRow label="Leads Gerados" getter={d => d.meta.leads} editable channel="meta" metric="leads" />
+                                            <DataRow label="Custo por Lead" getter={d => d.meta.leads > 0 ? d.meta.investment / d.meta.leads : 0} format={formatCurrency} />
+                                            <DataRow label="Investimento" getter={d => d.meta.investment} format={formatCurrency} editable channel="meta" metric="investment" />
+                                            <DataRow label="Conversões" getter={d => d.meta.conversions} editable channel="meta" metric="conversions" />
+                                            <DataRow label="Valor de Conversões" getter={d => d.meta.revenue} format={formatCurrency} editable channel="meta" metric="revenue" />
+                                            <DataRow label="Taxa de Conversão" getter={d => d.meta.leads > 0 ? d.meta.conversions / d.meta.leads : 0} format={formatPercent} />
+
+                                            {/* GOOGLE ADS */}
+                                            <SectionHeader title="Google Ads" color="border-l-emerald-500" />
+                                            <DataRow label="Leads Gerados" getter={d => d.google.leads} editable channel="google" metric="leads" />
+                                            <DataRow label="Custo por Lead" getter={d => d.google.leads > 0 ? d.google.investment / d.google.leads : 0} format={formatCurrency} />
+                                            <DataRow label="Investimento" getter={d => d.google.investment} format={formatCurrency} editable channel="google" metric="investment" />
+                                            <DataRow label="Conversões" getter={d => d.google.conversions} editable channel="google" metric="conversions" />
+                                            <DataRow label="Valor de Conversões" getter={d => d.google.revenue} format={formatCurrency} editable channel="google" metric="revenue" />
+                                            <DataRow label="Taxa de Conversão" getter={d => d.google.leads > 0 ? d.google.conversions / d.google.leads : 0} format={formatPercent} />
+
+                                            {/* SEM RASTREIO */}
+                                            <SectionHeader title="Sem Rastreio" color="border-l-purple-500" />
+                                            <DataRow label="Leads Gerados" getter={d => d.direct.leads} editable channel="direct" metric="leads" />
+                                            <DataRow label="Conversões" getter={d => d.direct.conversions} editable channel="direct" metric="conversions" />
+                                            <DataRow label="Taxa de Conversão" getter={d => d.direct.leads > 0 ? d.direct.conversions / d.direct.leads : 0} format={formatPercent} />
+
+                                            {/* GERAL */}
+                                            <SectionHeader title="Resumo Geral" color="border-l-slate-200" />
+                                            <DataRow label="Total Leads" getter={d => d.total.leads} bg="bg-white/[0.03] font-bold" />
+                                            <DataRow label="Inv. Total" getter={d => d.total.investment} format={formatCurrency} bg="bg-white/[0.03] font-bold" />
+                                            <DataRow label="CPL Médio" getter={d => d.total.cpl} format={formatCurrency} bg="bg-white/[0.01]" />
+                                            <DataRow label="Total Conversões" getter={d => d.total.conversions} bg="bg-white/[0.01]" />
+                                            <DataRow label="Valor de Conversões" getter={d => d.total.revenue} format={formatCurrency} bg="bg-white/[0.03] font-bold" />
+                                            <DataRow label="Taxa Global" getter={d => d.total.rate} format={formatPercent} bg="bg-white/[0.01]" />
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                )
-            }
+                )}
             {/* Manual Lead Modal */}
             <ManualLeadModal
                 isOpen={isManualLeadModalOpen}

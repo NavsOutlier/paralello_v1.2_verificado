@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     ChevronRight, ChevronDown, LayoutDashboard, Table, Settings2,
     Target, Layers, FileImage, TrendingUp,
-    BarChart3, Search, Loader2, AlertCircle, Filter, CalendarCheck
+    BarChart3, Search, Loader2, AlertCircle, Filter, CalendarCheck, RefreshCw
 } from 'lucide-react';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
@@ -87,7 +87,7 @@ export const CampaignExplorer: React.FC<CampaignExplorerProps> = ({
     const parentCampaignIds = useMemo(() => Array.from(selectedCampaignIds), [selectedCampaignIds]);
     const parentAdsetIds = useMemo(() => Array.from(selectedAdsetIds), [selectedAdsetIds]);
 
-    const { data, rawData, loading, error } = useCampaignInsights({
+    const { data, rawData, loading, error, refresh } = useCampaignInsights({
         organizationId,
         clientId,
         startDate,
@@ -381,6 +381,15 @@ export const CampaignExplorer: React.FC<CampaignExplorerProps> = ({
                             Tabela
                         </button>
                     </div>
+                    {/* Refresh Button */}
+                    <button
+                        onClick={refresh}
+                        disabled={loading}
+                        className="p-2 bg-slate-950/50 border border-white/5 rounded-lg hover:bg-white/5 hover:border-cyan-500/20 transition-all text-slate-500 hover:text-cyan-400 disabled:opacity-50"
+                        title="Atualizar dados"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
                     {/* Global Config Button (Default) */}
                     <button
                         onClick={() => handleOpenConfig(null)}

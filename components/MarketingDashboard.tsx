@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
     Users, Calendar, Filter, Download, ArrowRight, Table, BarChart3, GripHorizontal, Pencil, CheckCircle2, LayoutDashboard,
-    Settings, ShieldCheck, Link, Activity, Check, X, Copy, ExternalLink, ChevronDown, Sparkles, Plus, Target
+    Settings, ShieldCheck, Link, Activity, Check, X, Copy, ExternalLink, ChevronDown, Sparkles, Plus, Target, Facebook
 } from 'lucide-react';
 import { TintimIntegrationForm } from './manager/TintimIntegrationForm';
 import { ManualLeadModal } from './ManualLeadModal';
@@ -757,15 +757,25 @@ export const MarketingDashboard: React.FC = () => {
                             </div>
                         )}
 
+                        <a
+                            href="https://business.facebook.com/messaging/whatsapp/onboard/?app_id=936443005488271&config_id=912171961501171&extras=%7B%22sessionInfoVersion%22%3A%223%22%2C%22version%22%3A%22v3%22%7D"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 group px-4 py-2 rounded-xl border transition-all text-xs font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border-blue-500/30 hover:bg-blue-500/30 hover:border-blue-300/50 hover:shadow-[0_0_15px_-3px_rgba(59,130,246,0.3)] cursor-pointer"
+                        >
+                            <img src="/assets/meta_logo.png" alt="" className="w-4 h-4 object-contain transition-transform group-hover:scale-105" />
+                            META CONNECT
+                        </a>
+
                         <button
                             onClick={() => setIsTintimModalOpen(true)}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest ${isIntegrated
-                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
-                                : 'bg-slate-800 text-slate-500 border-white/5 hover:text-slate-300'
+                            className={`flex items-center gap-2 group px-4 py-2 rounded-xl border transition-all text-xs font-black uppercase tracking-wider ${isIntegrated
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30 hover:border-emerald-300/50 hover:shadow-[0_0_15px_-3px_rgba(16,185,129,0.3)]'
+                                : 'bg-amber-500/20 text-amber-300 border-amber-500/30 hover:bg-amber-500/30 hover:border-amber-300/50 hover:shadow-[0_0_15px_-3px_rgba(245,158,11,0.3)]'
                                 }`}
                         >
-                            <Link className="w-3.5 h-3.5" />
-                            {isIntegrated ? 'INTEGRADO' : 'CRM CONNECT'}
+                            <img src="/assets/tintim_logo.png" alt="" className="w-4 h-4 object-contain transition-transform group-hover:scale-105" />
+                            {isIntegrated ? 'INTEGRADO' : 'TINTIM CONNECT'}
                         </button>
                     </div>
                 </div>

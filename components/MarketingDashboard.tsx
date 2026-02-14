@@ -11,7 +11,7 @@ import { ManualConversionModal } from './ManualConversionModal';
 import { TintimConfig } from '../types/marketing';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
-    BarChart, Bar
+    BarChart, Bar, PieChart, Pie, Cell
 } from 'recharts';
 import { CampaignExplorer } from './marketing/CampaignExplorer';
 
@@ -64,7 +64,6 @@ export const MarketingDashboard: React.FC = () => {
     const [granularity, setGranularity] = useState<Granularity>('day');
 
     // Preset Date Filter
-    // Preset Date Filter
     const [selectedPreset, setSelectedPreset] = useState('last7');
     const [viewMode, setViewMode] = useState<'geral' | 'campaigns'>('geral');
     const [geralSubView, setGeralSubView] = useState<'dashboard' | 'table'>('dashboard');
@@ -75,7 +74,128 @@ export const MarketingDashboard: React.FC = () => {
     const [isManualConversionModalOpen, setIsManualConversionModalOpen] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+    // Tintim Integration State
+    const [isTintimModalOpen, setIsTintimModalOpen] = useState(false);
+    const [tintimConfig, setTintimConfig] = useState<TintimConfig>({
+        isActive: false, apiKey: '', funnelId: '', stageId: '',
+        customFields: { utm_source: '', utm_medium: '', utm_campaign: '', utm_content: '', utm_term: '' }
+    });
 
+    // Mock Data State (Manual Rows)
+    const [manualRows, setManualRows] = useState<any[]>([]);
+    const [leadsData, setLeadsData] = useState<any[]>([]);
+    const [conversionsData, setConversionsData] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchClients = async () => {
+            if (!organizationId) return;
+            const { data } = await supabase.from('clients').select('id, name').eq('organization_id', organizationId);
+            if (data) {
+                setClients(data);
+                if (data.length > 0 && !selectedClient) setSelectedClient(data[0].id);
+            }
+        };
+        fetchClients();
+    }, [organizationId]);
+
+    const isIntegrated = tintimConfig.isActive;
+
+    // Load Data (Mock + Integration)
+    useEffect(() => {
+        if (!selectedClient) return;
+
+        const loadData = async () => {
+            // 1. Load Config
+            const { data: configData } = await supabase.from('tintim_config').select('*').eq('client_id', selectedClient).single();
+            if (configData) setTintimConfig(configData as TintimConfig);
+
+            // 2. Load Manual Rows
+            const { data: mnRows } = await supabase.from('marketing_manual_metrics').select('*')
+                .eq('client_id', selectedClient)
+                .gte('date', startDate)
+                .lte('date', endDate);
+            setManualRows(mnRows || []);
+
+            // 3. Load Real-time Leads (from n8n webhook table)
+            const { data: leads } = await supabase.from('marketing_leads').select('*')
+                .eq('client_id', selectedClient)
+                .gte('created_at', startDate + 'T00:00:00')
+                .lte('created_at', endDate + 'T23:59:59');
+
+            const formattedLeads = (leads || []).map(l => ({
+                ...l,
+                date: toLocalDateString(new Date(l.created_at)),
+                channel: (l.utm_source || 'direct').toLowerCase().includes('facebook') || (l.utm_source || '').toLowerCase().includes('instagram') ? 'meta' :
+                    (l.utm_source || '').toLowerCase().includes('google') ? 'google' : 'direct'
+            }));
+            setLeadsData(formattedLeads);
+
+            // 4. Load Real-time Conversions (from CRM webhook table - e.g. "Deal Won")
+            const { data: convs } = await supabase.from('marketing_conversions').select('*')
+                .eq('client_id', selectedClient)
+                .gte('created_at', startDate + 'T00:00:00')
+                .lte('created_at', endDate + 'T23:59:59');
+
+            const formattedConvs = (convs || []).map(c => ({
+                ...c,
+                date: toLocalDateString(new Date(c.created_at)),
+                revenue: parseFloat(c.deal_value || '0'),
+                channel: 'meta' // Simplified attribution logic for demo
+            }));
+            setConversionsData(formattedConvs);
+        };
+
+        loadData();
+    }, [selectedClient, startDate, endDate, refreshTrigger]);
+
+    const handleSaveTintimConfig = async () => {
+        if (!selectedClient) return;
+        const payload = { client_id: selectedClient, ...tintimConfig, updated_at: new Date().toISOString() };
+        const { error } = await supabase.from('tintim_config').upsert(payload, { onConflict: 'client_id' });
+        if (!error) setIsTintimModalOpen(false);
+    };
+
+    const handleSaveCell = async (dateKey: string, channel: string, metric: string, value: string) => {
+        if (!selectedClient) return;
+        const numValue = parseFloat(value.replace(',', '.')) || 0;
+
+        // Optimistic Update
+        const newRows = [...manualRows];
+        const existingIndex = newRows.findIndex(r => r.date === dateKey && r.channel === channel);
+
+        if (existingIndex >= 0) {
+            newRows[existingIndex] = { ...newRows[existingIndex], [metric]: numValue };
+        } else {
+            newRows.push({ client_id: selectedClient, date: dateKey, channel, [metric]: numValue });
+        }
+        setManualRows(newRows);
+
+        // Save to DB
+        await supabase.from('marketing_manual_metrics').upsert({
+            client_id: selectedClient,
+            date: dateKey,
+            channel,
+            [metric]: numValue,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'client_id,date,channel' });
+    };
+
+    // Scroll Handlers
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (!scrollContainerRef.current) return;
+        setIsDragging(true);
+        setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
+        setScrollLeft(scrollContainerRef.current.scrollLeft);
+    };
+    const handleMouseLeave = () => setIsDragging(false);
+    const handleMouseUp = () => setIsDragging(false);
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isDragging || !scrollContainerRef.current) return;
+        e.preventDefault();
+        const x = e.pageX - scrollContainerRef.current.offsetLeft;
+        const walk = (x - startX) * 2;
+        scrollContainerRef.current.scrollLeft = scrollLeft - walk;
+    };
 
     // Preset date filter options
     const datePresets = [
@@ -93,10 +213,13 @@ export const MarketingDashboard: React.FC = () => {
             }
         },
         {
-            key: 'todayYesterday', label: 'Hoje e ontem', getDates: () => {
-                const today = toLocalDateString(new Date());
-                const d = new Date(); d.setDate(d.getDate() - 1);
-                return { start: toLocalDateString(d), end: today };
+            key: 'thisWeek', label: 'Esta semana', getDates: () => {
+                const today = new Date();
+                const dayOfWeek = today.getDay(); // 0 (Sun) to 6 (Sat)
+                // Adjust to make Monday the start?? usually 0 is Sunday. Let's assume Sunday start for simplicity or Monday.
+                // JS getDay(): 0=Sun.
+                const start = new Date(today); start.setDate(today.getDate() - dayOfWeek);
+                return { start: toLocalDateString(start), end: toLocalDateString(today) };
             }
         },
         {
@@ -107,41 +230,10 @@ export const MarketingDashboard: React.FC = () => {
             }
         },
         {
-            key: 'last14', label: 'Últimos 14 dias', getDates: () => {
-                const end = new Date();
-                const start = new Date(); start.setDate(start.getDate() - 13);
-                return { start: toLocalDateString(start), end: toLocalDateString(end) };
-            }
-        },
-        {
-            key: 'last28', label: 'Últimos 28 dias', getDates: () => {
-                const end = new Date();
-                const start = new Date(); start.setDate(start.getDate() - 27);
-                return { start: toLocalDateString(start), end: toLocalDateString(end) };
-            }
-        },
-        {
             key: 'last30', label: 'Últimos 30 dias', getDates: () => {
                 const end = new Date();
                 const start = new Date(); start.setDate(start.getDate() - 29);
                 return { start: toLocalDateString(start), end: toLocalDateString(end) };
-            }
-        },
-        {
-            key: 'thisWeek', label: 'Esta semana', getDates: () => {
-                const today = new Date();
-                const dayOfWeek = today.getDay();
-                const start = new Date(today); start.setDate(today.getDate() - dayOfWeek);
-                return { start: toLocalDateString(start), end: toLocalDateString(today) };
-            }
-        },
-        {
-            key: 'lastWeek', label: 'Semana passada', getDates: () => {
-                const today = new Date();
-                const dayOfWeek = today.getDay();
-                const endOfLastWeek = new Date(today); endOfLastWeek.setDate(today.getDate() - dayOfWeek - 1);
-                const startOfLastWeek = new Date(endOfLastWeek); startOfLastWeek.setDate(endOfLastWeek.getDate() - 6);
-                return { start: toLocalDateString(startOfLastWeek), end: toLocalDateString(endOfLastWeek) };
             }
         },
         {
@@ -158,13 +250,7 @@ export const MarketingDashboard: React.FC = () => {
                 const end = new Date(today.getFullYear(), today.getMonth(), 0);
                 return { start: toLocalDateString(start), end: toLocalDateString(end) };
             }
-        },
-        {
-            key: 'max', label: 'Máximo', getDates: () => {
-                const start = new Date(); start.setFullYear(start.getFullYear() - 1);
-                return { start: toLocalDateString(start), end: toLocalDateString(new Date()) };
-            }
-        },
+        }
     ];
 
     const handlePresetChange = (presetKey: string) => {
@@ -187,321 +273,87 @@ export const MarketingDashboard: React.FC = () => {
 
     const selectedPresetLabel = useMemo(() => {
         const preset = datePresets.find(p => p.key === selectedPreset);
-        // Special case for 'today' or 'yesterday' to avoid redundancy if label already implies it? 
-        // User asked: "when date is a single day let it appear only it". 
-        // Example: "Hoje: 18 de jan." or just "18 de jan."? User said "deixe aparecer somente ele".
-        // If it's a preset like "Hoje", maybe separate logic? 
-        // Default behavior: "Label: Date".
-
         const label = preset?.label || 'Personalizado';
         if (!startDate || !endDate) return label;
-
-        const startStr = formatDateDisplay(startDate);
-        const endStr = formatDateDisplay(endDate);
-
+        // If single day
         if (startDate === endDate) {
-            return `${label}: ${startStr}`;
+            return formatDateDisplay(startDate);
         }
-        return `${label}: ${startStr} a ${endStr}`;
+        return label;
     }, [selectedPreset, startDate, endDate]);
 
-    // Real Data State
-    const [rawData, setRawData] = useState<any[]>([]);
-    // const [loading, setLoading] = useState(false); // Removed separate loading state to fix potential conflicts, relying on effect
 
-    // New Marketing Data State (from new tables)
-    const [leadsData, setLeadsData] = useState<any[]>([]);
-    const [conversionsData, setConversionsData] = useState<any[]>([]);
-    const [manualData, setManualData] = useState<any[]>([]);
-
-    // Tintim Integration State
-    const [isTintimModalOpen, setIsTintimModalOpen] = useState(false);
-    const [tintimConfig, setTintimConfig] = useState<TintimConfig>({
-        customer_code: '',
-        security_token: '',
-        conversion_event: ''
-    });
-
-    // Integration Check (Must be after state declaration)
-    const isIntegrated = !!tintimConfig.customer_code;
-
-    // Load and Save Tintim Config
-    useEffect(() => {
-        if (selectedClient) {
-            const loadConfig = async () => {
-                const { data, error } = await supabase
-                    .from('client_integrations')
-                    .select('*')
-                    .eq('client_id', selectedClient)
-                    .eq('provider', 'tintim')
-                    .maybeSingle();
-
-                if (data) {
-                    setTintimConfig({
-                        customer_code: data.customer_code || '',
-                        security_token: data.security_token || '',
-                        conversion_event: data.conversion_event || '',
-                        conversion_event_id: data.conversion_event_id || undefined
-                    });
-                } else {
-                    setTintimConfig({
-                        customer_code: '',
-                        security_token: '',
-                        conversion_event: '',
-                        conversion_event_id: undefined
-                    });
-                }
-            };
-            loadConfig();
-        }
-    }, [selectedClient]);
-
-    const handleSaveTintimConfig = async () => {
-        if (!selectedClient || !organizationId) return;
-
-        const integrationData = {
-            organization_id: organizationId,
-            client_id: selectedClient,
-            provider: 'tintim',
-            customer_code: tintimConfig.customer_code || null,
-            security_token: tintimConfig.security_token || null,
-            conversion_event: tintimConfig.conversion_event || null,
-            conversion_event_id: tintimConfig.conversion_event_id || null,
-            is_active: true,
-            updated_at: new Date().toISOString()
-        };
-
-        await supabase
-            .from('client_integrations')
-            .upsert(integrationData, {
-                onConflict: 'client_id,provider',
-                ignoreDuplicates: false
-            });
-
-        setIsTintimModalOpen(false);
-    };
-
-    const handleMouseDown = (e: React.MouseEvent) => {
-        if (isEditing || !scrollContainerRef.current) return; // Disable drag when editing to allow text selection
-        setIsDragging(true);
-        setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
-        setScrollLeft(scrollContainerRef.current.scrollLeft);
-    };
-
-    const handleMouseLeave = () => { setIsDragging(false); };
-    const handleMouseUp = () => { setIsDragging(false); };
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (isEditing || !isDragging || !scrollContainerRef.current) return;
-        e.preventDefault();
-        const x = e.pageX - scrollContainerRef.current.offsetLeft;
-        const walk = (x - startX) * 2;
-        scrollContainerRef.current.scrollLeft = scrollLeft - walk;
-    };
-
-    // Load Clients
-    useEffect(() => {
-        if (organizationId) {
-            const fetchClients = async () => {
-                const { data, error } = await supabase
-                    .from('clients')
-                    .select('id, name')
-                    .eq('organization_id', organizationId)
-                    .order('name');
-
-                if (error) {
-                    console.error('Error fetching clients:', error);
-                } else if (data) {
-                    setClients(data);
-                    if (data.length > 0 && !selectedClient) {
-                        setSelectedClient(data[0].id);
-                    }
-                }
-            };
-            fetchClients();
-        }
-    }, [organizationId]);
-
-    // Cell Save Handler [RESTORED]
-    const handleSaveCell = async (dateKey: string, channel: string, metric: 'leads' | 'investment' | 'conversions' | 'revenue' | 'impressions' | 'clicks', value: string) => {
-        if (!organizationId || !selectedClient) return;
-
-        // Convert string formatted value back to number
-        const numValue = parseFloat(value.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
-
-        try {
-            const { error } = await supabase
-                .from('marketing_daily_performance')
-                .upsert({
-                    organization_id: organizationId,
-                    client_id: selectedClient,
-                    date: dateKey,
-                    channel: channel,
-                    [metric]: numValue,
-                    created_by: user?.id
-                }, {
-                    onConflict: 'client_id,date,channel'
-                });
-
-            if (error) throw error;
-
-            // Trigger refresh
-            setRefreshTrigger(prev => prev + 1);
-        } catch (error) {
-            console.error('Error saving manual data:', error);
-            alert('Erro ao salvar dados manuais.');
-        }
-    };
-
-    // Fetch data from new tables (marketing_leads and marketing_conversions)
-    useEffect(() => {
-        if (!organizationId || !selectedClient) return;
-
-        const fetchNewData = async () => {
-            console.log('Fetching new data for:', { organizationId, selectedClient, startDate, endDate });
-
-            // Fetch leads - filter by first_interaction_at (actual lead date)
-            const { data: leads, error: leadsError } = await supabase
-                .from('marketing_leads')
-                .select('*')
-                .eq('organization_id', organizationId)
-                .eq('client_id', selectedClient)
-                .gte('first_interaction_at', startDate)
-                .lte('first_interaction_at', endDate + 'T23:59:59');
-
-            console.log('Leads result:', { leads, leadsError });
-
-            if (leadsError) {
-                console.error('Error fetching leads:', leadsError);
-            } else {
-                setLeadsData(leads || []);
-            }
-
-            // Fetch conversions
-            const { data: conversions, error: conversionsError } = await supabase
-                .from('marketing_conversions')
-                .select('*')
-                .eq('organization_id', organizationId)
-                .eq('client_id', selectedClient)
-                .gte('converted_at', startDate)
-                .lte('converted_at', endDate + 'T23:59:59');
-
-            console.log('Conversions result:', { conversions, conversionsError });
-
-            if (conversionsError) {
-                console.error('Error fetching conversions:', conversionsError);
-            } else {
-                setConversionsData(conversions || []);
-            }
-        };
-
-        const fetchManual = async () => {
-            const { data, error } = await supabase
-                .from('marketing_daily_performance')
-                .select('*')
-                .eq('organization_id', organizationId)
-                .eq('client_id', selectedClient)
-                .gte('date', startDate)
-                .lte('date', endDate);
-
-            if (error) {
-                console.error('Error fetching manual data:', error);
-            } else {
-                setManualData(data || []);
-            }
-        };
-
-        fetchNewData();
-        fetchManual();
-    }, [organizationId, selectedClient, startDate, endDate, refreshTrigger]);
-
-    // Generate Period Columns based on Range & Granularity
+    // GENERATE PERIODS BASED ON GRANULARITY
     const periods = useMemo(() => {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const result: { label: string, key: string, endKey?: string }[] = [];
-
+        const start = new Date(startDate + 'T12:00:00');
+        const end = new Date(endDate + 'T12:00:00');
+        const result: { label: string; key: string; endKey?: string }[] = [];
         let current = new Date(start);
         let loops = 0;
 
-        // Helper to format date key YYYY-MM-DD
         const getKey = (d: Date) => d.toISOString().split('T')[0];
 
         while (current <= end && loops < 100) {
             let label = '';
-            let key = getKey(current);
-            let nextDate = new Date(current);
+            const key = getKey(current);
+            const nextDate = new Date(current);
 
             if (granularity === 'day') {
                 label = current.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
                 nextDate.setDate(current.getDate() + 1);
             } else if (granularity === 'week') {
+                // Find end of week
                 const weekEnd = new Date(current);
                 weekEnd.setDate(weekEnd.getDate() + 6);
-                label = `${current.getDate()}/${current.getMonth() + 1} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}`;
+                const actualEnd = weekEnd > end ? end : weekEnd;
+                label = `${current.getDate()}/${current.getMonth() + 1} - ${actualEnd.getDate()}/${actualEnd.getMonth() + 1}`;
                 nextDate.setDate(current.getDate() + 7);
-            } else { // Month
+            } else { // month
                 label = current.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
                 nextDate.setMonth(current.getMonth() + 1);
                 nextDate.setDate(1);
             }
 
-            // For aggregation filtering
+            // Correct endKey for filtering
+            const endKeyDate = new Date(nextDate);
+            endKeyDate.setDate(endKeyDate.getDate() - 1);
+
             result.push({
                 label,
                 key,
-                endKey: getKey(new Date(nextDate.getTime() - 1)) // End of this period (e.g. end of week)
+                endKey: getKey(endKeyDate)
             });
-
             current = nextDate;
             loops++;
         }
         return result;
     }, [startDate, endDate, granularity]);
 
-    // Process Data into Table Format (Pivot)
+    // Data Processing for Table/Charts (Geral View)
+    // IMPORTANT: This logic is for "Geral" dashboard. Campaign Explorer does its own via hook.
     const tableData = useMemo(() => {
-        // 1. Process Real-time Leads into aggregations
-        const realTimeLeads = leadsData.map(l => {
-            const date = l.first_interaction_at.split('T')[0];
-            let channel = 'direct';
-            if (l.source?.toLowerCase().includes('meta') || l.source?.toLowerCase().includes('facebook') || l.source?.toLowerCase().includes('instagram')) channel = 'meta';
-            else if (l.source?.toLowerCase().includes('google')) channel = 'google';
+        // Mock data also needs to be filtered/aggregated by granularity?
+        // Current implementation assumes manualRows are by DAY.
+        // We aggregate based on periods.
 
-            return { date, channel, type: 'lead', phone: l.phone };
-        });
+        // Real-time data
+        const realTimeLeads = leadsData;
+        const realTimeConversions = conversionsData;
 
-        // 2. Process Real-time Conversions into aggregations
-        // Try to match conversion to a lead to get source
-        const realTimeConversions = conversionsData.map(c => {
-            const date = c.converted_at.split('T')[0];
-            const revenue = parseFloat(c.revenue) || 0;
-            // Find specific lead source if possible (naive matching by phone)
-            const matchedLead = leadsData.find(l => l.phone === c.phone); // This searches across all fetched leads
-            let channel = 'direct';
-            if (matchedLead) {
-                if (matchedLead.source?.toLowerCase().includes('meta') || matchedLead.source?.toLowerCase().includes('facebook') || matchedLead.source?.toLowerCase().includes('instagram')) channel = 'meta';
-                else if (matchedLead.source?.toLowerCase().includes('google')) channel = 'google';
-            }
-
-            return { date, channel, revenue, type: 'conversion' };
-        });
-
-        // 3. Merge Real-time data with Manual Raw Data
-        // We create a combined list of "data points" to aggregate
-        // Manual data has { report_date, channel, leads, conversions, revenue, investment }
+        // Raw Manual Rows (Day level)
+        const rawManual = manualRows;
 
         return periods.map(p => {
-            // A. Filter Manual Rows
-            // A. Filter Manual Rows
-            const manualRows = manualData.filter(r => {
+            // Filter Manual Rows within period
+            const periodManual = rawManual.filter(r => {
                 const rowDate = r.date;
                 if (granularity === 'day') return rowDate === p.key;
                 if (granularity === 'month') return rowDate.startsWith(p.key.slice(0, 7));
+                // week/custom
                 return rowDate >= p.key && (p.endKey ? rowDate <= p.endKey : true);
             });
 
-
-            // B. Filter Real-time Data
+            // Filter Real-time Data
             const periodLeads = realTimeLeads.filter(l => {
                 const rowDate = l.date;
                 if (granularity === 'day') return rowDate === p.key;
@@ -518,9 +370,10 @@ export const MarketingDashboard: React.FC = () => {
 
             // Aggregate helpers
             const sumStart = { leads: 0, investment: 0, conversions: 0, revenue: 0 };
+
             const groupByChannel = (channel: string) => {
                 // Manual Aggregate
-                const manual = manualRows.filter(r => r.channel === channel).reduce((acc, curr) => ({
+                const manual = periodManual.filter(r => r.channel === channel).reduce((acc, curr) => ({
                     leads: acc.leads + (curr.leads || 0),
                     investment: acc.investment + (curr.investment || 0),
                     conversions: acc.conversions + (curr.conversions || 0),
@@ -533,7 +386,7 @@ export const MarketingDashboard: React.FC = () => {
                 const rtConversionsCount = rtConversions.length;
                 const rtRevenue = rtConversions.reduce((acc, c) => acc + c.revenue, 0);
 
-                // Combine (Integration ADDs to manual, usually you use one or other, but summing ensures no data loss if hybrid)
+                // Combine
                 return {
                     leads: manual.leads + rtLeadsCount,
                     investment: manual.investment, // Investment currently only manual
@@ -567,7 +420,7 @@ export const MarketingDashboard: React.FC = () => {
                 }
             } as PeriodData;
         });
-    }, [periods, rawData, leadsData, conversionsData, granularity]);
+    }, [periods, manualRows, leadsData, conversionsData, granularity]);
 
     const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
     const formatPercent = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 2 }).format(val);
@@ -593,12 +446,10 @@ export const MarketingDashboard: React.FC = () => {
                 {(totalLeadsNew > 0 || totalConversionsNew > 0) && (
                     <div className="relative group overflow-hidden bg-slate-900/40 backdrop-blur-2xl p-6 md:p-8 rounded-[2rem] border border-white/5 shadow-3xl">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
-
                         <h4 className="relative z-10 text-[10px] md:text-xs font-black text-cyan-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
                             <Activity className="w-5 h-5 animate-pulse" />
                             Dados da Integração em Tempo Real
                         </h4>
-
                         <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                             {[
                                 { label: 'Leads (n8n)', val: totalLeadsNew, color: 'text-indigo-400', icon: Users },
@@ -690,48 +541,32 @@ export const MarketingDashboard: React.FC = () => {
         );
     };
 
-    // Helper Components for Table View
-    const EditableCell = ({
-        value,
-        dateKey,
-        channel,
-        metric,
-        isMoney = false
-    }: { value: number, dateKey: string, channel: string, metric: 'leads' | 'investment' | 'conversions' | 'revenue', isMoney?: boolean }) => {
+    // Helper Components for Table View (Geral)
+    const EditableCell = ({ value, dateKey, channel, metric, isMoney = false }: { value: number, dateKey: string, channel: string, metric: 'leads' | 'investment' | 'conversions' | 'revenue', isMoney?: boolean }) => {
         const [localValue, setLocalValue] = useState(isMoney ? value.toFixed(2).replace('.', ',') : value.toString());
-
-        useEffect(() => {
-            setLocalValue(isMoney ? value.toFixed(2).replace('.', ',') : value.toString());
-        }, [value, isMoney]);
+        useEffect(() => { setLocalValue(isMoney ? value.toFixed(2).replace('.', ',') : value.toString()); }, [value, isMoney]);
 
         if (!isEditing) {
-            return (
-                <span className={value === 0 ? "text-slate-600" : "text-slate-200 font-bold"}>
-                    {isMoney ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) : value}
-                </span>
-            );
+            return <span className={value === 0 ? "text-slate-600" : "text-slate-200 font-bold"}>
+                {isMoney ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) : value}
+            </span>;
         }
 
         const isLocked = isIntegrated && metric !== 'investment';
-
         if (isLocked) {
-            return (
-                <span className="text-slate-600 italic text-xs flex items-center justify-center gap-1 opacity-60" title="Gerenciado pela Integração">
-                    {isMoney ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) : value}
-                    <ShieldCheck className="w-3 h-3 text-cyan-500 opacity-50" />
-                </span>
-            );
+            return <span className="text-slate-600 italic text-xs flex items-center justify-center gap-1 opacity-60" title="Gerenciado pela Integração">
+                {isMoney ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value) : value}
+                <ShieldCheck className="w-3 h-3 text-cyan-500 opacity-50" />
+            </span>;
         }
 
-        return (
-            <input
-                type="text"
-                value={localValue}
-                onChange={(e) => setLocalValue(e.target.value)}
-                onBlur={(e) => handleSaveCell(dateKey, channel, metric, e.target.value)}
-                className="w-24 text-center text-xs p-2 bg-slate-950/50 border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500/50 focus:outline-none text-white font-bold placeholder:text-slate-700 transition-all font-mono"
-            />
-        );
+        return <input
+            type="text"
+            value={localValue}
+            onChange={(e) => setLocalValue(e.target.value)}
+            onBlur={(e) => handleSaveCell(dateKey, channel, metric, e.target.value)}
+            className="w-24 text-center text-xs p-2 bg-slate-950/50 border border-white/10 rounded-lg focus:ring-2 focus:ring-cyan-500/50 focus:outline-none text-white font-bold placeholder:text-slate-700 transition-all font-mono"
+        />;
     };
 
     const DataRow = ({ label, channel, metric, getter, format = (v: any) => v, bg = '', editable = false }: any) => (
@@ -742,13 +577,7 @@ export const MarketingDashboard: React.FC = () => {
             {tableData.map((d) => (
                 <td key={d.dateKey} className="py-4 px-6 text-center text-xs font-medium text-slate-400 whitespace-nowrap min-w-[140px]">
                     {editable && channel && metric ? (
-                        <EditableCell
-                            value={getter(d)}
-                            dateKey={d.dateKey}
-                            channel={channel}
-                            metric={metric}
-                            isMoney={metric === 'investment'}
-                        />
+                        <EditableCell value={getter(d)} dateKey={d.dateKey} channel={channel} metric={metric} isMoney={metric === 'investment'} />
                     ) : (
                         <span className="font-bold text-slate-300">{format(getter(d))}</span>
                     )}
@@ -813,9 +642,23 @@ export const MarketingDashboard: React.FC = () => {
                     {/* 2. Controls & Filters */}
                     <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto justify-end">
 
+                        {/* Granularity (Global for all views) */}
+                        <div className="flex bg-slate-950/30 p-1 rounded-xl border border-white/5 mr-2">
+                            {(['day', 'week', 'month'] as Granularity[]).map(g => (
+                                <button
+                                    key={g}
+                                    onClick={() => setGranularity(g)}
+                                    className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${granularity === g ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                >
+                                    {g === 'day' ? 'Dia' : g === 'week' ? 'Sem' : 'Mês'}
+                                </button>
+                            ))}
+                        </div>
+
                         {/* Client & Date Group */}
                         <div className="flex items-center gap-1 bg-slate-950/30 p-1.5 rounded-xl border border-white/5">
                             <div className="relative">
+                                {/* Client Dropdown Logic */}
                                 <button
                                     onClick={() => setShowClientDropdown(!showClientDropdown)}
                                     className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors text-xs text-indigo-300 font-bold uppercase tracking-wider shadow-sm"
@@ -837,10 +680,7 @@ export const MarketingDashboard: React.FC = () => {
                                                 clients.map(client => (
                                                     <button
                                                         key={client.id}
-                                                        onClick={() => {
-                                                            setSelectedClient(client.id);
-                                                            setShowClientDropdown(false);
-                                                        }}
+                                                        onClick={() => { setSelectedClient(client.id); setShowClientDropdown(false); }}
                                                         className={`w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-white/5 transition-colors ${selectedClient === client.id ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-400'}`}
                                                     >
                                                         {client.name}
@@ -880,18 +720,8 @@ export const MarketingDashboard: React.FC = () => {
                                             <div className="border-t border-white/10 mt-2 pt-3 px-4 pb-3 bg-slate-950/30">
                                                 <p className="text-[9px] uppercase font-black text-slate-500 mb-2">Personalizado</p>
                                                 <div className="flex items-center gap-2">
-                                                    <input
-                                                        type="date"
-                                                        value={startDate}
-                                                        onChange={(e) => { setStartDate(e.target.value); setSelectedPreset(''); }}
-                                                        className="w-full text-xs bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-slate-300 focus:outline-none focus:border-indigo-500/50"
-                                                    />
-                                                    <input
-                                                        type="date"
-                                                        value={endDate}
-                                                        onChange={(e) => { setEndDate(e.target.value); setSelectedPreset(''); }}
-                                                        className="w-full text-xs bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-slate-300 focus:outline-none focus:border-indigo-500/50"
-                                                    />
+                                                    <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setSelectedPreset(''); }} className="w-full text-xs bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-slate-300 focus:outline-none focus:border-indigo-500/50" />
+                                                    <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setSelectedPreset(''); }} className="w-full text-xs bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-slate-300 focus:outline-none focus:border-indigo-500/50" />
                                                 </div>
                                             </div>
                                         </div>
@@ -900,72 +730,31 @@ export const MarketingDashboard: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Granularity (Dashboard Only) */}
-                        {viewMode === 'dashboard' && (
-                            <div className="flex bg-slate-950/30 p-1.5 rounded-xl border border-white/5">
-                                {(['day', 'week', 'month'] as Granularity[]).map(g => (
-                                    <button
-                                        key={g}
-                                        onClick={() => setGranularity(g)}
-                                        className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all ${granularity === g ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
-                                    >
-                                        {g === 'day' ? 'Dia' : g === 'week' ? 'Sem' : 'Mês'}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Data Actions (Table Only) */}
-                        {viewMode === 'table' && (
-                            <>
-                                {/* Table Granularity Filter */}
-                                <div className="flex bg-[#0f1623] p-1 rounded-lg border border-white/5 mr-2">
-                                    {(['day', 'week', 'month'] as Granularity[]).map(g => (
-                                        <button
-                                            key={g}
-                                            onClick={() => setGranularity(g)}
-                                            className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-md transition-all ${granularity === g
-                                                ? 'bg-slate-700 text-white shadow-sm'
-                                                : 'text-slate-500 hover:text-slate-300'
-                                                }`}
-                                        >
-                                            {g === 'day' ? 'Dia' : g === 'week' ? 'Sem' : 'Mês'}
+                        {/* Data Actions (Geral Table Only) */}
+                        {viewMode === 'geral' && geralSubView === 'table' && (
+                            <div className="flex items-center gap-3 pl-3 border-l border-white/10">
+                                {isIntegrated && (
+                                    <>
+                                        <button onClick={() => setIsManualLeadModalOpen(true)} className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl hover:bg-indigo-500/20 transition-all border border-indigo-500/20" title="Novo Lead Manual">
+                                            <Users className="w-4 h-4" />
                                         </button>
-                                    ))}
-                                </div>
-
-                                <div className="flex items-center gap-3 pl-3 border-l border-white/10">
-                                    {isIntegrated && (
-                                        <>
-                                            <button
-                                                onClick={() => setIsManualLeadModalOpen(true)}
-                                                className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl hover:bg-indigo-500/20 transition-all border border-indigo-500/20"
-                                                title="Novo Lead Manual"
-                                            >
-                                                <Users className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => setIsManualConversionModalOpen(true)}
-                                                className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl hover:bg-emerald-500/20 transition-all border border-emerald-500/20"
-                                                title="Nova Venda Manual"
-                                            >
-                                                <Activity className="w-4 h-4" />
-                                            </button>
-                                            <div className="w-px h-6 bg-white/10 mx-1" />
-                                        </>
-                                    )}
-                                    <button
-                                        onClick={() => setIsEditing(!isEditing)}
-                                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${isEditing
-                                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                                            : 'bg-slate-800 text-slate-400 border-white/10 hover:bg-slate-700'
-                                            }`}
-                                    >
-                                        {isEditing ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
-                                        {isEditing ? 'FINALIZADO' : 'EDITAR DADOS'}
-                                    </button>
-                                </div>
-                            </>
+                                        <button onClick={() => setIsManualConversionModalOpen(true)} className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl hover:bg-emerald-500/20 transition-all border border-emerald-500/20" title="Nova Venda Manual">
+                                            <Activity className="w-4 h-4" />
+                                        </button>
+                                        <div className="w-px h-6 bg-white/10 mx-1" />
+                                    </>
+                                )}
+                                <button
+                                    onClick={() => setIsEditing(!isEditing)}
+                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${isEditing
+                                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                        : 'bg-slate-800 text-slate-400 border-white/10 hover:bg-slate-700'
+                                        }`}
+                                >
+                                    {isEditing ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                                    {isEditing ? 'FINALIZADO' : 'EDITAR DADOS'}
+                                </button>
+                            </div>
                         )}
 
                         <button
@@ -983,127 +772,116 @@ export const MarketingDashboard: React.FC = () => {
             </div>
 
             <style>{`
-                .horizontal-scroll-container::-webkit-scrollbar {
-                    height: 10px;
-                }
-                .horizontal-scroll-container::-webkit-scrollbar-track {
-                    background: rgba(0,0,0,0.2);
-                    border-radius: 0 0 20px 20px;
-                }
-                .horizontal-scroll-container::-webkit-scrollbar-thumb {
-                    background-color: rgba(255,255,255,0.1);
-                    border-radius: 20px;
-                    border: 2px solid transparent;
-                    background-clip: content-box;
-                }
-                .horizontal-scroll-container::-webkit-scrollbar-thumb:hover {
-                    background-color: rgba(255,255,255,0.2);
-                }
+                .horizontal-scroll-container::-webkit-scrollbar { height: 10px; }
+                .horizontal-scroll-container::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 0 0 20px 20px; }
+                .horizontal-scroll-container::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); border-radius: 20px; border: 2px solid transparent; background-clip: content-box; }
+                .horizontal-scroll-container::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.2); }
             `}</style>
 
-            {
-                viewMode === 'campaigns' ? (
-                    <CampaignExplorer
-                        organizationId={organizationId}
-                        clientId={selectedClient}
-                        startDate={startDate}
-                        endDate={endDate}
-                    />
-                ) : (
-                    /* ========= GERAL VIEW ========= */
-                    <div className="flex-1 flex flex-col overflow-hidden">
-                        {/* Sub-view toggle: Dash / Tabela */}
-                        <div className="flex items-center justify-between px-6 md:px-8 py-3 bg-white/[0.01] border-b border-white/5">
-                            <div />
-                            <div className="bg-slate-950/50 p-1 rounded-lg border border-white/5 flex items-center">
-                                <button
-                                    onClick={() => setGeralSubView('dashboard')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${geralSubView === 'dashboard'
-                                        ? 'bg-slate-700 text-white shadow-sm border border-white/10'
-                                        : 'text-slate-500 hover:text-slate-300'
-                                        }`}
-                                >
-                                    <LayoutDashboard className="w-3 h-3" />
-                                    Dash
-                                </button>
-                                <button
-                                    onClick={() => setGeralSubView('table')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${geralSubView === 'table'
-                                        ? 'bg-slate-700 text-white shadow-sm border border-white/10'
-                                        : 'text-slate-500 hover:text-slate-300'
-                                        }`}
-                                >
-                                    <Table className="w-3 h-3" />
-                                    Tabela
-                                </button>
+            {viewMode === 'campaigns' ? (
+                <CampaignExplorer
+                    organizationId={organizationId}
+                    clientId={selectedClient}
+                    startDate={startDate}
+                    endDate={endDate}
+                    granularity={granularity}
+                />
+            ) : (
+                /* ========= GERAL VIEW ========= */
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    {/* Sub-view toggle: Dash / Tabela */}
+                    <div className="flex items-center justify-between px-6 md:px-8 py-3 bg-white/[0.01] border-b border-white/5">
+                        <div />
+                        <div className="bg-slate-950/50 p-1 rounded-lg border border-white/5 flex items-center">
+                            <button
+                                onClick={() => setGeralSubView('dashboard')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${geralSubView === 'dashboard'
+                                    ? 'bg-slate-700 text-white shadow-sm border border-white/10'
+                                    : 'text-slate-500 hover:text-slate-300'
+                                    }`}
+                            >
+                                <LayoutDashboard className="w-3 h-3" />
+                                Dash
+                            </button>
+                            <button
+                                onClick={() => setGeralSubView('table')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${geralSubView === 'table'
+                                    ? 'bg-slate-700 text-white shadow-sm border border-white/10'
+                                    : 'text-slate-500 hover:text-slate-300'
+                                    }`}
+                            >
+                                <Table className="w-3 h-3" />
+                                Tabela
+                            </button>
+                        </div>
+                    </div>
+
+                    {geralSubView === 'dashboard' ? renderDashboardView() : (
+                        /* Scrollable Table Area */
+                        <div className="flex-1 overflow-hidden p-8 flex flex-col relative w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            <div
+                                ref={scrollContainerRef}
+                                onMouseDown={handleMouseDown}
+                                onMouseLeave={handleMouseLeave}
+                                onMouseUp={handleMouseUp}
+                                onMouseMove={handleMouseMove}
+                                className="horizontal-scroll-container bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 overflow-x-auto w-full pb-0 shadow-2xl relative"
+                                style={{ cursor: isEditing ? 'default' : (isDragging ? 'grabbing' : 'grab') }}
+                            >
+                                <table className="w-full border-collapse select-none" style={{ minWidth: '100%' }}>
+                                    <thead>
+                                        <tr className="bg-[#0b101b] border-b border-white/5">
+                                            <th className="sticky left-0 z-20 bg-[#0b101b] py-6 px-6 text-left font-black text-[10px] uppercase tracking-[0.3em] text-cyan-500/80 min-w-[200px] border-r border-white/5 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)] pointer-events-none">
+                                                Métrica / Período
+                                            </th>
+                                            {tableData.map(d => (
+                                                <th key={d.dateKey} className="py-6 px-6 text-center font-black text-[10px] text-slate-400 uppercase tracking-[0.2em] min-w-[160px] border-l border-white/5 pointer-events-none">
+                                                    {d.label}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {/* META ADS */}
+                                        <SectionHeader title="Meta Ads" color="border-l-blue-500" />
+                                        <DataRow label="Leads Gerados" getter={d => d.meta.leads} editable channel="meta" metric="leads" />
+                                        <DataRow label="Custo por Lead" getter={d => d.meta.leads > 0 ? d.meta.investment / d.meta.leads : 0} format={formatCurrency} />
+                                        <DataRow label="Investimento" getter={d => d.meta.investment} format={formatCurrency} editable channel="meta" metric="investment" />
+                                        <DataRow label="Conversões" getter={d => d.meta.conversions} editable channel="meta" metric="conversions" />
+                                        <DataRow label="Valor de Conversões" getter={d => d.meta.revenue} format={formatCurrency} editable channel="meta" metric="revenue" />
+                                        <DataRow label="Taxa de Conversão" getter={d => d.meta.leads > 0 ? d.meta.conversions / d.meta.leads : 0} format={formatPercent} />
+
+                                        {/* GOOGLE ADS */}
+                                        <SectionHeader title="Google Ads" color="border-l-emerald-500" />
+                                        <DataRow label="Leads Gerados" getter={d => d.google.leads} editable channel="google" metric="leads" />
+                                        <DataRow label="Custo por Lead" getter={d => d.google.leads > 0 ? d.google.investment / d.google.leads : 0} format={formatCurrency} />
+                                        <DataRow label="Investimento" getter={d => d.google.investment} format={formatCurrency} editable channel="google" metric="investment" />
+                                        <DataRow label="Conversões" getter={d => d.google.conversions} editable channel="google" metric="conversions" />
+                                        <DataRow label="Valor de Conversões" getter={d => d.google.revenue} format={formatCurrency} editable channel="google" metric="revenue" />
+                                        <DataRow label="Taxa de Conversão" getter={d => d.google.leads > 0 ? d.google.conversions / d.google.leads : 0} format={formatPercent} />
+
+                                        {/* SEM RASTREIO */}
+                                        <SectionHeader title="Sem Rastreio" color="border-l-purple-500" />
+                                        <DataRow label="Leads Gerados" getter={d => d.direct.leads} editable channel="direct" metric="leads" />
+                                        <DataRow label="Conversões" getter={d => d.direct.conversions} editable channel="direct" metric="conversions" />
+                                        <DataRow label="Taxa de Conversão" getter={d => d.direct.leads > 0 ? d.direct.conversions / d.direct.leads : 0} format={formatPercent} />
+
+                                        {/* GERAL */}
+                                        <SectionHeader title="Resumo Geral" color="border-l-slate-200" />
+                                        <DataRow label="Total Leads" getter={d => d.total.leads} bg="bg-white/[0.03] font-bold" />
+                                        <DataRow label="Inv. Total" getter={d => d.total.investment} format={formatCurrency} bg="bg-white/[0.03] font-bold" />
+                                        <DataRow label="CPL Médio" getter={d => d.total.cpl} format={formatCurrency} bg="bg-white/[0.01]" />
+                                        <DataRow label="Total Conversões" getter={d => d.total.conversions} bg="bg-white/[0.01]" />
+                                        <DataRow label="Valor de Conversões" getter={d => d.total.revenue} format={formatCurrency} bg="bg-white/[0.03] font-bold" />
+                                        <DataRow label="Taxa Global" getter={d => d.total.rate} format={formatPercent} bg="bg-white/[0.01]" />
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
+                    )}
+                </div>
+            )}
 
-                        {geralSubView === 'dashboard' ? renderDashboardView() : (
-                            /* Scrollable Table Area */
-                            <div className="flex-1 overflow-hidden p-8 flex flex-col relative w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
-                                <div
-                                    ref={scrollContainerRef}
-                                    onMouseDown={handleMouseDown}
-                                    onMouseLeave={handleMouseLeave}
-                                    onMouseUp={handleMouseUp}
-                                    onMouseMove={handleMouseMove}
-                                    className="horizontal-scroll-container bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 overflow-x-auto w-full pb-0 shadow-2xl relative"
-                                    style={{ cursor: isEditing ? 'default' : (isDragging ? 'grabbing' : 'grab') }}
-                                >
-                                    <table className="w-full border-collapse select-none" style={{ minWidth: '100%' }}>
-                                        <thead>
-                                            <tr className="bg-[#0b101b] border-b border-white/5">
-                                                <th className="sticky left-0 z-20 bg-[#0b101b] py-6 px-6 text-left font-black text-[10px] uppercase tracking-[0.3em] text-cyan-500/80 min-w-[200px] border-r border-white/5 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.5)] pointer-events-none">
-                                                    Métrica / Período
-                                                </th>
-                                                {tableData.map(d => (
-                                                    <th key={d.dateKey} className="py-6 px-6 text-center font-black text-[10px] text-slate-400 uppercase tracking-[0.2em] min-w-[160px] border-l border-white/5 pointer-events-none">
-                                                        {d.label}
-                                                    </th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {/* META ADS */}
-                                            <SectionHeader title="Meta Ads" color="border-l-blue-500" />
-                                            <DataRow label="Leads Gerados" getter={d => d.meta.leads} editable channel="meta" metric="leads" />
-                                            <DataRow label="Custo por Lead" getter={d => d.meta.leads > 0 ? d.meta.investment / d.meta.leads : 0} format={formatCurrency} />
-                                            <DataRow label="Investimento" getter={d => d.meta.investment} format={formatCurrency} editable channel="meta" metric="investment" />
-                                            <DataRow label="Conversões" getter={d => d.meta.conversions} editable channel="meta" metric="conversions" />
-                                            <DataRow label="Valor de Conversões" getter={d => d.meta.revenue} format={formatCurrency} editable channel="meta" metric="revenue" />
-                                            <DataRow label="Taxa de Conversão" getter={d => d.meta.leads > 0 ? d.meta.conversions / d.meta.leads : 0} format={formatPercent} />
-
-                                            {/* GOOGLE ADS */}
-                                            <SectionHeader title="Google Ads" color="border-l-emerald-500" />
-                                            <DataRow label="Leads Gerados" getter={d => d.google.leads} editable channel="google" metric="leads" />
-                                            <DataRow label="Custo por Lead" getter={d => d.google.leads > 0 ? d.google.investment / d.google.leads : 0} format={formatCurrency} />
-                                            <DataRow label="Investimento" getter={d => d.google.investment} format={formatCurrency} editable channel="google" metric="investment" />
-                                            <DataRow label="Conversões" getter={d => d.google.conversions} editable channel="google" metric="conversions" />
-                                            <DataRow label="Valor de Conversões" getter={d => d.google.revenue} format={formatCurrency} editable channel="google" metric="revenue" />
-                                            <DataRow label="Taxa de Conversão" getter={d => d.google.leads > 0 ? d.google.conversions / d.google.leads : 0} format={formatPercent} />
-
-                                            {/* SEM RASTREIO */}
-                                            <SectionHeader title="Sem Rastreio" color="border-l-purple-500" />
-                                            <DataRow label="Leads Gerados" getter={d => d.direct.leads} editable channel="direct" metric="leads" />
-                                            <DataRow label="Conversões" getter={d => d.direct.conversions} editable channel="direct" metric="conversions" />
-                                            <DataRow label="Taxa de Conversão" getter={d => d.direct.leads > 0 ? d.direct.conversions / d.direct.leads : 0} format={formatPercent} />
-
-                                            {/* GERAL */}
-                                            <SectionHeader title="Resumo Geral" color="border-l-slate-200" />
-                                            <DataRow label="Total Leads" getter={d => d.total.leads} bg="bg-white/[0.03] font-bold" />
-                                            <DataRow label="Inv. Total" getter={d => d.total.investment} format={formatCurrency} bg="bg-white/[0.03] font-bold" />
-                                            <DataRow label="CPL Médio" getter={d => d.total.cpl} format={formatCurrency} bg="bg-white/[0.01]" />
-                                            <DataRow label="Total Conversões" getter={d => d.total.conversions} bg="bg-white/[0.01]" />
-                                            <DataRow label="Valor de Conversões" getter={d => d.total.revenue} format={formatCurrency} bg="bg-white/[0.03] font-bold" />
-                                            <DataRow label="Taxa Global" getter={d => d.total.rate} format={formatPercent} bg="bg-white/[0.01]" />
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
             {/* Manual Lead Modal */}
             <ManualLeadModal
                 isOpen={isManualLeadModalOpen}

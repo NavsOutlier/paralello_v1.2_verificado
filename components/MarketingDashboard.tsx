@@ -758,7 +758,7 @@ export const MarketingDashboard: React.FC = () => {
                         )}
 
                         <a
-                            href="https://business.facebook.com/messaging/whatsapp/onboard/?app_id=936443005488271&config_id=912171961501171&extras=%7B%22sessionInfoVersion%22%3A%223%22%2C%22version%22%3A%22v3%22%7D"
+                            href="https://www.facebook.com/v24.0/dialog/oauth?client_id=936443005488271&redirect_uri=https%3A%2F%2Fwebhooks.blackback.com.br%2Fwebhook%2Foauth%2Fcallback&scope=ads_read&response_type=code&state=secureRandom123"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 group px-4 py-2 rounded-xl border transition-all text-xs font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border-blue-500/30 hover:bg-blue-500/30 hover:border-blue-300/50 hover:shadow-[0_0_15px_-3px_rgba(59,130,246,0.3)] cursor-pointer"

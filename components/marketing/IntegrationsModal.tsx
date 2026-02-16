@@ -15,6 +15,8 @@ export interface IntegrationOption {
     accountDetails?: {
         name: string;
         id: string;
+        userName?: string;
+        userId?: string;
     };
 }
 
@@ -101,9 +103,23 @@ export const IntegrationsModal: React.FC<IntegrationsModalProps> = ({ isOpen, on
                                         </p>
                                     )}
                                     {integration.accountDetails && (
-                                        <div className="mt-2 text-[10px] bg-white/5 rounded-lg p-2 border border-white/5 inline-block">
-                                            <p className="text-slate-300 font-bold mb-0.5">{integration.accountDetails.name}</p>
-                                            <p className="text-slate-500 font-mono">ID: {integration.accountDetails.id}</p>
+                                        <div className="mt-2 text-[10px] bg-white/5 rounded-lg p-2 border border-white/5 inline-block w-full">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <p className="text-slate-300 font-bold">{integration.accountDetails.name}</p>
+                                                <span className="text-[9px] text-slate-600 font-mono">ID: {integration.accountDetails.id}</span>
+                                            </div>
+                                            {integration.accountDetails.userName && (
+                                                <div className="pt-2 mt-1 border-t border-white/5">
+                                                    <p className="text-[9px] text-slate-500">
+                                                        Integrado por: <span className="text-slate-400 font-medium">{integration.accountDetails.userName}</span>
+                                                    </p>
+                                                    {integration.accountDetails.userId && (
+                                                        <p className="text-[9px] text-slate-600 font-mono">
+                                                            User ID: {integration.accountDetails.userId}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>

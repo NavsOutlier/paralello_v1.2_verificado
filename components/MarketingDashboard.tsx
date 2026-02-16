@@ -94,7 +94,7 @@ export const MarketingDashboard: React.FC = () => {
     const [isAdAccountModalOpen, setIsAdAccountModalOpen] = useState(false);
     const [metaConnectionId, setMetaConnectionId] = useState<string | null>(null);
     const [metaIntegrationDate, setMetaIntegrationDate] = useState<string | null>(null);
-    const [metaAccountDetails, setMetaAccountDetails] = useState<{ name: string, id: string } | null>(null);
+    const [metaAccountDetails, setMetaAccountDetails] = useState<{ name: string, id: string, userName?: string, userId?: string } | null>(null);
     const [tintimIntegrationDate, setTintimIntegrationDate] = useState<string | null>(null);
 
 
@@ -365,7 +365,7 @@ export const MarketingDashboard: React.FC = () => {
 
             // 1b. Load Meta Integration
             const { data: metaIntegration } = await supabase.from('client_integrations')
-                .select('id, created_at, config')
+                .select('id, created_at, config, customer_code')
                 .eq('client_id', selectedClient)
                 .eq('provider', 'meta')
                 .maybeSingle();
@@ -374,9 +374,49 @@ export const MarketingDashboard: React.FC = () => {
                 setMetaConnectionId(metaIntegration.id);
                 const linkedAt = metaIntegration.config?.linked_at || metaIntegration.created_at;
                 setMetaIntegrationDate(toLocalDateString(new Date(linkedAt)));
+
+                let accName = metaIntegration.config?.ad_account_name;
+                const accId = metaIntegration.config?.ad_account_id || metaIntegration.customer_code || '';
+                let userName = '';
+                let userId = '';
+
+                // Extended Fetch: Get Account Name AND specific Connection User details
+                if (accId) {
+                    const { data: adAccount } = await supabase.from('meta_ad_accounts')
+                        .select(`
+                            name,
+                            connection_id,
+                            meta_connections (
+                                meta_user_name,
+                                meta_user_id
+                            )
+                        `)
+                        .eq('account_id', accId)
+                        .maybeSingle();
+
+                    if (adAccount) {
+                        accName = accName || adAccount.name;
+                        // @ts-ignore - Supabase types join inference might be tricky here
+                        const conn = adAccount.meta_connections;
+                        if (conn) {
+                            // @ts-ignore
+                            userName = conn.meta_user_name;
+                            // @ts-ignore
+                            userId = conn.meta_user_id;
+                        }
+                    }
+                }
+
+                setMetaAccountDetails({
+                    name: accName || 'Conta Vinculada',
+                    id: accId,
+                    userName: userName,
+                    userId: userId
+                });
             } else {
                 setMetaConnectionId(null);
                 setMetaIntegrationDate(null);
+                setMetaAccountDetails(null);
             }
 
             // 2. Load Manual Rows

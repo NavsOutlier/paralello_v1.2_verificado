@@ -114,17 +114,34 @@ export const MarketingDashboard: React.FC = () => {
 
                     console.log('N8n Response:', data);
 
-                    if (data && data.success) {
+                    if (data && (data.success || data.id)) {
+                        // Map n8n response to our expected format
+                        const metaUserId = data.meta_user_id || data.id;
+                        const metaUserName = data.meta_user_name || data.name;
+                        const tokenExpiresIn = data.token_expires_in || data.expires_in;
+                        const bms = data.bms || data.Bms || [];
+                        const rawAdAccounts = data.ad_accounts || data.CAs || [];
+
+                        // Transform Ad Accounts to normalize keys
+                        const normalizedAdAccounts = rawAdAccounts.map((acc: any) => ({
+                            id: acc.id,
+                            name: acc.name,
+                            currency: acc.currency,
+                            timezone: acc.timezone_name || acc.timezone,
+                            status: acc.account_status === 1 ? 'ACTIVE' : (acc.status || 'DISABLED'),
+                            bm_id: acc.business?.id || acc.bm_id || null
+                        }));
+
                         // Sync Connection Data to Supabase
                         if (organizationId) {
                             const { data: syncData, error: syncError } = await supabase.rpc('sync_meta_connection_data', {
                                 p_organization_id: organizationId,
-                                p_meta_user_id: data.meta_user_id || 'unknown', // Fallback if n8n doesn't return yet
-                                p_meta_user_name: data.meta_user_name || 'Meta User',
+                                p_meta_user_id: metaUserId,
+                                p_meta_user_name: metaUserName,
                                 p_access_token: data.access_token,
-                                p_token_expires_in: data.token_expires_in,
-                                p_bms: data.bms || [],
-                                p_ad_accounts: data.ad_accounts || []
+                                p_token_expires_in: tokenExpiresIn,
+                                p_bms: bms,
+                                p_ad_accounts: normalizedAdAccounts
                             });
 
                             if (syncError) {
@@ -135,8 +152,8 @@ export const MarketingDashboard: React.FC = () => {
                             }
                         }
 
-                        if (Array.isArray(data.ad_accounts)) {
-                            setAdAccounts(data.ad_accounts);
+                        if (normalizedAdAccounts.length > 0) {
+                            setAdAccounts(normalizedAdAccounts);
                             setIsAdAccountModalOpen(true);
                         } else {
                             alert('Conexão realizada com sucesso, mas nenhuma conta de anúncios foi encontrada.');

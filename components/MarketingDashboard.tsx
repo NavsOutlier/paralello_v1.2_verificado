@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import {
     Users, Calendar, Filter, Download, ArrowRight, Table, BarChart3, GripHorizontal, Pencil, CheckCircle2, LayoutDashboard,
-    Settings, ShieldCheck, Link, Activity, Check, X, Copy, ExternalLink, ChevronDown, Sparkles, Plus, Target, Facebook, Loader2
+    Settings, ShieldCheck, Link, Activity, Check, X, Copy, ExternalLink, ChevronDown, Sparkles, Plus, Target, Facebook, Loader2, Plug
 } from 'lucide-react';
 import { TintimIntegrationForm } from './manager/TintimIntegrationForm';
 import { ManualLeadModal } from './ManualLeadModal';
@@ -15,6 +16,7 @@ import {
 } from 'recharts';
 import { CampaignExplorer } from './marketing/CampaignExplorer';
 import { MetaAdAccountSelector } from './marketing/MetaAdAccountSelector';
+import { IntegrationsModal } from './marketing/IntegrationsModal';
 import { PremiumBackground } from './ui/PremiumBackground';
 
 interface Client {
@@ -44,6 +46,7 @@ const toLocalDateString = (date: Date) => {
 
 export const MarketingDashboard: React.FC = () => {
     const { organizationId, isSuperAdmin, permissions, user } = useAuth();
+    const { addToast } = useToast();
     const canManageMarketing = isSuperAdmin || permissions?.can_manage_marketing;
     const [clients, setClients] = useState<Client[]>([]);
     const [selectedClient, setSelectedClient] = useState<string>('');
@@ -74,10 +77,11 @@ export const MarketingDashboard: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [isManualLeadModalOpen, setIsManualLeadModalOpen] = useState(false);
     const [isManualConversionModalOpen, setIsManualConversionModalOpen] = useState(false);
+    const [isTintimModalOpen, setIsTintimModalOpen] = useState(false);
+    const [isIntegrationsModalOpen, setIsIntegrationsModalOpen] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     // Tintim Integration State
-    const [isTintimModalOpen, setIsTintimModalOpen] = useState(false);
     const [tintimConfig, setTintimConfig] = useState<TintimConfig>({
         isActive: false, apiKey: '', funnelId: '', stageId: '',
         customFields: { utm_source: '', utm_medium: '', utm_campaign: '', utm_content: '', utm_term: '' }
@@ -163,17 +167,23 @@ export const MarketingDashboard: React.FC = () => {
                         if (normalizedAdAccounts.length > 0) {
                             setAdAccounts(normalizedAdAccounts);
                             setIsAdAccountModalOpen(true);
-                        } else {
-                            alert('Conexão realizada com sucesso, mas nenhuma conta de anúncios foi encontrada.');
+                            addToast({
+                                type: 'info',
+                                title: 'Nenhuma conta encontrada',
+                                message: 'Conexão realizada, mas nenhuma conta de anúncios está disponível.'
+                            });
                         }
                     } else {
-                        console.error('Invalid n8n response structure:', normalizedData);
                         throw new Error(normalizedData?.message || normalizedData?.error || 'Falha na resposta do n8n (campos obrigatórios ausentes).');
                     }
 
                 } catch (error: any) {
                     console.error('Meta Connection Error:', error);
-                    alert(`Erro ao conectar: ${error.message}`);
+                    addToast({
+                        type: 'error',
+                        title: 'Erro na Conexão',
+                        message: error.message
+                    });
                 } finally {
                     setIsMetaConnecting(false);
                 }
@@ -186,79 +196,72 @@ export const MarketingDashboard: React.FC = () => {
 
     const handleAdAccountSelect = async (account: any) => {
         if (!selectedClient || !organizationId) {
-            alert('Por favor, selecione um cliente antes de vincular a conta.');
+            addToast({
+                type: 'warning',
+                title: 'Seleção Necessária',
+                message: 'Por favor, selecione um cliente antes de vincular a conta.'
+            });
             return;
         }
 
         try {
-            const { error } = await supabase.from('client_integrations').upsert({
-                organization_id: organizationId,
-                client_id: selectedClient,
-                provider: 'meta',
-                customer_code: account.id, // Ad Account ID
-                is_active: true,
-                config: {
-                    connection_id: metaConnectionId,
-                    bm_id: account.bm_id,
-                    account_name: account.name,
-                    currency: account.currency,
-                    timezone: account.timezone,
-                    linked_at: new Date().toISOString()
-                }
-            }, { onConflict: 'client_id, provider' }); // Ensure unique meta integration per client? Or handle validation.
-            // Note: client_integrations PK is ID. But we want one Meta integration per client typically.
-            // If the table doesn't have a unique constraint on (client_id, provider), upsert might duplicate if we don't assume ID.
-            // Better to query first or rely on a specific constraint.
-            // Let's assume we want to update if exists.
-
-            // To be safe with 'upsert' without ID, we need a unique constraint.
-            // Does 'client_integrations' have unique(client_id, provider)?
-            // I'll check/add that constraint or query first.
-
-            // For now, let's just insert/update based on query logic to be safe if no constraint.
+            // Check if there is already a meta integration for this client
             const { data: existing } = await supabase.from('client_integrations')
                 .select('id')
                 .eq('client_id', selectedClient)
                 .eq('provider', 'meta')
-                .single();
+                .maybeSingle();
 
             if (existing) {
-                await supabase.from('client_integrations').update({
-                    customer_code: account.id,
+                const { error } = await supabase.from('client_integrations').update({
+                    organization_id: organizationId,
+                    customer_code: account.account_id || account.id, // Ad Account ID
                     is_active: true,
                     config: {
-                        connection_id: metaConnectionId,
-                        bm_id: account.bm_id,
-                        account_name: account.name,
+                        ad_account_id: account.id,
+                        ad_account_name: account.name,
                         currency: account.currency,
                         timezone: account.timezone,
                         linked_at: new Date().toISOString()
                     }
                 }).eq('id', existing.id);
+                if (error) throw error;
             } else {
-                await supabase.from('client_integrations').insert({
+                const { error } = await supabase.from('client_integrations').insert({
                     organization_id: organizationId,
                     client_id: selectedClient,
                     provider: 'meta',
-                    customer_code: account.id,
+                    customer_code: account.account_id || account.id, // Ad Account ID
                     is_active: true,
                     config: {
-                        connection_id: metaConnectionId,
-                        bm_id: account.bm_id,
-                        account_name: account.name,
+                        ad_account_id: account.id,
+                        ad_account_name: account.name,
                         currency: account.currency,
                         timezone: account.timezone,
                         linked_at: new Date().toISOString()
                     }
                 });
+                if (error) throw error;
             }
 
             console.log('Ad Account Linked:', account);
             setIsAdAccountModalOpen(false);
-            alert(`Conta "${account.name}" vinculada com sucesso ao cliente!`);
+            addToast({
+                type: 'success',
+                title: 'Conta Vinculada',
+                message: `Conta "${account.name}" vinculada com sucesso ao cliente!`
+            });
+
+            // Refresh Integrations check
+            setRefreshTrigger(prev => prev + 1);
+
         } catch (err: any) {
             console.error('Error linking ad account:', err);
-            alert('Erro ao vincular conta de anúncios: ' + err.message);
+            addToast({
+                type: 'error',
+                title: 'Erro de Vinculação',
+                message: 'Erro ao vincular conta de anúncios: ' + err.message
+            });
         }
     };
 
@@ -967,22 +970,11 @@ export const MarketingDashboard: React.FC = () => {
                         )}
 
                         <button
-                            onClick={handleMetaConnect}
-                            className="flex items-center gap-2 group px-4 py-2 rounded-xl border transition-all text-xs font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border-blue-500/30 hover:bg-blue-500/30 hover:border-blue-300/50 hover:shadow-[0_0_15px_-3px_rgba(59,130,246,0.3)] cursor-pointer"
+                            onClick={() => setIsIntegrationsModalOpen(true)}
+                            className="flex items-center gap-2 group px-4 py-2 rounded-xl border transition-all text-xs font-black uppercase tracking-wider bg-slate-800 text-slate-300 border-white/10 hover:bg-slate-700 hover:text-white hover:border-white/20 hover:shadow-[0_0_15px_-3px_rgba(255,255,255,0.1)]"
                         >
-                            <img src="/assets/meta_logo.png" alt="" className="w-4 h-4 object-contain transition-transform group-hover:scale-105" />
-                            META CONNECT
-                        </button>
-
-                        <button
-                            onClick={() => setIsTintimModalOpen(true)}
-                            className={`flex items-center gap-2 group px-4 py-2 rounded-xl border transition-all text-xs font-black uppercase tracking-wider ${isIntegrated
-                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30 hover:border-emerald-300/50 hover:shadow-[0_0_15px_-3px_rgba(16,185,129,0.3)]'
-                                : 'bg-amber-500/20 text-amber-300 border-amber-500/30 hover:bg-amber-500/30 hover:border-amber-300/50 hover:shadow-[0_0_15px_-3px_rgba(245,158,11,0.3)]'
-                                }`}
-                        >
-                            <img src="/assets/tintim_logo.png" alt="" className="w-4 h-4 object-contain transition-transform group-hover:scale-105" />
-                            {isIntegrated ? 'INTEGRADO' : 'TINTIM CONNECT'}
+                            <Plug className="w-3.5 h-3.5 transition-transform group-hover:scale-105" />
+                            INTEGRAÇÕES
                         </button>
                     </div>
                 </div>
@@ -1115,6 +1107,43 @@ export const MarketingDashboard: React.FC = () => {
                 organizationId={organizationId || ''}
                 clientId={selectedClient}
                 onSuccess={() => setRefreshTrigger(prev => prev + 1)}
+            />
+
+            {/* Integrations Modal */}
+            <IntegrationsModal
+                isOpen={isIntegrationsModalOpen}
+                onClose={() => setIsIntegrationsModalOpen(false)}
+                integrations={[
+                    {
+                        id: 'meta',
+                        name: 'Meta Ads',
+                        description: 'Conecte sua conta de anúncios do Facebook/Instagram para importar campanhas, leads e métricas de conversão automaticamente.',
+                        icon: '/assets/meta_logo.png',
+                        status: metaConnectionId ? 'connected' : 'disconnected',
+                        actionLabel: metaConnectionId ? 'Configurar' : 'Conectar',
+                        onAction: () => {
+                            setIsIntegrationsModalOpen(false);
+                            if (!metaConnectionId) handleMetaConnect();
+                            else {
+                                // If already connected, maybe show account selector or just re-connect?
+                                // For now, let's allow re-connecting/switching account
+                                handleMetaConnect();
+                            }
+                        }
+                    },
+                    {
+                        id: 'tintim',
+                        name: 'Tintim',
+                        description: 'Integração com o ecossistema Tintim para sincronização de vendas, CRM e automação de atendimento.',
+                        icon: '/assets/tintim_logo.png',
+                        status: isIntegrated ? 'connected' : 'disconnected',
+                        actionLabel: isIntegrated ? 'Configurar' : 'Conectar',
+                        onAction: () => {
+                            setIsIntegrationsModalOpen(false);
+                            setIsTintimModalOpen(true);
+                        }
+                    }
+                ]}
             />
 
             {/* Tintim Integration Modal */}

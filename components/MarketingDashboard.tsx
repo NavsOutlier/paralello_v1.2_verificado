@@ -114,13 +114,17 @@ export const MarketingDashboard: React.FC = () => {
 
                     console.log('N8n Response:', data);
 
-                    if (data && (data.success || data.id)) {
+                    // Normalize n8n response (sometimes it's an array)
+                    const normalizedData = Array.isArray(data) ? data[0] : data;
+                    console.log('Normalized N8n Keys:', normalizedData ? Object.keys(normalizedData) : 'null');
+
+                    if (normalizedData && (normalizedData.success || normalizedData.id)) {
                         // Map n8n response to our expected format
-                        const metaUserId = data.meta_user_id || data.id;
-                        const metaUserName = data.meta_user_name || data.name;
-                        const tokenExpiresIn = data.token_expires_in || data.expires_in;
-                        const bms = data.bms || data.Bms || [];
-                        const rawAdAccounts = data.ad_accounts || data.CAs || [];
+                        const metaUserId = normalizedData.meta_user_id || normalizedData.id;
+                        const metaUserName = normalizedData.meta_user_name || normalizedData.name;
+                        const tokenExpiresIn = normalizedData.token_expires_in || normalizedData.expires_in;
+                        const bms = normalizedData.bms || normalizedData.Bms || [];
+                        const rawAdAccounts = normalizedData.ad_accounts || normalizedData.CAs || [];
 
                         // Transform Ad Accounts to normalize keys
                         const normalizedAdAccounts = rawAdAccounts.map((acc: any) => ({
@@ -132,13 +136,15 @@ export const MarketingDashboard: React.FC = () => {
                             bm_id: acc.business?.id || acc.bm_id || null
                         }));
 
+                        console.log('Normalized Ad Accounts:', normalizedAdAccounts.length);
+
                         // Sync Connection Data to Supabase
                         if (organizationId) {
                             const { data: syncData, error: syncError } = await supabase.rpc('sync_meta_connection_data', {
                                 p_organization_id: organizationId,
                                 p_meta_user_id: metaUserId,
                                 p_meta_user_name: metaUserName,
-                                p_access_token: data.access_token,
+                                p_access_token: normalizedData.access_token,
                                 p_token_expires_in: tokenExpiresIn,
                                 p_bms: bms,
                                 p_ad_accounts: normalizedAdAccounts
@@ -146,6 +152,7 @@ export const MarketingDashboard: React.FC = () => {
 
                             if (syncError) {
                                 console.error('Error syncing meta data:', syncError);
+                                throw new Error(`Erro ao salvar no banco: ${syncError.message}`);
                             } else if (syncData?.connection_id) {
                                 console.log('Meta Connection Synced:', syncData.connection_id);
                                 setMetaConnectionId(syncData.connection_id);
@@ -159,7 +166,8 @@ export const MarketingDashboard: React.FC = () => {
                             alert('Conexão realizada com sucesso, mas nenhuma conta de anúncios foi encontrada.');
                         }
                     } else {
-                        throw new Error(data?.message || 'Falha na resposta do n8n.');
+                        console.error('Invalid n8n response structure:', normalizedData);
+                        throw new Error(normalizedData?.message || normalizedData?.error || 'Falha na resposta do n8n (campos obrigatórios ausentes).');
                     }
 
                 } catch (error: any) {
@@ -173,7 +181,7 @@ export const MarketingDashboard: React.FC = () => {
 
         window.addEventListener('message', handleMessage);
         return () => window.removeEventListener('message', handleMessage);
-    }, []);
+    }, [organizationId]);
 
     const handleAdAccountSelect = async (account: any) => {
         if (!selectedClient || !organizationId) {

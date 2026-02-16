@@ -51,6 +51,7 @@ Deno.serve(async (req) => {
 
         let responseData;
         const responseText = await n8nResponse.text();
+        console.log("Response from n8n:", responseText);
 
         try {
             responseData = JSON.parse(responseText);

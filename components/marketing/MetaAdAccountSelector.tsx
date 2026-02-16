@@ -26,10 +26,12 @@ export const MetaAdAccountSelector: React.FC<MetaAdAccountSelectorProps> = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
 
-    const filteredAccounts = accounts.filter(account =>
-        account.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        account.account_id.includes(searchTerm)
-    );
+    const filteredAccounts = accounts.filter(account => {
+        const name = account.name || '';
+        const accountId = account.account_id || account.id || '';
+        return name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            accountId.includes(searchTerm);
+    });
 
     if (!isOpen) return null;
 

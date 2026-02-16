@@ -129,7 +129,8 @@ export const MarketingDashboard: React.FC = () => {
                         // Transform Ad Accounts to normalize keys
                         const normalizedAdAccounts = rawAdAccounts.map((acc: any) => ({
                             id: acc.id,
-                            name: acc.name,
+                            name: acc.name || 'Conta sem nome',
+                            account_id: acc.account_id || acc.id?.replace('act_', '') || '',
                             currency: acc.currency,
                             timezone: acc.timezone_name || acc.timezone,
                             status: acc.account_status === 1 ? 'ACTIVE' : (acc.status || 'DISABLED'),

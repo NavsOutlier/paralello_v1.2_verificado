@@ -81,6 +81,50 @@ export const MarketingDashboard: React.FC = () => {
         customFields: { utm_source: '', utm_medium: '', utm_campaign: '', utm_content: '', utm_term: '' }
     });
 
+    // Meta OAuth Integration
+    useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            if (event.origin !== window.location.origin) return;
+
+            if (event.data?.type === 'META_CONNECTION_SUCCESS') {
+                console.log('Meta Connection Successful!', event.data);
+                // Here we can trigger the next step (e.g., fetch integration status or open ad account modal)
+                alert('Conexão com Meta realizada com sucesso! (Placeholder para próximas etapas)');
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
+
+    const handleMetaConnect = () => {
+        const popupWidth = 600;
+        const popupHeight = 700;
+
+        // Fix for dual-screen positioning
+        const windowLeft = window.screenLeft !== undefined ? window.screenLeft : window.screenX;
+        const windowTop = window.screenTop !== undefined ? window.screenTop : window.screenY;
+        const windowWidth = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth ? document.documentElement.clientWidth : screen.width;
+        const windowHeight = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.height;
+
+        const left = windowLeft + (windowWidth / 2) - (popupWidth / 2);
+        const top = windowTop + (windowHeight / 2) - (popupHeight / 2);
+
+        // Construct OAuth URL with internal callback
+        const clientId = '936443005488271';
+        const redirectUri = `${window.location.origin}/oauth/meta/callback`;
+        // Generates a random state string for CSRF protection
+        const state = Math.random().toString(36).substring(7);
+
+        const oauthUrl = `https://www.facebook.com/v24.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=ads_read&response_type=code&state=${state}`;
+
+        window.open(
+            oauthUrl,
+            'MetaConnect',
+            `width=${popupWidth},height=${popupHeight},top=${top},left=${left},toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=yes,popup=yes,location=yes`
+        );
+    };
+
     // Mock Data State (Manual Rows)
     const [manualRows, setManualRows] = useState<any[]>([]);
     const [leadsData, setLeadsData] = useState<any[]>([]);
@@ -757,15 +801,13 @@ export const MarketingDashboard: React.FC = () => {
                             </div>
                         )}
 
-                        <a
-                            href="https://www.facebook.com/v24.0/dialog/oauth?client_id=936443005488271&redirect_uri=https%3A%2F%2Fwebhooks.blackback.com.br%2Fwebhook%2Foauth%2Fcallback&scope=ads_read&response_type=code&state=secureRandom123"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        <button
+                            onClick={handleMetaConnect}
                             className="flex items-center gap-2 group px-4 py-2 rounded-xl border transition-all text-xs font-black uppercase tracking-wider bg-blue-500/20 text-blue-300 border-blue-500/30 hover:bg-blue-500/30 hover:border-blue-300/50 hover:shadow-[0_0_15px_-3px_rgba(59,130,246,0.3)] cursor-pointer"
                         >
                             <img src="/assets/meta_logo.png" alt="" className="w-4 h-4 object-contain transition-transform group-hover:scale-105" />
                             META CONNECT
-                        </a>
+                        </button>
 
                         <button
                             onClick={() => setIsTintimModalOpen(true)}

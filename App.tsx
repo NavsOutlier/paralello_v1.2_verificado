@@ -11,6 +11,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import { LoginView } from './views/LoginView';
 import { UpdatePasswordView } from './views/UpdatePasswordView';
 import { MarketingDashboard } from './components/MarketingDashboard';
+import { MetaCallback } from './components/auth/MetaCallback';
 import { AutomationTab } from './components/automation';
 import { WorkersIADashboard } from './components/workers-ia/WorkersIADashboard';
 import { PremiumBackground } from './components/ui/PremiumBackground';
@@ -109,6 +110,11 @@ const AppContent: React.FC = () => {
       localStorage.removeItem('app_current_view');
     }
   }, [user, loading]);
+
+  // Special Route: OAuth Callback (Meta)
+  if (window.location.pathname === '/oauth/meta/callback') {
+    return <MetaCallback />;
+  }
 
   if (loading || (user && currentView === null)) {
     return (

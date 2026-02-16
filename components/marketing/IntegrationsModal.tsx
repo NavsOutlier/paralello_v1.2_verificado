@@ -21,7 +21,17 @@ interface IntegrationsModalProps {
 }
 
 export const IntegrationsModal: React.FC<IntegrationsModalProps> = ({ isOpen, onClose, integrations }) => {
+    const [disconnectingId, setDisconnectingId] = React.useState<string | null>(null);
+
     if (!isOpen) return null;
+
+    const handleConfirmDisconnect = () => {
+        if (disconnectingId) {
+            const integration = integrations.find(i => i.id === disconnectingId);
+            integration?.onDisconnect?.();
+            setDisconnectingId(null);
+        }
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-200">
@@ -105,9 +115,7 @@ export const IntegrationsModal: React.FC<IntegrationsModalProps> = ({ isOpen, on
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                if (confirm('Tem certeza que deseja desconectar?')) {
-                                                    integration.onDisconnect?.();
-                                                }
+                                                setDisconnectingId(integration.id);
                                             }}
                                             className="px-6 py-2 rounded-xl text-[10px] font-bold text-red-500 hover:bg-red-500/10 hover:text-red-400 transition-colors uppercase tracking-widest flex items-center justify-center gap-2"
                                         >
@@ -120,6 +128,38 @@ export const IntegrationsModal: React.FC<IntegrationsModalProps> = ({ isOpen, on
                         </div>
                     ))}
                 </div>
+
+                {/* Disconnect Confirmation Modal Overlay */}
+                {disconnectingId && (
+                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-8 animate-in fade-in duration-200">
+                        <div className="bg-[#0d121f] border border-white/10 rounded-3xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center text-center relative overflow-hidden animate-in zoom-in-95 duration-200">
+                            <PremiumBackground />
+                            <div className="relative z-10 flex flex-col items-center">
+                                <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+                                    <AlertCircle className="w-8 h-8 text-red-500" />
+                                </div>
+                                <h3 className="text-xl font-black text-white mb-2 tracking-tight">Desconectar Integração?</h3>
+                                <p className="text-slate-400 text-xs font-medium mb-8 leading-relaxed">
+                                    Tem certeza que deseja remover esta conexão? Os dados pararam de ser sincronizados.
+                                </p>
+                                <div className="flex gap-3 w-full">
+                                    <button
+                                        onClick={() => setDisconnectingId(null)}
+                                        className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold uppercase tracking-widest transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={handleConfirmDisconnect}
+                                        className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest transition-colors shadow-lg shadow-red-500/20"
+                                    >
+                                        Desconectar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

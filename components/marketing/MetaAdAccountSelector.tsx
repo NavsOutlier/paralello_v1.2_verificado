@@ -34,12 +34,12 @@ export const MetaAdAccountSelector: React.FC<MetaAdAccountSelectorProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="relative w-full max-w-2xl bg-[#0d121f] rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-200">
+            <div className="relative w-full max-w-2xl bg-[#0d121f] rounded-[2rem] border border-white/20 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-300">
                 <PremiumBackground />
 
                 {/* Header */}
-                <div className="relative z-10 px-8 py-6 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
+                <div className="relative z-10 px-8 py-6 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-blue-600/10 border border-blue-500/20 text-blue-400 rounded-2xl">
                             <Facebook className="w-6 h-6" />
@@ -68,7 +68,7 @@ export const MetaAdAccountSelector: React.FC<MetaAdAccountSelectorProps> = ({
                             placeholder="Buscar conta..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-[#0a0f1a] border border-white/5 rounded-xl py-4 pl-12 pr-4 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all font-medium"
+                            className="w-full bg-[#0a0f1a] border border-white/10 rounded-xl py-4 pl-12 pr-4 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all font-medium"
                         />
                     </div>
                 </div>
@@ -82,7 +82,7 @@ export const MetaAdAccountSelector: React.FC<MetaAdAccountSelectorProps> = ({
                                 onClick={() => setSelectedAccountId(account.id)}
                                 className={`w-full text-left p-4 rounded-xl border transition-all duration-200 group relative overflow-hidden ${selectedAccountId === account.id
                                     ? 'bg-blue-600/10 border-blue-500/50 shadow-[0_0_20px_rgba(37,99,235,0.1)]'
-                                    : 'bg-white/[0.02] border-white/5 hover:border-white/10 hover:bg-white/[0.04]'
+                                    : 'bg-white/[0.04] border-white/10 hover:border-white/20 hover:bg-white/[0.08]'
                                     }`}
                             >
                                 <div className="flex items-center justify-between relative z-10">

@@ -1146,6 +1146,17 @@ export const MarketingDashboard: React.FC = () => {
                 ]}
             />
 
+
+
+            {/* Meta Ad Account Selection Modal */}
+            {/* Meta Ad Account Selection Modal */}
+            <MetaAdAccountSelector
+                isOpen={isAdAccountModalOpen}
+                onClose={() => setIsAdAccountModalOpen(false)}
+                accounts={adAccounts}
+                onSelect={handleAdAccountSelect}
+            />
+
             {/* Tintim Integration Modal */}
             {isTintimModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
@@ -1213,14 +1224,7 @@ export const MarketingDashboard: React.FC = () => {
                     </div>
                 </div>
             )}
-            {/* Meta Ad Account Selection Modal */}
-            <MetaAdAccountSelector
-                isOpen={isAdAccountModalOpen}
-                onClose={() => setIsAdAccountModalOpen(false)}
-                accounts={adAccounts}
-                onSelect={handleAdAccountSelect}
-                isLoading={false}
-            />
+
         </div>
     );
 };

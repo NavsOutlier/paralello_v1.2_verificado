@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, CheckCircle2, AlertCircle, ChevronRight, ExternalLink } from 'lucide-react';
+import { X, CheckCircle2, AlertCircle, ChevronRight, ExternalLink, ArrowLeft, Trash2 } from 'lucide-react';
 import { PremiumBackground } from '../ui/PremiumBackground';
 
 export interface IntegrationOption {
@@ -10,6 +10,7 @@ export interface IntegrationOption {
     status: 'connected' | 'disconnected' | 'pending';
     actionLabel: string;
     onAction: () => void;
+    onDisconnect?: () => void;
     connectedDate?: string;
 }
 
@@ -29,18 +30,22 @@ export const IntegrationsModal: React.FC<IntegrationsModalProps> = ({ isOpen, on
 
                 {/* Header */}
                 <div className="relative z-10 px-8 py-8 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
-                    <div>
-                        <h3 className="text-2xl font-black text-white tracking-tight mb-1">Central de Integrações</h3>
-                        <p className="text-xs font-bold uppercase text-slate-500 tracking-widest">
-                            Gerencie suas conexões externas
-                        </p>
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={onClose}
+                            className="p-2 -ml-2 text-slate-500 hover:text-white hover:bg-white/5 rounded-xl transition-all flex items-center gap-2 group"
+                        >
+                            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                            <span className="text-sm font-bold uppercase tracking-widest hidden sm:block">Voltar</span>
+                        </button>
+                        <div className="h-8 w-px bg-white/10 mx-2" />
+                        <div>
+                            <h3 className="text-2xl font-black text-white tracking-tight mb-1">Integrações</h3>
+                            <p className="text-xs font-bold uppercase text-slate-500 tracking-widest">
+                                Gerencie suas conexões
+                            </p>
+                        </div>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-3 hover:bg-white/5 rounded-full transition-colors group"
-                    >
-                        <X className="w-6 h-6 text-slate-500 group-hover:text-white transition-colors" />
-                    </button>
                 </div>
 
                 {/* Body */}
@@ -83,17 +88,34 @@ export const IntegrationsModal: React.FC<IntegrationsModalProps> = ({ isOpen, on
                                     )}
                                 </div>
 
-                                {/* Action */}
-                                <button
-                                    onClick={integration.onAction}
-                                    className={`relative z-20 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg ${integration.status === 'connected'
-                                        ? 'bg-[#0b101b] text-slate-300 border border-white/10 hover:border-white/20 hover:text-white'
-                                        : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20'
-                                        }`}
-                                >
-                                    {integration.status === 'connected' ? 'Configurar' : 'Conectar'}
-                                    {integration.status === 'connected' ? <SettingsIcon className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                                </button>
+                                {/* Actions */}
+                                <div className="flex flex-col gap-2">
+                                    <button
+                                        onClick={integration.onAction}
+                                        className={`relative z-20 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg ${integration.status === 'connected'
+                                            ? 'bg-[#0b101b] text-slate-300 border border-white/10 hover:border-white/20 hover:text-white'
+                                            : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20'
+                                            }`}
+                                    >
+                                        {integration.status === 'connected' ? 'Configurar' : 'Conectar'}
+                                        {integration.status === 'connected' ? <SettingsIcon className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                                    </button>
+
+                                    {integration.status === 'connected' && integration.onDisconnect && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (confirm('Tem certeza que deseja desconectar?')) {
+                                                    integration.onDisconnect?.();
+                                                }
+                                            }}
+                                            className="px-6 py-2 rounded-xl text-[10px] font-bold text-red-500 hover:bg-red-500/10 hover:text-red-400 transition-colors uppercase tracking-widest flex items-center justify-center gap-2"
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                            Desconectar
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}

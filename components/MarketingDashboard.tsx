@@ -93,6 +93,41 @@ export const MarketingDashboard: React.FC = () => {
     const [adAccounts, setAdAccounts] = useState<any[]>([]);
     const [isAdAccountModalOpen, setIsAdAccountModalOpen] = useState(false);
     const [metaConnectionId, setMetaConnectionId] = useState<string | null>(null);
+    const [metaIntegrationDate, setMetaIntegrationDate] = useState<string | null>(null);
+    const [tintimIntegrationDate, setTintimIntegrationDate] = useState<string | null>(null);
+
+    // ... (keep useEffect for message)
+
+    const handleMetaDisconnect = async () => {
+        if (!metaConnectionId) return;
+        try {
+            const { error } = await supabase.from('client_integrations').delete().eq('id', metaConnectionId);
+            if (error) throw error;
+            setMetaConnectionId(null);
+            setMetaIntegrationDate(null);
+            addToast({ type: 'success', title: 'Desconectado', message: 'Conta Meta desconectada com sucesso.' });
+            setRefreshTrigger(prev => prev + 1);
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Erro', message: error.message });
+        }
+    };
+
+    const handleTintimDisconnect = async () => {
+        if (!selectedClient) return;
+        try {
+            const { error } = await supabase.from('tintim_config').delete().eq('client_id', selectedClient);
+            if (error) throw error;
+            setTintimConfig({
+                isActive: false, apiKey: '', funnelId: '', stageId: '',
+                customFields: { utm_source: '', utm_medium: '', utm_campaign: '', utm_content: '', utm_term: '' }
+            });
+            setTintimIntegrationDate(null);
+            addToast({ type: 'success', title: 'Desconectado', message: 'Integração Tintim removida.' });
+            setRefreshTrigger(prev => prev + 1);
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Erro', message: error.message });
+        }
+    };
 
     useEffect(() => {
         const handleMessage = async (event: MessageEvent) => {
@@ -318,8 +353,29 @@ export const MarketingDashboard: React.FC = () => {
 
         const loadData = async () => {
             // 1. Load Config
-            const { data: configData } = await supabase.from('tintim_config').select('*').eq('client_id', selectedClient).single();
-            if (configData) setTintimConfig(configData as TintimConfig);
+            const { data: configData } = await supabase.from('tintim_config').select('*').eq('client_id', selectedClient).maybeSingle();
+            if (configData) {
+                setTintimConfig(configData as any);
+                setTintimIntegrationDate(toLocalDateString(new Date(configData.updated_at || configData.created_at || new Date())));
+            } else {
+                setTintimIntegrationDate(null);
+            }
+
+            // 1b. Load Meta Integration
+            const { data: metaIntegration } = await supabase.from('client_integrations')
+                .select('id, created_at, config')
+                .eq('client_id', selectedClient)
+                .eq('provider', 'meta')
+                .maybeSingle();
+
+            if (metaIntegration) {
+                setMetaConnectionId(metaIntegration.id);
+                const linkedAt = metaIntegration.config?.linked_at || metaIntegration.created_at;
+                setMetaIntegrationDate(toLocalDateString(new Date(linkedAt)));
+            } else {
+                setMetaConnectionId(null);
+                setMetaIntegrationDate(null);
+            }
 
             // 2. Load Manual Rows
             const { data: mnRows } = await supabase.from('marketing_manual_metrics').select('*')
@@ -1121,11 +1177,12 @@ export const MarketingDashboard: React.FC = () => {
                         icon: '/assets/meta_logo.png',
                         status: metaConnectionId ? 'connected' : 'disconnected',
                         actionLabel: metaConnectionId ? 'Configurar' : 'Conectar',
+                        connectedDate: metaIntegrationDate || undefined,
+                        onDisconnect: handleMetaDisconnect,
                         onAction: () => {
+                            // setIsIntegrationsModalOpen(false); // Keep open for Meta
                             if (!metaConnectionId) handleMetaConnect();
                             else {
-                                // If already connected, maybe show account selector or just re-connect?
-                                // For now, let's allow re-connecting/switching account
                                 handleMetaConnect();
                             }
                         }
@@ -1137,6 +1194,8 @@ export const MarketingDashboard: React.FC = () => {
                         icon: '/assets/tintim_logo.png',
                         status: isIntegrated ? 'connected' : 'disconnected',
                         actionLabel: isIntegrated ? 'Configurar' : 'Conectar',
+                        connectedDate: tintimIntegrationDate || undefined,
+                        onDisconnect: handleTintimDisconnect,
                         onAction: () => {
                             setIsIntegrationsModalOpen(false);
                             setIsTintimModalOpen(true);

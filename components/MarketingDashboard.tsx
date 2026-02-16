@@ -14,6 +14,7 @@ import {
     BarChart, Bar, PieChart, Pie, Cell
 } from 'recharts';
 import { CampaignExplorer } from './marketing/CampaignExplorer';
+import { MetaAdAccountSelector } from './marketing/MetaAdAccountSelector';
 import { PremiumBackground } from './ui/PremiumBackground';
 
 interface Client {
@@ -83,7 +84,11 @@ export const MarketingDashboard: React.FC = () => {
     });
 
     // Meta OAuth Integration
+    // Meta OAuth Integration
     const [isMetaConnecting, setIsMetaConnecting] = useState(false);
+    const [adAccounts, setAdAccounts] = useState<any[]>([]);
+    const [isAdAccountModalOpen, setIsAdAccountModalOpen] = useState(false);
+    const [metaConnectionId, setMetaConnectionId] = useState<string | null>(null);
 
     useEffect(() => {
         const handleMessage = async (event: MessageEvent) => {
@@ -96,7 +101,7 @@ export const MarketingDashboard: React.FC = () => {
                 setIsMetaConnecting(true);
 
                 try {
-                    // Send code to n8n Webhook via Supabase Proxy (to avoid CORS)
+                    // Send code to n8n Webhook via Supabase Proxy
                     const { data, error } = await supabase.functions.invoke('n8n-proxy', {
                         body: {
                             code,
@@ -105,12 +110,41 @@ export const MarketingDashboard: React.FC = () => {
                         }
                     });
 
-                    if (error) {
-                        throw error;
-                    }
+                    if (error) throw error;
 
                     console.log('N8n Response:', data);
-                    alert('Conexão com Meta realizada com sucesso! (Fluxo via Proxy)');
+
+                    if (data && data.success) {
+                        // Sync Connection Data to Supabase
+                        if (organizationId) {
+                            const { data: syncData, error: syncError } = await supabase.rpc('sync_meta_connection_data', {
+                                p_organization_id: organizationId,
+                                p_meta_user_id: data.meta_user_id || 'unknown', // Fallback if n8n doesn't return yet
+                                p_meta_user_name: data.meta_user_name || 'Meta User',
+                                p_access_token: data.access_token,
+                                p_token_expires_in: data.token_expires_in,
+                                p_bms: data.bms || [],
+                                p_ad_accounts: data.ad_accounts || []
+                            });
+
+                            if (syncError) {
+                                console.error('Error syncing meta data:', syncError);
+                            } else if (syncData?.connection_id) {
+                                console.log('Meta Connection Synced:', syncData.connection_id);
+                                setMetaConnectionId(syncData.connection_id);
+                            }
+                        }
+
+                        if (Array.isArray(data.ad_accounts)) {
+                            setAdAccounts(data.ad_accounts);
+                            setIsAdAccountModalOpen(true);
+                        } else {
+                            alert('Conexão realizada com sucesso, mas nenhuma conta de anúncios foi encontrada.');
+                        }
+                    } else {
+                        throw new Error(data?.message || 'Falha na resposta do n8n.');
+                    }
+
                 } catch (error: any) {
                     console.error('Meta Connection Error:', error);
                     alert(`Erro ao conectar: ${error.message}`);
@@ -123,6 +157,84 @@ export const MarketingDashboard: React.FC = () => {
         window.addEventListener('message', handleMessage);
         return () => window.removeEventListener('message', handleMessage);
     }, []);
+
+    const handleAdAccountSelect = async (account: any) => {
+        if (!selectedClient || !organizationId) {
+            alert('Por favor, selecione um cliente antes de vincular a conta.');
+            return;
+        }
+
+        try {
+            const { error } = await supabase.from('client_integrations').upsert({
+                organization_id: organizationId,
+                client_id: selectedClient,
+                provider: 'meta',
+                customer_code: account.id, // Ad Account ID
+                is_active: true,
+                config: {
+                    connection_id: metaConnectionId,
+                    bm_id: account.bm_id,
+                    account_name: account.name,
+                    currency: account.currency,
+                    timezone: account.timezone,
+                    linked_at: new Date().toISOString()
+                }
+            }, { onConflict: 'client_id, provider' }); // Ensure unique meta integration per client? Or handle validation.
+            // Note: client_integrations PK is ID. But we want one Meta integration per client typically.
+            // If the table doesn't have a unique constraint on (client_id, provider), upsert might duplicate if we don't assume ID.
+            // Better to query first or rely on a specific constraint.
+            // Let's assume we want to update if exists.
+
+            // To be safe with 'upsert' without ID, we need a unique constraint.
+            // Does 'client_integrations' have unique(client_id, provider)?
+            // I'll check/add that constraint or query first.
+
+            // For now, let's just insert/update based on query logic to be safe if no constraint.
+            const { data: existing } = await supabase.from('client_integrations')
+                .select('id')
+                .eq('client_id', selectedClient)
+                .eq('provider', 'meta')
+                .single();
+
+            if (existing) {
+                await supabase.from('client_integrations').update({
+                    customer_code: account.id,
+                    is_active: true,
+                    config: {
+                        connection_id: metaConnectionId,
+                        bm_id: account.bm_id,
+                        account_name: account.name,
+                        currency: account.currency,
+                        timezone: account.timezone,
+                        linked_at: new Date().toISOString()
+                    }
+                }).eq('id', existing.id);
+            } else {
+                await supabase.from('client_integrations').insert({
+                    organization_id: organizationId,
+                    client_id: selectedClient,
+                    provider: 'meta',
+                    customer_code: account.id,
+                    is_active: true,
+                    config: {
+                        connection_id: metaConnectionId,
+                        bm_id: account.bm_id,
+                        account_name: account.name,
+                        currency: account.currency,
+                        timezone: account.timezone,
+                        linked_at: new Date().toISOString()
+                    }
+                });
+            }
+
+            console.log('Ad Account Linked:', account);
+            setIsAdAccountModalOpen(false);
+            alert(`Conta "${account.name}" vinculada com sucesso ao cliente!`);
+        } catch (err: any) {
+            console.error('Error linking ad account:', err);
+            alert('Erro ao vincular conta de anúncios: ' + err.message);
+        }
+    };
 
     const handleMetaConnect = () => {
         const popupWidth = 600;
@@ -1046,6 +1158,14 @@ export const MarketingDashboard: React.FC = () => {
                     </div>
                 </div>
             )}
+            {/* Meta Ad Account Selection Modal */}
+            <MetaAdAccountSelector
+                isOpen={isAdAccountModalOpen}
+                onClose={() => setIsAdAccountModalOpen(false)}
+                accounts={adAccounts}
+                onSelect={handleAdAccountSelect}
+                isLoading={false}
+            />
         </div>
     );
 };

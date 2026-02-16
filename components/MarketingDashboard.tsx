@@ -96,24 +96,21 @@ export const MarketingDashboard: React.FC = () => {
                 setIsMetaConnecting(true);
 
                 try {
-                    // Send code to n8n Webhook
-                    const response = await fetch('https://webhooks.blackback.com.br/webhook/oauth/callback', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
+                    // Send code to n8n Webhook via Supabase Proxy (to avoid CORS)
+                    const { data, error } = await supabase.functions.invoke('n8n-proxy', {
+                        body: {
                             code,
                             source: 'marketing_dashboard',
                             timestamp: new Date().toISOString()
-                        }),
+                        }
                     });
 
-                    if (!response.ok) {
-                        throw new Error('Falha na comunicação com integração.');
+                    if (error) {
+                        throw error;
                     }
 
-                    alert('Conexão com Meta realizada com sucesso! (Placeholder para próximas etapas)');
+                    console.log('N8n Response:', data);
+                    alert('Conexão com Meta realizada com sucesso! (Fluxo via Proxy)');
                 } catch (error: any) {
                     console.error('Meta Connection Error:', error);
                     alert(`Erro ao conectar: ${error.message}`);

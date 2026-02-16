@@ -94,9 +94,11 @@ export const IntegrationsModal: React.FC<IntegrationsModalProps> = ({ isOpen, on
                                             </div>
                                         )}
                                     </div>
-                                    <p className="text-xs font-medium text-slate-400 leading-relaxed max-w-md">
-                                        {integration.description}
-                                    </p>
+                                    {integration.status !== 'connected' && (
+                                        <p className="text-xs font-medium text-slate-400 leading-relaxed max-w-md">
+                                            {integration.description}
+                                        </p>
+                                    )}
                                     {integration.connectedDate && (
                                         <p className="text-[10px] text-slate-600 mt-2 font-mono">
                                             Conectado em: {integration.connectedDate}

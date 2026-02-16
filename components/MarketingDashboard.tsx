@@ -1122,7 +1122,6 @@ export const MarketingDashboard: React.FC = () => {
                         status: metaConnectionId ? 'connected' : 'disconnected',
                         actionLabel: metaConnectionId ? 'Configurar' : 'Conectar',
                         onAction: () => {
-                            setIsIntegrationsModalOpen(false);
                             if (!metaConnectionId) handleMetaConnect();
                             else {
                                 // If already connected, maybe show account selector or just re-connect?

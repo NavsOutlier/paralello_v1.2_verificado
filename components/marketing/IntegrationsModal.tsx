@@ -12,6 +12,10 @@ export interface IntegrationOption {
     onAction: () => void;
     onDisconnect?: () => void;
     connectedDate?: string;
+    accountDetails?: {
+        name: string;
+        id: string;
+    };
 }
 
 interface IntegrationsModalProps {
@@ -95,6 +99,12 @@ export const IntegrationsModal: React.FC<IntegrationsModalProps> = ({ isOpen, on
                                         <p className="text-[10px] text-slate-600 mt-2 font-mono">
                                             Conectado em: {integration.connectedDate}
                                         </p>
+                                    )}
+                                    {integration.accountDetails && (
+                                        <div className="mt-2 text-[10px] bg-white/5 rounded-lg p-2 border border-white/5 inline-block">
+                                            <p className="text-slate-300 font-bold mb-0.5">{integration.accountDetails.name}</p>
+                                            <p className="text-slate-500 font-mono">ID: {integration.accountDetails.id}</p>
+                                        </div>
                                     )}
                                 </div>
 

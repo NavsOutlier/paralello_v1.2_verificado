@@ -94,9 +94,10 @@ export const MarketingDashboard: React.FC = () => {
     const [isAdAccountModalOpen, setIsAdAccountModalOpen] = useState(false);
     const [metaConnectionId, setMetaConnectionId] = useState<string | null>(null);
     const [metaIntegrationDate, setMetaIntegrationDate] = useState<string | null>(null);
+    const [metaAccountDetails, setMetaAccountDetails] = useState<{ name: string, id: string } | null>(null);
     const [tintimIntegrationDate, setTintimIntegrationDate] = useState<string | null>(null);
 
-    // ... (keep useEffect for message)
+
 
     const handleMetaDisconnect = async () => {
         if (!metaConnectionId) return;
@@ -105,6 +106,7 @@ export const MarketingDashboard: React.FC = () => {
             if (error) throw error;
             setMetaConnectionId(null);
             setMetaIntegrationDate(null);
+            setMetaAccountDetails(null);
             addToast({ type: 'success', title: 'Desconectado', message: 'Conta Meta desconectada com sucesso.' });
             setRefreshTrigger(prev => prev + 1);
         } catch (error: any) {
@@ -1178,6 +1180,7 @@ export const MarketingDashboard: React.FC = () => {
                         status: metaConnectionId ? 'connected' : 'disconnected',
                         actionLabel: metaConnectionId ? 'Configurar' : 'Conectar',
                         connectedDate: metaIntegrationDate || undefined,
+                        accountDetails: metaAccountDetails || undefined,
                         onDisconnect: handleMetaDisconnect,
                         onAction: () => {
                             // setIsIntegrationsModalOpen(false); // Keep open for Meta

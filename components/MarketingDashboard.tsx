@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
     Users, Calendar, Filter, Download, ArrowRight, Table, BarChart3, GripHorizontal, Pencil, CheckCircle2, LayoutDashboard,
-    Settings, ShieldCheck, Link, Activity, Check, X, Copy, ExternalLink, ChevronDown, Sparkles, Plus, Target, Facebook
+    Settings, ShieldCheck, Link, Activity, Check, X, Copy, ExternalLink, ChevronDown, Sparkles, Plus, Target, Facebook, Loader2
 } from 'lucide-react';
 import { TintimIntegrationForm } from './manager/TintimIntegrationForm';
 import { ManualLeadModal } from './ManualLeadModal';
@@ -14,6 +14,7 @@ import {
     BarChart, Bar, PieChart, Pie, Cell
 } from 'recharts';
 import { CampaignExplorer } from './marketing/CampaignExplorer';
+import { PremiumBackground } from './ui/PremiumBackground';
 
 interface Client {
     id: string;
@@ -82,14 +83,43 @@ export const MarketingDashboard: React.FC = () => {
     });
 
     // Meta OAuth Integration
+    const [isMetaConnecting, setIsMetaConnecting] = useState(false);
+
     useEffect(() => {
-        const handleMessage = (event: MessageEvent) => {
+        const handleMessage = async (event: MessageEvent) => {
             if (event.origin !== window.location.origin) return;
 
-            if (event.data?.type === 'META_CONNECTION_SUCCESS') {
-                console.log('Meta Connection Successful!', event.data);
-                // Here we can trigger the next step (e.g., fetch integration status or open ad account modal)
-                alert('Conexão com Meta realizada com sucesso! (Placeholder para próximas etapas)');
+            if (event.data?.type === 'META_AUTH_CODE') {
+                const code = event.data.code;
+                console.log('Received Meta Auth Code:', code);
+
+                setIsMetaConnecting(true);
+
+                try {
+                    // Send code to n8n Webhook
+                    const response = await fetch('https://webhooks.blackback.com.br/webhook/oauth/callback', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            code,
+                            source: 'marketing_dashboard',
+                            timestamp: new Date().toISOString()
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Falha na comunicação com integração.');
+                    }
+
+                    alert('Conexão com Meta realizada com sucesso! (Placeholder para próximas etapas)');
+                } catch (error: any) {
+                    console.error('Meta Connection Error:', error);
+                    alert(`Erro ao conectar: ${error.message}`);
+                } finally {
+                    setIsMetaConnecting(false);
+                }
             }
         };
 
@@ -1001,6 +1031,24 @@ export const MarketingDashboard: React.FC = () => {
                     </div>
                 </div>
             )}
-        </div >
+
+            {/* Meta Connection Loading Modal */}
+            {isMetaConnecting && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                    <div className="bg-slate-900 border border-white/10 rounded-2xl p-8 max-w-sm w-full flex flex-col items-center text-center shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <PremiumBackground />
+                        <div className="relative z-10 flex flex-col items-center">
+                            <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                                <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">Conectando...</h3>
+                            <p className="text-slate-400 text-sm">
+                                Estamos finalizando a conexão segura com a Meta. Por favor, aguarde.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };

@@ -22,46 +22,28 @@ export const MetaCallback: React.FC = () => {
                     throw new Error('Código de autorização não encontrado.');
                 }
 
-                setMessage('Processando autenticação...');
-
-                // 2. Send code to n8n Webhook
-                const response = await fetch('https://webhooks.blackback.com.br/webhook/oauth/callback', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        code,
-                        source: 'marketing_dashboard',
-                        timestamp: new Date().toISOString()
-                    }),
-                });
-
-                if (!response.ok) {
-                    throw new Error('Erro ao comunicar com servidor de integração.');
-                }
-
-                // 3. Notify steps
-                setStatus('success');
-                setMessage('Conexão realizada com sucesso!');
-
-                // 4. Send message to opener (Main Dashboard)
+                // 3. Send CODE to opener (Main Dashboard) immediately
                 if (window.opener) {
                     window.opener.postMessage(
-                        { type: 'META_CONNECTION_SUCCESS', timestamp: new Date().toISOString() },
+                        {
+                            type: 'META_AUTH_CODE',
+                            code: code,
+                            timestamp: new Date().toISOString()
+                        },
                         window.location.origin
                     );
                 }
 
-                // 5. Close window after short delay
-                setTimeout(() => {
-                    window.close();
-                }, 2000);
+                // 4. Close window
+                window.close();
 
             } catch (err: any) {
                 console.error('Meta Callback Error:', err);
                 setStatus('error');
                 setMessage(err.message || 'Ocorreu um erro desconhecido.');
+
+                // If error, keep window open briefly to show error then close
+                setTimeout(() => window.close(), 3000);
             }
         };
 

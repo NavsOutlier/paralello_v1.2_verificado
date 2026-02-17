@@ -118,7 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setUser(session?.user ?? null);
                 if (session?.user) {
                     // Start checking roles in background, don't block
-                    checkRoles(session.user.id);
+                    checkRoles(session.user.id).catch(err => console.error('Background role check failed:', err));
                 }
             } catch (err) {
                 console.error('AUTH: Init error:', err);
@@ -133,12 +133,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
+            setLoading(true); // Set loading true on change
             setSession(session);
             const newUser = session?.user ?? null;
             setUser(newUser);
 
             if (newUser) {
-                checkRoles(newUser.id);
+                checkRoles(newUser.id).catch(err => console.error('Background role check failed:', err));
             } else {
                 setIsSuperAdmin(false);
                 setIsManager(false);

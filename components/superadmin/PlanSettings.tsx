@@ -26,7 +26,7 @@ import { ViewState } from '../../types';
 interface PlanConfig {
     id: string;
     name: string;
-    base_price: number;
+    price_base: number;
     price_per_client: number;
     max_users: number;
     trial_days: number;
@@ -55,7 +55,7 @@ export const PlanSettings: React.FC = () => {
     const [newPlan, setNewPlan] = useState<Partial<PlanConfig>>({
         id: '',
         name: '',
-        base_price: 0,
+        price_base: 0,
         price_per_client: 0,
         max_users: 1,
         trial_days: 7,
@@ -76,7 +76,7 @@ export const PlanSettings: React.FC = () => {
             const { data, error } = await supabase
                 .from('plan_configurations')
                 .select('*')
-                .order('base_price');
+                .order('price_base');
 
             if (error) throw error;
             setPlans(data || []);
@@ -178,7 +178,7 @@ export const PlanSettings: React.FC = () => {
             setNewPlan({
                 id: '',
                 name: '',
-                base_price: 0,
+                price_base: 0,
                 price_per_client: 0,
                 max_users: 1,
                 trial_days: 7,
@@ -273,7 +273,7 @@ export const PlanSettings: React.FC = () => {
                                             </span>
                                         </div>
                                         <p className="text-sm text-slate-400 font-medium">
-                                            {formatCurrency(plan.base_price)}/mês
+                                            {formatCurrency(plan.price_base)}/mês
                                             {plan.price_per_client > 0 && ` + ${formatCurrency(plan.price_per_client)}/cliente`}
                                         </p>
                                     </div>
@@ -314,8 +314,8 @@ export const PlanSettings: React.FC = () => {
                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Preço Base (R$)</label>
                                             <input
                                                 type="number"
-                                                value={plan.base_price}
-                                                onChange={(e) => handlePlanChange(plan.id, 'base_price', Number(e.target.value))}
+                                                value={plan.price_base}
+                                                onChange={(e) => handlePlanChange(plan.id, 'price_base', Number(e.target.value))}
                                                 className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm font-bold text-white focus:ring-2 focus:ring-indigo-500/30 outline-none"
                                             />
                                         </div>
@@ -413,8 +413,8 @@ export const PlanSettings: React.FC = () => {
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Preço Base (R$)</label>
                                     <input
                                         type="number"
-                                        value={newPlan.base_price}
-                                        onChange={e => setNewPlan({ ...newPlan, base_price: Number(e.target.value) })}
+                                        value={newPlan.price_base}
+                                        onChange={e => setNewPlan({ ...newPlan, price_base: Number(e.target.value) })}
                                         className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/30 outline-none"
                                     />
                                 </div>

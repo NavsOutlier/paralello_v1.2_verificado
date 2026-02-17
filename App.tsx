@@ -35,14 +35,7 @@ const AppContent: React.FC = () => {
       const hasDeepLink = params.has('task') || params.has('chat');
 
       if (!hasRouted) {
-        // If restored from storage, respect it
-        if (currentView) {
-          setHasRouted(true);
-          setPerformedRoleRedirection(true);
-          return;
-        }
-
-        // Deep Link Override
+        // Deep Link Override (prioritize deep links)
         if (hasDeepLink) {
           setCurrentView(ViewState.WORKSPACE);
           setHasRouted(true);
@@ -54,11 +47,24 @@ const AppContent: React.FC = () => {
         if (isSuperAdmin) {
           setCurrentView(ViewState.SUPERADMIN);
           setPerformedRoleRedirection(true);
-        } else if (isManager) {
-          setCurrentView(ViewState.MANAGER);
-          setPerformedRoleRedirection(true);
         } else {
-          setCurrentView(ViewState.WORKSPACE);
+          // If we have a stored view, use it (unless it's forbidden)
+          const storedView = localStorage.getItem('app_current_view') as ViewState;
+          if (storedView) {
+            // Validate stored view against permissions
+            if (storedView === ViewState.MANAGER && !isManager) {
+              setCurrentView(ViewState.WORKSPACE);
+            } else if (storedView === ViewState.SUPERADMIN && !isSuperAdmin) {
+              setCurrentView(ViewState.WORKSPACE);
+            } else {
+              setCurrentView(storedView);
+            }
+          } else if (isManager) {
+            setCurrentView(ViewState.MANAGER);
+            setPerformedRoleRedirection(true);
+          } else {
+            setCurrentView(ViewState.WORKSPACE);
+          }
         }
         setHasRouted(true);
       } else if (!performedRoleRedirection && !hasDeepLink) {

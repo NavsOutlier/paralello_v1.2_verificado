@@ -81,6 +81,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
         )}
       </div>
 
+
+
       <div className="mt-auto mb-4 flex flex-col items-center space-y-5">
         <NotificationCenter currentView={currentView} onViewChange={onViewChange} />
 
@@ -101,6 +103,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
           />
         </div>
       </div>
-    </nav>
+    </nav >
   );
 };

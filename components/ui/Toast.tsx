@@ -4,6 +4,7 @@ import { CheckCircle, AlertCircle, Info, X } from 'lucide-react';
 export type ToastType = 'success' | 'error' | 'info';
 
 interface ToastProps {
+    title?: string;
     message: string;
     type: ToastType;
     onClose: () => void;
@@ -28,7 +29,7 @@ const iconStyles = {
     info: 'text-blue-500',
 };
 
-export const Toast: React.FC<ToastProps> = ({ message, type, onClose, duration = 3000 }) => {
+export const Toast: React.FC<ToastProps> = ({ title, message, type, onClose, duration = 3000 }) => {
     const Icon = toastIcons[type];
 
     useEffect(() => {
@@ -40,9 +41,12 @@ export const Toast: React.FC<ToastProps> = ({ message, type, onClose, duration =
     }, [duration, onClose]);
 
     return (
-        <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg ${toastStyles[type]} animate-slide-in-right`}>
-            <Icon className={`w-5 h-5 ${iconStyles[type]}`} />
-            <p className="text-sm font-medium flex-1">{message}</p>
+        <div className={`flex items-start gap-3 px-4 py-3 rounded-lg border shadow-lg ${toastStyles[type]} animate-slide-in-right max-w-sm`}>
+            <Icon className={`w-5 h-5 mt-0.5 ${iconStyles[type]}`} />
+            <div className="flex-1 min-w-0">
+                {title && <h5 className="text-sm font-bold mb-0.5">{title}</h5>}
+                <p className="text-xs font-medium leading-relaxed opacity-90">{message}</p>
+            </div>
             <button
                 onClick={onClose}
                 className="text-current opacity-50 hover:opacity-100 transition-opacity"

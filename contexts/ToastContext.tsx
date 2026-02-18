@@ -3,12 +3,14 @@ import { Toast, ToastType } from '../components/ui/Toast';
 
 interface ToastMessage {
     id: string;
+    title?: string;
     message: string;
     type: ToastType;
 }
 
 interface ToastContextType {
     showToast: (message: string, type?: ToastType) => void;
+    addToast: (params: { type: ToastType, title?: string, message: string }) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -21,12 +23,17 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setToasts(prev => [...prev, { id, message, type }]);
     }, []);
 
+    const addToast = useCallback(({ type, title, message }: { type: ToastType, title?: string, message: string }) => {
+        const id = `toast-${Date.now()}`;
+        setToasts(prev => [...prev, { id, title, message, type }]);
+    }, []);
+
     const removeToast = useCallback((id: string) => {
         setToasts(prev => prev.filter(t => t.id !== id));
     }, []);
 
     return (
-        <ToastContext.Provider value={{ showToast }}>
+        <ToastContext.Provider value={{ showToast, addToast }}>
             {children}
 
             {/* Toast Container */}
@@ -34,6 +41,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 {toasts.map(toast => (
                     <Toast
                         key={toast.id}
+                        title={toast.title}
                         message={toast.message}
                         type={toast.type}
                         onClose={() => removeToast(toast.id)}

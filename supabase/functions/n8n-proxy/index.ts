@@ -16,26 +16,21 @@ Deno.serve(async (req) => {
         let body;
         try {
             const text = await req.text()
-            console.log("Raw body length:", text.length)
-            if (!text) {
-                throw new Error("Empty body")
-            }
+            if (!text) throw new Error("Empty body")
             body = JSON.parse(text)
         } catch (e) {
             console.error("JSON Parse Error:", e)
             throw new Error(`Invalid JSON body: ${e.message}`)
         }
 
-        const { code, source, timestamp } = body
+        // Determine destination based on type or fallback to OAuth
+        let n8nUrl = 'https://webhooks.blackback.com.br/webhook/oauth/callback'
 
-        if (!code) {
-            console.error("Missing code parameter in body keys:", Object.keys(body))
-            throw new Error('Missing code parameter')
+        if (body.type === 'META_SYNC_TRIGGER') {
+            n8nUrl = 'https://webhooks.blackback.com.br/webhook/meta/sync-trigger'
         }
 
-        const n8nUrl = 'https://webhooks.blackback.com.br/webhook/oauth/callback'
-
-        console.log(`Proxying request to n8n: ${n8nUrl}`)
+        console.log(`Proxying ${body.type || 'OAUTH'} request to n8n: ${n8nUrl}`)
 
         const n8nResponse = await fetch(n8nUrl, {
             method: 'POST',
@@ -43,9 +38,8 @@ Deno.serve(async (req) => {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                code,
-                source,
-                timestamp
+                ...body,
+                timestamp: body.timestamp || new Date().toISOString()
             }),
         })
 

@@ -289,6 +289,34 @@ export const MarketingDashboard: React.FC = () => {
                 message: `Conta "${account.name}" vinculada com sucesso ao cliente!`
             });
 
+            // Trigger immediate sync via n8n-proxy
+            try {
+                // Fetch the access token from meta_connections for this org
+                const { data: connection } = await supabase
+                    .from('meta_connections')
+                    .select('access_token')
+                    .eq('organization_id', organizationId)
+                    .eq('is_active', true)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                await supabase.functions.invoke('n8n-proxy', {
+                    body: {
+                        type: 'META_SYNC_TRIGGER',
+                        client_id: selectedClient,
+                        account_id: account.account_id || account.id,
+                        organization_id: organizationId,
+                        access_token: connection?.access_token,
+                        timestamp: new Date().toISOString()
+                    }
+                });
+                console.log('Sync trigger sent to n8n');
+            } catch (syncErr) {
+                console.error('Failed to trigger immediate sync:', syncErr);
+                // Don't toast error here to avoid confusing user, since linking was successful
+            }
+
             // Refresh Integrations check
             setRefreshTrigger(prev => prev + 1);
 

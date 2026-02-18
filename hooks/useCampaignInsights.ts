@@ -26,7 +26,7 @@ interface UseCampaignInsightsResult {
 }
 
 // ⚠️ MOCK: Set to false when real data is available
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 function generateMockData(level: DrillLevel, startDate: string, endDate: string, parentCampaignIds?: string[], parentAdsetIds?: string[]): any[] {
     const start = new Date(startDate + 'T12:00:00');
@@ -277,64 +277,109 @@ export function useCampaignInsights({
             setError(null);
 
             try {
-                // ⚠️ MOCK MODE
-                if (USE_MOCK_DATA) {
-                    await new Promise(r => setTimeout(r, 400));
-                    const mockRows = generateMockData(level, startDate, endDate, effectiveCampaignIds, effectiveAdsetIds);
-                    setRawData(mockRows);
+                // REAL SUPABASE DATA integration
+                // 1. Get Ad Account ID for the client
+                const { data: integrations, error: intError } = await supabase
+                    .from('client_integrations')
+                    .select('customer_code, config')
+                    .eq('client_id', clientId)
+                    .eq('provider', 'meta')
+                    .eq('is_active', true)
+                    .maybeSingle();
+
+                if (intError) throw intError;
+                if (!integrations) {
+                    setRawData([]);
                     setLoading(false);
                     return;
                 }
 
-                // REAL SUPABASE DATA
-                if (level === 'campaigns') {
-                    const { data, error: err } = await supabase
-                        .from('meta_campaign_insights')
-                        .select('*')
-                        .eq('organization_id', organizationId)
-                        .eq('client_id', clientId)
-                        .gte('date', startDate)
-                        .lte('date', endDate)
-                        .order('date', { ascending: true });
-                    if (err) throw err;
-                    setRawData(data || []);
+                const adAccountId = integrations.customer_code;
+                if (!adAccountId) {
+                    setRawData([]);
+                    setLoading(false);
+                    return;
+                }
 
-                } else if (level === 'adsets') {
-                    let query = supabase
-                        .from('meta_adset_insights')
-                        .select('*')
-                        .eq('organization_id', organizationId)
-                        .eq('client_id', clientId)
-                        .gte('date', startDate)
-                        .lte('date', endDate);
+                // 2. Query meta_insights with structural joins
+                // We always query with the same join structure to ensure we have all metadata
+                // regardless of the level we are viewing.
+                let query = supabase
+                    .from('meta_insights')
+                    .select(`
+                        *,
+                        meta_ads (
+                            name,
+                            status,
+                            meta_ad_sets (
+                                name,
+                                status,
+                                meta_campaigns (
+                                    name,
+                                    status,
+                                    objective
+                                )
+                            )
+                        )
+                    `)
+                    .eq('account_id', adAccountId)
+                    .gte('date', startDate)
+                    .lte('date', endDate);
 
-                    if (effectiveCampaignIds.length > 0) {
-                        query = query.in('campaign_id', effectiveCampaignIds);
-                    }
-
-                    const { data, error: err } = await query.order('date', { ascending: true });
-                    if (err) throw err;
-                    setRawData(data || []);
-
+                // Apply drill-down filters if present
+                if (level === 'adsets' && effectiveCampaignIds.length > 0) {
+                    query = query.in('campaign_id', effectiveCampaignIds);
                 } else if (level === 'ads') {
-                    let query = supabase
-                        .from('meta_ad_insights')
-                        .select('*')
-                        .eq('organization_id', organizationId)
-                        .eq('client_id', clientId)
-                        .gte('date', startDate)
-                        .lte('date', endDate);
-
                     if (effectiveAdsetIds.length > 0) {
                         query = query.in('adset_id', effectiveAdsetIds);
                     } else if (effectiveCampaignIds.length > 0) {
                         query = query.in('campaign_id', effectiveCampaignIds);
                     }
-
-                    const { data, error: err } = await query.order('date', { ascending: true });
-                    if (err) throw err;
-                    setRawData(data || []);
                 }
+
+                const { data: insights, error: fetchErr } = await query.order('date', { ascending: true });
+                if (fetchErr) throw fetchErr;
+
+                // 3. Flatten the joined data to maintain compatibility with the UI's expected format
+                const flattenedData = (insights || []).map(row => {
+                    const ad = row.meta_ads as any;
+                    const adset = ad?.meta_ad_sets as any;
+                    const campaign = adset?.meta_campaigns as any;
+
+                    // Support extraction from actions JSONB (leads, conversions, etc.)
+                    const actions = Array.isArray(row.actions) ? row.actions : [];
+                    const actionValues = Array.isArray(row.action_values) ? row.action_values : [];
+
+                    const leads = actions.find((a: any) => a.action_type === 'lead')?.value || 0;
+                    const purchaseConversions = actions.find((a: any) =>
+                        ['purchase', 'offsite_conversion.fb_pixel_purchase'].includes(a.action_type)
+                    )?.value || 0;
+
+                    const revenue = actionValues.find((a: any) =>
+                        ['purchase', 'offsite_conversion.fb_pixel_purchase'].includes(a.action_type)
+                    )?.value || 0;
+
+                    return {
+                        ...row,
+                        leads: Number(leads),
+                        conversions: Number(purchaseConversions),
+                        revenue: Number(revenue),
+                        ad_name: ad?.name || 'Anúncio sem nome',
+                        ad_status: ad?.status,
+                        adset_name: adset?.name || 'Conjunto sem nome',
+                        adset_status: adset?.status,
+                        campaign_name: campaign?.name || 'Campanha sem nome',
+                        campaign_status: campaign?.status,
+                        objective: campaign?.objective,
+                        frequency: row.impressions > 0 && row.reach > 0 ? Number(row.impressions) / Number(row.reach) : 0,
+                        // Ensure status is mapped to the current level for the generic UI
+                        status: level === 'campaigns' ? campaign?.status
+                            : level === 'adsets' ? adset?.status
+                                : ad?.status
+                    };
+                });
+
+                setRawData(flattenedData);
             } catch (err: any) {
                 console.error('Error fetching campaign insights:', err);
                 setError(err.message || 'Erro ao buscar dados');

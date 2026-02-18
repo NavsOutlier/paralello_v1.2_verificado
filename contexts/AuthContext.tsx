@@ -8,6 +8,7 @@ interface AuthContextType {
     isSuperAdmin: boolean;
     isManager: boolean;
     organizationId: string | null;
+    organizationStatus: string | null;
     permissions: {
         can_manage_clients: boolean;
         can_manage_tasks: boolean;
@@ -38,6 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [isSuperAdmin, setIsSuperAdmin] = useState(false);
     const [isManager, setIsManager] = useState(false);
     const [organizationId, setOrganizationId] = useState<string | null>(null);
+    const [organizationStatus, setOrganizationStatus] = useState<string | null>(null);
     const [permissions, setPermissions] = useState<AuthContextType['permissions']>(null);
     const [loading, setLoading] = useState(true);
 
@@ -75,7 +77,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             if (teamData) {
-                const isManagerRole = teamData.role === 'manager';
+                // 3. Verify organization status (Crucial for billing)
+                const { data: orgData } = await supabase
+                    .from('organizations')
+                    .select('status')
+                    .eq('id', teamData.organization_id)
+                    .single();
+
+                const orgStatus = orgData?.status || null;
+                setOrganizationStatus(orgStatus);
+
+                // Gated Manager Access: Only if org is active or trialing
+                const isOrgActive = orgStatus === 'active' || orgStatus === 'trialing';
+                const isManagerRole = teamData.role === 'manager' && isOrgActive;
+
                 setIsManager(isManagerRole);
                 if (teamData.organization_id) {
                     setOrganizationId(teamData.organization_id);
@@ -106,6 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setIsSuperAdmin(false);
             setIsManager(false);
             setOrganizationId(null);
+            setOrganizationStatus(null);
         }
     };
 
@@ -144,6 +160,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setIsSuperAdmin(false);
                 setIsManager(false);
                 setOrganizationId(null);
+                setOrganizationStatus(null);
                 setPermissions(null);
             }
             setLoading(false);
@@ -162,6 +179,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setIsSuperAdmin(false);
             setIsManager(false);
             setOrganizationId(null);
+            setOrganizationStatus(null);
             setPermissions(null);
             setSession(null);
             setUser(null);
@@ -174,6 +192,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isSuperAdmin,
         isManager,
         organizationId,
+        organizationStatus,
         permissions,
         loading,
         signOut,

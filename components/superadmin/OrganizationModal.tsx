@@ -156,7 +156,42 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                 return;
             }
 
-            // Unify flow: Always use onSave
+            // If creating new org with billing, use the pending payment flow
+            if (!organization && activateBilling) {
+                const { data: response, error } = await supabase.functions.invoke('create-org-v2', {
+                    body: {
+                        organization: { name, slug },
+                        owner_email: ownerEmail,
+                        owner_name: ownerName,
+                        plan,
+                        billing_document: billingDocument,
+                        billing_email: billingEmail,
+                        billing_phone: billingPhone,
+                        activate_billing: true,
+                        contracted_clients: clients,
+                        max_users: maxUsers === '' ? undefined : maxUsers,
+                        billing_value: totalValue
+                    }
+                });
+
+                if (error) {
+                    console.error('Error creating pending payment:', error);
+                    showToast('Erro ao iniciar pagamento', 'error');
+                    setLoading(false);
+                    return;
+                }
+
+                if (response?.pending_payment_id) {
+                    // Show the payment modal
+                    setPendingPaymentId(response.pending_payment_id);
+                    setPaymentUrl(response.payment_url || 'Link será atualizado pelo n8n...');
+                    setShowPaymentModal(true);
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            // Normal flow (editing or creating without billing)
             const data: Partial<Organization> = {
                 name,
                 slug,
@@ -171,23 +206,15 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                 maxUsers: maxUsers === '' ? undefined : maxUsers,
                 contractedClients: clients,
                 billingValue: totalValue,
-                activateBilling: activateBilling
+                activateBilling: false // Don't trigger billing for direct create
             };
 
             if (organization) {
                 data.id = organization.id;
             }
 
-            const result = await onSave(data);
-
-            // Handle transition to payment modal if needed
-            if (!organization && activateBilling && result?.pendingPaymentId) {
-                setPendingPaymentId(result.pendingPaymentId);
-                setPaymentUrl(result.paymentUrl || 'Link será gerado...');
-                setShowPaymentModal(true);
-            } else {
-                onClose();
-            }
+            await onSave(data);
+            onClose();
         } catch (error) {
             console.error('Error in OrganizationModal handleSubmit:', error);
             showToast('Erro ao salvar organização', 'error');
@@ -200,7 +227,7 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
     const handlePaymentConfirmed = async () => {
         setLoading(true);
         try {
-            const { data: response, error } = await supabase.functions.invoke('create-org-with-owner', {
+            const { data: response, error } = await supabase.functions.invoke('create-org-v2', {
                 body: {
                     action: 'confirm_pending_payment',
                     pending_payment_id: pendingPaymentId

@@ -14,7 +14,6 @@ interface OrganizationLimits {
     contractedClients: number;
     maxUsers: number;
     name: string;
-    status: string;
 }
 
 // Número de WhatsApp para upgrades (formato internacional sem +)
@@ -52,10 +51,10 @@ export function useOrganizationPlan() {
         const loadPlan = async () => {
             try {
                 setLoading(true);
-                // 1. Get organization's plan ID, status and limits
+                // 1. Get organization's plan ID and limits
                 const { data: org, error: orgError } = await supabase
                     .from('organizations')
-                    .select('plan, status, contracted_clients, max_users, name')
+                    .select('plan, contracted_clients, max_users, name')
                     .eq('id', organizationId)
                     .single();
 
@@ -65,8 +64,7 @@ export function useOrganizationPlan() {
                 setOrgLimits({
                     contractedClients: org.contracted_clients || 10,
                     maxUsers: org.max_users || 10,
-                    name: org.name || '',
-                    status: org.status // Adding status to limits state
+                    name: org.name || ''
                 });
 
                 // 2. Get plan configuration
@@ -91,11 +89,7 @@ export function useOrganizationPlan() {
 
     const hasModule = (moduleId: string) => {
         if (isSuperAdmin) return true;
-        if (!plan || !orgLimits) return false;
-
-        // Strict Billing Gate: Block everything if pending_payment
-        if (orgLimits.status === 'pending_payment') return false;
-
+        if (!plan) return false;
         return (plan.modules || []).includes(moduleId);
     };
 

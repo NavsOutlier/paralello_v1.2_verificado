@@ -160,30 +160,20 @@ export const SuperAdminDashboard: React.FC = () => {
 
     const handleSave = async (data: Partial<Organization>) => {
         try {
-            let result;
             if (editingOrg) {
                 // Edit existing
                 await updateOrganization(editingOrg.id, data);
                 showToast(`${data.name} foi atualizada com sucesso`, 'success');
             } else {
                 // Create new
-                result = await createOrganization(data);
-                if (!data.activateBilling) {
-                    showToast(`${data.name} foi criada com sucesso`, 'success');
-                }
+                await createOrganization(data);
+                showToast(`${data.name} foi criada com sucesso`, 'success');
             }
             await loadOrganizations(); // Reload to get fresh data
-
-            // If it's a new create, we DON'T close the modal here if billing is active
-            if (!data.activateBilling) {
-                setModalOpen(false);
-            }
-
-            return result;
+            setModalOpen(false);
         } catch (err) {
             showToast('Erro ao salvar organização', 'error');
             console.error(err);
-            throw err;
         }
     };
 

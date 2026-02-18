@@ -419,14 +419,24 @@ export const PlanSettings: React.FC = () => {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Máx. Usuários</label>
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Por Cliente (R$)</label>
                                     <input
                                         type="number"
-                                        value={newPlan.max_users}
-                                        onChange={e => setNewPlan({ ...newPlan, max_users: Number(e.target.value) })}
+                                        value={newPlan.price_per_client}
+                                        onChange={e => setNewPlan({ ...newPlan, price_per_client: Number(e.target.value) })}
                                         className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/30 outline-none"
                                     />
                                 </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Máx. Usuários</label>
+                                <input
+                                    type="number"
+                                    value={newPlan.max_users}
+                                    onChange={e => setNewPlan({ ...newPlan, max_users: Number(e.target.value) })}
+                                    className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/30 outline-none"
+                                />
                             </div>
 
                             <button

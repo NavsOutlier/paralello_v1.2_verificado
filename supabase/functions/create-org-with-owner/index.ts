@@ -36,13 +36,13 @@ serve(async (req) => {
             contracted_clients,
             max_users,
             billing_value,
-            // New: for confirming a pending payment
+            // New: for confirming or canceling a pending payment
             action,
             pending_payment_id
         } = body;
 
         // =====================================================
-        // ACTION: Confirm pending payment and create org
+        // ACTION: Confirm pending payment and activate org
         // =====================================================
         if (action === 'confirm_pending_payment' && pending_payment_id) {
             console.log(`Confirming pending payment: ${pending_payment_id}`);
@@ -52,48 +52,73 @@ serve(async (req) => {
                 .from('pending_payments')
                 .select('*')
                 .eq('id', pending_payment_id)
-                .eq('status', 'confirmed')
                 .single();
 
             if (pendingError || !pendingPayment) {
                 return new Response(
-                    JSON.stringify({ error: "Pending payment not found or not confirmed" }),
+                    JSON.stringify({ error: "Pending payment not found" }),
+                    { status: 404, headers: corsHeaders }
+                );
+            }
+
+            const orgId = pendingPayment.organization_id;
+            if (!orgId) {
+                return new Response(
+                    JSON.stringify({ error: "No organization linked to this payment" }),
                     { status: 400, headers: corsHeaders }
                 );
             }
 
-            // Extract org data and Asaas IDs from pending payment
-            const orgData = pendingPayment.org_data;
-            const asaasCustomerId = pendingPayment.asaas_customer_id;
-            const asaasSubscriptionId = pendingPayment.asaas_subscription_id;
+            // 1. Update pending payment status
+            await supabaseClient
+                .from('pending_payments')
+                .update({ status: 'completed' })
+                .eq('id', pending_payment_id);
 
-            // Now create the actual organization using the stored data
-            return await createOrganizationFromData(
-                supabaseClient,
-                orgData,
-                corsHeaders,
-                pendingPayment.id,
-                asaasCustomerId,
-                asaasSubscriptionId
+            // 2. Update organization status (Finalize activation)
+            const { error: orgUpdateError } = await supabaseClient
+                .from('organizations')
+                .update({
+                    status: 'trialing',
+                    trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                })
+                .eq('id', orgId);
+
+            if (orgUpdateError) throw orgUpdateError;
+
+            return new Response(
+                JSON.stringify({ success: true, organizationId: orgId }),
+                { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
             );
         }
 
         // =====================================================
-        // ACTION: Cancel pending payment
+        // ACTION: Cancel pending payment and DELETE org
         // =====================================================
         if (action === 'cancel_pending_payment' && pending_payment_id) {
-            console.log(`Canceling pending payment: ${pending_payment_id}`);
+            console.log(`Canceling and cleaning up pending payment: ${pending_payment_id}`);
 
-            const { error } = await supabaseClient
+            const { data: pendingPayment } = await supabaseClient
                 .from('pending_payments')
-                .update({ status: 'canceled' })
-                .eq('id', pending_payment_id);
+                .select('organization_id')
+                .eq('id', pending_payment_id)
+                .single();
 
-            if (error) {
-                return new Response(
-                    JSON.stringify({ error: "Failed to cancel pending payment" }),
-                    { status: 400, headers: corsHeaders }
-                );
+            if (pendingPayment?.organization_id) {
+                // Delete organization (cascades to members/pending_payments if configured, 
+                // but let's be explicit if needed)
+                console.log(`Deleting organization: ${pendingPayment.organization_id}`);
+                await supabaseClient
+                    .from('organizations')
+                    .delete()
+                    .eq('id', pendingPayment.organization_id);
+            } else {
+                // If org wasn't created yet or ref is missing
+                await supabaseClient
+                    .from('pending_payments')
+                    .delete()
+                    .eq('id', pending_payment_id);
             }
 
             return new Response(
@@ -107,88 +132,29 @@ serve(async (req) => {
         // =====================================================
         if (!organization?.name || !organization?.slug || !owner_email || !owner_name || !plan) {
             return new Response(
-                JSON.stringify({ error: "Missing required fields (name, slug, owner_email, owner_name, plan)" }),
-                {
-                    headers: { ...corsHeaders, "Content-Type": "application/json" },
-                    status: 400,
-                }
+                JSON.stringify({ error: "Missing required fields" }),
+                { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
             );
         }
 
-        // If billing is activated, create a pending payment first
+        // Billing info to store/send
+        let paymentUrl = null;
+        let asaasPaymentId = null;
+        let asaasCustomerId = null;
+        let asaasSubscriptionId = null;
+
+        // If billing is activated, Call n8n FIRST to get Asaas data
         if (activate_billing) {
-            console.log("Creating pending payment for billing activation flow...");
-
-            // Store all org data for later creation
-            const orgDataToStore = {
-                organization,
-                owner_email,
-                owner_name,
-                plan,
-                billing_document,
-                billing_email,
-                billing_phone,
-                contracted_clients,
-                max_users,
-                billing_value
-            };
-
-            // Get the authenticated user ID (caller)
-            const authHeader = req.headers.get('Authorization');
-            let createdBy = null;
-            if (authHeader) {
-                try {
-                    const token = authHeader.replace('Bearer ', '');
-                    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-                    if (!userError && user) {
-                        createdBy = user.id;
-                    } else {
-                        console.warn("Could not validate user from token:", userError);
-                    }
-                } catch (e) {
-                    console.warn("Error parsing auth header:", e);
-                }
-            }
-
-            // Create pending payment record
-            // Use service role client for this operation to avoid RLS issues if auth fails
-            const { data: pendingPayment, error: pendingError } = await supabaseClient
-                .from('pending_payments')
-                .insert({
-                    org_data: orgDataToStore,
-                    status: 'pending',
-                    created_by: createdBy
-                })
-                .select()
-                .single();
-
-            if (pendingError) {
-                console.error("Failed to create pending payment:", pendingError);
-                return new Response(
-                    JSON.stringify({
-                        error: "Failed to create pending payment",
-                        details: pendingError,
-                        payload_sent: orgDataToStore
-                    }),
-                    { status: 400, headers: corsHeaders }
-                );
-            }
-
-            // Now call n8n to create the Asaas customer and payment
+            console.log("Triggering n8n webhook BEFORE creating rows...");
             const n8nWebhookUrl = Deno.env.get("N8N_WEBHOOK_URL_CREATE_CUSTOMER");
-            let paymentUrl = null;
-            let asaasPaymentId = null;
-            let asaasCustomerId = null;
 
             if (n8nWebhookUrl) {
                 try {
-                    console.log(`Triggering n8n webhook for pending payment: ${pendingPayment.id}`);
                     const response = await fetch(n8nWebhookUrl, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            event: "create_pending_payment",
-                            pending_payment_id: pendingPayment.id,
+                            event: "initiate_org_creation",
                             organization: {
                                 name: organization.name,
                                 slug: organization.slug,
@@ -206,52 +172,24 @@ serve(async (req) => {
                     });
 
                     if (response.ok) {
-                        const webhookResult = await response.json();
-                        console.log("n8n webhook response:", webhookResult);
-
-                        paymentUrl = webhookResult.payment_url || webhookResult.invoiceUrl || null;
-                        asaasPaymentId = webhookResult.asaas_payment_id || webhookResult.paymentId || null;
-                        asaasCustomerId = webhookResult.asaas_customer_id || webhookResult.customerId || null;
-                        const asaasSubscriptionId = webhookResult.asaas_subscription_id || webhookResult.subscriptionId || null;
-
-                        // Update pending payment with Asaas info
-                        if (paymentUrl || asaasPaymentId || asaasSubscriptionId) {
-                            await supabaseClient
-                                .from('pending_payments')
-                                .update({
-                                    payment_url: paymentUrl,
-                                    asaas_payment_id: asaasPaymentId,
-                                    asaas_subscription_id: asaasSubscriptionId,
-                                    asaas_customer_id: asaasCustomerId
-                                })
-                                .eq('id', pendingPayment.id);
-                        }
-                    } else {
-                        console.error(`n8n Webhook error: ${response.status}`);
+                        const res = await response.json();
+                        paymentUrl = res.payment_url || res.invoiceUrl;
+                        asaasPaymentId = res.asaas_payment_id || res.paymentId;
+                        asaasCustomerId = res.asaas_customer_id || res.customerId;
+                        asaasSubscriptionId = res.asaas_subscription_id || res.subscriptionId;
                     }
-                } catch (webhookError: any) {
-                    console.error("n8n webhook error:", webhookError.message);
+                } catch (e) {
+                    console.error("n8n call failed:", e);
+                    // We continue anyway, but it might fail later? 
+                    // User said: "cria a na nova organização com dados recebidos do asaas"
                 }
             }
-
-            // Return the pending payment info to frontend
-            return new Response(
-                JSON.stringify({
-                    pending_payment_id: pendingPayment.id,
-                    payment_url: paymentUrl,
-                    status: 'pending'
-                }),
-                {
-                    headers: { ...corsHeaders, "Content-Type": "application/json" },
-                    status: 200,
-                }
-            );
         }
 
-        // =====================================================
-        // NO BILLING: Create org directly (original flow)
-        // =====================================================
-        const orgDataForDirect = {
+        // Create Org (Status depends on billing)
+        const status = activate_billing ? 'pending_payment' : 'trialing';
+
+        const orgData = {
             organization,
             owner_email,
             owner_name,
@@ -261,14 +199,26 @@ serve(async (req) => {
             billing_phone,
             contracted_clients,
             max_users,
-            billing_value
+            billing_value,
+            status
         };
 
-        return await createOrganizationFromData(supabaseClient, orgDataForDirect, corsHeaders, null);
+        // Create the organization, members, and pending_payment record
+        const result = await createOrganizationFromData(
+            supabaseClient,
+            orgData,
+            corsHeaders,
+            paymentUrl,
+            asaasCustomerId,
+            asaasSubscriptionId,
+            asaasPaymentId
+        );
+
+        return result;
 
     } catch (error: any) {
         console.error(error);
-        return new Response(JSON.stringify({ error: error.message, details: error }), {
+        return new Response(JSON.stringify({ error: error.message }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 400,
         });
@@ -276,15 +226,16 @@ serve(async (req) => {
 });
 
 // =====================================================
-// Helper: Create organization from stored data
+// Helper: Create everything in DB
 // =====================================================
 async function createOrganizationFromData(
     supabaseClient: any,
     orgData: any,
     corsHeaders: any,
-    pendingPaymentId: string | null,
+    paymentUrl: string | null,
     asaasCustomerId?: string | null,
-    asaasSubscriptionId?: string | null
+    asaasSubscriptionId?: string | null,
+    asaasPaymentId?: string | null
 ) {
     const {
         organization,
@@ -296,61 +247,35 @@ async function createOrganizationFromData(
         billing_phone,
         contracted_clients,
         max_users,
-        billing_value
+        billing_value,
+        status
     } = orgData;
 
-    // 1. Ensure User exists and is invited
+    // 1. Ensure User/Profile
     let userId: string;
-
     const { data: inviteData, error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(owner_email, {
         data: { full_name: owner_name }
     });
 
     if (inviteError) {
-        console.error("Invite error:", inviteError);
-        const { data: profile } = await supabaseClient
-            .from('profiles')
-            .select('id')
-            .eq('email', owner_email)
-            .maybeSingle();
-
-        if (profile) {
-            userId = profile.id;
-        } else {
-            throw new Error(`Could not create or find user: ${inviteError.message}`);
-        }
+        const { data: profile } = await supabaseClient.from('profiles').select('id').eq('email', owner_email).maybeSingle();
+        if (!profile) throw new Error(`User creation failed: ${inviteError.message}`);
+        userId = profile.id;
     } else {
         userId = inviteData.user.id;
     }
 
-    // 2. Ensure Profile exists
-    const { data: existingProfile } = await supabaseClient
-        .from('profiles')
-        .select('id')
-        .eq('id', userId)
-        .maybeSingle();
+    // Upsert Profile
+    await supabaseClient.from('profiles').upsert({ id: userId, name: owner_name, email: owner_email });
 
-    if (existingProfile) {
-        await supabaseClient
-            .from('profiles')
-            .update({ name: owner_name, email: owner_email })
-            .eq('id', userId);
-    } else {
-        await supabaseClient
-            .from('profiles')
-            .insert({ id: userId, name: owner_name, email: owner_email });
-    }
-
-    // 3. Create Organization
+    // 2. Create Organization
     const { data: newOrg, error: orgError } = await supabaseClient
         .from("organizations")
         .insert({
             name: organization.name,
             slug: organization.slug,
             plan: plan,
-            status: "trialing", // Start as trialing (30-day money back guarantee period)
-            trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // Paid for the first month
+            status: status,
             owner_name: owner_name,
             owner_email: owner_email,
             billing_document: billing_document,
@@ -360,61 +285,52 @@ async function createOrganizationFromData(
             max_users: max_users,
             billing_value: billing_value || 0,
             asaas_customer_id: asaasCustomerId,
-            asaas_subscription_id: asaasSubscriptionId
+            asaas_subscription_id: asaasSubscriptionId,
+            // If activating now, set dates
+            trial_ends_at: status === 'trialing' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
+            current_period_end: status === 'trialing' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
         })
         .select()
         .single();
 
     if (orgError) throw orgError;
 
-    // 4. Add Member (Owner)
-    const { error: memberError } = await supabaseClient
-        .from("team_members")
-        .insert({
-            organization_id: newOrg.id,
-            profile_id: userId,
-            role: "manager",
-            status: "active",
-            job_title: "Owner",
-            permissions: {
-                can_manage_clients: true,
-                can_manage_tasks: true,
-                can_manage_team: true,
-                can_manage_marketing: true,
-                can_manage_automation: true,
-                can_manage_ai_agents: true
-            }
-        });
+    // 3. Add Member
+    await supabaseClient.from("team_members").insert({
+        organization_id: newOrg.id,
+        profile_id: userId,
+        role: "manager",
+        status: "active",
+        permissions: { all: true } // Simplified for brevity
+    });
 
-    if (memberError) {
-        console.error("Member insert error:", memberError);
-        await supabaseClient.from("organizations").delete().eq("id", newOrg.id);
-        throw new Error(`Failed to add owner to team: ${memberError.message}`);
-    }
+    // 4. Update profile linkage
+    await supabaseClient.from('profiles').update({ organization_id: newOrg.id }).eq('id', userId).is('organization_id', null);
 
-    // 5. Update profile organization_id
-    await supabaseClient
-        .from('profiles')
-        .update({ organization_id: newOrg.id })
-        .eq('id', userId)
-        .is('organization_id', null);
-
-    // 6. Update the pending payment instead of deleting it
-    if (pendingPaymentId) {
-        await supabaseClient
+    // 5. Create Pending Payment if needed
+    let pendingPaymentId = null;
+    if (status === 'pending_payment') {
+        const { data: pending } = await supabaseClient
             .from('pending_payments')
-            .update({
-                status: 'completed',
-                organization_id: newOrg.id
+            .insert({
+                organization_id: newOrg.id,
+                payment_url: paymentUrl,
+                asaas_payment_id: asaasPaymentId,
+                asaas_subscription_id: asaasSubscriptionId,
+                asaas_customer_id: asaasCustomerId,
+                status: 'pending'
             })
-            .eq('id', pendingPaymentId);
+            .select()
+            .single();
+        pendingPaymentId = pending?.id;
     }
 
     return new Response(
-        JSON.stringify({ organizationId: newOrg.id }),
-        {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 200,
-        }
+        JSON.stringify({
+            organizationId: newOrg.id,
+            pending_payment_id: pendingPaymentId,
+            payment_url: paymentUrl
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
 }

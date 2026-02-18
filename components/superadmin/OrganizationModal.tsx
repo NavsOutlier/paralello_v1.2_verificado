@@ -16,7 +16,7 @@ interface OrganizationModalProps {
 interface PlanConfig {
     id: string;
     name: string;
-    base_price: number;
+    price_base: number;
     price_per_client: number;
     max_users: number;
     trial_days: number;
@@ -27,9 +27,9 @@ interface PlanConfig {
 
 // Fallback plans if database not available
 const FALLBACK_PLANS: PlanConfig[] = [
-    { id: 'gestor_solo', name: 'Gestor Solo', base_price: 397, price_per_client: 0, max_users: 1, trial_days: 7, features: [], modules: ['dash', 'workspace', 'kanban'], is_active: true },
-    { id: 'agencia', name: 'Agência', base_price: 97, price_per_client: 7, max_users: 10, trial_days: 7, features: [], modules: ['dash', 'workspace', 'kanban', 'marketing', 'automation'], is_active: true },
-    { id: 'enterprise', name: 'Enterprise', base_price: 297, price_per_client: 5, max_users: 999999, trial_days: 14, features: [], modules: ['dash', 'workspace', 'kanban', 'marketing', 'automation', 'workers_ia', 'manager'], is_active: true },
+    { id: 'gestor_solo', name: 'Gestor Solo', price_base: 397, price_per_client: 0, max_users: 1, trial_days: 7, features: [], modules: ['dash', 'workspace', 'kanban'], is_active: true },
+    { id: 'agencia', name: 'Agência', price_base: 97, price_per_client: 7, max_users: 10, trial_days: 7, features: [], modules: ['dash', 'workspace', 'kanban', 'marketing', 'automation'], is_active: true },
+    { id: 'enterprise', name: 'Enterprise', price_base: 297, price_per_client: 5, max_users: 999999, trial_days: 14, features: [], modules: ['dash', 'workspace', 'kanban', 'marketing', 'automation', 'workers_ia', 'manager'], is_active: true },
 ];
 
 export const OrganizationModal: React.FC<OrganizationModalProps> = ({
@@ -65,7 +65,7 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
         const selectedPlan = plans.find(p => p.id === plan);
         if (!selectedPlan) return 0;
         const clients = typeof contractedClients === 'number' ? contractedClients : 0;
-        return selectedPlan.base_price + (selectedPlan.price_per_client * clients);
+        return selectedPlan.price_base + (selectedPlan.price_per_client * clients);
     };
 
     // Load plans from database
@@ -82,7 +82,7 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                 .from('plan_configurations')
                 .select('*')
                 .eq('is_active', true)
-                .order('base_price');
+                .order('price_base');
 
             if (error) {
                 console.log('Using fallback plans:', error.message);
@@ -424,7 +424,7 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
 
                                                 <div className="space-y-1">
                                                     <p className="text-lg font-black text-white">
-                                                        {formatCurrency(planData.base_price)}
+                                                        {formatCurrency(planData.price_base)}
                                                         <span className="text-xs text-slate-400 font-normal">/mês</span>
                                                     </p>
                                                     {planData.price_per_client > 0 && (
@@ -476,7 +476,7 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                                         {(() => {
                                             const selectedPlan = plans.find(p => p.id === plan);
                                             if (!selectedPlan) return '';
-                                            return `Base: ${formatCurrency(selectedPlan.base_price)} + ${typeof contractedClients === 'number' ? contractedClients : 0} clientes × ${formatCurrency(selectedPlan.price_per_client)}`;
+                                            return `Base: ${formatCurrency(selectedPlan.price_base)} + ${typeof contractedClients === 'number' ? contractedClients : 0} clientes × ${formatCurrency(selectedPlan.price_per_client)}`;
                                         })()}
                                     </p>
                                 </div>

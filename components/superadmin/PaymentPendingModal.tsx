@@ -27,6 +27,12 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
     const [copied, setCopied] = useState(false);
     const [status, setStatus] = useState<'pending' | 'confirmed' | 'canceled'>('pending');
     const [canceling, setCanceling] = useState(false);
+    const [currentPaymentUrl, setCurrentPaymentUrl] = useState(paymentUrl);
+
+    // Update local state when prop changes
+    useEffect(() => {
+        setCurrentPaymentUrl(paymentUrl);
+    }, [paymentUrl]);
 
     // Subscribe to realtime changes
     useEffect(() => {
@@ -44,6 +50,11 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
                 },
                 (payload) => {
                     const newStatus = payload.new.status;
+                    const newPaymentUrl = payload.new.payment_url;
+
+                    if (newPaymentUrl) {
+                        setCurrentPaymentUrl(newPaymentUrl);
+                    }
 
                     // Avoid duplicate processing
                     if (status === 'confirmed' || status === 'completed') return;
@@ -65,7 +76,7 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
 
     const handleCopy = async () => {
         try {
-            await navigator.clipboard.writeText(paymentUrl);
+            await navigator.clipboard.writeText(currentPaymentUrl);
             setCopied(true);
             showToast('Link copiado!', 'success');
             setTimeout(() => setCopied(false), 2000);
@@ -77,15 +88,17 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
     const handleCancel = async () => {
         setCanceling(true);
         try {
-            // Cancel the pending payment
-            const { error } = await supabase
-                .from('pending_payments')
-                .update({ status: 'canceled' })
-                .eq('id', pendingPaymentId);
+            // Cancel the pending payment via Edge Function (which will now CLEAN UP the pre-created org)
+            const { error } = await supabase.functions.invoke('create-org-with-owner', {
+                body: {
+                    action: 'cancel_pending_payment',
+                    pending_payment_id: pendingPaymentId
+                }
+            });
 
             if (error) throw error;
 
-            showToast('Pagamento cancelado', 'info');
+            showToast('Pagamento cancelado e dados removidos', 'info');
             onClose();
         } catch (err) {
             console.error('Error canceling payment:', err);
@@ -190,7 +203,7 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
                         <div className="flex gap-2">
                             <input
                                 type="text"
-                                value={paymentUrl}
+                                value={currentPaymentUrl}
                                 readOnly
                                 className="flex-1 px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-300 font-mono truncate"
                             />
@@ -209,7 +222,7 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
                             <Button
                                 type="button"
                                 variant="secondary"
-                                onClick={() => window.open(paymentUrl, '_blank')}
+                                onClick={() => window.open(currentPaymentUrl, '_blank')}
                                 className="px-4 bg-white/5 border-white/10"
                             >
                                 <ExternalLink className="w-4 h-4" />

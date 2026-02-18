@@ -351,7 +351,10 @@ async function createOrganizationFromData(
         .select()
         .single();
 
-    if (orgError) throw orgError;
+    if (orgError) {
+        console.error("Organization creation error:", orgError);
+        return new Response(JSON.stringify({ error: orgError.message }), { headers: corsHeaders, status: 400 });
+    }
 
     // 3. Add Member (Only if user was created/invited)
     if (userId) {
@@ -370,7 +373,7 @@ async function createOrganizationFromData(
     // 5. Create Pending Payment if needed
     let pendingPaymentId = null;
     if (status === 'pending_payment') {
-        const { data: pending } = await supabaseClient
+        const { data: pending, error: pendingErr } = await supabaseClient
             .from('pending_payments')
             .insert({
                 organization_id: newOrg.id,
@@ -382,6 +385,11 @@ async function createOrganizationFromData(
             })
             .select()
             .single();
+
+        if (pendingErr) {
+            console.error("Pending payment record error:", pendingErr);
+            return new Response(JSON.stringify({ error: "Failed to create payment record: " + pendingErr.message }), { headers: corsHeaders, status: 400 });
+        }
         pendingPaymentId = pending?.id;
     }
 
@@ -389,7 +397,8 @@ async function createOrganizationFromData(
         JSON.stringify({
             organizationId: newOrg.id,
             pending_payment_id: pendingPaymentId,
-            payment_url: paymentUrl
+            payment_url: paymentUrl,
+            success: true
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );

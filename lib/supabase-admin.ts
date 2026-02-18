@@ -16,7 +16,7 @@ export async function fetchOrganizations(): Promise<Organization[]> {
 /**
  * Create a new organization (Atomic Onboarding)
  */
-export async function createOrganization(data: Partial<Organization>): Promise<Organization> {
+export async function createOrganization(data: Partial<Organization>): Promise<{ organization: Organization, pendingPaymentId?: string, paymentUrl?: string }> {
     const { data: response, error } = await supabase.functions.invoke('create-org-with-owner', {
         body: {
             organization: {
@@ -40,40 +40,37 @@ export async function createOrganization(data: Partial<Organization>): Promise<O
         const errorDetails = error || response?.error;
         console.error('Error creating organization via Edge Function:', errorDetails);
 
-        // Try to extract more specific error message from response body if possible
         let errorMessage = error?.message || response?.error || 'Failed to create organization';
 
         if (error && typeof error === 'object' && 'context' in error) {
             try {
-                // @ts-ignore - Supabase FunctionsHttpError has a context property with the response
+                // @ts-ignore
                 const errorBody = await error.context.json();
                 if (errorBody && errorBody.error) {
                     errorMessage = errorBody.error;
                 }
-            } catch (e) {
-                // Ignore JSON parse error, stick to default message
-            }
+            } catch (e) { }
         }
 
         throw new Error(errorMessage);
     }
 
-    // Return a basic representation, the dashboard will reload
     return {
-        id: response.organizationId,
-        name: data.name || '',
-        slug: data.slug || '',
-        plan: data.plan as PlanType,
-        status: 'active',
-        billingDocument: data.billingDocument,
-        billingEmail: data.billingEmail,
-        billingPhone: data.billingPhone,
-        createdAt: new Date(),
-        owner: {
-            name: data.owner?.name || '',
-            email: data.owner?.email || ''
+        organization: {
+            id: response.organizationId,
+            name: data.name || '',
+            slug: data.slug || '',
+            plan: data.plan as PlanType,
+            status: data.activateBilling ? 'pending_payment' : 'active' as any,
+            createdAt: new Date(),
+            owner: {
+                name: data.owner?.name || '',
+                email: data.owner?.email || ''
+            },
+            stats: { users: 0, clients: 0, tasks: 0 }
         },
-        stats: { users: 0, clients: 0, tasks: 0 }
+        pendingPaymentId: response.pending_payment_id,
+        paymentUrl: response.payment_url
     };
 }
 

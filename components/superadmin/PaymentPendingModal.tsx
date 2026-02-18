@@ -118,7 +118,7 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
         setCanceling(true);
         try {
             // Cancel the pending payment via Edge Function (which will now CLEAN UP the pre-created org)
-            const { error } = await supabase.functions.invoke('create-org-v2', {
+            const { error } = await supabase.functions.invoke('create-org-with-owner', {
                 body: {
                     action: 'cancel_pending_payment',
                     pending_payment_id: pendingPaymentId

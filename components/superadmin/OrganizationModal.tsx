@@ -158,7 +158,7 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
 
             // If creating new org with billing, use the pending payment flow
             if (!organization && activateBilling) {
-                const { data: response, error } = await supabase.functions.invoke('create-org-with-owner', {
+                const { data: response, error } = await supabase.functions.invoke('create-org-v2', {
                     body: {
                         organization: { name, slug },
                         owner_email: ownerEmail,
@@ -227,7 +227,7 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
     const handlePaymentConfirmed = async () => {
         setLoading(true);
         try {
-            const { data: response, error } = await supabase.functions.invoke('create-org-with-owner', {
+            const { data: response, error } = await supabase.functions.invoke('create-org-v2', {
                 body: {
                     action: 'confirm_pending_payment',
                     pending_payment_id: pendingPaymentId

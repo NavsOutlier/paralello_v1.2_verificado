@@ -171,18 +171,30 @@ serve(async (req) => {
                         }),
                     });
 
+                    console.log(`n8n response status: ${response.status}`);
                     if (response.ok) {
                         const res = await response.json();
-                        paymentUrl = res.payment_url || res.invoiceUrl;
-                        asaasPaymentId = res.asaas_payment_id || res.paymentId;
-                        asaasCustomerId = res.asaas_customer_id || res.customerId;
-                        asaasSubscriptionId = res.asaas_subscription_id || res.subscriptionId;
+                        console.log("n8n response body:", JSON.stringify(res));
+
+                        // RESILIENT MAPPING: Handle nested structures (res[0].data[0] or similar)
+                        const root = Array.isArray(res) ? res[0] : res;
+                        const data = (root && root.data && Array.isArray(root.data)) ? root.data[0] : root;
+
+                        paymentUrl = data.payment_url || data.invoiceUrl || data.url;
+                        asaasPaymentId = data.asaas_payment_id || data.paymentId || data.id;
+                        asaasCustomerId = data.asaas_customer_id || data.customerId || data.customer;
+                        asaasSubscriptionId = data.asaas_subscription_id || data.subscriptionId || data.subscription;
+
+                        console.log("Mapped IDs:", { asaasPaymentId, asaasCustomerId, asaasSubscriptionId, paymentUrl });
+                    } else {
+                        const errorText = await response.text();
+                        console.error("n8n error body:", errorText);
                     }
                 } catch (e) {
-                    console.error("n8n call failed:", e);
-                    // We continue anyway, but it might fail later? 
-                    // User said: "cria a na nova organização com dados recebidos do asaas"
+                    console.error("n8n fetch exception:", e);
                 }
+            } else {
+                console.error("N8N_WEBHOOK_URL_CREATE_CUSTOMER is NOT set in environment variables!");
             }
         }
 

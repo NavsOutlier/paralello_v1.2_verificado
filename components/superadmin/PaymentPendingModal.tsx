@@ -34,10 +34,11 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
         setCurrentPaymentUrl(paymentUrl);
     }, [paymentUrl]);
 
-    // Subscribe to realtime changes
+    // Subscribe to realtime changes and Polling fallback
     useEffect(() => {
         if (!isOpen || !pendingPaymentId) return;
 
+        // 1. Realtime Subscription
         const channel = supabase
             .channel(`pending_payment_${pendingPaymentId}`)
             .on(
@@ -52,27 +53,55 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
                     const newStatus = payload.new.status;
                     const newPaymentUrl = payload.new.payment_url;
 
-                    if (newPaymentUrl) {
+                    if (newPaymentUrl && newPaymentUrl !== currentPaymentUrl) {
                         setCurrentPaymentUrl(newPaymentUrl);
                     }
 
-                    // Avoid duplicate processing
-                    if (status === 'confirmed' || status === 'completed') return;
-
-                    setStatus(newStatus);
-
-                    if (newStatus === 'confirmed') {
-                        showToast('Pagamento confirmado! Criando organização...', 'success');
-                        onConfirmed();
+                    if (newStatus === 'confirmed' || newStatus === 'completed') {
+                        if (status === 'pending') {
+                            setStatus('confirmed');
+                            showToast('Pagamento confirmado! Criando organização...', 'success');
+                            onConfirmed();
+                        }
+                    } else if (newStatus === 'canceled') {
+                        setStatus('canceled');
                     }
                 }
             )
             .subscribe();
 
+        // 2. Polling Fallback (every 5 seconds)
+        const pollInterval = setInterval(async () => {
+            if (status !== 'pending') return;
+
+            const { data, error } = await supabase
+                .from('pending_payments')
+                .select('status, payment_url')
+                .eq('id', pendingPaymentId)
+                .single();
+
+            if (!error && data) {
+                if (data.payment_url && data.payment_url !== currentPaymentUrl) {
+                    setCurrentPaymentUrl(data.payment_url);
+                }
+
+                if (data.status === 'confirmed' || data.status === 'completed') {
+                    clearInterval(pollInterval);
+                    setStatus('confirmed');
+                    showToast('Pagamento confirmado!', 'success');
+                    onConfirmed();
+                } else if (data.status === 'canceled') {
+                    clearInterval(pollInterval);
+                    setStatus('canceled');
+                }
+            }
+        }, 5000);
+
         return () => {
             supabase.removeChannel(channel);
+            clearInterval(pollInterval);
         };
-    }, [isOpen, pendingPaymentId, onConfirmed, showToast, status]);
+    }, [isOpen, pendingPaymentId, onConfirmed, showToast, status, currentPaymentUrl]);
 
     const handleCopy = async () => {
         try {
@@ -89,7 +118,7 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
         setCanceling(true);
         try {
             // Cancel the pending payment via Edge Function (which will now CLEAN UP the pre-created org)
-            const { error } = await supabase.functions.invoke('create-org-with-owner', {
+            const { error } = await supabase.functions.invoke('create-org-v2', {
                 body: {
                     action: 'cancel_pending_payment',
                     pending_payment_id: pendingPaymentId

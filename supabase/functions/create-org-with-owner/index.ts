@@ -75,7 +75,50 @@ serve(async (req) => {
                 .update({ status: 'completed' })
                 .eq('id', pending_payment_id);
 
-            // 2. Update organization status (Finalize activation)
+            // 2. Fetch Organization data for invitation
+            const { data: org, error: fetchError } = await supabaseClient
+                .from('organizations')
+                .select('*')
+                .eq('id', orgId)
+                .single();
+
+            if (fetchError || !org) {
+                return new Response(JSON.stringify({ error: "Organization not found" }), { status: 404, headers: corsHeaders });
+            }
+
+            // 3. Invite User and Create Member (Now that they paid)
+            let userId: string;
+            const { data: inviteData, error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(org.owner_email, {
+                data: { full_name: org.owner_name }
+            });
+
+            if (inviteError) {
+                // If user already exists, get their ID
+                const { data: profile } = await supabaseClient.from('profiles').select('id').eq('email', org.owner_email).maybeSingle();
+                if (!profile) {
+                    console.error("Invite Error and Profile not found:", inviteError);
+                    // We proceed anyway to update status, but log the error
+                }
+                userId = profile?.id;
+            } else {
+                userId = inviteData.user.id;
+            }
+
+            if (userId) {
+                // Create/Upsert Profile
+                await supabaseClient.from('profiles').upsert({ id: userId, name: org.owner_name, email: org.owner_email, organization_id: orgId });
+
+                // Add Member record
+                await supabaseClient.from("team_members").insert({
+                    organization_id: orgId,
+                    profile_id: userId,
+                    role: "manager",
+                    status: "active",
+                    permissions: { all: true }
+                });
+            }
+
+            // 4. Update organization status (Finalize activation)
             const { error: orgUpdateError } = await supabaseClient
                 .from('organizations')
                 .update({
@@ -263,22 +306,26 @@ async function createOrganizationFromData(
         status
     } = orgData;
 
-    // 1. Ensure User/Profile
-    let userId: string;
-    const { data: inviteData, error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(owner_email, {
-        data: { full_name: owner_name }
-    });
+    // 1. Determine if we should Invite User Now
+    let userId: string | null = null;
 
-    if (inviteError) {
-        const { data: profile } = await supabaseClient.from('profiles').select('id').eq('email', owner_email).maybeSingle();
-        if (!profile) throw new Error(`User creation failed: ${inviteError.message}`);
-        userId = profile.id;
-    } else {
-        userId = inviteData.user.id;
+    // Only invite immediately if NOT pending payment (e.g., direct creation by superadmin)
+    if (status !== 'pending_payment') {
+        const { data: inviteData, error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(owner_email, {
+            data: { full_name: owner_name }
+        });
+
+        if (inviteError) {
+            const { data: profile } = await supabaseClient.from('profiles').select('id').eq('email', owner_email).maybeSingle();
+            if (!profile) throw new Error(`User creation failed: ${inviteError.message}`);
+            userId = profile.id;
+        } else {
+            userId = inviteData.user.id;
+        }
+
+        // Upsert Profile
+        await supabaseClient.from('profiles').upsert({ id: userId, name: owner_name, email: owner_email });
     }
-
-    // Upsert Profile
-    await supabaseClient.from('profiles').upsert({ id: userId, name: owner_name, email: owner_email });
 
     // 2. Create Organization
     const { data: newOrg, error: orgError } = await supabaseClient
@@ -298,7 +345,6 @@ async function createOrganizationFromData(
             billing_value: billing_value || 0,
             asaas_customer_id: asaasCustomerId,
             asaas_subscription_id: asaasSubscriptionId,
-            // If activating now, set dates
             trial_ends_at: status === 'trialing' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
             current_period_end: status === 'trialing' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
         })
@@ -307,17 +353,19 @@ async function createOrganizationFromData(
 
     if (orgError) throw orgError;
 
-    // 3. Add Member
-    await supabaseClient.from("team_members").insert({
-        organization_id: newOrg.id,
-        profile_id: userId,
-        role: "manager",
-        status: "active",
-        permissions: { all: true } // Simplified for brevity
-    });
+    // 3. Add Member (Only if user was created/invited)
+    if (userId) {
+        await supabaseClient.from("team_members").insert({
+            organization_id: newOrg.id,
+            profile_id: userId,
+            role: "manager",
+            status: "active",
+            permissions: { all: true }
+        });
 
-    // 4. Update profile linkage
-    await supabaseClient.from('profiles').update({ organization_id: newOrg.id }).eq('id', userId).is('organization_id', null);
+        // Update profile linkage
+        await supabaseClient.from('profiles').update({ organization_id: newOrg.id }).eq('id', userId).is('organization_id', null);
+    }
 
     // 5. Create Pending Payment if needed
     let pendingPaymentId = null;

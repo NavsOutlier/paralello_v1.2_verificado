@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
             throw new Error(`Invalid JSON body: ${e.message}`)
         }
 
-        const { code, source, timestamp } = body
+        const { code, source, timestamp, redirect_uri } = body
 
         if (!code) {
             console.error("Missing code parameter in body keys:", Object.keys(body))
@@ -44,6 +44,7 @@ Deno.serve(async (req) => {
             },
             body: JSON.stringify({
                 code,
+                redirect_uri,
                 source,
                 timestamp
             }),
@@ -61,7 +62,7 @@ Deno.serve(async (req) => {
 
         if (!n8nResponse.ok) {
             console.error("n8n Error Response:", responseText)
-            throw new Error(`n8n Error: ${n8nResponse.status} - ${responseText.substring(0, 100)}`)
+            throw new Error(`n8n Error: ${n8nResponse.status} - ${responseText}`)
         }
 
         return new Response(JSON.stringify(responseData), {

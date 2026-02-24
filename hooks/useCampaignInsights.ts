@@ -25,8 +25,8 @@ interface UseCampaignInsightsResult {
     refresh: () => void;
 }
 
-// ⚠️ MOCK: Set to false when real data is available
-const USE_MOCK_DATA = true;
+// ⚠️ DATA IS REAL: Mock disabled
+const USE_MOCK_DATA = false;
 
 function generateMockData(level: DrillLevel, startDate: string, endDate: string, parentCampaignIds?: string[], parentAdsetIds?: string[]): any[] {
     const start = new Date(startDate + 'T12:00:00');

@@ -1,12 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { PremiumBackground } from '../ui/PremiumBackground';
 
 export const MetaCallback: React.FC = () => {
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const [message, setMessage] = useState('Conectando com Meta...');
+    const hasProcessed = useRef(false);
 
     useEffect(() => {
+        if (hasProcessed.current) return;
+        hasProcessed.current = true;
+
         const processCallback = async () => {
             try {
                 // 1. Extract code from URL
@@ -24,10 +28,12 @@ export const MetaCallback: React.FC = () => {
 
                 // 3. Send CODE to opener (Main Dashboard) immediately
                 if (window.opener) {
+                    const exactRedirectUri = `${window.location.origin}${window.location.pathname}`.replace(/\/$/, '');
                     window.opener.postMessage(
                         {
                             type: 'META_AUTH_CODE',
                             code: code,
+                            redirect_uri: exactRedirectUri,
                             timestamp: new Date().toISOString()
                         },
                         window.location.origin

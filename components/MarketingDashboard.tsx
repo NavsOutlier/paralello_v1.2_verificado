@@ -46,7 +46,7 @@ const toLocalDateString = (date: Date) => {
 
 export const MarketingDashboard: React.FC = () => {
     const { organizationId, isSuperAdmin, permissions, user } = useAuth();
-    const { addToast } = useToast();
+    const { showToast } = useToast();
     const canManageMarketing = isSuperAdmin || permissions?.can_manage_marketing;
     const [clients, setClients] = useState<Client[]>([]);
     const [selectedClient, setSelectedClient] = useState<string>('');
@@ -107,10 +107,10 @@ export const MarketingDashboard: React.FC = () => {
             setMetaConnectionId(null);
             setMetaIntegrationDate(null);
             setMetaAccountDetails(null);
-            addToast({ type: 'success', title: 'Desconectado', message: 'Conta Meta desconectada com sucesso.' });
+            showToast('Conta Meta desconectada com sucesso.', 'success');
             setRefreshTrigger(prev => prev + 1);
         } catch (error: any) {
-            addToast({ type: 'error', title: 'Erro', message: error.message });
+            showToast(error.message, 'error');
         }
     };
 
@@ -124,10 +124,10 @@ export const MarketingDashboard: React.FC = () => {
                 customFields: { utm_source: '', utm_medium: '', utm_campaign: '', utm_content: '', utm_term: '' }
             });
             setTintimIntegrationDate(null);
-            addToast({ type: 'success', title: 'Desconectado', message: 'Integração Tintim removida.' });
+            showToast('Integração Tintim removida.', 'success');
             setRefreshTrigger(prev => prev + 1);
         } catch (error: any) {
-            addToast({ type: 'error', title: 'Erro', message: error.message });
+            showToast(error.message, 'error');
         }
     };
 
@@ -141,11 +141,13 @@ export const MarketingDashboard: React.FC = () => {
 
                 setIsMetaConnecting(true);
 
+                // 3. Send CODE to opener (Main Dashboard) immediately
                 try {
                     // Send code to n8n Webhook via Supabase Proxy
                     const { data, error } = await supabase.functions.invoke('n8n-proxy', {
                         body: {
                             code,
+                            redirect_uri: (event.data.redirect_uri || `${window.location.origin}/oauth/meta/callback`).replace(/\/$/, ''),
                             source: 'marketing_dashboard',
                             timestamp: new Date().toISOString()
                         }
@@ -204,11 +206,7 @@ export const MarketingDashboard: React.FC = () => {
                         if (normalizedAdAccounts.length > 0) {
                             setAdAccounts(normalizedAdAccounts);
                             setIsAdAccountModalOpen(true);
-                            addToast({
-                                type: 'info',
-                                title: 'Nenhuma conta encontrada',
-                                message: 'Conexão realizada, mas nenhuma conta de anúncios está disponível.'
-                            });
+                            showToast('Conexão realizada, mas nenhuma conta de anúncios está disponível.', 'info');
                         }
                     } else {
                         throw new Error(normalizedData?.message || normalizedData?.error || 'Falha na resposta do n8n (campos obrigatórios ausentes).');
@@ -216,11 +214,7 @@ export const MarketingDashboard: React.FC = () => {
 
                 } catch (error: any) {
                     console.error('Meta Connection Error:', error);
-                    addToast({
-                        type: 'error',
-                        title: 'Erro na Conexão',
-                        message: error.message
-                    });
+                    showToast(error.message, 'error');
                 } finally {
                     setIsMetaConnecting(false);
                 }
@@ -229,15 +223,11 @@ export const MarketingDashboard: React.FC = () => {
 
         window.addEventListener('message', handleMessage);
         return () => window.removeEventListener('message', handleMessage);
-    }, [organizationId]);
+    }, [organizationId, showToast]);
 
     const handleAdAccountSelect = async (account: any) => {
         if (!selectedClient || !organizationId) {
-            addToast({
-                type: 'warning',
-                title: 'Seleção Necessária',
-                message: 'Por favor, selecione um cliente antes de vincular a conta.'
-            });
+            showToast('Por favor, selecione um cliente antes de vincular a conta.', 'info');
             return;
         }
 
@@ -283,22 +273,14 @@ export const MarketingDashboard: React.FC = () => {
 
             console.log('Ad Account Linked:', account);
             setIsAdAccountModalOpen(false);
-            addToast({
-                type: 'success',
-                title: 'Conta Vinculada',
-                message: `Conta "${account.name}" vinculada com sucesso ao cliente!`
-            });
+            showToast(`Conta "${account.name}" vinculada com sucesso ao cliente!`, 'success');
 
             // Refresh Integrations check
             setRefreshTrigger(prev => prev + 1);
 
         } catch (err: any) {
             console.error('Error linking ad account:', err);
-            addToast({
-                type: 'error',
-                title: 'Erro de Vinculação',
-                message: 'Erro ao vincular conta de anúncios: ' + err.message
-            });
+            showToast('Erro ao vincular conta de anúncios: ' + err.message, 'error');
         }
     };
 
@@ -317,7 +299,7 @@ export const MarketingDashboard: React.FC = () => {
 
         // Construct OAuth URL with internal callback
         const clientId = '936443005488271';
-        const redirectUri = `${window.location.origin}/oauth/meta/callback`;
+        const redirectUri = `${window.location.origin}/oauth/meta/callback`.replace(/\/$/, '');
         // Generates a random state string for CSRF protection
         const state = Math.random().toString(36).substring(7);
 

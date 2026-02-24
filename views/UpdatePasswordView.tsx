@@ -50,7 +50,7 @@ export const UpdatePasswordView: React.FC<{ onSuccess: () => void }> = ({ onSucc
                 {/* Card Container with Glassmorphism */}
                 <div className="bg-slate-900/40 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 shadow-3xl shadow-black/50 p-8 md:p-10">
                     <div className="text-center mb-10">
-                        <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-3xl shadow-2xl shadow-indigo-500/20 mb-8 group transition-transform hover:scale-105 duration-300">
+                        <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-500 to-cyan-600 rounded-3xl shadow-2xl shadow-indigo-500/20 mb-8 group transition-transform hover:scale-105 duration-300">
                             <Lock className="w-10 h-10 text-white group-hover:rotate-12 transition-transform" />
                         </div>
                         <h1 className="text-3xl font-black text-white mb-3 tracking-tight">Defina sua Senha</h1>
@@ -98,7 +98,7 @@ export const UpdatePasswordView: React.FC<{ onSuccess: () => void }> = ({ onSucc
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-gradient-to-r from-indigo-600 to-violet-700 hover:from-indigo-500 hover:to-violet-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:hover:scale-100 group"
+                            className="w-full bg-gradient-to-r from-indigo-600 to-cyan-700 hover:from-indigo-500 hover:to-cyan-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:hover:scale-100 group"
                         >
                             {loading ? (
                                 <Loader2 className="w-5 h-5 animate-spin" />

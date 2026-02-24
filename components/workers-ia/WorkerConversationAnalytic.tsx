@@ -106,7 +106,7 @@ export const WorkerConversationAnalytic: React.FC<WorkerConversationAnalyticProp
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                 <div>
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <MessageSquare className="w-5 h-5 text-violet-400" />
+                        <MessageSquare className="w-5 h-5 text-cyan-400" />
                         Analítico de Sessões
                     </h3>
                     <p className="text-slate-400 text-sm">Exploração granular de atendimentos e KPIs individuais</p>
@@ -121,7 +121,7 @@ export const WorkerConversationAnalytic: React.FC<WorkerConversationAnalyticProp
                             placeholder="Buscar contato ou resumo..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:ring-2 focus:ring-violet-500 outline-none"
+                            className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white focus:ring-2 focus:ring-cyan-500 outline-none"
                         />
                     </div>
 

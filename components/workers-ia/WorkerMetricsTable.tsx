@@ -112,7 +112,7 @@ export const WorkerMetricsTable: React.FC<WorkerMetricsTableProps> = ({ agentId 
         {
             category: 'VOLUME DE ATENDIMENTO',
             icon: Activity,
-            color: 'text-violet-400',
+            color: 'text-cyan-400',
             rows: [
                 { label: 'Conversas Ativas', key: 'total_conversations', format: formatNumber },
                 { label: 'Mensagens Trocadas', key: 'total_messages', format: formatNumber },
@@ -157,7 +157,7 @@ export const WorkerMetricsTable: React.FC<WorkerMetricsTableProps> = ({ agentId 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <Table className="w-5 h-5 text-violet-400" />
+                        <Table className="w-5 h-5 text-cyan-400" />
                         Visão Detalhada (Pivot)
                     </h3>
                     <p className="text-slate-400 text-sm">Análise diária lado a lado</p>
@@ -170,7 +170,7 @@ export const WorkerMetricsTable: React.FC<WorkerMetricsTableProps> = ({ agentId 
                         <ChevronLeft className="w-4 h-4" />
                     </button>
                     <div className="flex items-center gap-2 px-2 text-sm font-medium text-slate-200">
-                        <Calendar className="w-4 h-4 text-violet-400" />
+                        <Calendar className="w-4 h-4 text-cyan-400" />
                         <span>{format(dateRange.start, "dd/MM", { locale: ptBR })}</span>
                         <span className="text-slate-500">-</span>
                         <span>{format(dateRange.end, "dd/MM", { locale: ptBR })}</span>

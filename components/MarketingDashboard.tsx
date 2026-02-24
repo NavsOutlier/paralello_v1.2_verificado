@@ -765,7 +765,7 @@ export const MarketingDashboard: React.FC = () => {
                                 { label: 'Leads (n8n)', val: totalLeadsNew, color: 'text-indigo-400', icon: Users },
                                 { label: 'Vendas (CRM)', val: totalConversionsNew, color: 'text-emerald-400', icon: Activity },
                                 { label: 'Receita Total', val: new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalRevenueNew), color: 'text-cyan-400', icon: ExternalLink },
-                                { label: 'Taxa de Conversão', val: new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1 }).format(conversionRateNew), color: 'text-violet-400', icon: Sparkles }
+                                { label: 'Taxa de Conversão', val: new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 1 }).format(conversionRateNew), color: 'text-cyan-400', icon: Sparkles }
                             ].map((stat, i) => (
                                 <div key={i} className="bg-white/[0.03] border border-white/5 p-5 rounded-2xl hover:bg-white/[0.06] transition-all group/stat">
                                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 flex items-center justify-between">
@@ -1298,7 +1298,7 @@ export const MarketingDashboard: React.FC = () => {
                             </button>
                             <button
                                 onClick={handleSaveTintimConfig}
-                                className="px-8 py-3 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-2xl text-xs font-black hover:scale-105 shadow-xl shadow-indigo-500/20 transition-all flex items-center gap-2 uppercase tracking-widest"
+                                className="px-8 py-3 bg-gradient-to-br from-indigo-500 to-cyan-600 text-white rounded-2xl text-xs font-black hover:scale-105 shadow-xl shadow-indigo-500/20 transition-all flex items-center gap-2 uppercase tracking-widest"
                             >
                                 <Check className="w-4 h-4" />
                                 CONSOLIDAR CONFIGURAÇÃO

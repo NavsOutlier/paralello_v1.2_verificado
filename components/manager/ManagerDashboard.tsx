@@ -33,7 +33,7 @@ export const ManagerDashboard: React.FC = () => {
                     <button
                         onClick={() => handleNavigate('overview')}
                         className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'overview'
-                            ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg'
+                            ? 'bg-gradient-to-br from-indigo-500 to-cyan-600 text-white shadow-lg'
                             : 'text-slate-500 hover:text-slate-300'
                             }`}
                     >
@@ -44,7 +44,7 @@ export const ManagerDashboard: React.FC = () => {
                         <button
                             onClick={() => handleNavigate('clients')}
                             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'clients'
-                                ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg'
+                                ? 'bg-gradient-to-br from-indigo-500 to-cyan-600 text-white shadow-lg'
                                 : 'text-slate-500 hover:text-slate-300'
                                 }`}
                         >
@@ -56,7 +56,7 @@ export const ManagerDashboard: React.FC = () => {
                         <button
                             onClick={() => handleNavigate('team')}
                             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'team'
-                                ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg'
+                                ? 'bg-gradient-to-br from-indigo-500 to-cyan-600 text-white shadow-lg'
                                 : 'text-slate-500 hover:text-slate-300'
                                 }`}
                         >
@@ -67,7 +67,7 @@ export const ManagerDashboard: React.FC = () => {
                     <button
                         onClick={() => handleNavigate('settings')}
                         className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all ${activeTab === 'settings'
-                            ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg'
+                            ? 'bg-gradient-to-br from-indigo-500 to-cyan-600 text-white shadow-lg'
                             : 'text-slate-500 hover:text-slate-300'
                             }`}
                     >
@@ -311,7 +311,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
                                     </span>
                                 )}
                                 {plan?.id === 'agencia' && (
-                                    <span className="text-violet-400 drop-shadow-[0_0_10px_rgba(167,139,250,0.5)]">
+                                    <span className="text-cyan-400 drop-shadow-[0_0_10px_rgba(167,139,250,0.5)]">
                                         Agência
                                     </span>
                                 )}
@@ -378,15 +378,15 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onNavigate, canSeeClients, ca
                     {canSeeTeam && (
                         <div
                             onClick={() => onNavigate('team')}
-                            className="relative group overflow-hidden bg-slate-900/40 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/10 shadow-3xl cursor-pointer hover:scale-[1.02] transition-all hover:border-violet-500/30"
+                            className="relative group overflow-hidden bg-slate-900/40 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/10 shadow-3xl cursor-pointer hover:scale-[1.02] transition-all hover:border-cyan-500/30"
                         >
-                            <div className="absolute inset-0 bg-violet-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                             <div className="flex items-start justify-between mb-8">
                                 <div>
-                                    <h2 className="text-xs font-black text-violet-400 uppercase tracking-[0.3em] mb-2">Capital Humano</h2>
+                                    <h2 className="text-xs font-black text-cyan-400 uppercase tracking-[0.3em] mb-2">Capital Humano</h2>
                                     <p className="text-2xl font-black text-white">Equipe Interna</p>
                                 </div>
-                                <div className="p-4 bg-violet-500/10 text-violet-400 rounded-2xl group-hover:rotate-12 transition-transform">
+                                <div className="p-4 bg-cyan-500/10 text-cyan-400 rounded-2xl group-hover:rotate-12 transition-transform">
                                     <UserPlus className="w-10 h-10" />
                                 </div>
                             </div>

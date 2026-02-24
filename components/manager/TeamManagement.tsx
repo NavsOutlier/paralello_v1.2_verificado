@@ -284,7 +284,7 @@ export const TeamManagement: React.FC = () => {
             <div className="bg-slate-900/40 backdrop-blur-xl border-b border-white/5 p-6 sticky top-0 z-20">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                     <div className="flex items-center gap-3">
-                        <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/20 border border-white/10 group">
+                        <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 border border-white/10 group">
                             <UserPlus className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
                             <div className="absolute inset-0 bg-white/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
                         </div>
@@ -292,11 +292,11 @@ export const TeamManagement: React.FC = () => {
                             <h1 className="text-2xl font-black text-white tracking-tight">Equipe & Acessos</h1>
                             <div className="flex items-center gap-2">
                                 <p className="text-sm text-slate-400 font-medium">
-                                    <span className="text-violet-400 font-bold">{members.length}</span> {members.length === 1 ? 'membro ativo' : 'membros ativos'}
+                                    <span className="text-cyan-400 font-bold">{members.length}</span> {members.length === 1 ? 'membro ativo' : 'membros ativos'}
                                 </p>
                                 {plan && !isSuperAdmin && (
                                     <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white/5 rounded-full border border-white/5">
-                                        <div className="w-1 h-1 rounded-full bg-violet-400" />
+                                        <div className="w-1 h-1 rounded-full bg-cyan-400" />
                                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                                             {plan.max_users >= 999999 ? 'Ilimitado' : `Limite: ${plan.max_users}`}
                                         </span>
@@ -330,7 +330,7 @@ export const TeamManagement: React.FC = () => {
                                         setSelectedMember(undefined);
                                         setIsFormOpen(true);
                                     }}
-                                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all border border-white/10 bg-gradient-to-br from-violet-500 to-purple-600 text-white hover:scale-105 shadow-lg shadow-violet-500/20"
+                                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all border border-white/10 bg-gradient-to-br from-cyan-500 to-purple-600 text-white hover:scale-105 shadow-lg shadow-cyan-500/20"
                                 >
                                     <UserPlus className="w-4 h-4" />
                                     Convidar Membro
@@ -348,7 +348,7 @@ export const TeamManagement: React.FC = () => {
                         placeholder="Buscar por nome ou email..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all font-medium"
+                        className="w-full pl-12 pr-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 transition-all font-medium"
                     />
                 </div>
             </div>
@@ -357,7 +357,7 @@ export const TeamManagement: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-20 text-slate-500">
-                        <Loader2 className="w-10 h-10 animate-spin text-violet-500 mb-4" />
+                        <Loader2 className="w-10 h-10 animate-spin text-cyan-500 mb-4" />
                         <p className="text-sm font-medium">Carregando equipe...</p>
                     </div>
                 ) : filteredMembers.length === 0 ? (
@@ -375,12 +375,12 @@ export const TeamManagement: React.FC = () => {
                         {filteredMembers.map((member) => (
                             <div
                                 key={member.id}
-                                className="group relative bg-slate-900/40 backdrop-blur-xl rounded-2xl border border-white/5 p-5 hover:border-violet-500/30 hover:shadow-2xl hover:shadow-violet-500/5 transition-all duration-300"
+                                className="group relative bg-slate-900/40 backdrop-blur-xl rounded-2xl border border-white/5 p-5 hover:border-cyan-500/30 hover:shadow-2xl hover:shadow-cyan-500/5 transition-all duration-300"
                             >
                                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
                                     {/* Avatar */}
                                     <div className="relative">
-                                        <div className="w-16 h-16 bg-gradient-to-br from-violet-500 to-pink-600 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-violet-500/10 border border-white/10 group-hover:scale-105 transition-transform duration-300">
+                                        <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-pink-600 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-cyan-500/10 border border-white/10 group-hover:scale-105 transition-transform duration-300">
                                             {member.profile?.name?.charAt(0).toUpperCase() || '?'}
                                         </div>
                                         <div className={`absolute -bottom-2 -right-2 px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase tracking-wide shadow-sm
@@ -410,7 +410,7 @@ export const TeamManagement: React.FC = () => {
 
                                         {member.jobTitle && (
                                             <div className="flex items-center justify-center sm:justify-start gap-2 mb-4">
-                                                <div className="px-3 py-1 rounded-lg bg-white/5 border border-white/5 text-xs text-violet-300 font-medium flex items-center gap-1.5">
+                                                <div className="px-3 py-1 rounded-lg bg-white/5 border border-white/5 text-xs text-cyan-300 font-medium flex items-center gap-1.5">
                                                     <Briefcase className="w-3.5 h-3.5" />
                                                     {member.jobTitle}
                                                 </div>
@@ -426,7 +426,7 @@ export const TeamManagement: React.FC = () => {
                                                 <span className="w-2 h-2 rounded-full bg-emerald-500" title="Tarefas" />
                                             )}
                                             {member.permissions.canManageTeam && (
-                                                <span className="w-2 h-2 rounded-full bg-violet-500" title="Equipe" />
+                                                <span className="w-2 h-2 rounded-full bg-cyan-500" title="Equipe" />
                                             )}
                                             {member.permissions.canManageAutomation && (
                                                 <span className="w-2 h-2 rounded-full bg-cyan-500" title="Automação" />

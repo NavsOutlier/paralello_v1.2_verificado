@@ -171,9 +171,9 @@ export const SubscriptionPanel: React.FC<SubscriptionPanelProps> = ({ className 
                         </div>
                     </div>
                     <div className="text-right">
-                        <p className="text-sm text-slate-400">Período atual</p>
+                        <p className="text-sm text-slate-400">Término do período</p>
                         <p className="text-white font-medium">
-                            {formatDate(subscription.current_period_start)} - {formatDate(subscription.current_period_end)}
+                            {formatDate(subscription.current_period_end)}
                         </p>
                     </div>
                 </div>

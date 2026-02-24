@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type BadgeVariant = 'default' | 'primary' | 'success' | 'warning' | 'danger';
+export type BadgeVariant = 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger';
 export type BadgeSize = 'sm' | 'md';
 
 interface BadgeProps {
@@ -13,6 +13,7 @@ interface BadgeProps {
 const variantClasses: Record<BadgeVariant, string> = {
     default: 'bg-slate-100 text-slate-700',
     primary: 'bg-indigo-100 text-indigo-700',
+    secondary: 'bg-cyan-100 text-cyan-700',
     success: 'bg-green-100 text-green-700',
     warning: 'bg-amber-100 text-amber-700',
     danger: 'bg-red-100 text-red-700',

@@ -62,7 +62,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         else if (msg.linkedMessageId) onNavigateToLinked?.(msg.linkedMessageId);
       }}
       className={`group relative w-fit max-w-[300px] px-4 py-2.5 text-[14px] leading-relaxed tracking-tight ${isMe ? 'ml-auto' : ''} ${msg.isInternal && colorScheme !== 'indigo'
-        ? 'bg-violet-500/10 backdrop-blur-md border border-violet-500/20 text-slate-200 rounded-2xl rounded-tr-none shadow-xl'
+        ? 'bg-cyan-500/10 backdrop-blur-md border border-cyan-500/20 text-slate-200 rounded-2xl rounded-tr-none shadow-xl'
         : isMe
           ? `${scheme.myBubble} rounded-[1.25rem] rounded-tr-none backdrop-blur-md`
           : colorScheme === 'green'
@@ -104,7 +104,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
       {/* Sender Info - High End Look */}
       <div className={`text-[10px] font-black mb-1 flex flex-wrap items-center gap-1 uppercase tracking-tighter ${isMe ? 'justify-end text-right' : 'justify-start text-left'} ${msg.isInternal && colorScheme !== 'indigo'
-        ? 'text-violet-400 opacity-80'
+        ? 'text-cyan-400 opacity-80'
         : isMe
           ? 'text-white/90 opacity-100'
           : `${scheme.senderName} opacity-80`

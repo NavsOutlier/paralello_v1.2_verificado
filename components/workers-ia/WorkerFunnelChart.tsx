@@ -23,7 +23,7 @@ export const WorkerFunnelChart: React.FC<WorkerFunnelChartProps> = ({ funnelStag
     if (loading) {
         return (
             <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/30 rounded-2xl p-6 h-[400px] flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
             </div>
         );
     }
@@ -32,7 +32,7 @@ export const WorkerFunnelChart: React.FC<WorkerFunnelChartProps> = ({ funnelStag
         return (
             <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/30 rounded-2xl p-6 h-[400px] flex flex-col items-center justify-center">
                 <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2 self-start">
-                    <TrendingUp className="w-5 h-5 text-violet-400" />
+                    <TrendingUp className="w-5 h-5 text-cyan-400" />
                     Funil de Conversão
                 </h3>
                 <div className="text-center py-8 text-slate-500">
@@ -47,10 +47,10 @@ export const WorkerFunnelChart: React.FC<WorkerFunnelChartProps> = ({ funnelStag
         <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/30 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-8">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-violet-400" />
+                    <TrendingUp className="w-5 h-5 text-cyan-400" />
                     Funil de Conversão
                 </h3>
-                <div className="px-3 py-1 bg-violet-500/10 border border-violet-500/20 rounded-full text-[10px] font-bold text-violet-400">
+                <div className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-[10px] font-bold text-cyan-400">
                     {totalLeads} LEADS TOTAIS
                 </div>
             </div>

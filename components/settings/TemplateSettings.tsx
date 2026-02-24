@@ -98,7 +98,7 @@ export const TemplateSettings: React.FC<TemplateSettingsProps> = ({ organization
         }
     };
 
-    if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-violet-500" /></div>;
+    if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-cyan-500" /></div>;
 
     return (
         <div className="max-w-4xl">

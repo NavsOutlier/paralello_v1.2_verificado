@@ -11,12 +11,14 @@
   "dependencies": {
     "@headlessui/react": "^2.2.9",
     "@supabase/supabase-js": "^2.89.0",
+    "@tailwindcss/vite": "^4.2.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.562.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "recharts": "^3.6.0"
+    "recharts": "^3.6.0",
+    "tailwindcss": "^4.2.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

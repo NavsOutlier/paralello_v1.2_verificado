@@ -156,16 +156,16 @@ export const WorkersIADashboard: React.FC = () => {
                 <div className="p-5 border-b border-cyan-500/10">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="relative">
-                            <div className="p-2.5 bg-gradient-to-br from-violet-500 to-fuchsia-600 rounded-xl shadow-lg shadow-violet-500/30">
+                            <div className="p-2.5 bg-gradient-to-br from-cyan-500 to-fuchsia-600 rounded-xl shadow-lg shadow-cyan-500/30">
                                 <Briefcase className="w-5 h-5 text-white" />
                             </div>
                             {/* Pulse animation */}
-                            <div className="absolute inset-0 bg-violet-400 rounded-xl animate-ping opacity-20" />
+                            <div className="absolute inset-0 bg-cyan-400 rounded-xl animate-ping opacity-20" />
                         </div>
                         <div>
                             <div className="flex flex-col justify-center">
                                 <img src="/blackback-text.png" alt="Blackback" className="h-5 w-auto object-contain mb-1 opacity-90" />
-                                <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest flex items-center gap-2 pl-0.5">
+                                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest flex items-center gap-2 pl-0.5">
                                     Workers IA <Sparkles className="w-3 h-3 animate-pulse" />
                                 </span>
                             </div>
@@ -204,18 +204,18 @@ export const WorkersIADashboard: React.FC = () => {
                                     key={client.id}
                                     onClick={() => setSelectedClient(client)}
                                     className={`w-full text-left p-3 rounded-xl transition-all group relative overflow-hidden ${selectedClient?.id === client.id
-                                        ? 'bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30'
+                                        ? 'bg-gradient-to-r from-cyan-500/20 to-fuchsia-500/20 border border-cyan-500/30'
                                         : 'hover:bg-slate-800/50 border border-transparent'
                                         }`}
                                 >
                                     {/* Active indicator line */}
                                     {selectedClient?.id === client.id && (
-                                        <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b from-violet-400 to-fuchsia-500" />
+                                        <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b from-cyan-400 to-fuchsia-500" />
                                     )}
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold relative ${selectedClient?.id === client.id
-                                                ? 'bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-lg shadow-violet-500/30'
+                                                ? 'bg-gradient-to-br from-cyan-500 to-fuchsia-600 text-white shadow-lg shadow-cyan-500/30'
                                                 : 'bg-slate-700/50 text-slate-400 group-hover:bg-slate-600/50'
                                                 }`}>
                                                 {client.name.charAt(0).toUpperCase()}
@@ -229,7 +229,7 @@ export const WorkersIADashboard: React.FC = () => {
                                             </span>
                                         </div>
                                         <ChevronRight className={`w-4 h-4 transition-all ${selectedClient?.id === client.id
-                                            ? 'text-violet-400 translate-x-0'
+                                            ? 'text-cyan-400 translate-x-0'
                                             : 'text-slate-600 -translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
                                             }`} />
                                     </div>
@@ -242,7 +242,7 @@ export const WorkersIADashboard: React.FC = () => {
                 {/* Sidebar Footer with neural network decoration */}
                 <div className="p-4 border-t border-cyan-500/10">
                     <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <Activity className="w-3 h-3 text-violet-500 animate-pulse" />
+                        <Activity className="w-3 h-3 text-cyan-500 animate-pulse" />
                         <span>Worker Node Ativo</span>
                     </div>
                 </div>
@@ -255,7 +255,7 @@ export const WorkersIADashboard: React.FC = () => {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="relative">
-                                <div className="p-3 bg-gradient-to-br from-violet-500 to-fuchsia-600 rounded-2xl shadow-lg shadow-violet-500/30">
+                                <div className="p-3 bg-gradient-to-br from-cyan-500 to-fuchsia-600 rounded-2xl shadow-lg shadow-cyan-500/30">
                                     <Bot className="w-6 h-6 text-white" />
                                 </div>
                                 {selectedAgent?.is_active && (
@@ -279,10 +279,10 @@ export const WorkersIADashboard: React.FC = () => {
                                         <div className="relative">
                                             <button
                                                 onClick={() => setIsAgentDropdownOpen(!isAgentDropdownOpen)}
-                                                className="flex items-center gap-2 text-sm text-slate-300 hover:text-white transition-colors bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 hover:border-violet-500/30"
+                                                className="flex items-center gap-2 text-sm text-slate-300 hover:text-white transition-colors bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-700/50 hover:border-cyan-500/30"
                                             >
                                                 <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                                                <span className="font-medium text-violet-300">Agent:</span>
+                                                <span className="font-medium text-cyan-300">Agent:</span>
                                                 {selectedAgent ? selectedAgent.name : 'Selecione um Agente'}
                                                 <ChevronRight className={`w-3 h-3 text-slate-500 transition-transform ${isAgentDropdownOpen ? '-rotate-90' : 'rotate-90'}`} />
                                             </button>
@@ -302,11 +302,11 @@ export const WorkersIADashboard: React.FC = () => {
                                                                     setIsAgentDropdownOpen(false);
                                                                 }}
                                                                 className={`w-full text-left px-3 py-2 text-sm rounded-lg flex items-center gap-3 transition-all ${selectedAgent?.id === a.id
-                                                                    ? 'bg-violet-500/10 text-white border border-violet-500/20'
+                                                                    ? 'bg-cyan-500/10 text-white border border-cyan-500/20'
                                                                     : 'text-slate-400 hover:bg-slate-800 hover:text-white border border-transparent'
                                                                     }`}
                                                             >
-                                                                <div className={`p-1.5 rounded-md ${selectedAgent?.id === a.id ? 'bg-violet-500/20 text-violet-400' : 'bg-slate-800 text-slate-500'
+                                                                <div className={`p-1.5 rounded-md ${selectedAgent?.id === a.id ? 'bg-cyan-500/20 text-cyan-400' : 'bg-slate-800 text-slate-500'
                                                                     }`}>
                                                                     <Bot className="w-3.5 h-3.5" />
                                                                 </div>
@@ -327,7 +327,7 @@ export const WorkersIADashboard: React.FC = () => {
                                                                     setIsAgentDropdownOpen(false);
                                                                     handleCreateNew();
                                                                 }}
-                                                                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-violet-400 hover:text-white hover:bg-violet-500/10 rounded-lg transition-colors border border-dashed border-violet-500/20 hover:border-violet-500/40"
+                                                                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-cyan-400 hover:text-white hover:bg-cyan-500/10 rounded-lg transition-colors border border-dashed border-cyan-500/20 hover:border-cyan-500/40"
                                                             >
                                                                 <Plus className="w-3 h-3" />
                                                                 Novo Agente
@@ -353,7 +353,7 @@ export const WorkersIADashboard: React.FC = () => {
                         {selectedClient && agents.length === 0 && (
                             <button
                                 onClick={handleCreateNew}
-                                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-500 to-fuchsia-600 text-white rounded-xl text-sm font-bold hover:from-violet-400 hover:to-fuchsia-500 transition-all shadow-lg shadow-violet-500/30 group"
+                                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-fuchsia-600 text-white rounded-xl text-sm font-bold hover:from-cyan-400 hover:to-fuchsia-500 transition-all shadow-lg shadow-cyan-500/30 group"
                             >
                                 <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
                                 Criar Worker
@@ -368,9 +368,9 @@ export const WorkersIADashboard: React.FC = () => {
                         <div className="flex-1 flex items-center justify-center">
                             <div className="text-center">
                                 <div className="relative inline-block">
-                                    <div className="w-16 h-16 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+                                    <div className="w-16 h-16 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
                                     <div className="absolute inset-2 w-12 h-12 border-2 border-transparent border-t-fuchsia-500 rounded-full animate-spin" style={{ animationDirection: 'reverse' }} />
-                                    <Bot className="absolute inset-0 m-auto w-6 h-6 text-violet-400" />
+                                    <Bot className="absolute inset-0 m-auto w-6 h-6 text-cyan-400" />
                                 </div>
                                 <p className="text-slate-400 mt-4">Carregando dados dos workers...</p>
                             </div>
@@ -388,14 +388,14 @@ export const WorkersIADashboard: React.FC = () => {
                                                 key={tab.id}
                                                 onClick={() => setActiveTab(tab.id)}
                                                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all relative ${isActive
-                                                    ? 'bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 text-violet-400 border border-violet-500/30'
+                                                    ? 'bg-gradient-to-r from-cyan-500/20 to-fuchsia-500/20 text-cyan-400 border border-cyan-500/30'
                                                     : 'text-slate-400 hover:text-white hover:bg-slate-800/30 border border-transparent'
                                                     }`}
                                             >
                                                 <Icon className={`w-4 h-4 ${isActive ? 'animate-pulse' : ''}`} />
                                                 <span className="text-sm font-bold">{tab.label}</span>
                                                 {isActive && (
-                                                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-gradient-to-r from-violet-400 to-fuchsia-500" />
+                                                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-gradient-to-r from-cyan-400 to-fuchsia-500" />
                                                 )}
                                             </button>
                                         );
@@ -445,15 +445,15 @@ export const WorkersIADashboard: React.FC = () => {
                             <div className="text-center max-w-md">
                                 {/* Robot illustration */}
                                 <div className="relative inline-block mb-6">
-                                    <div className="w-32 h-32 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 rounded-3xl flex items-center justify-center border border-violet-500/20 relative">
-                                        <Bot className="w-16 h-16 text-violet-400" />
+                                    <div className="w-32 h-32 bg-gradient-to-br from-cyan-500/10 to-fuchsia-500/10 rounded-3xl flex items-center justify-center border border-cyan-500/20 relative">
+                                        <Bot className="w-16 h-16 text-cyan-400" />
                                         {/* Decorative elements */}
-                                        <div className="absolute -top-2 -right-2 w-4 h-4 bg-violet-500/30 rounded-full animate-ping" />
+                                        <div className="absolute -top-2 -right-2 w-4 h-4 bg-cyan-500/30 rounded-full animate-ping" />
                                         <div className="absolute -bottom-2 -left-2 w-3 h-3 bg-fuchsia-500/30 rounded-full animate-ping" style={{ animationDelay: '0.5s' }} />
                                     </div>
                                     {/* Orbital ring */}
-                                    <div className="absolute inset-0 border border-violet-500/10 rounded-full animate-spin" style={{ animationDuration: '10s' }}>
-                                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-violet-400 rounded-full" />
+                                    <div className="absolute inset-0 border border-cyan-500/10 rounded-full animate-spin" style={{ animationDuration: '10s' }}>
+                                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-cyan-400 rounded-full" />
                                     </div>
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-2">Configure seu primeiro Worker</h3>
@@ -463,7 +463,7 @@ export const WorkersIADashboard: React.FC = () => {
                                 </p>
                                 <button
                                     onClick={handleCreateNew}
-                                    className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-violet-500 to-fuchsia-600 text-white rounded-xl font-bold hover:from-violet-400 hover:to-fuchsia-500 transition-all shadow-lg shadow-violet-500/30 group"
+                                    className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-cyan-500 to-fuchsia-600 text-white rounded-xl font-bold hover:from-cyan-400 hover:to-fuchsia-500 transition-all shadow-lg shadow-cyan-500/30 group"
                                 >
                                     <Zap className="w-5 h-5 group-hover:animate-bounce" />
                                     Criar Worker Inicial

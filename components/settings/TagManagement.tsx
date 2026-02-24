@@ -21,7 +21,7 @@ const TAG_COLORS = [
     '#f59e0b', // amber
     '#ef4444', // rose
     '#3b82f6', // blue
-    '#8b5cf6', // violet
+    '#8b5cf6', // cyan
     '#ec4899', // pink
     '#14b8a6', // teal
 ];
@@ -146,7 +146,7 @@ export const TagManagement: React.FC<TagManagementProps> = ({ organizationId }) 
     if (isLoading) {
         return (
             <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
+                <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
             </div>
         );
     }

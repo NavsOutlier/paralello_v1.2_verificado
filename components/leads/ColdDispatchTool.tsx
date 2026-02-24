@@ -198,13 +198,13 @@ export const ColdDispatchTool: React.FC<ColdDispatchToolProps> = ({ preselectedC
                         {/* TEMPLATE */}
                         <div className="space-y-3">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                <Tag className="w-4 h-4 text-violet-400" /> Template Ativo
+                                <Tag className="w-4 h-4 text-cyan-400" /> Template Ativo
                             </label>
                             <div className="relative group">
                                 <select
                                     value={selectedTemplateName}
                                     onChange={(e) => setSelectedTemplateName(e.target.value)}
-                                    className="w-full px-6 py-4 bg-slate-950/40 border border-white/10 rounded-2xl text-slate-200 focus:ring-2 focus:ring-violet-500/30 font-bold appearance-none cursor-pointer transition-all"
+                                    className="w-full px-6 py-4 bg-slate-950/40 border border-white/10 rounded-2xl text-slate-200 focus:ring-2 focus:ring-cyan-500/30 font-bold appearance-none cursor-pointer transition-all"
                                 >
                                     {groupedTemplates.marketing.map(t => <option key={t.id} value={t.template_name}>{t.name} (MARKETING)</option>)}
                                     {groupedTemplates.utility.map(t => <option key={t.id} value={t.template_name}>{t.name} (UTILIDADE)</option>)}
@@ -257,7 +257,7 @@ export const ColdDispatchTool: React.FC<ColdDispatchToolProps> = ({ preselectedC
                         <button
                             type="submit"
                             disabled={loading || !hasTemplates}
-                            className="w-full py-5 bg-gradient-to-br from-indigo-600 to-violet-700 hover:from-indigo-500 hover:to-violet-600 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-3 border border-white/10"
+                            className="w-full py-5 bg-gradient-to-br from-indigo-600 to-cyan-700 hover:from-indigo-500 hover:to-cyan-600 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-3 border border-white/10"
                         >
                             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-4 h-4" /> Enviar Mensagem Aprovada</>}
                         </button>

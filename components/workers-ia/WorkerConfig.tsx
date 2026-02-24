@@ -497,7 +497,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         placeholder="Ex: Consultor de Vendas"
-                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
                         required
                     />
                 </div>
@@ -523,7 +523,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                     <select
                         value={formData.model}
                         onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none"
                     >
                         <option value="gpt-4o">GPT-4o (OpenAI)</option>
                         <option value="gpt-4o-mini">GPT-4o Mini (Rápido)</option>
@@ -540,7 +540,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                         min="1"
                         value={formData.sla_threshold_seconds}
                         onChange={(e) => setFormData({ ...formData, sla_threshold_seconds: Number(e.target.value) })}
-                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none"
                     />
                 </div>
             </div>
@@ -559,7 +559,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                         onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                         className="sr-only peer"
                     />
-                    <div className="w-12 h-6 bg-slate-700 peer-focus:ring-2 peer-focus:ring-violet-500 rounded-full peer peer-checked:after:translate-x-6 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600 peer-checked:after:bg-white"></div>
+                    <div className="w-12 h-6 bg-slate-700 peer-focus:ring-2 peer-focus:ring-cyan-500 rounded-full peer peer-checked:after:translate-x-6 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600 peer-checked:after:bg-white"></div>
                 </label>
             </div>
         </div>
@@ -580,7 +580,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                         step="0.1"
                         value={formData.temperature}
                         onChange={(e) => setFormData({ ...formData, temperature: Number(e.target.value) })}
-                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-500"
+                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
                     />
                 </div>
                 <div>
@@ -592,20 +592,20 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                         step="100"
                         value={formData.max_tokens}
                         onChange={(e) => setFormData({ ...formData, max_tokens: Number(e.target.value) })}
-                        className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-violet-500 focus:outline-none"
+                        className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-cyan-500 focus:outline-none"
                     />
                 </div>
             </div>
             <div className="space-y-2">
                 <label className="block text-sm font-bold text-slate-300 mb-2 flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-violet-400" />
+                    <FileText className="w-4 h-4 text-cyan-400" />
                     Instruções Principais
                 </label>
                 <textarea
                     value={formData.system_prompt}
                     onChange={(e) => setFormData({ ...formData, system_prompt: e.target.value })}
                     placeholder="Você é um assistente útil e amigável..."
-                    className={`w-full px-4 py-4 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-600 focus:ring-2 focus:ring-violet-500 focus:outline-none font-mono text-sm leading-relaxed resize-none custom-scrollbar ${isInline ? 'h-64' : 'h-80'}`}
+                    className={`w-full px-4 py-4 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-600 focus:ring-2 focus:ring-cyan-500 focus:outline-none font-mono text-sm leading-relaxed resize-none custom-scrollbar ${isInline ? 'h-64' : 'h-80'}`}
                 />
             </div>
         </div>
@@ -1260,7 +1260,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
         { label: 'Verde', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
         { label: 'Azul', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
         { label: 'Âmbar', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
-        { label: 'Violeta', color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20' },
+        { label: 'Violeta', color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' },
         { label: 'Rosa', color: 'text-rose-500', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
     ];
 
@@ -1269,7 +1269,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
             <div className="flex items-center justify-between">
                 <div>
                     <h4 className="font-bold text-white flex items-center gap-2">
-                        <Layout className="w-4 h-4 text-violet-400" />
+                        <Layout className="w-4 h-4 text-cyan-400" />
                         Etapas do Funil (Kanban)
                     </h4>
                     <p className="text-xs text-slate-400 mt-1">Personalize as colunas e o fluxo do seu atendimento</p>
@@ -1277,7 +1277,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                 <button
                     type="button"
                     onClick={addFunnelStage}
-                    className="flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-medium transition-all text-sm block"
+                    className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-medium transition-all text-sm block"
                 >
                     <Plus className="w-4 h-4" />
                     Adicionar Etapa
@@ -1288,7 +1288,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                 {formData.funnel_config.map((stage, idx) => (
                     <div
                         key={stage.id}
-                        className="flex items-center gap-4 p-4 bg-slate-800/50 border border-slate-700 rounded-2xl group hover:border-violet-500/30 transition-all"
+                        className="flex items-center gap-4 p-4 bg-slate-800/50 border border-slate-700 rounded-2xl group hover:border-cyan-500/30 transition-all"
                     >
                         <div className="flex flex-col gap-1">
                             <button
@@ -1316,7 +1316,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                                     type="text"
                                     value={stage.label}
                                     onChange={(e) => updateFunnelStage(stage.id, { label: e.target.value })}
-                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-violet-500 focus:outline-none"
+                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-cyan-500 focus:outline-none"
                                 />
                             </div>
                             <div className="col-span-10 md:col-span-5">
@@ -1374,7 +1374,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                                 key={tab.id}
                                 onClick={() => setActiveInlineTab(tab.id)}
                                 className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-all border-b-2 ${isActive
-                                    ? 'border-violet-500 text-violet-400 bg-violet-500/5'
+                                    ? 'border-cyan-500 text-cyan-400 bg-cyan-500/5'
                                     : 'border-transparent text-slate-400 hover:text-white hover:bg-slate-800/50'
                                     }`}
                             >
@@ -1399,7 +1399,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                     <button
                         onClick={() => handleSave(false)}
                         disabled={saving}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold transition-all"
+                        className="flex items-center gap-2 px-6 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-bold transition-all"
                     >
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         Salvar Alterações
@@ -1428,7 +1428,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-gradient-to-br from-violet-500 to-fuchsia-600 rounded-2xl shadow-lg shadow-violet-500/20">
+                        <div className="p-3 bg-gradient-to-br from-cyan-500 to-fuchsia-600 rounded-2xl shadow-lg shadow-cyan-500/20">
                             <Bot className="w-6 h-6 text-white" />
                         </div>
                         <div>
@@ -1462,13 +1462,13 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                                     key={step.id}
                                     className={`flex flex-col items-center gap-2 bg-slate-900 px-2 ${isActive ? 'scale-110' : ''} transition-all duration-300`}
                                 >
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${isActive ? 'border-violet-500 bg-violet-500/10 text-violet-400' :
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${isActive ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400' :
                                         isCompleted ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400' :
                                             'border-slate-700 bg-slate-800 text-slate-500'
                                         }`}>
                                         {isCompleted ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                                     </div>
-                                    <span className={`text-[10px] font-medium ${isActive ? 'text-violet-400' :
+                                    <span className={`text-[10px] font-medium ${isActive ? 'text-cyan-400' :
                                         isCompleted ? 'text-emerald-400' :
                                             'text-slate-500'
                                         }`}>
@@ -1535,7 +1535,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                             <button
                                 onClick={() => handleSave(true)}
                                 disabled={saving}
-                                className="flex items-center gap-2 px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold transition-all"
+                                className="flex items-center gap-2 px-6 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-bold transition-all"
                             >
                                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
                                 Próximo: Cérebro
@@ -1554,7 +1554,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                             <button
                                 onClick={() => handleSave(true)}
                                 disabled={saving}
-                                className="flex items-center gap-2 px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold transition-all"
+                                className="flex items-center gap-2 px-6 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-bold transition-all"
                             >
                                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
                                 Próximo: Funil
@@ -1573,7 +1573,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                             <button
                                 onClick={() => handleSave(true)}
                                 disabled={saving}
-                                className="flex items-center gap-2 px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold transition-all"
+                                className="flex items-center gap-2 px-6 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-bold transition-all"
                             >
                                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
                                 Próximo: Gatilhos
@@ -1592,7 +1592,7 @@ export const WorkerConfig: React.FC<WorkerConfigProps> = ({
                             <button
                                 onClick={() => handleSave(true)}
                                 disabled={saving}
-                                className="flex items-center gap-2 px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold transition-all"
+                                className="flex items-center gap-2 px-6 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-bold transition-all"
                             >
                                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
                                 Próximo: Conexão

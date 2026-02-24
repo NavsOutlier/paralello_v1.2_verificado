@@ -22,13 +22,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
       <button
         onClick={() => onViewChange(view)}
         className={`flex flex-col items-center justify-center w-full py-4 space-y-1 transition-all relative group ${currentView === view
-          ? 'text-violet-400'
+          ? 'text-cyan-400'
           : 'text-slate-500 hover:text-slate-300'
           }`}
         title={label}
       >
         {currentView === view && (
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-violet-600 rounded-r-lg" />
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-cyan-600 rounded-r-lg" />
         )}
         <div className="relative">
           <Icon className={`w-6 h-6 transition-transform group-hover:scale-110 ${currentView === view ? 'drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]' : ''}`} />
@@ -92,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
           <LogOut className="w-6 h-6" />
         </button>
 
-        <div className="p-0.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-violet-500/20 border border-white/5 shadow-lg">
+        <div className="p-0.5 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/20 border border-white/5 shadow-lg">
           <Avatar
             src={`https://ui-avatars.com/api/?name=${user?.email || 'User'}&background=6366f1&color=fff`}
             name={user?.email || 'User'}

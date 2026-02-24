@@ -119,7 +119,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 {/* Header - Standardized */}
                 <div className="flex-shrink-0 bg-slate-900/40 backdrop-blur-xl border-b border-cyan-500/10 px-6 py-4 flex items-center justify-between relative z-20 shadow-lg">
                     <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-violet-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 border border-white/10">
+                        <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-cyan-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 border border-white/10">
                             <span className="text-[15px] font-black">{entity.name.slice(0, 1).toUpperCase()}</span>
                         </div>
                         <div>
@@ -140,7 +140,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                         <button
                             onClick={() => setViewMode('standard')}
                             className={`flex items-center gap-2 px-4 py-1.5 rounded-full transition-all duration-300 ${viewMode === 'standard'
-                                ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-lg'
+                                ? 'bg-gradient-to-r from-indigo-500 to-cyan-600 text-white shadow-lg'
                                 : 'text-slate-400 hover:text-slate-200'
                                 }`}
                         >
@@ -360,7 +360,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                                     disabled={!inputText.trim() || isSending}
                                     className={`w-11 h-11 flex items-center justify-center rounded-full transition-all duration-300 ${!inputText.trim() || isSending
                                         ? 'bg-slate-700 text-slate-500'
-                                        : 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/20 hover:scale-105 active:scale-95'
+                                        : 'bg-gradient-to-br from-indigo-500 to-cyan-600 text-white shadow-lg shadow-indigo-500/20 hover:scale-105 active:scale-95'
                                         }`}
                                 >
                                     {isSending ? (

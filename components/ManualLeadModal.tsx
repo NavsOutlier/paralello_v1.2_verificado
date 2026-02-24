@@ -153,7 +153,7 @@ export const ManualLeadModal: React.FC<ManualLeadModalProps> = ({ isOpen, onClos
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex-1 py-3 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
+                            className="flex-1 py-3 bg-gradient-to-br from-indigo-500 to-cyan-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
                         >
                             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                             {loading ? 'Salvando...' : 'Salvar Lead'}

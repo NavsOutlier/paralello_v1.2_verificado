@@ -50,15 +50,15 @@ export const OnboardingChecklist: React.FC<OnboardingChecklistProps> = ({ stats,
     if (completedCount === steps.length) return null;
 
     return (
-        <Card className="mb-8 overflow-hidden relative bg-gradient-to-r from-indigo-600/20 via-violet-600/20 to-cyan-500/20 backdrop-blur-xl shadow-[0_0_60px_rgba(139,92,246,0.3),0_0_100px_rgba(99,102,241,0.2)] border-2 border-transparent [background-image:linear-gradient(to_right,rgba(15,23,42,0.9),rgba(15,23,42,0.8)),linear-gradient(to_right,#6366f1,#8b5cf6,#22d3ee)] [background-origin:border-box] [background-clip:padding-box,border-box]">
+        <Card className="mb-8 overflow-hidden relative bg-gradient-to-r from-indigo-600/20 via-cyan-600/20 to-cyan-500/20 backdrop-blur-xl shadow-[0_0_60px_rgba(139,92,246,0.3),0_0_100px_rgba(99,102,241,0.2)] border-2 border-transparent [background-image:linear-gradient(to_right,rgba(15,23,42,0.9),rgba(15,23,42,0.8)),linear-gradient(to_right,#6366f1,#8b5cf6,#22d3ee)] [background-origin:border-box] [background-clip:padding-box,border-box]">
             <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/30">
+                        <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-cyan-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/30">
                             <Sparkles className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-400 to-cyan-400 tracking-tight uppercase">Protocolo de Iniciação</h2>
+                            <h2 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-cyan-400 to-cyan-400 tracking-tight uppercase">Protocolo de Iniciação</h2>
                             <p className="text-slate-500 text-xs mt-0.5 font-bold uppercase tracking-widest">Complete os protocolos para ativar sua estação</p>
                         </div>
                     </div>

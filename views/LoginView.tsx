@@ -69,11 +69,11 @@ export const LoginView: React.FC = () => {
                         <div className="space-y-2">
                             <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-1">Senha</label>
                             <div className="relative group">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-violet-400 transition-colors" />
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
                                 <input
                                     type="password"
                                     required
-                                    className="w-full bg-slate-800/50 border border-white/5 rounded-2xl py-4 pl-12 pr-4 focus:bg-slate-800 focus:border-violet-500/50 focus:ring-4 focus:ring-violet-500/10 transition-all outline-none text-slate-200 placeholder:text-slate-600 font-medium"
+                                    className="w-full bg-slate-800/50 border border-white/5 rounded-2xl py-4 pl-12 pr-4 focus:bg-slate-800 focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/10 transition-all outline-none text-slate-200 placeholder:text-slate-600 font-medium"
                                     placeholder="••••••••"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
@@ -84,7 +84,7 @@ export const LoginView: React.FC = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-4 mt-4 bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-2 group"
+                            className="w-full py-4 mt-4 bg-gradient-to-r from-indigo-500 to-cyan-600 text-white font-black rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-2 group"
                         >
                             {loading ? (
                                 <Loader2 className="w-5 h-5 animate-spin" />

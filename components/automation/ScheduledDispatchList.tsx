@@ -82,7 +82,7 @@ export const ScheduledDispatchList: React.FC<ScheduledDispatchListProps> = ({
             case 'holiday': return <CalendarDays className="w-4 h-4 text-orange-400" />;
             case 'meeting': return <Video className="w-4 h-4 text-blue-400" />;
             case 'payment': return <CreditCard className="w-4 h-4 text-emerald-400" />;
-            case 'reminder': return <Bell className="w-4 h-4 text-violet-400" />;
+            case 'reminder': return <Bell className="w-4 h-4 text-cyan-400" />;
             default: return <MessageSquare className="w-4 h-4 text-slate-400" />;
         }
     };
@@ -151,7 +151,7 @@ export const ScheduledDispatchList: React.FC<ScheduledDispatchListProps> = ({
                 </div>
                 <button
                     onClick={() => setShowForm(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-indigo-500/20"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-indigo-500 to-cyan-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-indigo-500/20"
                 >
                     <Plus className="w-4 h-4" />
                     Novo Disparo

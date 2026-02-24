@@ -200,7 +200,7 @@ export const WorkerMetricsCards: React.FC<WorkerMetricsCardsProps> = ({ agentId 
     if (!kpis) return null;
 
     const cards = [
-        { label: 'Conversas Ativas', value: kpis.totalConversations, icon: MessageSquare, color: 'from-violet-500 to-purple-600', trend: getTrend(kpis.totalConversations, previousKpis?.totalConversations), pos: true },
+        { label: 'Conversas Ativas', value: kpis.totalConversations, icon: MessageSquare, color: 'from-cyan-500 to-purple-600', trend: getTrend(kpis.totalConversations, previousKpis?.totalConversations), pos: true },
         { label: 'Sentimento Médio', value: `${(kpis.avgSentiment * 10).toFixed(1)}/10`, icon: StarIcon, color: 'from-emerald-500 to-teal-600', trend: 'neutral', pos: true },
         { label: 'Custo Estimado', value: `R$ ${kpis.totalCost.toFixed(2)}`, icon: DollarSign, color: 'from-blue-500 to-cyan-600', trend: getTrend(kpis.totalCost, previousKpis?.totalCost), pos: false },
         { label: 'SLA de Resposta', value: `${kpis.avgResponseTime.toFixed(1)}s`, icon: Clock, color: 'from-amber-500 to-orange-600', trend: getTrend(kpis.avgResponseTime, previousKpis?.avgResponseTime), pos: false },
@@ -214,7 +214,7 @@ export const WorkerMetricsCards: React.FC<WorkerMetricsCardsProps> = ({ agentId 
                 <h3 className="text-xl font-bold text-white">Visão Geral</h3>
                 <div className="flex items-center gap-2 bg-slate-800/50 p-1 rounded-xl border border-slate-700">
                     {periodOptions.map(p => (
-                        <button key={p.id} onClick={() => setPeriod(p.id)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${period === p.id ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>{p.label}</button>
+                        <button key={p.id} onClick={() => setPeriod(p.id)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${period === p.id ? 'bg-cyan-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>{p.label}</button>
                     ))}
                 </div>
             </div>

@@ -113,7 +113,7 @@ export const SystemSettings: React.FC = () => {
                                         disabled={saving === setting.key}
                                         className={`flex items-center gap-3 px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg ${saving === setting.key
                                             ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5'
-                                            : 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-95'
+                                            : 'bg-gradient-to-br from-indigo-500 to-cyan-600 text-white hover:shadow-indigo-500/25 hover:-translate-y-0.5 active:scale-95'
                                             }`}
                                     >
                                         {saving === setting.key ? (

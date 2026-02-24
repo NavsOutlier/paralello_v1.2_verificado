@@ -16,7 +16,7 @@ const TAG_COLORS = [
     { bg: 'bg-amber-500/10', text: 'text-amber-300', dot: 'bg-amber-400' },
     { bg: 'bg-rose-500/10', text: 'text-rose-300', dot: 'bg-rose-400' },
     { bg: 'bg-sky-500/10', text: 'text-sky-300', dot: 'bg-sky-400' },
-    { bg: 'bg-violet-500/10', text: 'text-violet-300', dot: 'bg-violet-400' },
+    { bg: 'bg-cyan-500/10', text: 'text-cyan-300', dot: 'bg-cyan-400' },
 ];
 
 const getTagColor = (tag: string) => {

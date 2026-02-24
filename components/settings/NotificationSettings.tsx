@@ -87,7 +87,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ orga
         });
     };
 
-    if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-violet-500" /></div>;
+    if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-cyan-500" /></div>;
 
     const prefs = settings.notification_preferences;
 
@@ -164,7 +164,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ orga
 
                 <div className="p-6 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-violet-500/10 rounded-xl text-violet-400 border border-violet-500/10">
+                        <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-400 border border-cyan-500/10">
                             <Volume2 className="w-5 h-5" />
                         </div>
                         <div>
@@ -174,7 +174,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ orga
                     </div>
                     <button
                         onClick={() => togglePref('daily_digest')}
-                        className={`w-14 h-7 rounded-full transition-all relative ${prefs.daily_digest ? 'bg-violet-600 shadow-[0_0_15px_rgba(124,58,237,0.4)]' : 'bg-slate-700'}`}
+                        className={`w-14 h-7 rounded-full transition-all relative ${prefs.daily_digest ? 'bg-cyan-600 shadow-[0_0_15px_rgba(124,58,237,0.4)]' : 'bg-slate-700'}`}
                     >
                         <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all shadow-md ${prefs.daily_digest ? 'right-1' : 'left-1'}`} />
                     </button>

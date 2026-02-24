@@ -33,7 +33,7 @@ export const RestrictedModule: React.FC<RestrictedModuleProps> = ({
             {/* Locked Overlay */}
             <div className="absolute inset-0 z-10 flex items-center justify-center p-6 text-center">
                 <div className="max-w-md w-full bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 shadow-2xl shadow-black/50 border-t-white/20 transform transition-all duration-500 group-hover:scale-[1.02]">
-                    <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-indigo-500/20">
+                    <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-cyan-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-indigo-500/20">
                         <Lock className="w-10 h-10 text-white" />
                     </div>
 

@@ -177,7 +177,7 @@ export const LeadsConfig: React.FC<LeadsConfigProps> = ({ selectedClientId }) =>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-xl shadow-indigo-500/20">
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-600 flex items-center justify-center shadow-xl shadow-indigo-500/20">
                             <Smartphone className="w-7 h-7 text-white" />
                         </div>
                         <div>
@@ -204,7 +204,7 @@ export const LeadsConfig: React.FC<LeadsConfigProps> = ({ selectedClientId }) =>
                 </div>
 
                 <div className="flex gap-2 bg-slate-900/40 p-1 rounded-2xl border border-white/5 backdrop-blur-md">
-                    <button className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg font-black text-[10px] uppercase tracking-widest transition-all">
+                    <button className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-600 text-white shadow-lg font-black text-[10px] uppercase tracking-widest transition-all">
                         <Settings2 className="w-4 h-4" /> Configuração
                     </button>
                     <button className="flex items-center gap-2 px-6 py-3 rounded-xl text-slate-500 hover:text-white font-black text-[10px] uppercase tracking-widest transition-all">
@@ -264,7 +264,7 @@ export const LeadsConfig: React.FC<LeadsConfigProps> = ({ selectedClientId }) =>
                                 <input type="text" placeholder="DDD + NÚMERO" value={newNumber.sender_phone} onChange={e => setNewNumber({ ...newNumber, sender_phone: e.target.value })} className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-xl text-[11px] text-emerald-400 font-black focus:ring-2 focus:ring-indigo-500/40 focus:outline-none placeholder:text-slate-600 transition-all" />
                                 <input type="text" placeholder="PHONE ID (META)" value={newNumber.phone_number_id} onChange={e => setNewNumber({ ...newNumber, phone_number_id: e.target.value })} className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-xl text-[11px] text-indigo-400 font-mono focus:ring-2 focus:ring-indigo-500/40 focus:outline-none placeholder:text-slate-600 transition-all" />
                             </div>
-                            <button onClick={handleAddNumber} disabled={saving} className="w-full py-4 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.2em] hover:scale-[1.02] transition-all shadow-xl shadow-indigo-500/30 active:scale-95">
+                            <button onClick={handleAddNumber} disabled={saving} className="w-full py-4 bg-gradient-to-br from-indigo-500 to-cyan-600 text-white rounded-xl text-[11px] font-black uppercase tracking-[0.2em] hover:scale-[1.02] transition-all shadow-xl shadow-indigo-500/30 active:scale-95">
                                 {saving ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'VINCULAR AGORA'}
                             </button>
                         </section>
@@ -276,7 +276,7 @@ export const LeadsConfig: React.FC<LeadsConfigProps> = ({ selectedClientId }) =>
             <div className="space-y-4 mt-12">
                 <div className="flex items-center gap-2">
                     <div className="p-2 bg-slate-800 rounded-xl border border-white/5">
-                        <Layout className="w-4 h-4 text-violet-400" />
+                        <Layout className="w-4 h-4 text-cyan-400" />
                     </div>
                     <h3 className="font-black text-slate-300 text-[11px] uppercase tracking-[0.2em]">Engenharia de Template</h3>
                 </div>
@@ -311,7 +311,7 @@ export const LeadsConfig: React.FC<LeadsConfigProps> = ({ selectedClientId }) =>
                                     <option value="authentication">AUTENTICAÇÃO</option>
                                 </select>
                             </div>
-                            <button onClick={handleAddTemplate} disabled={saving} className="w-full py-5 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-[1.25rem] text-[12px] font-black uppercase tracking-[0.3em] transition-all shadow-2xl shadow-indigo-500/40 hover:scale-[1.02] active:scale-95">
+                            <button onClick={handleAddTemplate} disabled={saving} className="w-full py-5 bg-gradient-to-br from-indigo-500 to-cyan-600 text-white rounded-[1.25rem] text-[12px] font-black uppercase tracking-[0.3em] transition-all shadow-2xl shadow-indigo-500/40 hover:scale-[1.02] active:scale-95">
                                 {saving ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'SOLICITAR APROVAÇÃO'}
                             </button>
                         </div>
@@ -320,7 +320,7 @@ export const LeadsConfig: React.FC<LeadsConfigProps> = ({ selectedClientId }) =>
                             <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-4">Payload (Estrutura da Mensagem)</label>
                             <textarea placeholder="Construa o corpo da mensagem oficial aqui..." value={newTemplate.content} onChange={e => setNewTemplate({ ...newTemplate, content: e.target.value })} className="w-full flex-1 min-h-[280px] p-8 bg-black/40 border border-white/5 rounded-[2rem] text-[12px] text-slate-200 font-medium leading-relaxed resize-none outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all" />
                             <div className="mt-4 flex items-center justify-between text-[8px] text-slate-700 font-extrabold uppercase tracking-widest">
-                                <span className="flex items-center gap-2"><Sparkles className="w-3 h-3 text-violet-500" /> Suporte: Variáveis {"{{1}}"} e Markdown</span>
+                                <span className="flex items-center gap-2"><Sparkles className="w-3 h-3 text-cyan-500" /> Suporte: Variáveis {"{{1}}"} e Markdown</span>
                                 <span>Preview Engine Ativa</span>
                             </div>
                         </div>

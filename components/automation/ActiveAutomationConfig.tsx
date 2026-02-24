@@ -146,11 +146,11 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-white/5 sticky top-0 bg-[#0d121f] z-10">
                     <div className="flex items-center gap-3">
-                        <div className={`p-2.5 rounded-xl ${duplicateMode ? 'bg-orange-500/10 border border-orange-500/20' : 'bg-violet-500/10 border border-violet-500/20'}`}>
+                        <div className={`p-2.5 rounded-xl ${duplicateMode ? 'bg-orange-500/10 border border-orange-500/20' : 'bg-cyan-500/10 border border-cyan-500/20'}`}>
                             {duplicateMode ? (
                                 <Copy className="w-5 h-5 text-orange-400" />
                             ) : (
-                                <Sparkles className="w-5 h-5 text-violet-400" />
+                                <Sparkles className="w-5 h-5 text-cyan-400" />
                             )}
                         </div>
                         <div>
@@ -197,7 +197,7 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                             onChange={(e) => setName(e.target.value)}
                             placeholder="Ex: Atualização Semanal"
                             required
-                            className="w-full px-4 py-2.5 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-violet-500/30 focus:outline-none placeholder:text-slate-600"
+                            className="w-full px-4 py-2.5 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-cyan-500/30 focus:outline-none placeholder:text-slate-600"
                         />
                     </div>
 
@@ -214,7 +214,7 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                                     type="button"
                                     onClick={() => toggleWeekday(day.value)}
                                     className={`p-2 rounded-lg text-center transition-all border ${selectedWeekdays.includes(day.value)
-                                        ? 'bg-violet-500/10 border-violet-500/30 text-violet-400'
+                                        ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
                                         : 'bg-slate-900/50 border-white/5 text-slate-500 hover:bg-white/5'
                                         }`}
                                 >
@@ -235,7 +235,7 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                             <select
                                 value={contextDays}
                                 onChange={(e) => setContextDays(Number(e.target.value))}
-                                className="w-full px-4 py-2.5 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-violet-500/30 focus:outline-none"
+                                className="w-full px-4 py-2.5 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-cyan-500/30 focus:outline-none"
                             >
                                 <option value={3}>Últimos 3 dias</option>
                                 <option value={7}>Últimos 7 dias</option>
@@ -250,7 +250,7 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                             <select
                                 value={assignedApprover}
                                 onChange={(e) => setAssignedApprover(e.target.value)}
-                                className="w-full px-4 py-2.5 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-violet-500/30 focus:outline-none"
+                                className="w-full px-4 py-2.5 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-cyan-500/30 focus:outline-none"
                             >
                                 <option value="">Selecione...</option>
                                 {teamMembers?.map(member => (
@@ -265,14 +265,14 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                     {/* Custom AI Guidance */}
                     <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1">
-                            <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
                             Direcionamento para IA (opcional)
                         </label>
                         <textarea
                             value={customPrompt}
                             onChange={(e) => setCustomPrompt(e.target.value)}
                             placeholder="Ex: Mencione a nova campanha de marketing. Seja mais formal. Pergunte sobre o projeto X..."
-                            className="w-full px-4 py-3 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-violet-500/30 focus:outline-none resize-none placeholder:text-slate-600"
+                            className="w-full px-4 py-3 bg-slate-950/50 border border-white/5 rounded-xl text-sm text-slate-200 focus:ring-2 focus:ring-cyan-500/30 focus:outline-none resize-none placeholder:text-slate-600"
                             rows={3}
                         />
                         <p className="text-[9px] text-slate-500 font-medium">
@@ -281,8 +281,8 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                     </div>
 
                     {/* Info Box */}
-                    <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-4">
-                        <p className="text-[11px] text-violet-300 leading-relaxed font-medium">
+                    <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
+                        <p className="text-[11px] text-cyan-300 leading-relaxed font-medium">
                             <strong>Como funciona:</strong> Nos dias selecionados, a IA analisará conversas,
                             tarefas e checklists dos últimos {contextDays} dias e sugerirá uma mensagem para enviar ao cliente.
                             O responsável revisa e aprova antes do envio.
@@ -291,8 +291,8 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
 
                     {/* Info for multiple selection */}
                     {selectedClientIds.length > 1 && (
-                        <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-3">
-                            <p className="text-xs text-violet-300 font-medium">
+                        <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-3">
+                            <p className="text-xs text-cyan-300 font-medium">
                                 <strong>Nota:</strong> Será criada uma automação separada para cada um dos {selectedClientIds.length} clientes selecionados.
                             </p>
                         </div>
@@ -310,7 +310,7 @@ export const ActiveAutomationConfig: React.FC<ActiveAutomationConfigProps> = ({
                         <button
                             type="submit"
                             disabled={loading || selectedWeekdays.length === 0 || selectedClientIds.length === 0}
-                            className={`flex-1 py-3 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg ${duplicateMode ? 'bg-gradient-to-br from-orange-500 to-amber-600 shadow-orange-500/20' : 'bg-gradient-to-br from-violet-500 to-indigo-600 shadow-violet-500/20'
+                            className={`flex-1 py-3 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg ${duplicateMode ? 'bg-gradient-to-br from-orange-500 to-amber-600 shadow-orange-500/20' : 'bg-gradient-to-br from-cyan-500 to-indigo-600 shadow-cyan-500/20'
                                 }`}
                         >
                             {loading ? (

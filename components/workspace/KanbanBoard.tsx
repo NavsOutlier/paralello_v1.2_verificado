@@ -15,7 +15,7 @@ interface KanbanBoardProps {
 const COLUMNS: { id: Task['status']; label: string; bg: string; border: string; dot: string; shadow: string }[] = [
     { id: 'todo', label: 'PENDENTE', bg: 'bg-amber-500/5', border: 'border-amber-500/20', dot: 'bg-amber-500', shadow: 'shadow-amber-500/10' },
     { id: 'in-progress', label: 'EM PROGRESSO', bg: 'bg-blue-500/5', border: 'border-blue-500/20', dot: 'bg-blue-500', shadow: 'shadow-blue-500/10' },
-    { id: 'review', label: 'REVISÃO', bg: 'bg-violet-500/5', border: 'border-violet-500/20', dot: 'bg-violet-500', shadow: 'shadow-violet-500/10' },
+    { id: 'review', label: 'REVISÃO', bg: 'bg-cyan-500/5', border: 'border-cyan-500/20', dot: 'bg-cyan-500', shadow: 'shadow-cyan-500/10' },
     { id: 'done', label: 'CONCLUÍDO', bg: 'bg-emerald-500/5', border: 'border-emerald-500/20', dot: 'bg-emerald-500', shadow: 'shadow-emerald-500/10' },
 ];
 

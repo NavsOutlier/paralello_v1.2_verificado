@@ -1,5 +1,5 @@
 export { Avatar } from './Avatar';
-export type { AvatarSize, AvatarStatus } from './Avatar';
+export type { AvatarSize } from './Avatar';
 
 export { Badge } from './Badge';
 export type { BadgeVariant, BadgeSize } from './Badge';

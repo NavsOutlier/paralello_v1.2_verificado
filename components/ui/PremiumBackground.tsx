@@ -62,7 +62,7 @@ export const PremiumBackground: React.FC = () => {
 
             {/* Gradient overlays */}
             <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
-            <div className="absolute bottom-0 right-0 w-96 h-96 bg-violet-500/10 rounded-full blur-[120px] translate-x-1/2 translate-y-1/2" />
+            <div className="absolute bottom-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-[120px] translate-x-1/2 translate-y-1/2" />
             <div className="absolute top-1/2 left-1/2 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/2" />
 
             {/* CSS Animations (re-injecting locally if not globally available) */}

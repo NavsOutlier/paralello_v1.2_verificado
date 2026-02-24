@@ -90,7 +90,7 @@ export const LeadsDashboard: React.FC = () => {
                                     key={client.id}
                                     onClick={() => setSelectedClient(client)}
                                     className={`w-full text-left p-3 rounded-xl transition-all ${selectedClient?.id === client.id
-                                        ? 'bg-gradient-to-r from-indigo-500/20 to-violet-500/10 border border-indigo-500/30'
+                                        ? 'bg-gradient-to-r from-indigo-500/20 to-cyan-500/10 border border-indigo-500/30'
                                         : 'hover:bg-white/5 border border-transparent'
                                         }`}
                                 >
@@ -110,7 +110,7 @@ export const LeadsDashboard: React.FC = () => {
                 {/* Module Header */}
                 <div className="bg-slate-900/40 backdrop-blur-2xl border-b border-white/5 px-6 py-2 flex-none flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl shadow-lg shadow-indigo-500/20">
+                        <div className="p-2 bg-gradient-to-br from-indigo-500 to-cyan-600 rounded-xl shadow-lg shadow-indigo-500/20">
                             {activeTab === 'dispatch' ? <Send className="w-4 h-4 text-white" /> : <Settings className="w-4 h-4 text-white" />}
                         </div>
                         <div>

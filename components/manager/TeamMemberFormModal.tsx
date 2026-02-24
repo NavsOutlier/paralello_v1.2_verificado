@@ -84,8 +84,8 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
             <div className="bg-[#0f172a] rounded-2xl shadow-2xl shadow-black/50 border border-white/10 max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
                 <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-violet-500/10 rounded-lg border border-violet-500/20">
-                            <UserPlus className="w-5 h-5 text-violet-400" />
+                        <div className="p-2 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
+                            <UserPlus className="w-5 h-5 text-cyan-400" />
                         </div>
                         <h2 className="text-xl font-bold text-white">
                             {member ? 'Editar Membro' : 'Convidar Membro'}
@@ -109,7 +109,7 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                                     required
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-slate-200 placeholder:text-slate-600 transition-all"
+                                    className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 text-slate-200 placeholder:text-slate-600 transition-all"
                                     placeholder="Ex: Ana Souza"
                                 />
                             </div>
@@ -127,7 +127,7 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                                     disabled={!!member}
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-slate-200 placeholder:text-slate-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 text-slate-200 placeholder:text-slate-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     placeholder="ana@empresa.com"
                                 />
                             </div>
@@ -151,14 +151,14 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                                             setFormData({ ...formData, jobTitle: e.target.value });
                                         }
                                     }}
-                                    className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-slate-200 transition-all appearance-none cursor-pointer"
+                                    className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 text-slate-200 transition-all appearance-none cursor-pointer"
                                     style={{ backgroundImage: 'none' }}
                                 >
                                     <option value="" className="bg-slate-900">Selecione uma especialidade...</option>
                                     {availableSpecialties.map(specialty => (
                                         <option key={specialty} value={specialty} className="bg-slate-900 text-white">{specialty}</option>
                                     ))}
-                                    <option value="new" className="bg-slate-900 text-violet-400 font-bold">+ Criar nova...</option>
+                                    <option value="new" className="bg-slate-900 text-cyan-400 font-bold">+ Criar nova...</option>
                                 </select>
                             </div>
                         ) : (
@@ -169,7 +169,7 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                                         type="text"
                                         value={formData.jobTitle}
                                         onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
-                                        className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-slate-200 placeholder:text-slate-600 transition-all"
+                                        className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 text-slate-200 placeholder:text-slate-600 transition-all"
                                         placeholder="Ex: Gestor de Tráfego"
                                         autoFocus
                                     />
@@ -199,7 +199,7 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                             <select
                                 value={formData.role}
                                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                                className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-slate-200 transition-all appearance-none cursor-pointer"
+                                className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 text-slate-200 transition-all appearance-none cursor-pointer"
                                 style={{ backgroundImage: 'none' }}
                             >
                                 <option value="viewer" className="bg-slate-900">Visualizador (Apenas leitura)</option>
@@ -230,7 +230,7 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                             />
                             <PermissionToggle
                                 label="Gerenciar Equipe"
-                                icon={<UserPlus className="w-4 h-4 text-violet-400" />}
+                                icon={<UserPlus className="w-4 h-4 text-cyan-400" />}
                                 checked={formData.canManageTeam}
                                 onChange={(checked) => setFormData({ ...formData, canManageTeam: checked })}
                                 disabled={formData.role === 'manager'}
@@ -270,7 +270,7 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
                         </button>
                         <button
                             type="submit"
-                            className="px-8 py-2.5 bg-gradient-to-r from-violet-600 to-violet-500 text-white rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-violet-500/20 transition-all disabled:opacity-50 border border-white/10"
+                            className="px-8 py-2.5 bg-gradient-to-r from-cyan-600 to-cyan-500 text-white rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-cyan-500/20 transition-all disabled:opacity-50 border border-white/10"
                             disabled={loading}
                         >
                             {loading ? 'Processando...' : member ? 'Salvar Alterações' : 'Enviar Convite'}
@@ -283,8 +283,8 @@ export const TeamMemberFormModal: React.FC<TeamMemberFormModalProps> = ({
 };
 
 const PermissionToggle = ({ label, icon, checked, onChange, disabled }: { label: string, icon: React.ReactNode, checked: boolean, onChange: (c: boolean) => void, disabled: boolean }) => (
-    <label className={`flex items-center gap-3 p-3 rounded-xl border border-white/5 transition-all ${checked && !disabled ? 'bg-slate-800/50 border-violet-500/30' : 'bg-slate-900/30 hover:bg-slate-800/50'} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
-        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${checked ? 'bg-violet-500 border-violet-500 text-white' : 'border-slate-600 bg-transparent'}`}>
+    <label className={`flex items-center gap-3 p-3 rounded-xl border border-white/5 transition-all ${checked && !disabled ? 'bg-slate-800/50 border-cyan-500/30' : 'bg-slate-900/30 hover:bg-slate-800/50'} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${checked ? 'bg-cyan-500 border-cyan-500 text-white' : 'border-slate-600 bg-transparent'}`}>
             {checked && <CheckSquare className="w-3.5 h-3.5" />}
         </div>
         <input

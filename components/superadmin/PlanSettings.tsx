@@ -221,7 +221,7 @@ export const PlanSettings: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div className="flex items-center gap-3">
-                    <div className="p-3 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl shadow-lg shadow-indigo-500/20">
+                    <div className="p-3 bg-gradient-to-br from-indigo-500 to-cyan-600 rounded-2xl shadow-lg shadow-indigo-500/20">
                         <Settings className="w-6 h-6 text-white" />
                     </div>
                     <div>
@@ -432,7 +432,7 @@ export const PlanSettings: React.FC = () => {
                             <button
                                 type="submit"
                                 disabled={!!saving}
-                                className="w-full py-4 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white rounded-2xl text-sm font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-indigo-500/20 active:scale-95 disabled:grayscale"
+                                className="w-full py-4 bg-gradient-to-r from-indigo-500 to-cyan-600 hover:from-indigo-600 hover:to-cyan-700 text-white rounded-2xl text-sm font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-indigo-500/20 active:scale-95 disabled:grayscale"
                             >
                                 {saving === 'new' ? 'Criando...' : 'Criar Plano Premium'}
                             </button>

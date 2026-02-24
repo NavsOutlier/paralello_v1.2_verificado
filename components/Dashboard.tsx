@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import {
   Activity, Users, CheckSquare, Clock, Loader2, AlertTriangle,
@@ -440,7 +440,7 @@ export const Dashboard: React.FC = () => {
   const statusConfig = {
     todo: { label: 'Pendente', icon: Circle, color: 'text-amber-500' },
     'in-progress': { label: 'Em Progresso', icon: PlayCircle, color: 'text-blue-500' },
-    review: { label: 'Revisão', icon: Eye, color: 'text-violet-500' },
+    review: { label: 'Revisão', icon: Eye, color: 'text-cyan-500' },
     done: { label: 'Concluído', icon: CheckCircle2, color: 'text-emerald-500' }
   };
 
@@ -496,7 +496,7 @@ export const Dashboard: React.FC = () => {
         <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 border border-white/10">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 border border-white/10">
                 <Activity className="w-5 h-5 text-white" />
               </div>
               <div className="flex flex-col justify-center">
@@ -618,11 +618,11 @@ export const Dashboard: React.FC = () => {
       <div className="p-8 space-y-8">
         {/* Review Tasks - Top Priority Section */}
         {reviewTasks.length > 0 && (
-          <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-violet-500/5 backdrop-blur-xl">
+          <div className="relative overflow-hidden rounded-2xl border border-cyan-500/20 bg-cyan-500/5 backdrop-blur-xl">
             <div className="p-6">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-200">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center shadow-lg shadow-cyan-200">
                     <Eye className="w-7 h-7 text-white" />
                   </div>
                   <div>
@@ -631,7 +631,7 @@ export const Dashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="px-4 py-2 rounded-full bg-violet-100 text-violet-700 text-sm font-bold">
+                  <span className="px-4 py-2 rounded-full bg-cyan-100 text-cyan-700 text-sm font-bold">
                     {reviewTasks.length} {reviewTasks.length === 1 ? 'tarefa' : 'tarefas'}
                   </span>
                 </div>
@@ -641,10 +641,10 @@ export const Dashboard: React.FC = () => {
                 {reviewTasks.slice(0, 6).map(task => (
                   <div
                     key={task.id}
-                    className="group relative bg-slate-900/60 backdrop-blur-md rounded-2xl p-4 border border-violet-500/20 shadow-sm hover:shadow-lg hover:shadow-violet-500/10 transition-all hover:-translate-y-1"
+                    className="group relative bg-slate-900/60 backdrop-blur-md rounded-2xl p-4 border border-cyan-500/20 shadow-sm hover:shadow-lg hover:shadow-cyan-500/10 transition-all hover:-translate-y-1"
                   >
                     <div className="flex items-start justify-between mb-3">
-                      <span className="text-[10px] font-bold text-violet-600 bg-violet-100 px-2 py-1 rounded-lg uppercase tracking-wide">
+                      <span className="text-[10px] font-bold text-cyan-600 bg-cyan-100 px-2 py-1 rounded-lg uppercase tracking-wide">
                         {task.clientName}
                       </span>
                       <div className="flex items-center gap-1">
@@ -674,7 +674,7 @@ export const Dashboard: React.FC = () => {
                         </button>
                         <button
                           onClick={() => window.location.href = `/?task=${task.id}`}
-                          className="p-1.5 rounded-lg bg-violet-100 text-violet-600 hover:bg-violet-200 transition-colors"
+                          className="p-1.5 rounded-lg bg-cyan-100 text-cyan-600 hover:bg-cyan-200 transition-colors"
                           title="Ver detalhes"
                         >
                           <ExternalLink className="w-4 h-4" />
@@ -686,7 +686,7 @@ export const Dashboard: React.FC = () => {
                     </h4>
                     {task.memberName && (
                       <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center text-white text-[8px] font-bold">
+                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center text-white text-[8px] font-bold">
                           {task.memberName.charAt(0)}
                         </div>
                         <span className="text-[10px] text-slate-500">{task.memberName}</span>
@@ -697,7 +697,7 @@ export const Dashboard: React.FC = () => {
               </div>
 
               {reviewTasks.length > 6 && (
-                <p className="text-center text-sm text-violet-600 mt-4 font-medium">
+                <p className="text-center text-sm text-cyan-600 mt-4 font-medium">
                   +{reviewTasks.length - 6} outras tarefas aguardando revisão
                 </p>
               )}
@@ -718,7 +718,7 @@ export const Dashboard: React.FC = () => {
             title="Tarefas Ativas"
             value={stats.activeTasks}
             icon={Activity}
-            gradient="from-indigo-500 to-violet-500"
+            gradient="from-indigo-500 to-cyan-500"
           />
           <StatCard
             title="Concluídas"
@@ -758,7 +758,7 @@ export const Dashboard: React.FC = () => {
             value={stats.teamMembers.toString()}
             subtitle="na equipe"
             icon={Users}
-            gradient="from-violet-500 to-purple-500"
+            gradient="from-cyan-500 to-purple-500"
           />
         </div>
 
@@ -814,7 +814,7 @@ export const Dashboard: React.FC = () => {
         <div className="relative bg-slate-900/40 backdrop-blur-xl rounded-3xl border border-cyan-500/10 shadow-2xl shadow-black/20 overflow-hidden">
           <div className="relative px-8 py-5 border-b border-cyan-500/10 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg border border-white/10 group">
+              <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-600 flex items-center justify-center shadow-lg border border-white/10 group">
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -974,7 +974,7 @@ export const Dashboard: React.FC = () => {
           <div className="relative bg-slate-900/40 backdrop-blur-xl rounded-3xl border border-cyan-500/10 shadow-2xl shadow-black/20 overflow-hidden group">
             <div className="relative px-6 py-5 border-b border-cyan-500/10">
               <div className="flex items-center gap-4">
-                <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-200">
+                <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center shadow-lg shadow-cyan-200">
                   <Target className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -1089,7 +1089,7 @@ export const Dashboard: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white text-xs font-bold">
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-white text-xs font-bold">
                             {item.member.profile?.name?.charAt(0) || '?'}
                           </div>
                           <div>
@@ -1116,7 +1116,7 @@ export const Dashboard: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-violet-50 text-violet-700 font-bold text-sm">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-50 text-cyan-700 font-bold text-sm">
                           <Users className="w-3.5 h-3.5" />
                           {item.clientsServed}
                         </span>

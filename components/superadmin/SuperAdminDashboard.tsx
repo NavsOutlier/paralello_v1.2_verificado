@@ -207,7 +207,7 @@ export const SuperAdminDashboard: React.FC = () => {
         return (
             <div className="flex-1 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm h-full relative z-10">
                 <div className="relative z-10 flex flex-col items-center">
-                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl shadow-2xl flex items-center justify-center text-white font-black text-2xl mb-6 animate-bounce">
+                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-cyan-600 rounded-2xl shadow-2xl flex items-center justify-center text-white font-black text-2xl mb-6 animate-bounce">
                         B
                     </div>
                     <div className="text-cyan-400/50 text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Sincronizando Sistema...</div>
@@ -256,7 +256,7 @@ export const SuperAdminDashboard: React.FC = () => {
                     </button>
                     <button
                         onClick={handleAddNew}
-                        className="flex items-center gap-3 px-8 py-4 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl text-white font-black text-xs uppercase tracking-widest shadow-[0_0_30px_rgba(99,102,241,0.3)] hover:shadow-[0_0_40px_rgba(99,102,241,0.5)] transition-all hover:-translate-y-1 active:scale-95"
+                        className="flex items-center gap-3 px-8 py-4 bg-gradient-to-br from-indigo-500 to-cyan-600 rounded-2xl text-white font-black text-xs uppercase tracking-widest shadow-[0_0_30px_rgba(99,102,241,0.3)] hover:shadow-[0_0_40px_rgba(99,102,241,0.5)] transition-all hover:-translate-y-1 active:scale-95"
                     >
                         <Plus className="w-4 h-4" />
                         NOVA ORGANIZAÇÃO
@@ -321,7 +321,7 @@ export const SuperAdminDashboard: React.FC = () => {
                             title="Membros da Equipe"
                             value={organizations.reduce((sum, o) => sum + o.stats.users, 0)}
                             icon={Users}
-                            color="bg-violet-500"
+                            color="bg-cyan-500"
                         />
                     </div>
 
@@ -346,9 +346,9 @@ export const SuperAdminDashboard: React.FC = () => {
                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">R$97/mês + R$7/cliente • {PLANS[PlanType.AGENCIA].maxUsers} usuários</div>
                         </div>
 
-                        <div className="bg-slate-900/40 backdrop-blur-2xl p-8 rounded-[2rem] border border-violet-500/20 shadow-2xl group hover:border-violet-500/40 transition-all">
+                        <div className="bg-slate-900/40 backdrop-blur-2xl p-8 rounded-[2rem] border border-cyan-500/20 shadow-2xl group hover:border-cyan-500/40 transition-all">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-[10px] font-black text-violet-400 uppercase tracking-[0.3em]">Protocolo ENTERPRISE</h3>
+                                <h3 className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.3em]">Protocolo ENTERPRISE</h3>
                                 <span className="text-3xl font-black text-white">{getPlanCount(PlanType.ENTERPRISE)}</span>
                             </div>
                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">R$297/mês + R$5/cliente • Ilimitado</div>

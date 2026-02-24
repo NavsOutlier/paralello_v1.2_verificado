@@ -169,7 +169,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                     <div className="flex items-center p-1 bg-slate-800 rounded-lg gap-1 border border-white/5 shadow-inner">
                         <button
                             onClick={() => setViewMode('list')}
-                            className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                            className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-gradient-to-br from-indigo-500 to-cyan-600 shadow-lg text-white' : 'text-slate-400 hover:text-slate-200'}`}
                             title="Lista"
                         >
                             <List className="w-4 h-4" />
@@ -191,7 +191,7 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                     {canManage && (
                         <button
                             onClick={props.onManualCreate}
-                            className="flex items-center gap-2 bg-gradient-to-br from-indigo-500 to-violet-600 text-white px-4 py-2 rounded-full font-black text-[11.5px] hover:scale-105 transition-all active:scale-95 shadow-lg shadow-indigo-500/20 border border-white/10"
+                            className="flex items-center gap-2 bg-gradient-to-br from-indigo-500 to-cyan-600 text-white px-4 py-2 rounded-full font-black text-[11.5px] hover:scale-105 transition-all active:scale-95 shadow-lg shadow-indigo-500/20 border border-white/10"
                         >
                             <Plus className="w-3.5 h-3.5" />
                             Nova Task
@@ -248,8 +248,8 @@ export const TaskManager: React.FC<TaskManagerProps> = (props) => {
                                                 <button onClick={() => { setStatusFilter('in-progress'); setOpenFilter(null); }} className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 ${statusFilter === 'in-progress' ? 'bg-blue-500/10 text-blue-400' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
                                                     <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.5)]" /> Em Progresso
                                                 </button>
-                                                <button onClick={() => { setStatusFilter('review'); setOpenFilter(null); }} className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 ${statusFilter === 'review' ? 'bg-violet-500/10 text-violet-400' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-violet-400 shadow-[0_0_8px_rgba(167,139,250,0.5)]" /> Revisão
+                                                <button onClick={() => { setStatusFilter('review'); setOpenFilter(null); }} className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 ${statusFilter === 'review' ? 'bg-cyan-500/10 text-cyan-400' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(167,139,250,0.5)]" /> Revisão
                                                 </button>
                                                 <button onClick={() => { setStatusFilter('done'); setOpenFilter(null); }} className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 ${statusFilter === 'done' ? 'bg-emerald-500/10 text-emerald-400' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}>
                                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" /> Concluído

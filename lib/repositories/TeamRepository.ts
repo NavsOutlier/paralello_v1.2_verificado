@@ -54,7 +54,10 @@ class TeamRepositoryClass extends BaseRepository<DBTeamMember> {
             permissions: {
                 canManageClients: db.role === 'manager',
                 canManageTasks: db.role !== 'viewer',
-                canManageTeam: db.role === 'manager'
+                canManageTeam: db.role === 'manager',
+                canManageMarketing: db.role === 'manager',
+                canManageAIAgents: db.role === 'manager',
+                canManageAutomation: db.role === 'manager'
             }
         };
     }

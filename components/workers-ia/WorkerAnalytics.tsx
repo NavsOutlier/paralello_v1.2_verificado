@@ -24,7 +24,7 @@ const LOSS_COLORS: Record<string, string> = {
     competitor: '#f59e0b', // amber-500
     no_fit: '#64748b',     // slate-500
     scheduled: '#10b981',  // emerald-500
-    other: '#8b5cf6',      // violet-500
+    other: '#8b5cf6',      // cyan-500
 };
 
 const LOSS_LABELS: Record<string, string> = {
@@ -239,7 +239,7 @@ export const WorkerAnalytics: React.FC<WorkerAnalyticsProps> = ({ agentId }) => 
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center h-96 gap-4">
-                <div className="w-12 h-12 border-4 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+                <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
                 <p className="text-slate-400 animate-pulse font-medium">Sincronizando métricas neurais...</p>
             </div>
         );
@@ -250,14 +250,14 @@ export const WorkerAnalytics: React.FC<WorkerAnalyticsProps> = ({ agentId }) => 
             {/* Real-time Banners Section */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {/* Connection Status */}
-                <div className="md:col-span-1 relative overflow-hidden bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl p-6 shadow-xl shadow-violet-500/10">
+                <div className="md:col-span-1 relative overflow-hidden bg-gradient-to-r from-cyan-600 to-indigo-600 rounded-2xl p-6 shadow-xl shadow-cyan-500/10">
                     <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSI0Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20" />
                     <div className="relative flex items-center justify-between">
                         <div>
-                            <p className="text-violet-200 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Conexões Ativas</p>
+                            <p className="text-cyan-200 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Conexões Ativas</p>
                             <div className="flex items-baseline gap-2">
                                 <p className="text-4xl font-black text-white">{activeConvs}</p>
-                                <span className="text-violet-200 text-[11px] font-bold">online</span>
+                                <span className="text-cyan-200 text-[11px] font-bold">online</span>
                             </div>
                         </div>
                         <Activity className="w-8 h-8 text-white/40 animate-pulse" />
@@ -265,16 +265,16 @@ export const WorkerAnalytics: React.FC<WorkerAnalyticsProps> = ({ agentId }) => 
                 </div>
 
                 {/* AI SDR Activity */}
-                <div className="relative overflow-hidden bg-slate-900 border border-violet-500/20 rounded-2xl p-6 shadow-lg">
+                <div className="relative overflow-hidden bg-slate-900 border border-cyan-500/20 rounded-2xl p-6 shadow-lg">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-violet-400/60 text-[10px] font-black uppercase tracking-[0.2em] mb-1">IA Atuando (SDR)</p>
+                            <p className="text-cyan-400/60 text-[10px] font-black uppercase tracking-[0.2em] mb-1">IA Atuando (SDR)</p>
                             <div className="flex items-baseline gap-2">
-                                <p className="text-4xl font-black text-violet-400">{activeConvs}</p>
+                                <p className="text-4xl font-black text-cyan-400">{activeConvs}</p>
                                 <span className="text-slate-500 text-[11px] font-bold">em triagem</span>
                             </div>
                         </div>
-                        <Database className="w-6 h-6 text-violet-500/30" />
+                        <Database className="w-6 h-6 text-cyan-500/30" />
                     </div>
                 </div>
 

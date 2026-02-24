@@ -112,12 +112,12 @@ export const ActiveSuggestionQueue: React.FC<ActiveSuggestionQueueProps> = ({
             {/* List */}
             {loading ? (
                 <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
+                    <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
                 </div>
             ) : suggestions.length === 0 ? (
                 <div className="bg-slate-900/40 backdrop-blur-xl border border-dashed border-white/10 rounded-2xl p-8 text-center">
-                    <div className="w-16 h-16 bg-violet-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-violet-500/20">
-                        <Sparkles className="w-8 h-8 text-violet-400" />
+                    <div className="w-16 h-16 bg-cyan-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-cyan-500/20">
+                        <Sparkles className="w-8 h-8 text-cyan-400" />
                     </div>
                     <h4 className="text-slate-300 font-black text-sm uppercase tracking-widest mb-2">Tudo em dia!</h4>
                     <p className="text-slate-500 text-xs font-medium max-w-xs mx-auto">
@@ -125,7 +125,7 @@ export const ActiveSuggestionQueue: React.FC<ActiveSuggestionQueueProps> = ({
                     </p>
                     <button
                         onClick={fetchSuggestions}
-                        className="mt-4 text-xs font-black text-violet-400 hover:text-violet-300 flex items-center justify-center gap-2 mx-auto uppercase tracking-widest"
+                        className="mt-4 text-xs font-black text-cyan-400 hover:text-cyan-300 flex items-center justify-center gap-2 mx-auto uppercase tracking-widest"
                     >
                         <RefreshCw className="w-3 h-3" />
                         Verificar novamente
@@ -141,7 +141,7 @@ export const ActiveSuggestionQueue: React.FC<ActiveSuggestionQueueProps> = ({
                             <div
                                 key={suggestion.id}
                                 className={`bg-slate-900/40 backdrop-blur-xl border rounded-2xl overflow-hidden transition-all duration-200
-                                    ${isExpanded ? 'border-violet-500/30 ring-2 ring-violet-500/10' : 'border-white/5 hover:border-violet-500/20'}
+                                    ${isExpanded ? 'border-cyan-500/30 ring-2 ring-cyan-500/10' : 'border-white/5 hover:border-cyan-500/20'}
                                 `}
                             >
                                 {/* Header Row */}
@@ -149,7 +149,7 @@ export const ActiveSuggestionQueue: React.FC<ActiveSuggestionQueueProps> = ({
                                     className="p-4 flex items-center gap-4 cursor-pointer hover:bg-white/5 transition-colors"
                                     onClick={() => toggleExpand(suggestion.id)}
                                 >
-                                    <div className={`p-2.5 rounded-xl transition-colors ${isExpanded ? 'bg-gradient-to-br from-violet-500 to-indigo-600 text-white' : 'bg-violet-500/10 text-violet-400'
+                                    <div className={`p-2.5 rounded-xl transition-colors ${isExpanded ? 'bg-gradient-to-br from-cyan-500 to-indigo-600 text-white' : 'bg-cyan-500/10 text-cyan-400'
                                         }`}>
                                         <Sparkles className="w-5 h-5" />
                                     </div>
@@ -170,8 +170,8 @@ export const ActiveSuggestionQueue: React.FC<ActiveSuggestionQueueProps> = ({
                                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                                             {formatDate(suggestion.created_at)}
                                         </span>
-                                        <div className={`p-1.5 rounded-xl transition-transform duration-200 ${isExpanded ? 'bg-violet-500/20 rotate-180' : 'bg-white/5'}`}>
-                                            <ChevronDown className={`w-4 h-4 ${isExpanded ? 'text-violet-400' : 'text-slate-500'}`} />
+                                        <div className={`p-1.5 rounded-xl transition-transform duration-200 ${isExpanded ? 'bg-cyan-500/20 rotate-180' : 'bg-white/5'}`}>
+                                            <ChevronDown className={`w-4 h-4 ${isExpanded ? 'text-cyan-400' : 'text-slate-500'}`} />
                                         </div>
                                     </div>
                                 </div>
@@ -221,14 +221,14 @@ export const ActiveSuggestionQueue: React.FC<ActiveSuggestionQueueProps> = ({
                                                                     .then(() => fetchSuggestions());
                                                             }}
                                                             className={`w-full text-left p-4 rounded-xl border-2 transition-all relative group ${suggestion.suggested_message === option
-                                                                ? 'border-violet-500/50 bg-violet-500/10 shadow-lg ring-4 ring-violet-500/10 z-10'
-                                                                : 'border-white/5 bg-slate-900/50 hover:border-violet-500/30 hover:shadow-sm'
+                                                                ? 'border-cyan-500/50 bg-cyan-500/10 shadow-lg ring-4 ring-cyan-500/10 z-10'
+                                                                : 'border-white/5 bg-slate-900/50 hover:border-cyan-500/30 hover:shadow-sm'
                                                                 }`}
                                                         >
                                                             <div className="flex gap-4">
                                                                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors ${suggestion.suggested_message === option
-                                                                    ? 'border-violet-500 bg-violet-500'
-                                                                    : 'border-slate-600 group-hover:border-violet-500/50'
+                                                                    ? 'border-cyan-500 bg-cyan-500'
+                                                                    : 'border-slate-600 group-hover:border-cyan-500/50'
                                                                     }`}>
                                                                     {suggestion.suggested_message === option && (
                                                                         <Check className="w-3.5 h-3.5 text-white" />
@@ -270,7 +270,7 @@ export const ActiveSuggestionQueue: React.FC<ActiveSuggestionQueueProps> = ({
                                                     handleApprove(suggestion.id);
                                                 }}
                                                 disabled={isProcessing}
-                                                className="flex-1 py-2.5 bg-gradient-to-br from-violet-500 to-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] hover:shadow-lg hover:shadow-violet-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                                className="flex-1 py-2.5 bg-gradient-to-br from-cyan-500 to-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] hover:shadow-lg hover:shadow-cyan-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                                             >
                                                 {isProcessing ? (
                                                     <Loader2 className="w-4 h-4 animate-spin" />

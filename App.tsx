@@ -121,7 +121,7 @@ const AppContent: React.FC = () => {
       <div className="h-screen flex flex-col items-center justify-center bg-[#0a0f1a] relative overflow-hidden">
         <PremiumBackground />
         <div className="relative z-10 flex flex-col items-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl shadow-2xl flex items-center justify-center text-white font-black text-2xl mb-6 animate-bounce">
+          <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-cyan-600 rounded-2xl shadow-2xl flex items-center justify-center text-white font-black text-2xl mb-6 animate-bounce">
             P
           </div>
           <div className="text-cyan-400/50 text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Sincronizando...</div>

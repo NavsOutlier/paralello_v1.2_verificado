@@ -169,7 +169,7 @@ export const OrganizationDrawer: React.FC<OrganizationDrawerProps> = ({
                     {activeTab === 'billing' && (
                         <div className="space-y-8 animate-in slide-in-from-right-4 duration-300">
                             {/* Resumo do Ciclo */}
-                            <div className="p-6 bg-gradient-to-br from-indigo-500/20 to-violet-500/10 rounded-3xl border border-indigo-500/20">
+                            <div className="p-6 bg-gradient-to-br from-indigo-500/20 to-cyan-500/10 rounded-3xl border border-indigo-500/20">
                                 <div className="flex items-center justify-between mb-6">
                                     <div>
                                         <p className="text-[10px] text-indigo-300 font-black uppercase tracking-widest mb-1">Fim do Ciclo Atual</p>

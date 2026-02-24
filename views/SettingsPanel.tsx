@@ -47,7 +47,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, organizati
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div className="flex items-center gap-2">
-                        <div className="p-2 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-lg shadow-lg shadow-violet-500/20 border border-white/10">
+                        <div className="p-2 bg-gradient-to-br from-cyan-600 to-indigo-600 rounded-lg shadow-lg shadow-cyan-500/20 border border-white/10">
                             <SettingsIcon className="w-5 h-5 text-white" />
                         </div>
                         <h1 className="text-xl font-bold text-white tracking-tight">Núcleo da Organização</h1>
@@ -86,14 +86,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack, organizati
                                         setMobileMenuOpen(false);
                                     }}
                                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group relative ${isActive
-                                        ? 'text-violet-300 bg-violet-500/10 border border-violet-500/20 shadow-lg shadow-violet-500/5'
+                                        ? 'text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 shadow-lg shadow-cyan-500/5'
                                         : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
                                         }`}
                                 >
-                                    <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-violet-400 drop-shadow-[0_0_8px_rgba(167,139,250,0.5)]' : 'text-slate-500 group-hover:text-slate-300'}`} />
+                                    <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(167,139,250,0.5)]' : 'text-slate-500 group-hover:text-slate-300'}`} />
                                     {tab.label}
                                     {isActive && (
-                                        <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-violet-400 shadow-[0_0_10px_rgba(167,139,250,0.8)] animate-pulse" />
+                                        <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(167,139,250,0.8)] animate-pulse" />
                                     )}
                                 </button>
                             );

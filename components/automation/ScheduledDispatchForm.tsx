@@ -324,7 +324,7 @@ export const ScheduledDispatchForm: React.FC<ScheduledDispatchFormProps> = ({
                             <button
                                 type="submit"
                                 disabled={loading || !message.trim() || !scheduledDate || selectedClientIds.length === 0}
-                                className={`flex-1 py-3 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg ${duplicateMode ? 'bg-gradient-to-br from-orange-500 to-amber-600 shadow-orange-500/20' : 'bg-gradient-to-br from-indigo-500 to-violet-600 shadow-indigo-500/20'
+                                className={`flex-1 py-3 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg ${duplicateMode ? 'bg-gradient-to-br from-orange-500 to-amber-600 shadow-orange-500/20' : 'bg-gradient-to-br from-indigo-500 to-cyan-600 shadow-indigo-500/20'
                                     }`}
                             >
                                 {loading ? (

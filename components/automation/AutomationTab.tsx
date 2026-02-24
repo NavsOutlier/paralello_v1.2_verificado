@@ -163,7 +163,7 @@ export const AutomationTab: React.FC = () => {
                                     key={client.id}
                                     onClick={() => setSelectedClient(client)}
                                     className={`w-full text-left p-3 rounded-xl transition-all ${selectedClient?.id === client.id
-                                        ? 'bg-gradient-to-r from-indigo-500/20 to-violet-500/10 border border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.1)]'
+                                        ? 'bg-gradient-to-r from-indigo-500/20 to-cyan-500/10 border border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.1)]'
                                         : 'hover:bg-white/5 border border-transparent'
                                         }`}
                                 >
@@ -189,7 +189,7 @@ export const AutomationTab: React.FC = () => {
                 {/* Header - Premium Dark */}
                 <div className="bg-slate-900/40 backdrop-blur-2xl border-b border-white/5 px-6 py-4">
                     <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl shadow-lg shadow-indigo-500/20">
+                        <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-cyan-600 rounded-xl shadow-lg shadow-indigo-500/20">
                             <Zap className="w-5 h-5 text-white" />
                         </div>
                         <div>
@@ -215,7 +215,7 @@ export const AutomationTab: React.FC = () => {
                                             key={section.id}
                                             onClick={() => setActiveSection(section.id)}
                                             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all whitespace-nowrap ${isActive
-                                                ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg font-black'
+                                                ? 'bg-gradient-to-br from-indigo-500 to-cyan-600 text-white shadow-lg font-black'
                                                 : 'text-slate-400 hover:text-slate-200 font-bold'
                                                 }`}
                                         >
@@ -249,7 +249,7 @@ export const AutomationTab: React.FC = () => {
                                                 setEditingAutomation(undefined);
                                                 setShowConfigModal(true);
                                             }}
-                                            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-indigo-500/20"
+                                            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-br from-indigo-500 to-cyan-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-indigo-500/20"
                                         >
                                             <Sparkles className="w-4 h-4" />
                                             Nova Automação
@@ -278,8 +278,8 @@ export const AutomationTab: React.FC = () => {
                                         {/* Right Column: Suggestions Feed */}
                                         <div className="space-y-3">
                                             <div className="flex items-center gap-2 mb-3">
-                                                <div className="p-2 bg-violet-500/10 rounded-xl border border-violet-500/20">
-                                                    <Sparkles className="w-4 h-4 text-violet-400" />
+                                                <div className="p-2 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
+                                                    <Sparkles className="w-4 h-4 text-cyan-400" />
                                                 </div>
                                                 <h4 className="font-black text-slate-300 text-xs uppercase tracking-widest">Fila de Sugestões</h4>
                                             </div>

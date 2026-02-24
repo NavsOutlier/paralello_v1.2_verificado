@@ -83,7 +83,7 @@ export const OrganizationInfo: React.FC<OrganizationInfoProps> = ({ organization
     if (isLoading) {
         return (
             <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
+                <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
             </div>
         );
     }
@@ -91,8 +91,8 @@ export const OrganizationInfo: React.FC<OrganizationInfoProps> = ({ organization
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4 mb-8">
-                <div className="p-3 bg-violet-500/10 rounded-2xl border border-violet-500/20">
-                    <Building2 className="w-8 h-8 text-violet-400" />
+                <div className="p-3 bg-cyan-500/10 rounded-2xl border border-cyan-500/20">
+                    <Building2 className="w-8 h-8 text-cyan-400" />
                 </div>
                 <div>
                     <h2 className="text-2xl font-bold text-white">Informações da Organização</h2>
@@ -114,7 +114,7 @@ export const OrganizationInfo: React.FC<OrganizationInfoProps> = ({ organization
                             type="text"
                             value={settings.display_name}
                             onChange={(e) => setSettings({ ...settings, display_name: e.target.value })}
-                            className="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-slate-200 placeholder:text-slate-600 transition-all font-medium"
+                            className="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 text-slate-200 placeholder:text-slate-600 transition-all font-medium"
                             placeholder="Ex: Minha Empresa Ltda"
                         />
                     </div>
@@ -129,7 +129,7 @@ export const OrganizationInfo: React.FC<OrganizationInfoProps> = ({ organization
                         value={settings.description}
                         onChange={(e) => setSettings({ ...settings, description: e.target.value })}
                         rows={3}
-                        className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-slate-200 placeholder:text-slate-600 transition-all resize-none custom-scrollbar"
+                        className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 text-slate-200 placeholder:text-slate-600 transition-all resize-none custom-scrollbar"
                         placeholder="Breve descrição sobre a organização..."
                     />
                 </div>
@@ -146,7 +146,7 @@ export const OrganizationInfo: React.FC<OrganizationInfoProps> = ({ organization
                                 type="url"
                                 value={settings.logo_url}
                                 onChange={(e) => setSettings({ ...settings, logo_url: e.target.value })}
-                                className="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-slate-200 placeholder:text-slate-600 transition-all"
+                                className="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 text-slate-200 placeholder:text-slate-600 transition-all"
                                 placeholder="https://exemplo.com/logo.png"
                             />
                         </div>
@@ -177,7 +177,7 @@ export const OrganizationInfo: React.FC<OrganizationInfoProps> = ({ organization
                                 type="email"
                                 value={settings.contact_email}
                                 onChange={(e) => setSettings({ ...settings, contact_email: e.target.value })}
-                                className="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-slate-200 placeholder:text-slate-600 transition-all"
+                                className="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 text-slate-200 placeholder:text-slate-600 transition-all"
                                 placeholder="contato@empresa.com"
                             />
                         </div>
@@ -194,7 +194,7 @@ export const OrganizationInfo: React.FC<OrganizationInfoProps> = ({ organization
                                 type="tel"
                                 value={settings.contact_phone}
                                 onChange={(e) => setSettings({ ...settings, contact_phone: e.target.value })}
-                                className="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-slate-200 placeholder:text-slate-600 transition-all"
+                                className="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 text-slate-200 placeholder:text-slate-600 transition-all"
                                 placeholder="(11) 99999-9999"
                             />
                         </div>
@@ -211,7 +211,7 @@ export const OrganizationInfo: React.FC<OrganizationInfoProps> = ({ organization
                         <select
                             value={settings.timezone}
                             onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
-                            className="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-slate-200 transition-all appearance-none cursor-pointer"
+                            className="w-full pl-10 pr-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 text-slate-200 transition-all appearance-none cursor-pointer"
                         >
                             <option value="America/Sao_Paulo" className="bg-slate-900">São Paulo (BRT)</option>
                             <option value="America/Manaus" className="bg-slate-900">Manaus (AMT)</option>
@@ -229,7 +229,7 @@ export const OrganizationInfo: React.FC<OrganizationInfoProps> = ({ organization
                 <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-violet-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-violet-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-white/10"
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-600 to-cyan-500 text-white rounded-xl font-bold hover:shadow-lg hover:shadow-cyan-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-white/10"
                 >
                     {isSaving ? (
                         <Loader2 className="w-4 h-4 animate-spin" />

@@ -170,10 +170,24 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         }
     };
 
-    // Listen for Group ID update in Realtime
+    // Listen for Group ID update in Realtime & Polling Fallback
     useEffect(() => {
         if (!isCreatingGroup || !newClientId) return;
 
+        let pollingInterval: any;
+        let timeoutId: any;
+        let isCompleted = false;
+
+        const completeProcess = () => {
+            if (isCompleted) return;
+            isCompleted = true;
+            console.log('--- Group Sync Completed! ---');
+            showToast('Grupo de WhatsApp sincronizado!');
+            setIsCreatingGroup(false);
+            setStep(4);
+        };
+
+        // 1. Setup Realtime Listener
         const channel = supabase
             .channel(`client-group-sync-${newClientId}`)
             .on(
@@ -185,17 +199,49 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     filter: `id=eq.${newClientId}`
                 },
                 (payload) => {
-                    if (payload.new.whatsapp_group_id) {
-                        console.log('--- Group Created Successfully! ---');
-                        showToast('Grupo de WhatsApp criado com sucesso!');
-                        setIsCreatingGroup(false);
-                        setStep(4);
+                    if (payload.new.whatsapp_group_id && !isCompleted) {
+                        completeProcess();
                     }
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log(`Realtime subscription status: ${status}`);
+            });
+
+        // 2. Setup Polling Fallback (every 3 seconds)
+        // This ensures it works even if WebSocket fails (e.g. 400 error)
+        pollingInterval = setInterval(async () => {
+            if (isCompleted) return;
+            try {
+                const { data } = await supabase
+                    .from('clients')
+                    .select('whatsapp_group_id')
+                    .eq('id', newClientId)
+                    .single();
+
+                if (data?.whatsapp_group_id) {
+                    completeProcess();
+                }
+            } catch (err) {
+                console.error('Polling error checking client group:', err);
+            }
+        }, 3000);
+
+        // 3. Setup Max Timeout (45 seconds) to avoid infinite loading
+        timeoutId = setTimeout(() => {
+            if (!isCompleted) {
+                isCompleted = true;
+                console.warn('--- Group creation timed out in frontend GUI ---');
+                showToast('A criação do grupo está demorando. Você pode prosseguir e verificá-lo depois!', 'info');
+                setIsCreatingGroup(false);
+                setStep(4);
+            }
+        }, 45000);
 
         return () => {
+            isCompleted = true;
+            if (pollingInterval) clearInterval(pollingInterval);
+            if (timeoutId) clearTimeout(timeoutId);
             supabase.removeChannel(channel);
         };
     }, [isCreatingGroup, newClientId, showToast]);

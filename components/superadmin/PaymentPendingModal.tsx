@@ -77,11 +77,13 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
     const handleCancel = async () => {
         setCanceling(true);
         try {
-            // Cancel the pending payment
-            const { error } = await supabase
-                .from('pending_payments')
-                .update({ status: 'cancelled' })
-                .eq('id', pendingPaymentId);
+            // Cancel the pending payment using the Edge Function to bypass RLS
+            const { error } = await supabase.functions.invoke('create-org-with-owner', {
+                body: {
+                    action: 'cancel_pending_payment',
+                    pending_payment_id: pendingPaymentId
+                }
+            });
 
             if (error) throw error;
 

@@ -58,7 +58,7 @@ serve(async (req) => {
             console.log(`Confirming pending payment: ${pending_payment_id}`);
 
             // Get the pending payment
-            const { data: pendingPayment, error: pendingError } = await supabaseClient
+            const { data: pendingPayment, error: pendingError } = await supabaseAdmin
                 .from('pending_payments')
                 .select('*')
                 .eq('id', pending_payment_id)
@@ -79,7 +79,7 @@ serve(async (req) => {
 
             // Now create the actual organization using the stored data
             return await createOrganizationFromData(
-                supabaseClient,
+                supabaseAdmin,
                 orgData,
                 corsHeaders,
                 pendingPayment.id,
@@ -94,7 +94,7 @@ serve(async (req) => {
         if (action === 'cancel_pending_payment' && pending_payment_id) {
             console.log(`Canceling pending payment: ${pending_payment_id}`);
 
-            const { error } = await supabaseClient
+            const { error } = await supabaseAdmin
                 .from('pending_payments')
                 .update({ status: 'cancelled' })
                 .eq('id', pending_payment_id);

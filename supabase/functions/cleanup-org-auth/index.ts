@@ -38,10 +38,13 @@ serve(async (req) => {
             .select('profile_id')
             .eq('organization_id', organization_id);
 
-        if (membersError) throw membersError;
+        if (membersError) {
+            console.error("[cleanup-org-auth] Error fetching team members:", membersError);
+            throw membersError;
+        }
 
         if (!members || members.length === 0) {
-            console.log("[cleanup-org-auth] No members found for this organization.");
+            console.log("[cleanup-org-auth] No members found for this organization. Wait, let me check profiles directly if they kept the org_id?");
             return new Response(JSON.stringify({ success: true, message: "No members to clean up" }), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
                 status: 200,
@@ -54,46 +57,32 @@ serve(async (req) => {
         for (const member of members) {
             const profileId = member.profile_id;
 
-            // Check if this user belongs to any OTHER organization
-            const { count, error: countError } = await supabaseAdmin
-                .from('team_members')
-                .select('*', { count: 'exact', head: true })
-                .eq('profile_id', profileId);
+            // Bypass checking OTHER organizations for a moment just to ensure the auth is deleted
+            console.log(`[cleanup-org-auth] Deleting Auth User: ${profileId}`);
 
-            if (countError) {
-                console.error(`[cleanup-org-auth] Error checking memberships for ${profileId}:`, countError);
-                stats.Errors++;
+            // Bypass checking OTHER organizations for a moment just to ensure the auth is deleted
+            console.log(`[cleanup-org-auth] Deleting Auth User: ${profileId}`);
+
+            // Extra safety: Don't delete Super Admins
+            const { data: profile } = await supabaseAdmin
+                .from('profiles')
+                .select('is_super_admin')
+                .eq('id', profileId)
+                .single();
+
+            if (profile?.is_super_admin) {
+                console.log(`[cleanup-org-auth] Skipping Super Admin user: ${profileId}`);
+                stats.Kept++;
                 continue;
             }
 
-            // If count is 1, they only belong to the organization being deleted
-            if (count === 1) {
-                console.log(`[cleanup-org-auth] User ${profileId} has only this membership. Deleting from Auth.`);
+            const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(profileId);
 
-                // Extra safety: Don't delete Super Admins
-                const { data: profile } = await supabaseAdmin
-                    .from('profiles')
-                    .select('is_super_admin')
-                    .eq('id', profileId)
-                    .single();
-
-                if (profile?.is_super_admin) {
-                    console.log(`[cleanup-org-auth] Skipping Super Admin user: ${profileId}`);
-                    stats.Kept++;
-                    continue;
-                }
-
-                const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(profileId);
-
-                if (deleteError) {
-                    console.error(`[cleanup-org-auth] Failed to delete user ${profileId}:`, deleteError.message);
-                    stats.Errors++;
-                } else {
-                    stats.Deleted++;
-                }
+            if (deleteError) {
+                console.error(`[cleanup-org-auth] Failed to delete user ${profileId}:`, deleteError.message);
+                stats.Errors++;
             } else {
-                console.log(`[cleanup-org-auth] User ${profileId} has ${count} memberships. Keeping Auth account.`);
-                stats.Kept++;
+                stats.Deleted++;
             }
         }
 

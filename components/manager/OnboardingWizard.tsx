@@ -78,6 +78,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
     // Step 4: Assignment State
     const [allTeamMembers, setAllTeamMembers] = useState<any[]>([]);
+    const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
 
     useEffect(() => {
         setLoading(false);
@@ -242,916 +243,851 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         };
     }, [isCreatingGroup, newClientId, showToast]);
 
+    const handleInviteMembers = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!organizationId) return;
+        setLoading(true);
 
-    e.preventDefault();
-    if (!organizationId) return;
-    setLoading(true);
-
-    try {
-        // First, register unique specialties if provided
-        const uniqueTitles = Array.from(new Set(invitedMembers.map(m => m.jobTitle.trim()).filter(t => t.length > 0)));
-        if (uniqueTitles.length > 0) {
-            // Upsert into team_specialties (ignore duplicates via ON CONFLICT if the DB supports it, or just insert)
-            for (const title of uniqueTitles) {
-                await supabase
-                    .from('team_specialties')
-                    .upsert({ organization_id: organizationId, name: title }, { onConflict: 'organization_id,name' })
-                    .select();
-            }
-        }
-
-        for (const member of invitedMembers) {
-            if (!member.email || !member.name) continue;
-
-            const { data: response, error: inviteError } = await supabase.functions.invoke('invite-team-member', {
-                body: {
-                    email: member.email.trim(),
-                    name: member.name.trim(),
-                    job_title: (member.jobTitle || '').trim(),
-                    role: member.role,
-                    organization_id: organizationId,
-                    invited_by: (await supabase.auth.getUser()).data.user?.id,
-                    permissions: member.permissions
+        try {
+            // First, register unique specialties if provided
+            const uniqueTitles = Array.from(new Set(invitedMembers.map(m => m.jobTitle.trim()).filter(t => t.length > 0)));
+            if (uniqueTitles.length > 0) {
+                // Upsert into team_specialties (ignore duplicates via ON CONFLICT if the DB supports it, or just insert)
+                for (const title of uniqueTitles) {
+                    await supabase
+                        .from('team_specialties')
+                        .upsert({ organization_id: organizationId, name: title }, { onConflict: 'organization_id,name' })
+                        .select();
                 }
-            });
-
-            if (inviteError || (response && response.error)) {
-                console.error('Erro ao convidar:', member.email, inviteError || response?.error);
             }
+
+            for (const member of invitedMembers) {
+                if (!member.email || !member.name) continue;
+
+                const { data: response, error: inviteError } = await supabase.functions.invoke('invite-team-member', {
+                    body: {
+                        email: member.email.trim(),
+                        name: member.name.trim(),
+                        job_title: (member.jobTitle || '').trim(),
+                        role: member.role,
+                        organization_id: organizationId,
+                        invited_by: (await supabase.auth.getUser()).data.user?.id,
+                        permissions: member.permissions
+                    }
+                });
+
+                if (inviteError || (response && response.error)) {
+                    console.error('Erro ao convidar:', member.email, inviteError || response?.error);
+                }
+            }
+
+            // If we already have clients, we could go to assignment, but usually after team we go to client creation
+            showToast('Processamento de convites concluído');
+            setStep(3);
+        } catch (err: any) {
+            showToast(err.message || 'Erro ao processar convites', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchAllTeamMembers = async () => {
+        if (!organizationId) return;
+        try {
+            const { data, error } = await supabase
+                .from('team_members')
+                .select('*, profile:profiles!team_members_profile_id_fkey(name, email)')
+                .eq('organization_id', organizationId)
+                .is('deleted_at', null);
+
+            if (error) throw error;
+            setAllTeamMembers(data || []);
+            // Auto-select the current user (manager)
+            const me = (await supabase.auth.getUser()).data.user;
+            const myMember = data?.find(m => m.profile_id === me?.id);
+            if (myMember) {
+                setSelectedMemberIds([myMember.id]);
+            }
+        } catch (error) {
+            console.error('Error fetching team members:', error);
+        }
+    };
+
+    useEffect(() => {
+        if (step === 4) {
+            fetchAllTeamMembers();
+        }
+    }, [step]);
+
+    const handleAssignMembers = async () => {
+        if (!organizationId || !newClientId || selectedMemberIds.length === 0) {
+            setStep(5); // Skip if nothing selected
+            return;
         }
 
-        // If we already have clients, we could go to assignment, but usually after team we go to client creation
-        showToast('Processamento de convites concluído');
-        setStep(3);
-    } catch (err: any) {
-        showToast(err.message || 'Erro ao processar convites', 'error');
-    } finally {
-        setLoading(false);
-    }
-};
+        setLoading(true);
+        try {
+            const assignments = selectedMemberIds.map(memberId => ({
+                organization_id: organizationId,
+                client_id: newClientId,
+                team_member_id: memberId,
+                role: 'support'
+            }));
 
-const fetchAllTeamMembers = async () => {
-    if (!organizationId) return;
-    try {
-        const { data, error } = await supabase
-            .from('team_members')
-            .select('*, profile:profiles!team_members_profile_id_fkey(name, email)')
-            .eq('organization_id', organizationId)
-            .is('deleted_at', null);
+            const { error } = await supabase
+                .from('client_assignments')
+                .insert(assignments);
 
-        if (error) throw error;
-        setAllTeamMembers(data || []);
-        // Auto-select the current user (manager)
-        const me = (await supabase.auth.getUser()).data.user;
-        const myMember = data?.find(m => m.profile_id === me?.id);
-        if (myMember) {
-            setSelectedMemberIds([myMember.id]);
+            if (error) throw error;
+            showToast('Equipe vinculada ao cliente com sucesso!');
+            setStep(5);
+        } catch (error: any) {
+            showToast(error.message || 'Erro ao vincular equipe', 'error');
+        } finally {
+            setLoading(false);
         }
-    } catch (error) {
-        console.error('Error fetching team members:', error);
-    }
-};
+    };
 
-useEffect(() => {
-    if (step === 4) {
-        fetchAllTeamMembers();
-    }
-}, [step]);
+    const addMemberRow = () => {
+        setInvitedMembers([...invitedMembers, {
+            name: '',
+            email: '',
+            jobTitle: '',
+            role: 'member',
+            permissions: {
+                can_manage_tasks: true,
+                can_manage_clients: false,
+                can_manage_team: false,
+                can_manage_marketing: false
+            }
+        }]);
+    };
 
-const handleAssignMembers = async () => {
-    if (!organizationId || !newClientId || selectedMemberIds.length === 0) {
-        setStep(5); // Skip if nothing selected
-        return;
-    }
-
-    setLoading(true);
-    try {
-        const assignments = selectedMemberIds.map(memberId => ({
-            organization_id: organizationId,
-            client_id: newClientId,
-            team_member_id: memberId,
-            role: 'support'
-        }));
-
-        const { error } = await supabase
-            .from('client_assignments')
-            .insert(assignments);
-
-        if (error) throw error;
-        showToast('Equipe vinculada ao cliente com sucesso!');
-        setStep(5);
-    } catch (error: any) {
-        showToast(error.message || 'Erro ao vincular equipe', 'error');
-    } finally {
-        setLoading(false);
-    }
-};
-
-const addMemberRow = () => {
-    setInvitedMembers([...invitedMembers, {
-        name: '',
-        email: '',
-        jobTitle: '',
-        role: 'member',
-        permissions: {
-            can_manage_tasks: true,
-            can_manage_clients: false,
-            can_manage_team: false,
-            can_manage_marketing: false
+    const removeMemberRow = (index: number) => {
+        if (invitedMembers.length > 1) {
+            setInvitedMembers(invitedMembers.filter((_, i) => i !== index));
         }
-    }]);
-};
+    };
 
-const removeMemberRow = (index: number) => {
-    if (invitedMembers.length > 1) {
-        setInvitedMembers(invitedMembers.filter((_, i) => i !== index));
-    }
-};
+    const updateMemberRow = (index: number, field: string, value: any) => {
+        const newMembers = [...invitedMembers];
+        if (field.includes('.')) {
+            const [parent, child] = field.split('.');
+            (newMembers[index] as any)[parent][child] = value;
+        } else {
+            (newMembers[index] as any)[field] = value;
+        }
+        setInvitedMembers(newMembers);
+    };
 
-const updateMemberRow = (index: number, field: string, value: any) => {
-    const newMembers = [...invitedMembers];
-    if (field.includes('.')) {
-        const [parent, child] = field.split('.');
-        (newMembers[index] as any)[parent][child] = value;
-    } else {
-        (newMembers[index] as any)[field] = value;
-    }
-    setInvitedMembers(newMembers);
-};
+    const renderStep1 = () => {
+        const instance = instances[0];
+        const isConnected = instance && ['connected', 'conectado'].includes(instance.status);
+        const isWaiting = instance?.status === 'waiting_scan' || instance?.status === 'connecting';
 
-const renderStep1 = () => {
-    const instance = instances[0];
-    const isConnected = instance && ['connected', 'conectado'].includes(instance.status);
-    const isWaiting = instance?.status === 'waiting_scan' || instance?.status === 'connecting';
-
-    return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-            <div className="text-center space-y-2">
-                <div className="inline-flex p-4 bg-indigo-500/10 text-indigo-400 rounded-2xl mb-2 border border-indigo-500/20">
-                    <MessageSquare className="w-8 h-8" />
+        return (
+            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                <div className="text-center space-y-2">
+                    <div className="inline-flex p-4 bg-indigo-500/10 text-indigo-400 rounded-2xl mb-2 border border-indigo-500/20">
+                        <MessageSquare className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-3xl font-black text-white tracking-tight">Sincronizar Inteligência</h2>
+                    <p className="text-slate-400 max-w-sm mx-auto text-sm">
+                        Estabeleça a conexão com sua conta principal para orquestrar comunicações automatizadas.
+                    </p>
                 </div>
-                <h2 className="text-3xl font-black text-white tracking-tight">Sincronizar Inteligência</h2>
-                <p className="text-slate-400 max-w-sm mx-auto text-sm">
-                    Estabeleça a conexão com sua conta principal para orquestrar comunicações automatizadas.
+
+                {(!instance || (!instance.qrCode && !isConnected)) && (
+                    <div className="flex flex-col items-center gap-6 py-8">
+                        <div className="p-12 border-2 border-dashed border-white/5 rounded-[40px] bg-white/[0.02] text-center w-full max-w-sm flex flex-col items-center justify-center min-h-[220px]">
+                            {loading ? (
+                                <>
+                                    <div className="relative">
+                                        <Loader2 className="w-12 h-12 text-indigo-500 animate-spin mb-4" />
+                                        <div className="absolute inset-0 bg-indigo-500/10 blur-xl animate-pulse rounded-full" />
+                                    </div>
+                                    <p className="font-bold text-white">Codificando QR Code...</p>
+                                    <p className="text-xs text-slate-500 mt-2 max-w-[200px]">Estabelecendo túnel de conexão com os servidores do WhatsApp.</p>
+                                </>
+                            ) : (
+                                <>
+                                    <Smartphone className="w-12 h-12 text-slate-700 mx-auto mb-4" />
+                                    <p className="text-sm text-slate-500 font-bold uppercase tracking-widest">Aguardando Iniciação</p>
+                                </>
+                            )}
+                        </div>
+                        {!loading && (
+                            <Button
+                                onClick={handleConnectWhatsApp}
+                                className="w-full max-w-sm h-12 rounded-xl text-md font-bold"
+                            >
+                                <Plus className="w-5 h-5 mr-2" />
+                                Gerar QR Code de Conexão
+                            </Button>
+                        )}
+                    </div>
+                )}
+
+                {isWaiting && instance.qrCode && (
+                    <Card className="p-8 border-white/5 bg-white/[0.02] backdrop-blur-md flex flex-col items-center gap-8 animate-in zoom-in-95 duration-500 rounded-[40px]">
+                        <div className="relative group">
+                            <div className="bg-white p-4 rounded-3xl shadow-2xl transition-all group-hover:shadow-indigo-500/20">
+                                <img src={instance.qrCode} alt="WhatsApp QR Code" className="w-48 h-48" />
+                            </div>
+                            <button
+                                onClick={handleConnectWhatsApp}
+                                disabled={loading}
+                                className="absolute -top-3 -right-3 bg-indigo-600 text-white p-2.5 rounded-full shadow-lg hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Atualizar QR Code"
+                            >
+                                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                            </button>
+                        </div>
+                        <div className="text-center">
+                            <p className="font-black text-white tracking-tight text-lg mb-1">Aguardando Escaneamento</p>
+                            <p className="text-xs text-slate-500 mb-6">WhatsApp &gt; Configurações &gt; Dispositivos Conectados</p>
+
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleConnectWhatsApp}
+                                disabled={loading}
+                                className="text-indigo-400 hover:text-white hover:bg-white/5 font-bold"
+                            >
+                                {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                                Problemas técnicos? Solicitar novo código
+                            </Button>
+                        </div>
+                    </Card>
+                )}
+
+                {isConnected && (
+                    <div className="py-8 text-center space-y-6 animate-in zoom-in-95 duration-500">
+                        <div className="inline-flex p-5 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">
+                            <CheckCircle2 className="w-12 h-12" />
+                        </div>
+                        <div className="space-y-1">
+                            <h3 className="text-2xl font-black text-white">Canal Estabelecido!</h3>
+                            <p className="text-sm text-slate-400">Sua conta está sincronizada e pronta para a missão.</p>
+                        </div>
+                        <Button
+                            onClick={() => setStep(2)}
+                            className="w-full max-w-xs h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 font-bold"
+                        >
+                            Ir para Próxima Etapa
+                            <ArrowRight className="w-5 h-5 ml-2" />
+                        </Button>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const renderStep2 = () => (
+        <div className="animate-in slide-in-from-right-8 fade-in duration-500">
+            <div className="mb-8 flex flex-col items-center">
+                <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-[24px] flex items-center justify-center text-emerald-400 mb-4 shadow-2xl shadow-emerald-900/10">
+                    <UserPlus className="w-8 h-8" />
+                </div>
+                <h2 className="text-3xl font-black text-white tracking-tight text-center">Convocação de Agentes 🤝</h2>
+                <p className="text-slate-400 mt-2 text-center max-w-sm text-sm leading-relaxed">
+                    Defina quem terá acesso aos protocolos de gestão e quais serão suas autorizações.
                 </p>
             </div>
 
-            {(!instance || (!instance.qrCode && !isConnected)) && (
-                <div className="flex flex-col items-center gap-6 py-8">
-                    <div className="p-12 border-2 border-dashed border-white/5 rounded-[40px] bg-white/[0.02] text-center w-full max-w-sm flex flex-col items-center justify-center min-h-[220px]">
-                        {loading ? (
-                            <>
-                                <div className="relative">
-                                    <Loader2 className="w-12 h-12 text-indigo-500 animate-spin mb-4" />
-                                    <div className="absolute inset-0 bg-indigo-500/10 blur-xl animate-pulse rounded-full" />
-                                </div>
-                                <p className="font-bold text-white">Codificando QR Code...</p>
-                                <p className="text-xs text-slate-500 mt-2 max-w-[200px]">Estabelecendo túnel de conexão com os servidores do WhatsApp.</p>
-                            </>
-                        ) : (
-                            <>
-                                <Smartphone className="w-12 h-12 text-slate-700 mx-auto mb-4" />
-                                <p className="text-sm text-slate-500 font-bold uppercase tracking-widest">Aguardando Iniciação</p>
-                            </>
-                        )}
-                    </div>
-                    {!loading && (
-                        <Button
-                            onClick={handleConnectWhatsApp}
-                            className="w-full max-w-sm h-12 rounded-xl text-md font-bold"
-                        >
-                            <Plus className="w-5 h-5 mr-2" />
-                            Gerar QR Code de Conexão
-                        </Button>
-                    )}
-                </div>
-            )}
-
-            {isWaiting && instance.qrCode && (
-                <Card className="p-8 border-white/5 bg-white/[0.02] backdrop-blur-md flex flex-col items-center gap-8 animate-in zoom-in-95 duration-500 rounded-[40px]">
-                    <div className="relative group">
-                        <div className="bg-white p-4 rounded-3xl shadow-2xl transition-all group-hover:shadow-indigo-500/20">
-                            <img src={instance.qrCode} alt="WhatsApp QR Code" className="w-48 h-48" />
-                        </div>
-                        <button
-                            onClick={handleConnectWhatsApp}
-                            disabled={loading}
-                            className="absolute -top-3 -right-3 bg-indigo-600 text-white p-2.5 rounded-full shadow-lg hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Atualizar QR Code"
-                        >
-                            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-                        </button>
-                    </div>
-                    <div className="text-center">
-                        <p className="font-black text-white tracking-tight text-lg mb-1">Aguardando Escaneamento</p>
-                        <p className="text-xs text-slate-500 mb-6">WhatsApp &gt; Configurações &gt; Dispositivos Conectados</p>
-
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleConnectWhatsApp}
-                            disabled={loading}
-                            className="text-indigo-400 hover:text-white hover:bg-white/5 font-bold"
-                        >
-                            {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                            Problemas técnicos? Solicitar novo código
-                        </Button>
-                    </div>
-                </Card>
-            )}
-
-            {isConnected && (
-                <div className="py-8 text-center space-y-6 animate-in zoom-in-95 duration-500">
-                    <div className="inline-flex p-5 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">
-                        <CheckCircle2 className="w-12 h-12" />
-                    </div>
-                    <div className="space-y-1">
-                        <h3 className="text-2xl font-black text-white">Canal Estabelecido!</h3>
-                        <p className="text-sm text-slate-400">Sua conta está sincronizada e pronta para a missão.</p>
-                    </div>
-                    <Button
-                        onClick={() => setStep(2)}
-                        className="w-full max-w-xs h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 font-bold"
-                    >
-                        Ir para Próxima Etapa
-                        <ArrowRight className="w-5 h-5 ml-2" />
-                    </Button>
-                </div>
-            )}
-        </div>
-    );
-};
-
-const renderStep2 = () => (
-    <div className="animate-in slide-in-from-right-8 fade-in duration-500">
-        <div className="mb-8 flex flex-col items-center">
-            <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 rounded-[24px] flex items-center justify-center text-emerald-400 mb-4 shadow-2xl shadow-emerald-900/10">
-                <UserPlus className="w-8 h-8" />
-            </div>
-            <h2 className="text-3xl font-black text-white tracking-tight text-center">Convocação de Agentes 🤝</h2>
-            <p className="text-slate-400 mt-2 text-center max-w-sm text-sm leading-relaxed">
-                Defina quem terá acesso aos protocolos de gestão e quais serão suas autorizações.
-            </p>
-        </div>
-
-        <form onSubmit={handleInviteMembers} className="space-y-4">
-            <div className="space-y-4 max-h-[400px] overflow-y-auto px-1 custom-scrollbar">
-                {invitedMembers.map((member, idx) => (
-                    <div key={idx} className="p-6 bg-white/[0.02] border border-white/5 rounded-[32px] relative group animate-in zoom-in-95 shadow-lg hover:border-indigo-500/30 transition-all">
-                        {invitedMembers.length > 1 && (
-                            <button
-                                type="button"
-                                onClick={() => removeMemberRow(idx)}
-                                className="absolute -top-2 -right-2 w-8 h-8 bg-slate-900 border border-white/10 text-red-400 rounded-full flex items-center justify-center hover:bg-red-500/10 shadow-xl transition-all"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        )}
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black text-slate-600 uppercase ml-1 tracking-widest">Nome Completo</label>
-                                <input
-                                    required
-                                    type="text"
-                                    value={member.name}
-                                    onChange={(e) => updateMemberRow(idx, 'name', e.target.value)}
-                                    placeholder="Ex: João Silva"
-                                    className="w-full px-4 py-2.5 bg-slate-950/40 border border-white/5 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium text-slate-200"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black text-slate-600 uppercase ml-1 tracking-widest">Email de Convite</label>
-                                <input
-                                    required
-                                    type="email"
-                                    value={member.email}
-                                    onChange={(e) => updateMemberRow(idx, 'email', e.target.value)}
-                                    placeholder="joao@suaagencia.com"
-                                    className="w-full px-4 py-2.5 bg-slate-950/40 border border-white/5 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium text-slate-200"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black text-slate-600 uppercase ml-1 tracking-widest">Especialidade / Cargo</label>
-                                <input
-                                    required
-                                    type="text"
-                                    value={member.jobTitle}
-                                    onChange={(e) => updateMemberRow(idx, 'jobTitle', e.target.value)}
-                                    placeholder="Ex: Gestor de Tráfego"
-                                    className="w-full px-4 py-2.5 bg-indigo-500/5 border border-indigo-500/20 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-bold text-indigo-400"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-black text-slate-600 uppercase ml-1 tracking-widest">Função no Sistema</label>
-                                <select
-                                    value={member.role}
-                                    onChange={(e) => updateMemberRow(idx, 'role', e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-slate-950/40 border border-white/5 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium text-slate-200"
+            <form onSubmit={handleInviteMembers} className="space-y-4">
+                <div className="space-y-4 max-h-[400px] overflow-y-auto px-1 custom-scrollbar">
+                    {invitedMembers.map((member, idx) => (
+                        <div key={idx} className="p-6 bg-white/[0.02] border border-white/5 rounded-[32px] relative group animate-in zoom-in-95 shadow-lg hover:border-indigo-500/30 transition-all">
+                            {invitedMembers.length > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={() => removeMemberRow(idx)}
+                                    className="absolute -top-2 -right-2 w-8 h-8 bg-slate-900 border border-white/10 text-red-400 rounded-full flex items-center justify-center hover:bg-red-500/10 shadow-xl transition-all"
                                 >
-                                    <option value="member">Membro (Operacional)</option>
-                                    <option value="manager">Gestor (Administrativo)</option>
-                                </select>
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-600 uppercase ml-1 tracking-widest">Nome Completo</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        value={member.name}
+                                        onChange={(e) => updateMemberRow(idx, 'name', e.target.value)}
+                                        placeholder="Ex: João Silva"
+                                        className="w-full px-4 py-2.5 bg-slate-950/40 border border-white/5 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium text-slate-200"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-600 uppercase ml-1 tracking-widest">Email de Convite</label>
+                                    <input
+                                        required
+                                        type="email"
+                                        value={member.email}
+                                        onChange={(e) => updateMemberRow(idx, 'email', e.target.value)}
+                                        placeholder="joao@suaagencia.com"
+                                        className="w-full px-4 py-2.5 bg-slate-950/40 border border-white/5 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium text-slate-200"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-600 uppercase ml-1 tracking-widest">Especialidade / Cargo</label>
+                                    <input
+                                        required
+                                        type="text"
+                                        value={member.jobTitle}
+                                        onChange={(e) => updateMemberRow(idx, 'jobTitle', e.target.value)}
+                                        placeholder="Ex: Gestor de Tráfego"
+                                        className="w-full px-4 py-2.5 bg-indigo-500/5 border border-indigo-500/20 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-bold text-indigo-400"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-600 uppercase ml-1 tracking-widest">Função no Sistema</label>
+                                    <select
+                                        value={member.role}
+                                        onChange={(e) => updateMemberRow(idx, 'role', e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-slate-950/40 border border-white/5 rounded-xl focus:ring-2 focus:ring-indigo-500/20 outline-none text-sm font-medium text-slate-200"
+                                    >
+                                        <option value="member">Membro (Operacional)</option>
+                                        <option value="manager">Gestor (Administrativo)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="bg-white/[0.02] p-5 rounded-2xl border border-white/5">
+                                <label className="text-[10px] font-black text-slate-600 uppercase block mb-3 ml-1 tracking-widest">Permissões de Acesso</label>
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={member.permissions.can_manage_tasks}
+                                                onChange={(e) => updateMemberRow(idx, 'permissions.can_manage_tasks', e.target.checked)}
+                                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                                            />
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-400 transition-colors">Tarefas</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={member.permissions.can_manage_clients}
+                                                onChange={(e) => updateMemberRow(idx, 'permissions.can_manage_clients', e.target.checked)}
+                                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                                            />
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-400 transition-colors">Clientes</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={member.permissions.can_manage_team}
+                                                onChange={(e) => updateMemberRow(idx, 'permissions.can_manage_team', e.target.checked)}
+                                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                                            />
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-400 transition-colors">Equipe</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <div className="relative flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={member.permissions.can_manage_marketing}
+                                                onChange={(e) => updateMemberRow(idx, 'permissions.can_manage_marketing', e.target.checked)}
+                                                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                                            />
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-400 transition-colors">Marketing</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
+                    ))}
+                </div>
 
-                        <div className="bg-white/[0.02] p-5 rounded-2xl border border-white/5">
-                            <label className="text-[10px] font-black text-slate-600 uppercase block mb-3 ml-1 tracking-widest">Permissões de Acesso</label>
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={member.permissions.can_manage_tasks}
-                                            onChange={(e) => updateMemberRow(idx, 'permissions.can_manage_tasks', e.target.checked)}
-                                            className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
-                                        />
-                                    </div>
-                                    <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-400 transition-colors">Tarefas</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={member.permissions.can_manage_clients}
-                                            onChange={(e) => updateMemberRow(idx, 'permissions.can_manage_clients', e.target.checked)}
-                                            className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
-                                        />
-                                    </div>
-                                    <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-400 transition-colors">Clientes</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={member.permissions.can_manage_team}
-                                            onChange={(e) => updateMemberRow(idx, 'permissions.can_manage_team', e.target.checked)}
-                                            className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
-                                        />
-                                    </div>
-                                    <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-400 transition-colors">Equipe</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={member.permissions.can_manage_marketing}
-                                            onChange={(e) => updateMemberRow(idx, 'permissions.can_manage_marketing', e.target.checked)}
-                                            className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
-                                        />
-                                    </div>
-                                    <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-400 transition-colors">Marketing</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            <div className="flex justify-center mt-2">
-                <button
-                    type="button"
-                    onClick={addMemberRow}
-                    className="flex items-center gap-2 px-6 py-4 bg-white/[0.02] border border-dashed border-white/10 text-slate-400 rounded-[24px] hover:bg-white/5 hover:border-indigo-500/30 transition-all font-bold text-[10px] uppercase tracking-widest"
-                >
-                    <Plus className="w-4 h-4" />
-                    Adicionar Novo Agente
-                </button>
-            </div>
-
-            <div className="pt-4 flex flex-col gap-3">
-                <Button
-                    type="submit"
-                    disabled={loading || invitedMembers.some(m => !m.email || !m.name)}
-                    className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-2xl shadow-indigo-500/10 transition-all active:scale-[0.98] disabled:opacity-50"
-                >
-                    {loading ? (
-                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    ) : (
-                        <>
-                            Próximo: Configurar Primeiro Cliente
-                            <ArrowRight className="ml-2 w-5 h-5" />
-                        </>
-                    )}
-                </Button>
-                <button
-                    type="button"
-                    onClick={() => setStep(3)}
-                    className="text-[10px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest text-center py-2"
-                >
-                    Pular por enquanto
-                </button>
-            </div>
-        </form>
-    </div>
-);
-
-const renderStep3 = () => (
-    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-        <div className="text-center space-y-2">
-            <div className="inline-flex p-4 bg-white/5 text-blue-400 rounded-2xl mb-2 border border-white/10">
-                <Users className="w-8 h-8" />
-            </div>
-            <h2 className="text-3xl font-black text-white tracking-tight">Primeiro Ativo</h2>
-            <p className="text-slate-400 max-w-sm mx-auto text-sm">
-                Cadastre o alvo principal da sua operação para iniciar a orquestração.
-            </p>
-        </div>
-
-        <form onSubmit={handleCreateClient} className="space-y-6 max-w-sm mx-auto bg-white/[0.02] p-8 rounded-[40px] border border-white/5 shadow-2xl">
-            <div>
-                <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2 ml-1">Nome do Ativo</label>
-                <input
-                    required
-                    value={clientName}
-                    onChange={(e) => {
-                        const newName = e.target.value;
-                        setClientName(newName);
-                        if (!groupName || groupName === `Atendimento: ${clientName}`) {
-                            setGroupName(`Atendimento: ${newName}`);
-                        }
-                    }}
-                    placeholder="Ex: Pedro Alvares"
-                    className="w-full px-4 py-3 bg-slate-950/40 border border-white/5 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium text-slate-200"
-                />
-            </div>
-            <div>
-                <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2 ml-1">WhatsApp (55 + DDD + Número)</label>
-                <input
-                    value={clientPhone}
-                    onChange={(e) => setClientPhone(e.target.value)}
-                    placeholder="Ex: 5511999998888"
-                    className="w-full px-4 py-3 bg-slate-950/40 border border-white/5 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium text-slate-200"
-                />
-            </div>
-
-            <div className="space-y-3">
-                <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2 ml-1">Configuração de Campo</label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="flex justify-center mt-2">
                     <button
                         type="button"
-                        onClick={() => setGroupMode('create')}
-                        className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${groupMode === 'create'
-                            ? 'border-blue-500 bg-blue-500/10 text-blue-400 shadow-2xl'
-                            : 'border-white/5 bg-slate-950/40 text-slate-600 hover:border-white/10'
-                            }`}
+                        onClick={addMemberRow}
+                        className="flex items-center gap-2 px-6 py-4 bg-white/[0.02] border border-dashed border-white/10 text-slate-400 rounded-[24px] hover:bg-white/5 hover:border-indigo-500/30 transition-all font-bold text-[10px] uppercase tracking-widest"
                     >
-                        <Sparkles className="w-5 h-5" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">Novo Grupo</span>
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setGroupMode('link')}
-                        className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${groupMode === 'link'
-                            ? 'border-blue-500 bg-blue-500/10 text-blue-400 shadow-2xl'
-                            : 'border-white/5 bg-slate-950/40 text-slate-600 hover:border-white/10'
-                            }`}
-                    >
-                        <Users className="w-5 h-5" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">Existente</span>
+                        <Plus className="w-4 h-4" />
+                        Adicionar Novo Agente
                     </button>
                 </div>
-            </div>
 
-            {groupMode === 'create' && (
-                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                    <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2 ml-1">Nome da Célula de Operação</label>
-                    <input
-                        required
-                        value={groupName}
-                        onChange={(e) => setGroupName(e.target.value)}
-                        placeholder="Ex: Suporte VIP - Pedro"
-                        className="w-full px-4 py-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-bold text-indigo-400"
-                    />
-                </div>
-            )}
-
-            {groupMode === 'link' && (
-                <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-2">
-                    <div className="flex items-center justify-between ml-1">
-                        <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest">Código da Célula (ID)</label>
-                        <button
-                            type="button"
-                            onClick={() => setShowHelp(true)}
-                            className="text-[10px] font-bold text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1"
-                        >
-                            <HelpCircle className="w-3 h-3" />
-                            MANUAL DE EXTRAÇÃO
-                        </button>
-                    </div>
-                    <input
-                        required
-                        value={whatsappGroupId}
-                        onChange={(e) => setWhatsappGroupId(e.target.value)}
-                        placeholder="123456789@g.us"
-                        className="w-full px-4 py-3 bg-slate-950/60 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-mono text-sm text-blue-400"
-                    />
-                </div>
-            )}
-
-            {isCreatingGroup ? (
-                <Card className="p-8 bg-blue-500/5 border-white/5 flex flex-col items-center gap-6 animate-pulse mt-6 rounded-[32px]">
-                    <div className="relative">
-                        <div className="w-12 h-12 rounded-full border-4 border-blue-500/10 border-t-blue-500 animate-spin" />
-                        <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-yellow-500 animate-bounce" />
-                    </div>
-                    <div className="text-center">
-                        <h3 className="text-white font-black tracking-tight text-lg">Criando Célula...</h3>
-                        <p className="text-blue-400 text-xs mt-1">Configurando protocolos de comunicação.</p>
-                    </div>
-                </Card>
-            ) : (
-                <>
+                <div className="pt-4 flex flex-col gap-3">
                     <Button
                         type="submit"
-                        disabled={loading || !clientName}
-                        className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl shadow-2xl shadow-indigo-500/10 transition-all active:scale-[0.98] disabled:opacity-50 mt-6 uppercase tracking-wider text-sm"
+                        disabled={loading || invitedMembers.some(m => !m.email || !m.name)}
+                        className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-2xl shadow-indigo-500/10 transition-all active:scale-[0.98] disabled:opacity-50"
                     >
                         {loading ? (
                             <Loader2 className="w-5 h-5 animate-spin mr-2" />
                         ) : (
                             <>
-                                Vincular Operativos
+                                Próximo: Configurar Primeiro Cliente
                                 <ArrowRight className="ml-2 w-5 h-5" />
                             </>
                         )}
                     </Button>
                     <button
                         type="button"
-                        onClick={() => setStep(4)}
-                        className="text-[10px] font-black text-slate-600 hover:text-slate-400 transition-colors uppercase tracking-widest text-center py-2"
+                        onClick={() => setStep(3)}
+                        className="text-[10px] font-black text-slate-400 hover:text-slate-600 transition-colors uppercase tracking-widest text-center py-2"
                     >
-                        Ignorar por enquanto
+                        Pular por enquanto
                     </button>
-                </>
-            )}
-        </form>
-    </div>
-);
-
-const renderStep4 = () => (
-    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-        <div className="text-center space-y-2">
-            <div className="inline-flex p-4 bg-white/5 text-indigo-400 rounded-2xl mb-2 border border-white/10">
-                <Activity className="w-8 h-8" />
-            </div>
-            <h2 className="text-3xl font-black text-white tracking-tight">Integração de Marketing</h2>
-            <p className="text-slate-400 max-w-sm mx-auto text-sm">
-                Deseja conectar os protocolos do Tintim para automatizar os dados deste ativo?
-            </p>
+                </div>
+            </form>
         </div>
+    );
 
-        <div className="max-w-md mx-auto space-y-6">
-            <div className="bg-white/[0.02] p-8 rounded-[40px] border border-white/5 shadow-2xl space-y-6">
-                <div className="flex items-center justify-between p-5 bg-slate-950/40 rounded-2xl border border-white/5">
-                    <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${hasTintim ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'bg-white/5 text-slate-600'}`}>
-                            <Activity className="w-5 h-5" />
-                        </div>
-                        <span className="font-bold text-slate-300">Ativar Integração?</span>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                            type="checkbox"
-                            className="sr-only peer"
-                            checked={hasTintim}
-                            onChange={(e) => setHasTintim(e.target.checked)}
-                        />
-                        <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-500/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
+    const renderStep3 = () => (
+        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+            <div className="text-center space-y-2">
+                <div className="inline-flex p-4 bg-white/5 text-blue-400 rounded-2xl mb-2 border border-white/10">
+                    <Users className="w-8 h-8" />
+                </div>
+                <h2 className="text-3xl font-black text-white tracking-tight">Primeiro Ativo</h2>
+                <p className="text-slate-400 max-w-sm mx-auto text-sm">
+                    Cadastre o alvo principal da sua operação para iniciar a orquestração.
+                </p>
+            </div>
+
+            <form onSubmit={handleCreateClient} className="space-y-6 max-w-sm mx-auto bg-white/[0.02] p-8 rounded-[40px] border border-white/5 shadow-2xl">
+                <div>
+                    <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2 ml-1">Nome do Ativo</label>
+                    <input
+                        required
+                        value={clientName}
+                        onChange={(e) => {
+                            const newName = e.target.value;
+                            setClientName(newName);
+                            if (!groupName || groupName === `Atendimento: ${clientName}`) {
+                                setGroupName(`Atendimento: ${newName}`);
+                            }
+                        }}
+                        placeholder="Ex: Pedro Alvares"
+                        className="w-full px-4 py-3 bg-slate-950/40 border border-white/5 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium text-slate-200"
+                    />
+                </div>
+                <div>
+                    <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2 ml-1">WhatsApp (55 + DDD + Número)</label>
+                    <input
+                        value={clientPhone}
+                        onChange={(e) => setClientPhone(e.target.value)}
+                        placeholder="Ex: 5511999998888"
+                        className="w-full px-4 py-3 bg-slate-950/40 border border-white/5 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-medium text-slate-200"
+                    />
                 </div>
 
-                {hasTintim && (
-                    <div className="animate-in fade-in slide-in-from-top-4 duration-500">
-                        <TintimIntegrationForm
-                            clientId={newClientId}
-                            clientName={clientName}
-                            config={tintimConfig}
-                            onChange={setTintimConfig}
-                            showWebhook={true}
+                <div className="space-y-3">
+                    <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2 ml-1">Configuração de Campo</label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setGroupMode('create')}
+                            className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${groupMode === 'create'
+                                ? 'border-blue-500 bg-blue-500/10 text-blue-400 shadow-2xl'
+                                : 'border-white/5 bg-slate-950/40 text-slate-600 hover:border-white/10'
+                                }`}
+                        >
+                            <Sparkles className="w-5 h-5" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Novo Grupo</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setGroupMode('link')}
+                            className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${groupMode === 'link'
+                                ? 'border-blue-500 bg-blue-500/10 text-blue-400 shadow-2xl'
+                                : 'border-white/5 bg-slate-950/40 text-slate-600 hover:border-white/10'
+                                }`}
+                        >
+                            <Users className="w-5 h-5" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Existente</span>
+                        </button>
+                    </div>
+                </div>
+
+                {groupMode === 'create' && (
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                        <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2 ml-1">Nome da Célula de Operação</label>
+                        <input
+                            required
+                            value={groupName}
+                            onChange={(e) => setGroupName(e.target.value)}
+                            placeholder="Ex: Suporte VIP - Pedro"
+                            className="w-full px-4 py-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-bold text-indigo-400"
                         />
                     </div>
                 )}
+
+                {groupMode === 'link' && (
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-300 space-y-2">
+                        <div className="flex items-center justify-between ml-1">
+                            <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest">Código da Célula (ID)</label>
+                            <button
+                                type="button"
+                                onClick={() => setShowHelp(true)}
+                                className="text-[10px] font-bold text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1"
+                            >
+                                <HelpCircle className="w-3 h-3" />
+                                MANUAL DE EXTRAÇÃO
+                            </button>
+                        </div>
+                        <input
+                            required
+                            value={whatsappGroupId}
+                            onChange={(e) => setWhatsappGroupId(e.target.value)}
+                            placeholder="123456789@g.us"
+                            className="w-full px-4 py-3 bg-slate-950/60 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-mono text-sm text-blue-400"
+                        />
+                    </div>
+                )}
+
+                {isCreatingGroup ? (
+                    <Card className="p-8 bg-blue-500/5 border-white/5 flex flex-col items-center gap-6 animate-pulse mt-6 rounded-[32px]">
+                        <div className="relative">
+                            <div className="w-12 h-12 rounded-full border-4 border-blue-500/10 border-t-blue-500 animate-spin" />
+                            <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-yellow-500 animate-bounce" />
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-white font-black tracking-tight text-lg">Criando Célula...</h3>
+                            <p className="text-blue-400 text-xs mt-1">Configurando protocolos de comunicação.</p>
+                        </div>
+                    </Card>
+                ) : (
+                    <>
+                        <Button
+                            type="submit"
+                            disabled={loading || !clientName}
+                            className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl shadow-2xl shadow-indigo-500/10 transition-all active:scale-[0.98] disabled:opacity-50 mt-6 uppercase tracking-wider text-sm"
+                        >
+                            {loading ? (
+                                <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                            ) : (
+                                <>
+                                    Vincular Operativos
+                                    <ArrowRight className="ml-2 w-5 h-5" />
+                                </>
+                            )}
+                        </Button>
+                        <button
+                            type="button"
+                            onClick={() => setStep(4)}
+                            className="text-[10px] font-black text-slate-600 hover:text-slate-400 transition-colors uppercase tracking-widest text-center py-2"
+                        >
+                            Ignorar por enquanto
+                        </button>
+                    </>
+                )}
+            </form>
+        </div>
+    );
+
+    const renderStep4 = () => (
+        <div className="animate-in slide-in-from-right-8 fade-in duration-500">
+            <div className="mb-10 flex flex-col items-center">
+                <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/20 rounded-[24px] flex items-center justify-center text-blue-400 mb-6 shadow-2xl shadow-blue-900/10">
+                    <UserCog className="w-8 h-8" />
+                </div>
+                <h2 className="text-4xl font-black text-white tracking-tight text-center">Escalation Protocol</h2>
+                <p className="text-slate-400 mt-3 text-center max-w-sm text-lg leading-relaxed">
+                    Selecione os agentes autorizados para intervir na operação deste ativo.
+                </p>
             </div>
 
-            <div className="pt-2 flex flex-col gap-3">
+            <div className="space-y-3 max-h-[300px] overflow-y-auto px-1 mb-8">
+                {allTeamMembers.length === 0 ? (
+                    <div className="text-center py-10 bg-white/[0.02] rounded-3xl border-2 border-dashed border-white/5">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-700 mb-2" />
+                        <p className="text-sm text-slate-600 font-bold">Localizando operativos...</p>
+                    </div>
+                ) : (
+                    allTeamMembers.map((member) => (
+                        <label
+                            key={member.id}
+                            className={`flex items-center gap-4 p-5 rounded-[24px] border-2 transition-all cursor-pointer ${selectedMemberIds.includes(member.id)
+                                ? 'bg-indigo-500/10 border-indigo-500/30 shadow-2xl transform scale-[1.02]'
+                                : 'bg-white/[0.02] border-white/5 hover:border-indigo-500/30'
+                                }`}
+                        >
+                            <div className="relative">
+                                <input
+                                    type="checkbox"
+                                    className="hidden"
+                                    checked={selectedMemberIds.includes(member.id)}
+                                    onChange={(e) => {
+                                        if (e.target.checked) {
+                                            setSelectedMemberIds([...selectedMemberIds, member.id]);
+                                        } else {
+                                            setSelectedMemberIds(selectedMemberIds.filter(id => id !== member.id));
+                                        }
+                                    }}
+                                />
+                                <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${selectedMemberIds.includes(member.id)
+                                    ? 'bg-indigo-500 border-indigo-500 text-white'
+                                    : 'border-white/10 bg-slate-950'
+                                    }`}>
+                                    {selectedMemberIds.includes(member.id) && <Check className="w-3.5 h-3.5" />}
+                                </div>
+                            </div>
+                            <div className="flex-1">
+                                <p className="font-bold text-white tracking-tight">{member.profile?.name || 'Agente'}</p>
+                                <p className="text-xs text-slate-500 font-mono uppercase tracking-tighter">{member.profile?.email}</p>
+                            </div>
+                            {member.job_title && (
+                                <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 font-black text-[10px] uppercase tracking-widest">
+                                    {member.job_title}
+                                </Badge>
+                            )}
+                        </label>
+                    ))
+                )}
+            </div>
+
+            <Button
+                onClick={handleAssignMembers}
+                disabled={loading || allTeamMembers.length === 0}
+                className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-2xl shadow-indigo-500/10 transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+                {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                ) : (
+                    <>
+                        Vincular Equipe e Finalizar
+                        <ArrowRight className="ml-2 w-5 h-5" />
+                    </>
+                )}
+            </Button>
+        </div>
+    );
+
+    const renderAdvisory = () => (
+        <div className="text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="mx-auto w-24 h-24 bg-amber-500/10 rounded-[32px] border border-amber-500/20 flex items-center justify-center text-amber-500 shadow-2xl shadow-amber-900/10">
+                <Smartphone className="w-10 h-10" />
+            </div>
+            <div className="space-y-3 font-sans">
+                <h2 className="text-3xl font-black text-white tracking-tight">Protocolo de Iniciação 📱</h2>
+                <div className="bg-white/[0.02] backdrop-blur-md p-6 rounded-[32px] border border-white/5 shadow-sm max-w-sm mx-auto">
+                    <p className="text-slate-400 leading-relaxed font-medium text-sm">
+                        Para configurar sua automação agora, você precisará estar com o <span className="text-indigo-400 font-bold">celular em mãos</span> que você usa para falar com seus clientes para <span className="text-indigo-400 font-bold">escanear o QR Code</span>.
+                    </p>
+                </div>
+            </div>
+            <div className="space-y-4 max-w-sm mx-auto">
                 <Button
-                    onClick={handleSaveTintim}
-                    disabled={loading || (hasTintim && (!tintimConfig.customer_code || !tintimConfig.security_token))}
-                    className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-2xl shadow-indigo-500/10 transition-all active:scale-[0.98] disabled:opacity-50"
+                    onClick={() => setIsConfirmed(true)}
+                    className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl shadow-xl shadow-indigo-500/10 transition-all active:scale-[0.98] uppercase tracking-wider text-sm"
                 >
-                    {loading ? (
-                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    ) : (
-                        <>
-                            {hasTintim ? 'Finalizar Integração' : 'Continuar sem Integração'}
-                            <ArrowRight className="ml-2 w-5 h-5" />
-                        </>
-                    )}
+                    Iniciar Protocolo de Setup
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+                <button
+                    onClick={onComplete}
+                    className="text-[10px] font-black text-slate-600 hover:text-slate-400 transition-colors uppercase tracking-[0.2em]"
+                >
+                    Sincronizar em Outra Ocasião
+                </button>
+            </div>
+        </div>
+    );
+
+    const renderStep5 = () => (
+        <div className="text-center space-y-10 py-4 animate-in zoom-in-95 fade-in duration-700">
+            {/* Header com Brilho */}
+            <div className="relative inline-block group">
+                <div className="absolute inset-0 bg-emerald-500 blur-[80px] opacity-30 group-hover:opacity-50 transition-opacity animate-pulse" />
+                <div className="relative p-10 bg-white/[0.02] rounded-[48px] shadow-3xl border border-white/5 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-700">
+                    <Sparkles className="w-20 h-20 text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.5)]" />
+                    <div className="absolute -top-3 -right-3 w-10 h-10 bg-emerald-500 rounded-full border-4 border-slate-900 flex items-center justify-center text-white p-2 shadow-2xl">
+                        <Check className="w-5 h-5" />
+                    </div>
+                </div>
+            </div>
+
+            {/* Títulos */}
+            <div className="space-y-4">
+                <h2 className="text-4xl font-black text-white tracking-widest italic uppercase">
+                    Missão Cumprida! 🚀
+                </h2>
+                <p className="text-slate-400 max-w-sm mx-auto text-lg leading-relaxed">
+                    Sua agência agora é uma estação tática de alta performance.
+                </p>
+            </div>
+
+            {/* Checklist de Sucesso */}
+            <div className="max-w-xs mx-auto space-y-4 bg-white/[0.02] p-8 rounded-[40px] border border-white/5 shadow-2xl">
+                {[
+                    'Conexão Tática Estabelecida',
+                    'Agentes Convocados e Autorizados',
+                    'Ficha de Ativo Registrada',
+                    'Orquestração Iniciada'
+                ].map((item, idx) => (
+                    <div
+                        key={idx}
+                        className="flex items-center gap-3 animate-in slide-in-from-left-4 fade-in duration-500 fill-mode-both"
+                        style={{ animationDelay: `${idx * 200}ms` }}
+                    >
+                        <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                            <Check className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="text-xs font-black text-slate-300 uppercase tracking-widest">{item}</span>
+                    </div>
+                ))}
+            </div>
+
+            {/* Ação Final */}
+            <div className="max-w-sm mx-auto pt-4 px-8">
+                <Button
+                    onClick={onComplete}
+                    className="w-full h-16 rounded-[28px] bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xl shadow-3xl shadow-indigo-500/20 active:scale-95 transition-all group overflow-hidden relative"
+                >
+                    <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 skew-x-[-20deg]" />
+                    <span className="relative z-10 flex items-center justify-center tracking-widest uppercase text-sm">
+                        Acessar Terminal
+                        <ArrowRight className="w-6 h-6 ml-2" />
+                    </span>
                 </Button>
             </div>
         </div>
-    </div>
-);
+    );
 
-const renderStep5 = () => (
-    <div className="animate-in slide-in-from-right-8 fade-in duration-500">
-        <div className="mb-10 flex flex-col items-center">
-            <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/20 rounded-[24px] flex items-center justify-center text-blue-400 mb-6 shadow-2xl shadow-blue-900/10">
-                <UserCog className="w-8 h-8" />
-            </div>
-            <h2 className="text-4xl font-black text-white tracking-tight text-center">Escalation Protocol</h2>
-            <p className="text-slate-400 mt-3 text-center max-w-sm text-lg leading-relaxed">
-                Selecione os agentes autorizados para intervir na operação deste ativo.
-            </p>
-        </div>
-
-        <div className="space-y-3 max-h-[300px] overflow-y-auto px-1 mb-8">
-            {allTeamMembers.length === 0 ? (
-                <div className="text-center py-10 bg-white/[0.02] rounded-3xl border-2 border-dashed border-white/5">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-700 mb-2" />
-                    <p className="text-sm text-slate-600 font-bold">Localizando operativos...</p>
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-xl p-4">
+            <div className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-[48px] shadow-3xl overflow-hidden relative animate-in fade-in zoom-in-95 duration-300">
+                {/* Progress Bar */}
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-white/5">
+                    <div
+                        className="h-full bg-indigo-500 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                        style={{ width: `${(step / 5) * 100}%` }}
+                    />
                 </div>
-            ) : (
-                allTeamMembers.map((member) => (
-                    <label
-                        key={member.id}
-                        className={`flex items-center gap-4 p-5 rounded-[24px] border-2 transition-all cursor-pointer ${selectedMemberIds.includes(member.id)
-                            ? 'bg-indigo-500/10 border-indigo-500/30 shadow-2xl transform scale-[1.02]'
-                            : 'bg-white/[0.02] border-white/5 hover:border-indigo-500/30'
-                            }`}
+
+                <div className="p-8 md:p-12 relative">
+                    {/* Exit Button - Positioned in the top-right corner */}
+                    <button
+                        onClick={onComplete}
+                        className="absolute top-8 right-8 p-3 text-slate-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all z-10"
+                        title="Sair e configurar depois"
                     >
-                        <div className="relative">
-                            <input
-                                type="checkbox"
-                                className="hidden"
-                                checked={selectedMemberIds.includes(member.id)}
-                                onChange={(e) => {
-                                    if (e.target.checked) {
-                                        setSelectedMemberIds([...selectedMemberIds, member.id]);
-                                    } else {
-                                        setSelectedMemberIds(selectedMemberIds.filter(id => id !== member.id));
-                                    }
-                                }}
-                            />
-                            <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${selectedMemberIds.includes(member.id)
-                                ? 'bg-indigo-500 border-indigo-500 text-white'
-                                : 'border-white/10 bg-slate-950'
-                                }`}>
-                                {selectedMemberIds.includes(member.id) && <Check className="w-3.5 h-3.5" />}
-                            </div>
-                        </div>
-                        <div className="flex-1">
-                            <p className="font-bold text-white tracking-tight">{member.profile?.name || 'Agente'}</p>
-                            <p className="text-xs text-slate-500 font-mono uppercase tracking-tighter">{member.profile?.email}</p>
-                        </div>
-                        {member.job_title && (
-                            <Badge variant="outline" className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 font-black text-[10px] uppercase tracking-widest">
-                                {member.job_title}
-                            </Badge>
-                        )}
-                    </label>
-                ))
-            )}
-        </div>
+                        <X className="w-5 h-5" />
+                    </button>
 
-        <Button
-            onClick={handleAssignMembers}
-            disabled={loading || allTeamMembers.length === 0}
-            className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-2xl shadow-indigo-500/10 transition-all active:scale-[0.98] disabled:opacity-50"
-        >
-            {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-            ) : (
-                <>
-                    Vincular Equipe e Finalizar
-                    <ArrowRight className="ml-2 w-5 h-5" />
-                </>
-            )}
-        </Button>
-    </div>
-);
-
-const renderAdvisory = () => (
-    <div className="text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="mx-auto w-24 h-24 bg-amber-500/10 rounded-[32px] border border-amber-500/20 flex items-center justify-center text-amber-500 shadow-2xl shadow-amber-900/10">
-            <Smartphone className="w-10 h-10" />
-        </div>
-        <div className="space-y-3 font-sans">
-            <h2 className="text-3xl font-black text-white tracking-tight">Protocolo de Iniciação 📱</h2>
-            <div className="bg-white/[0.02] backdrop-blur-md p-6 rounded-[32px] border border-white/5 shadow-sm max-w-sm mx-auto">
-                <p className="text-slate-400 leading-relaxed font-medium text-sm">
-                    Para configurar sua automação agora, você precisará estar com o <span className="text-indigo-400 font-bold">celular em mãos</span> que você usa para falar com seus clientes para <span className="text-indigo-400 font-bold">escanear o QR Code</span>.
-                </p>
-            </div>
-        </div>
-        <div className="space-y-4 max-w-sm mx-auto">
-            <Button
-                onClick={() => setIsConfirmed(true)}
-                className="w-full py-6 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl shadow-xl shadow-indigo-500/10 transition-all active:scale-[0.98] uppercase tracking-wider text-sm"
-            >
-                Iniciar Protocolo de Setup
-                <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-            <button
-                onClick={onComplete}
-                className="text-[10px] font-black text-slate-600 hover:text-slate-400 transition-colors uppercase tracking-[0.2em]"
-            >
-                Sincronizar em Outra Ocasião
-            </button>
-        </div>
-    </div>
-);
-
-const renderStep6 = () => (
-    <div className="text-center space-y-10 py-4 animate-in zoom-in-95 fade-in duration-700">
-        {/* Header com Brilho */}
-        <div className="relative inline-block group">
-            <div className="absolute inset-0 bg-emerald-500 blur-[80px] opacity-30 group-hover:opacity-50 transition-opacity animate-pulse" />
-            <div className="relative p-10 bg-white/[0.02] rounded-[48px] shadow-3xl border border-white/5 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-700">
-                <Sparkles className="w-20 h-20 text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.5)]" />
-                <div className="absolute -top-3 -right-3 w-10 h-10 bg-emerald-500 rounded-full border-4 border-slate-900 flex items-center justify-center text-white p-2 shadow-2xl">
-                    <Check className="w-5 h-5" />
-                </div>
-            </div>
-        </div>
-
-        {/* Títulos */}
-        <div className="space-y-4">
-            <h2 className="text-4xl font-black text-white tracking-widest italic uppercase">
-                Missão Cumprida! 🚀
-            </h2>
-            <p className="text-slate-400 max-w-sm mx-auto text-lg leading-relaxed">
-                Sua agência agora é uma estação tática de alta performance.
-            </p>
-        </div>
-
-        {/* Checklist de Sucesso */}
-        <div className="max-w-xs mx-auto space-y-4 bg-white/[0.02] p-8 rounded-[40px] border border-white/5 shadow-2xl">
-            {[
-                'Conexão Tática Estabelecida',
-                'Agentes Convocados e Autorizados',
-                'Ficha de Ativo Registrada',
-                'Orquestração Iniciada'
-            ].map((item, idx) => (
-                <div
-                    key={idx}
-                    className="flex items-center gap-3 animate-in slide-in-from-left-4 fade-in duration-500 fill-mode-both"
-                    style={{ animationDelay: `${idx * 200}ms` }}
-                >
-                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                        <Check className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="text-xs font-black text-slate-300 uppercase tracking-widest">{item}</span>
-                </div>
-            ))}
-        </div>
-
-        {/* Ação Final */}
-        <div className="max-w-sm mx-auto pt-4 px-8">
-            <Button
-                onClick={onComplete}
-                className="w-full h-16 rounded-[28px] bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xl shadow-3xl shadow-indigo-500/20 active:scale-95 transition-all group overflow-hidden relative"
-            >
-                <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 skew-x-[-20deg]" />
-                <span className="relative z-10 flex items-center justify-center tracking-widest uppercase text-sm">
-                    Acessar Terminal
-                    <ArrowRight className="w-6 h-6 ml-2" />
-                </span>
-            </Button>
-        </div>
-    </div>
-);
-
-return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-xl p-4">
-        <div className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-[48px] shadow-3xl overflow-hidden relative animate-in fade-in zoom-in-95 duration-300">
-            {/* Progress Bar */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-white/5">
-                <div
-                    className="h-full bg-indigo-500 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(99,102,241,0.5)]"
-                    style={{ width: `${(step / 5) * 100}%` }}
-                />
-            </div>
-
-            <div className="p-8 md:p-12 relative">
-                {/* Exit Button - Positioned in the top-right corner */}
-                <button
-                    onClick={onComplete}
-                    className="absolute top-8 right-8 p-3 text-slate-500 hover:text-white hover:bg-white/5 rounded-2xl transition-all z-10"
-                    title="Sair e configurar depois"
-                >
-                    <X className="w-5 h-5" />
-                </button>
-
-                {/* Header Controls */}
-                <div className="flex items-center justify-between mb-12">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400 shadow-lg">
-                            <Building2 className="w-6 h-6" />
-                        </div>
-                        <span className="font-black text-white tracking-widest text-xl italic">BLACKBACK</span>
-                    </div>
-                    {window.innerWidth > 768 && (
-                        <div className="flex gap-2">
-                            {[1, 2, 3, 4, 5].map((s) => (
-                                <div
-                                    key={s}
-                                    className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${step === s ? 'w-8 bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]' : s < step ? 'bg-emerald-500/50' : 'bg-white/5'
-                                        }`}
-                                />
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Main Content */}
-                <main className="min-h-[400px] flex flex-col justify-center">
-                    {!isConfirmed ? (
-                        renderAdvisory()
-                    ) : (
-                        <>
-                            {step === 1 && renderStep1()}
-                            {step === 2 && renderStep2()}
-                            {step === 3 && renderStep3()}
-                            {step === 4 && renderStep4()}
-                            {step === 5 && renderStep5()}
-                        </>
-                    )}
-                </main>
-
-                {/* Footer Info */}
-                <footer className="mt-12 text-center">
-                    <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.4em]">
-                        {!isConfirmed ? 'Protocolo de Preparação' : `Operação Blackback • Fase ${step} de 5`}
-                    </p>
-                </footer>
-            </div>
-        </div>
-
-        {/* Help Modal */}
-        {showHelp && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[110] p-4 scale-in-center animate-in duration-300">
-                <div className="bg-slate-900 text-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-700/50">
-                    <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-800/50">
+                    {/* Header Controls */}
+                    <div className="flex items-center justify-between mb-12">
                         <div className="flex items-center gap-3">
-                            <Info className="w-6 h-6 text-blue-400" />
-                            <h3 className="text-xl font-bold tracking-tight">Como achar o ID do Grupo</h3>
+                            <div className="w-12 h-12 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400 shadow-lg">
+                                <Building2 className="w-6 h-6" />
+                            </div>
+                            <span className="font-black text-white tracking-widest text-xl italic">BLACKBACK</span>
                         </div>
-                        <button
-                            onClick={() => setShowHelp(false)}
-                            className="p-2 hover:bg-slate-700 rounded-xl transition-colors"
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
+                        {window.innerWidth > 768 && (
+                            <div className="flex gap-2">
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                    <div
+                                        key={s}
+                                        className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${step === s ? 'w-8 bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]' : s < step ? 'bg-emerald-500/50' : 'bg-white/5'
+                                            }`}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </div>
-                    <div className="p-8 space-y-6">
-                        <div className="space-y-4">
-                            <div className="flex gap-4">
-                                <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-xs">1</div>
-                                <p className="text-slate-300 leading-relaxed text-sm">
-                                    Acesse o <strong>WhatsApp Web</strong> no seu computador.
-                                </p>
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-xs">2</div>
-                                <p className="text-slate-300 leading-relaxed text-sm">
-                                    Abra a conversa do <strong>grupo desejado</strong>.
-                                </p>
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-xs">3</div>
-                                <p className="text-slate-300 leading-relaxed text-sm">
-                                    Clique com o <strong>botão direito</strong> sobre qualquer mensagem ou sobre o nome do grupo na barra lateral e selecione <strong>"Inspecionar"</strong>.
-                                </p>
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-xs">4</div>
-                                <p className="text-slate-300 leading-relaxed text-sm">
-                                    No código que aparecer, procure pelo atributo que contenha o termo <code className="bg-slate-800 px-1.5 py-0.5 rounded text-blue-300 font-bold">@g.us</code>.
-                                </p>
-                            </div>
-                        </div>
 
-                        <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20">
-                            <p className="text-xs text-blue-300 italic text-center leading-relaxed">
-                                <strong>Dica:</strong> Pressione <code className="bg-blue-900/40 px-1 rounded text-white font-mono uppercase text-[10px]">Ctrl + F</code> e digite <span className="text-white font-bold ml-1">@g.us</span> para localizar o ID numérico que precede esse sufixo.
-                            </p>
-                        </div>
+                    {/* Main Content */}
+                    <main className="min-h-[400px] flex flex-col justify-center">
+                        {!isConfirmed ? (
+                            renderAdvisory()
+                        ) : (
+                            <>
+                                {step === 1 && renderStep1()}
+                                {step === 2 && renderStep2()}
+                                {step === 3 && renderStep3()}
+                                {step === 4 && renderStep4()}
+                                {step === 5 && renderStep5()}
+                            </>
+                        )}
+                    </main>
 
-                        <Button
-                            onClick={() => setShowHelp(false)}
-                            className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold"
-                        >
-                            Entendi, Vou Copiar
-                        </Button>
-                    </div>
+                    {/* Footer Info */}
+                    <footer className="mt-12 text-center">
+                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.4em]">
+                            {!isConfirmed ? 'Protocolo de Preparação' : `Operação Blackback • Fase ${step} de 5`}
+                        </p>
+                    </footer>
                 </div>
             </div>
-        )}
-    </div>
-);
+
+            {/* Help Modal */}
+            {showHelp && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[110] p-4 scale-in-center animate-in duration-300">
+                    <div className="bg-slate-900 text-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-700/50">
+                        <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-800/50">
+                            <div className="flex items-center gap-3">
+                                <Info className="w-6 h-6 text-blue-400" />
+                                <h3 className="text-xl font-bold tracking-tight">Como achar o ID do Grupo</h3>
+                            </div>
+                            <button
+                                onClick={() => setShowHelp(false)}
+                                className="p-2 hover:bg-slate-700 rounded-xl transition-colors"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <div className="space-y-4">
+                                <div className="flex gap-4">
+                                    <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-xs">1</div>
+                                    <p className="text-slate-300 leading-relaxed text-sm">
+                                        Acesse o <strong>WhatsApp Web</strong> no seu computador.
+                                    </p>
+                                </div>
+                                <div className="flex gap-4">
+                                    <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-xs">2</div>
+                                    <p className="text-slate-300 leading-relaxed text-sm">
+                                        Abra a conversa do <strong>grupo desejado</strong>.
+                                    </p>
+                                </div>
+                                <div className="flex gap-4">
+                                    <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-xs">3</div>
+                                    <p className="text-slate-300 leading-relaxed text-sm">
+                                        Clique com o <strong>botão direito</strong> sobre qualquer mensagem ou sobre o nome do grupo na barra lateral e selecione <strong>"Inspecionar"</strong>.
+                                    </p>
+                                </div>
+                                <div className="flex gap-4">
+                                    <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold flex-shrink-0 text-xs">4</div>
+                                    <p className="text-slate-300 leading-relaxed text-sm">
+                                        No código que aparecer, procure pelo atributo que contenha o termo <code className="bg-slate-800 px-1.5 py-0.5 rounded text-blue-300 font-bold">@g.us</code>.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20">
+                                <p className="text-xs text-blue-300 italic text-center leading-relaxed">
+                                    <strong>Dica:</strong> Pressione <code className="bg-blue-900/40 px-1 rounded text-white font-mono uppercase text-[10px]">Ctrl + F</code> e digite <span className="text-white font-bold ml-1">@g.us</span> para localizar o ID numérico que precede esse sufixo.
+                                </p>
+                            </div>
+
+                            <Button
+                                onClick={() => setShowHelp(false)}
+                                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold"
+                            >
+                                Entendi, Vou Copiar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 };

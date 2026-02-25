@@ -123,14 +123,15 @@ export const Kanban: React.FC = () => {
     if (!organizationId) return;
     const { data } = await supabase
       .from('team_members')
-      .select('id, name, avatar, role, job_title')
-      .eq('organization_id', organizationId);
+      .select('id, role, job_title, profile:profiles!team_members_profile_id_fkey(name, avatar)')
+      .eq('organization_id', organizationId)
+      .is('deleted_at', null);
 
     if (data) {
       setTeamMembers(data.map(m => ({
         id: m.id,
-        name: m.name,
-        avatar: m.avatar || '', // Handle potentially null avatar
+        name: (m.profile as any)?.name || '',
+        avatar: (m.profile as any)?.avatar || '',
         role: 'team',
         jobTitle: m.job_title
       })));

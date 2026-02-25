@@ -39,9 +39,9 @@ export const WorkflowSettings: React.FC<WorkflowSettingsProps> = ({ organization
                 .from('organization_settings')
                 .select('id, organization_id, auto_archive_days, required_fields')
                 .eq('organization_id', organizationId)
-                .single();
+                .maybeSingle();
 
-            if (error && error.code !== 'PGRST116') throw error;
+            if (error) throw error;
             if (data) setSettings(data);
         } catch (error) {
             console.error('Error loading workflow settings:', error);
@@ -134,8 +134,8 @@ export const WorkflowSettings: React.FC<WorkflowSettingsProps> = ({ organization
                                         key={field.id}
                                         onClick={() => toggleField(field.id)}
                                         className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all text-sm font-bold active:scale-95 ${(settings.required_fields || []).includes(field.id)
-                                                ? 'border-purple-500 bg-purple-500/20 text-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.2)]'
-                                                : 'border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10 text-slate-500'
+                                            ? 'border-purple-500 bg-purple-500/20 text-purple-300 shadow-[0_0_10px_rgba(168,85,247,0.2)]'
+                                            : 'border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10 text-slate-500'
                                             }`}
                                     >
                                         {field.label}

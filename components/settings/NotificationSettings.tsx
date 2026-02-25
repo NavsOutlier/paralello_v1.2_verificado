@@ -42,9 +42,9 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ orga
                 .from('organization_settings')
                 .select('id, organization_id, notification_preferences')
                 .eq('organization_id', organizationId)
-                .single();
+                .maybeSingle();
 
-            if (error && error.code !== 'PGRST116') throw error;
+            if (error) throw error;
             if (data && data.notification_preferences) {
                 setSettings(data as OrganizationSettings);
             }

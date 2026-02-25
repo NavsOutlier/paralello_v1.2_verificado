@@ -40,9 +40,9 @@ export const OrganizationInfo: React.FC<OrganizationInfoProps> = ({ organization
                 .from('organization_settings')
                 .select('*')
                 .eq('organization_id', organizationId)
-                .single();
+                .maybeSingle();
 
-            if (error && error.code !== 'PGRST116') {
+            if (error) {
                 throw error;
             }
 

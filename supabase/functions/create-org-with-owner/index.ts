@@ -96,7 +96,7 @@ serve(async (req) => {
 
             const { error } = await supabaseClient
                 .from('pending_payments')
-                .update({ status: 'canceled' })
+                .update({ status: 'cancelled' })
                 .eq('id', pending_payment_id);
 
             if (error) {

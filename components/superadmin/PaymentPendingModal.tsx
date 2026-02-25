@@ -25,7 +25,7 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
 }) => {
     const { showToast } = useToast();
     const [copied, setCopied] = useState(false);
-    const [status, setStatus] = useState<'pending' | 'confirmed' | 'canceled'>('pending');
+    const [status, setStatus] = useState<'pending' | 'confirmed' | 'cancelled'>('pending');
     const [canceling, setCanceling] = useState(false);
 
     // Subscribe to realtime changes
@@ -80,7 +80,7 @@ export const PaymentPendingModal: React.FC<PaymentPendingModalProps> = ({
             // Cancel the pending payment
             const { error } = await supabase
                 .from('pending_payments')
-                .update({ status: 'canceled' })
+                .update({ status: 'cancelled' })
                 .eq('id', pendingPaymentId);
 
             if (error) throw error;

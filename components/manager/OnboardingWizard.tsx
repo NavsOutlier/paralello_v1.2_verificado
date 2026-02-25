@@ -616,7 +616,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                                                 className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
                                             />
                                         </div>
-                                        <span className="text-xs font-bold text-slate-600 group-hover:text-slate-800 transition-colors">Tarefas</span>
+                                        <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-400 transition-colors">Tarefas</span>
                                     </label>
                                     <label className="flex items-center gap-2 cursor-pointer group">
                                         <div className="relative flex items-center">
@@ -627,7 +627,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                                                 className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
                                             />
                                         </div>
-                                        <span className="text-xs font-bold text-slate-600 group-hover:text-slate-800 transition-colors">Clientes</span>
+                                        <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-400 transition-colors">Clientes</span>
                                     </label>
                                     <label className="flex items-center gap-2 cursor-pointer group">
                                         <div className="relative flex items-center">
@@ -638,7 +638,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                                                 className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
                                             />
                                         </div>
-                                        <span className="text-xs font-bold text-slate-600 group-hover:text-slate-800 transition-colors">Equipe</span>
+                                        <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-400 transition-colors">Equipe</span>
                                     </label>
                                     <label className="flex items-center gap-2 cursor-pointer group">
                                         <div className="relative flex items-center">
@@ -649,7 +649,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                                                 className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
                                             />
                                         </div>
-                                        <span className="text-xs font-bold text-slate-600 group-hover:text-slate-800 transition-colors">Marketing</span>
+                                        <span className="text-xs font-bold text-slate-400 group-hover:text-indigo-400 transition-colors">Marketing</span>
                                     </label>
                                 </div>
                             </div>

@@ -1330,9 +1330,6 @@ export const MarketingDashboard: React.FC = () => {
                                     <tbody>
                                         {/* META ADS */}
                                         <SectionHeader title="Meta Ads" color="border-l-blue-500" />
-                                        <DataRow label="Impressões" getter={(d: PeriodData) => d.meta.impressions} format={formatNumber} />
-                                        <DataRow label="Cliques" getter={(d: PeriodData) => d.meta.clicks} format={formatNumber} />
-                                        <DataRow label="CTR" getter={(d: PeriodData) => d.meta.ctr} format={formatPercent} />
                                         <DataRow label="Investimento" getter={(d: PeriodData) => d.meta.investment} format={formatCurrency} editable channel="meta" metric="investment" />
                                         <DataRow label="Leads Gerados" getter={(d: PeriodData) => d.meta.leads} editable channel="meta" metric="leads" />
                                         <DataRow label="Custo por Lead" getter={(d: PeriodData) => d.meta.leads > 0 ? d.meta.investment / d.meta.leads : 0} format={formatCurrency} />

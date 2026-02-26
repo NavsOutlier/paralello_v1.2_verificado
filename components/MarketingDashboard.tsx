@@ -569,23 +569,32 @@ export const MarketingDashboard: React.FC = () => {
             }));
             setConversionsData(formattedConvs);
 
-            // 5. Load Meta Insights (aggregated at campaign level for Geral view)
-            const { data: metaInsights } = await supabase.from('meta_insights')
-                .select('date_start, spend, impressions, clicks')
-                .eq('client_id', selectedClient)
-                .gte('date_start', startDate)
-                .lte('date_start', endDate);
+            // 5. Load Meta Insights (for Geral view - use account_id from client_integrations)
+            let metaAccountId = '';
+            if (metaIntegration?.customer_code) {
+                metaAccountId = metaIntegration.customer_code;
+            }
 
-            // Aggregate insights by date (avoid double-counting from multiple campaigns)
-            const insightsByDate: Record<string, { spend: number; impressions: number; clicks: number }> = {};
-            (metaInsights || []).forEach(row => {
-                const date = row.date_start;
-                if (!insightsByDate[date]) insightsByDate[date] = { spend: 0, impressions: 0, clicks: 0 };
-                insightsByDate[date].spend += parseFloat(row.spend) || 0;
-                insightsByDate[date].impressions += parseInt(row.impressions) || 0;
-                insightsByDate[date].clicks += parseInt(row.clicks) || 0;
-            });
-            setMetaInsightsData(Object.entries(insightsByDate).map(([date, data]) => ({ date, ...data })));
+            if (metaAccountId) {
+                const { data: metaInsights } = await supabase.from('meta_insights')
+                    .select('date, spend, impressions, clicks')
+                    .eq('account_id', metaAccountId)
+                    .gte('date', startDate)
+                    .lte('date', endDate);
+
+                // Aggregate insights by date (avoid double-counting from multiple campaigns)
+                const insightsByDate: Record<string, { spend: number; impressions: number; clicks: number }> = {};
+                (metaInsights || []).forEach(row => {
+                    const date = row.date;
+                    if (!insightsByDate[date]) insightsByDate[date] = { spend: 0, impressions: 0, clicks: 0 };
+                    insightsByDate[date].spend += parseFloat(row.spend) || 0;
+                    insightsByDate[date].impressions += parseInt(row.impressions) || 0;
+                    insightsByDate[date].clicks += parseInt(row.clicks) || 0;
+                });
+                setMetaInsightsData(Object.entries(insightsByDate).map(([date, data]) => ({ date, ...data })));
+            } else {
+                setMetaInsightsData([]);
+            }
         };
 
         loadData();
@@ -1348,9 +1357,6 @@ export const MarketingDashboard: React.FC = () => {
 
                                         {/* GERAL */}
                                         <SectionHeader title="Resumo Geral" color="border-l-slate-200" />
-                                        <DataRow label="Impressões Totais" getter={(d: PeriodData) => d.total.impressions} format={formatNumber} bg="bg-white/[0.01]" />
-                                        <DataRow label="Cliques Totais" getter={(d: PeriodData) => d.total.clicks} format={formatNumber} bg="bg-white/[0.01]" />
-                                        <DataRow label="CTR Geral" getter={(d: PeriodData) => d.total.ctr} format={formatPercent} bg="bg-white/[0.01]" />
                                         <DataRow label="Total Leads" getter={(d: PeriodData) => d.total.leads} bg="bg-white/[0.03] font-bold" />
                                         <DataRow label="Inv. Total" getter={(d: PeriodData) => d.total.investment} format={formatCurrency} bg="bg-white/[0.03] font-bold" />
                                         <DataRow label="CPL Médio" getter={(d: PeriodData) => d.total.cpl} format={formatCurrency} bg="bg-white/[0.01]" />

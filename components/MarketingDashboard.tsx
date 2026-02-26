@@ -90,6 +90,8 @@ export const MarketingDashboard: React.FC = () => {
     // Meta OAuth Integration
     // Meta OAuth Integration
     const [isMetaConnecting, setIsMetaConnecting] = useState(false);
+    const [newClientName, setNewClientName] = useState('');
+    const [isSyncingMeta, setIsSyncingMeta] = useState(false);
     const [adAccounts, setAdAccounts] = useState<any[]>([]);
     const [isAdAccountModalOpen, setIsAdAccountModalOpen] = useState(false);
     const [metaConnectionId, setMetaConnectionId] = useState<string | null>(null);
@@ -206,6 +208,7 @@ export const MarketingDashboard: React.FC = () => {
                         if (normalizedAdAccounts.length > 0) {
                             setAdAccounts(normalizedAdAccounts);
                             setIsAdAccountModalOpen(true);
+                        } else {
                             showToast('Conexão realizada, mas nenhuma conta de anúncios está disponível.', 'info');
                         }
                     } else {
@@ -273,7 +276,26 @@ export const MarketingDashboard: React.FC = () => {
 
             console.log('Ad Account Linked:', account);
             setIsAdAccountModalOpen(false);
-            showToast(`Conta "${account.name}" vinculada com sucesso ao cliente!`, 'success');
+
+            // 1. Show immediate feedback and set loading state
+            setIsSyncingMeta(true);
+            showToast(`Conta "${account.name}" vinculada! Iniciando sincronização em segundo plano...`, 'info');
+
+            // 2. Trigger the sync webhook
+            const { error: syncError } = await supabase.functions.invoke('trigger-meta-sync', {
+                body: {
+                    client_id: selectedClient,
+                    organization_id: organizationId,
+                    ad_account_id: account.account_id || account.id,
+                    meta_user_id: metaAccountDetails?.userId
+                }
+            });
+
+            if (syncError) {
+                console.error('Error triggering sync:', syncError);
+                showToast('A conta foi vinculada, mas houve um erro ao iniciar a sincronização automática.', 'error');
+                setIsSyncingMeta(false);
+            }
 
             // Refresh Integrations check
             setRefreshTrigger(prev => prev + 1);
@@ -281,6 +303,7 @@ export const MarketingDashboard: React.FC = () => {
         } catch (err: any) {
             console.error('Error linking ad account:', err);
             showToast('Erro ao vincular conta de anúncios: ' + err.message, 'error');
+            setIsSyncingMeta(false);
         }
     };
 
@@ -327,7 +350,56 @@ export const MarketingDashboard: React.FC = () => {
             }
         };
         fetchClients();
-    }, [organizationId]);
+
+        // Load Meta Accounts and Ad Accounts associated with the Organization
+        const loadAvailableMetaAccounts = async () => {
+            if (!organizationId) return;
+            const { data: dbAccounts, error: dbError } = await supabase.from('meta_connections').select('*').eq('organization_id', organizationId);
+            if (!dbError && dbAccounts) {
+                // setAvailableAccounts(dbAccounts); // This state variable is not defined in the original code.
+            }
+        };
+
+        if (organizationId) {
+            loadAvailableMetaAccounts();
+        }
+    }, [organizationId, refreshTrigger]);
+
+    // Real-time listener for "client_integrations" to track sync completion
+    useEffect(() => {
+        if (!selectedClient) return;
+
+        const channel = supabase.channel(`meta_sync_tracker_${selectedClient}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'client_integrations',
+                    filter: `client_id=eq.${selectedClient}`
+                },
+                (payload) => {
+                    const newData = payload.new;
+                    if (newData.provider === 'meta' && newData.config) {
+                        // Check if the sync status changed in the config JSONB
+                        const config = newData.config as any;
+                        if (config.last_sync_status === 'success' && isSyncingMeta) {
+                            setIsSyncingMeta(false);
+                            showToast('Sincronização do Meta Ads concluída com sucesso! Recarregando dados...', 'success');
+                            setRefreshTrigger(prev => prev + 1);
+                        } else if (config.last_sync_status === 'error' && isSyncingMeta) {
+                            setIsSyncingMeta(false);
+                            showToast('Houve um erro durante a sincronização dos dados do Meta Ads.', 'error');
+                        }
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [selectedClient, isSyncingMeta, showToast]);
 
     const isIntegrated = tintimConfig.isActive;
 

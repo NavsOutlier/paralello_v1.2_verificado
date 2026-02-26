@@ -93,7 +93,8 @@ export const MarketingDashboard: React.FC = () => {
     // Meta OAuth Integration
     const [isMetaConnecting, setIsMetaConnecting] = useState(false);
     const [newClientName, setNewClientName] = useState('');
-    const [isSyncingMeta, setIsSyncingMeta] = useState(false);
+    const [isSyncingMeta, setIsSyncingMeta] = useState(false); // Controls modal visibility
+    const [isSyncPolling, setIsSyncPolling] = useState(false); // Controls polling (independent)
     const [isSyncComplete, setIsSyncComplete] = useState(false);
     const [syncStartedAt, setSyncStartedAt] = useState<string | null>(null);
     const [adAccounts, setAdAccounts] = useState<any[]>([]);
@@ -104,9 +105,9 @@ export const MarketingDashboard: React.FC = () => {
     const [tintimIntegrationDate, setTintimIntegrationDate] = useState<string | null>(null);
 
 
-    // Polling: detect when n8n sync completes
+    // Polling: detect when n8n sync completes (independent of modal)
     useEffect(() => {
-        if (!isSyncingMeta || !selectedClient) return;
+        if (!isSyncPolling || !selectedClient) return;
 
         const interval = setInterval(async () => {
             try {
@@ -118,8 +119,8 @@ export const MarketingDashboard: React.FC = () => {
                     .single();
 
                 if (data?.config?.last_sync_status === 'success') {
-                    // Check if the success happened after we triggered
                     if (!syncStartedAt || new Date(data.updated_at) > new Date(syncStartedAt)) {
+                        setIsSyncPolling(false);
                         setIsSyncingMeta(false);
                         setIsSyncComplete(true);
                         setSyncStartedAt(null);
@@ -133,6 +134,7 @@ export const MarketingDashboard: React.FC = () => {
 
         // Stop polling after 2 minutes (timeout)
         const timeout = setTimeout(() => {
+            setIsSyncPolling(false);
             setIsSyncingMeta(false);
             setSyncStartedAt(null);
         }, 120000);
@@ -141,7 +143,7 @@ export const MarketingDashboard: React.FC = () => {
             clearInterval(interval);
             clearTimeout(timeout);
         };
-    }, [isSyncingMeta, selectedClient, syncStartedAt]);
+    }, [isSyncPolling, selectedClient, syncStartedAt]);
 
     const handleMetaDisconnect = async () => {
         if (!metaConnectionId) return;
@@ -324,6 +326,7 @@ export const MarketingDashboard: React.FC = () => {
 
             // 1. Show immediate feedback and set loading state
             setIsSyncingMeta(true);
+            setIsSyncPolling(true);
             setSyncStartedAt(new Date().toISOString());
 
             // 2. Trigger the sync webhook
@@ -340,6 +343,7 @@ export const MarketingDashboard: React.FC = () => {
                 console.error('Error triggering sync:', syncError);
                 showToast('A conta foi vinculada, mas houve um erro ao iniciar a sincronização automática.', 'error');
                 setIsSyncingMeta(false);
+                setIsSyncPolling(false);
             }
 
             // Refresh Integrations check
@@ -349,6 +353,7 @@ export const MarketingDashboard: React.FC = () => {
             console.error('Error linking ad account:', err);
             showToast('Erro ao vincular conta de anúncios: ' + err.message, 'error');
             setIsSyncingMeta(false);
+            setIsSyncPolling(false);
         }
     };
 

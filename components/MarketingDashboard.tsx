@@ -27,13 +27,23 @@ interface Client {
 type Granularity = 'day' | 'week' | 'month';
 
 // Mock Data Structure
+interface ChannelData {
+    leads: number;
+    investment: number;
+    conversions: number;
+    revenue: number;
+    impressions: number;
+    clicks: number;
+    ctr: number;
+}
+
 interface PeriodData {
     label: string;
     dateKey: string;
-    meta: { leads: number; investment: number; conversions: number; revenue: number };
-    google: { leads: number; investment: number; conversions: number; revenue: number };
-    direct: { leads: number; investment: number; conversions: number; revenue: number };
-    total: { leads: number; investment: number; conversions: number; revenue: number; cpl: number; rate: number };
+    meta: ChannelData;
+    google: ChannelData;
+    direct: ChannelData;
+    total: ChannelData & { cpl: number; rate: number };
 }
 
 // Helper to get local date string YYYY-MM-DD
@@ -389,6 +399,7 @@ export const MarketingDashboard: React.FC = () => {
     const [manualRows, setManualRows] = useState<any[]>([]);
     const [leadsData, setLeadsData] = useState<any[]>([]);
     const [conversionsData, setConversionsData] = useState<any[]>([]);
+    const [metaInsightsData, setMetaInsightsData] = useState<any[]>([]);
 
     useEffect(() => {
         const fetchClients = async () => {
@@ -557,6 +568,24 @@ export const MarketingDashboard: React.FC = () => {
                 channel: 'meta' // Simplified attribution logic for demo
             }));
             setConversionsData(formattedConvs);
+
+            // 5. Load Meta Insights (aggregated at campaign level for Geral view)
+            const { data: metaInsights } = await supabase.from('meta_insights')
+                .select('date_start, spend, impressions, clicks')
+                .eq('client_id', selectedClient)
+                .gte('date_start', startDate)
+                .lte('date_start', endDate);
+
+            // Aggregate insights by date (avoid double-counting from multiple campaigns)
+            const insightsByDate: Record<string, { spend: number; impressions: number; clicks: number }> = {};
+            (metaInsights || []).forEach(row => {
+                const date = row.date_start;
+                if (!insightsByDate[date]) insightsByDate[date] = { spend: 0, impressions: 0, clicks: 0 };
+                insightsByDate[date].spend += parseFloat(row.spend) || 0;
+                insightsByDate[date].impressions += parseInt(row.impressions) || 0;
+                insightsByDate[date].clicks += parseInt(row.clicks) || 0;
+            });
+            setMetaInsightsData(Object.entries(insightsByDate).map(([date, data]) => ({ date, ...data })));
         };
 
         loadData();
@@ -757,6 +786,9 @@ export const MarketingDashboard: React.FC = () => {
         // Raw Manual Rows (Day level)
         const rawManual = manualRows;
 
+        // Meta Insights (Day level)
+        const rawMetaInsights = metaInsightsData;
+
         return periods.map(p => {
             // Filter Manual Rows within period
             const periodManual = rawManual.filter(r => {
@@ -766,6 +798,21 @@ export const MarketingDashboard: React.FC = () => {
                 // week/custom
                 return rowDate >= p.key && (p.endKey ? rowDate <= p.endKey : true);
             });
+
+            // Filter Meta Insights within period
+            const periodMetaInsights = rawMetaInsights.filter(r => {
+                const rowDate = r.date;
+                if (granularity === 'day') return rowDate === p.key;
+                if (granularity === 'month') return rowDate.startsWith(p.key.slice(0, 7));
+                return rowDate >= p.key && (p.endKey ? rowDate <= p.endKey : true);
+            });
+
+            // Aggregate Meta Insights for this period
+            const metaInsightAgg = periodMetaInsights.reduce((acc, curr) => ({
+                spend: acc.spend + (curr.spend || 0),
+                impressions: acc.impressions + (curr.impressions || 0),
+                clicks: acc.clicks + (curr.clicks || 0),
+            }), { spend: 0, impressions: 0, clicks: 0 });
 
             // Filter Real-time Data
             const periodLeads = realTimeLeads.filter(l => {
@@ -783,16 +830,16 @@ export const MarketingDashboard: React.FC = () => {
             });
 
             // Aggregate helpers
-            const sumStart = { leads: 0, investment: 0, conversions: 0, revenue: 0 };
+            const emptyChannel: ChannelData = { leads: 0, investment: 0, conversions: 0, revenue: 0, impressions: 0, clicks: 0, ctr: 0 };
 
-            const groupByChannel = (channel: string) => {
+            const groupByChannel = (channel: string): ChannelData => {
                 // Manual Aggregate
                 const manual = periodManual.filter(r => r.channel === channel).reduce((acc, curr) => ({
                     leads: acc.leads + (curr.leads || 0),
                     investment: acc.investment + (curr.investment || 0),
                     conversions: acc.conversions + (curr.conversions || 0),
                     revenue: acc.revenue + (curr.revenue || 0)
-                }), { ...sumStart });
+                }), { leads: 0, investment: 0, conversions: 0, revenue: 0 });
 
                 // Real-time Aggregate
                 const rtLeadsCount = periodLeads.filter(l => l.channel === channel).length;
@@ -800,12 +847,24 @@ export const MarketingDashboard: React.FC = () => {
                 const rtConversionsCount = rtConversions.length;
                 const rtRevenue = rtConversions.reduce((acc, c) => acc + c.revenue, 0);
 
-                // Combine
+                // Meta Insights (only for 'meta' channel)
+                const metaSpend = channel === 'meta' ? metaInsightAgg.spend : 0;
+                const metaImpressions = channel === 'meta' ? metaInsightAgg.impressions : 0;
+                const metaClicks = channel === 'meta' ? metaInsightAgg.clicks : 0;
+
+                const totalInvestment = manual.investment + metaSpend;
+                const totalImpressions = metaImpressions;
+                const totalClicks = metaClicks;
+                const ctr = totalImpressions > 0 ? totalClicks / totalImpressions : 0;
+
                 return {
                     leads: manual.leads + rtLeadsCount,
-                    investment: manual.investment, // Investment currently only manual
+                    investment: totalInvestment,
                     conversions: manual.conversions + rtConversionsCount,
-                    revenue: manual.revenue + rtRevenue
+                    revenue: manual.revenue + rtRevenue,
+                    impressions: totalImpressions,
+                    clicks: totalClicks,
+                    ctr,
                 };
             };
 
@@ -817,6 +876,9 @@ export const MarketingDashboard: React.FC = () => {
             const totalInvest = meta.investment + google.investment + direct.investment;
             const totalConv = meta.conversions + google.conversions + direct.conversions;
             const totalRevenue = meta.revenue + google.revenue + direct.revenue;
+            const totalImpressions = meta.impressions + google.impressions + direct.impressions;
+            const totalClicks = meta.clicks + google.clicks + direct.clicks;
+            const totalCtr = totalImpressions > 0 ? totalClicks / totalImpressions : 0;
 
             return {
                 label: p.label,
@@ -829,15 +891,19 @@ export const MarketingDashboard: React.FC = () => {
                     investment: totalInvest,
                     conversions: totalConv,
                     revenue: totalRevenue,
+                    impressions: totalImpressions,
+                    clicks: totalClicks,
+                    ctr: totalCtr,
                     cpl: totalLeads > 0 ? totalInvest / totalLeads : 0,
                     rate: totalLeads > 0 ? totalConv / totalLeads : 0
                 }
             } as PeriodData;
         });
-    }, [periods, manualRows, leadsData, conversionsData, granularity]);
+    }, [periods, manualRows, leadsData, conversionsData, metaInsightsData, granularity]);
 
-    const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
-    const formatPercent = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 2 }).format(val);
+    const formatCurrency = (val: number) => val === 0 ? '—' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+    const formatPercent = (val: number) => val === 0 ? '—' : new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 2 }).format(val);
+    const formatNumber = (val: number) => val === 0 ? '—' : new Intl.NumberFormat('pt-BR').format(Math.round(val));
 
     // Dashboard View Render Logic
     const renderDashboardView = () => {
@@ -1255,12 +1321,15 @@ export const MarketingDashboard: React.FC = () => {
                                     <tbody>
                                         {/* META ADS */}
                                         <SectionHeader title="Meta Ads" color="border-l-blue-500" />
-                                        <DataRow label="Leads Gerados" getter={d => d.meta.leads} editable channel="meta" metric="leads" />
-                                        <DataRow label="Custo por Lead" getter={d => d.meta.leads > 0 ? d.meta.investment / d.meta.leads : 0} format={formatCurrency} />
-                                        <DataRow label="Investimento" getter={d => d.meta.investment} format={formatCurrency} editable channel="meta" metric="investment" />
-                                        <DataRow label="Conversões" getter={d => d.meta.conversions} editable channel="meta" metric="conversions" />
-                                        <DataRow label="Valor de Conversões" getter={d => d.meta.revenue} format={formatCurrency} editable channel="meta" metric="revenue" />
-                                        <DataRow label="Taxa de Conversão" getter={d => d.meta.leads > 0 ? d.meta.conversions / d.meta.leads : 0} format={formatPercent} />
+                                        <DataRow label="Impressões" getter={(d: PeriodData) => d.meta.impressions} format={formatNumber} />
+                                        <DataRow label="Cliques" getter={(d: PeriodData) => d.meta.clicks} format={formatNumber} />
+                                        <DataRow label="CTR" getter={(d: PeriodData) => d.meta.ctr} format={formatPercent} />
+                                        <DataRow label="Investimento" getter={(d: PeriodData) => d.meta.investment} format={formatCurrency} editable channel="meta" metric="investment" />
+                                        <DataRow label="Leads Gerados" getter={(d: PeriodData) => d.meta.leads} editable channel="meta" metric="leads" />
+                                        <DataRow label="Custo por Lead" getter={(d: PeriodData) => d.meta.leads > 0 ? d.meta.investment / d.meta.leads : 0} format={formatCurrency} />
+                                        <DataRow label="Conversões" getter={(d: PeriodData) => d.meta.conversions} editable channel="meta" metric="conversions" />
+                                        <DataRow label="Valor de Conversões" getter={(d: PeriodData) => d.meta.revenue} format={formatCurrency} editable channel="meta" metric="revenue" />
+                                        <DataRow label="Taxa de Conversão" getter={(d: PeriodData) => d.meta.leads > 0 ? d.meta.conversions / d.meta.leads : 0} format={formatPercent} />
 
                                         {/* GOOGLE ADS */}
                                         <SectionHeader title="Google Ads" color="border-l-emerald-500" />
@@ -1279,12 +1348,15 @@ export const MarketingDashboard: React.FC = () => {
 
                                         {/* GERAL */}
                                         <SectionHeader title="Resumo Geral" color="border-l-slate-200" />
-                                        <DataRow label="Total Leads" getter={d => d.total.leads} bg="bg-white/[0.03] font-bold" />
-                                        <DataRow label="Inv. Total" getter={d => d.total.investment} format={formatCurrency} bg="bg-white/[0.03] font-bold" />
-                                        <DataRow label="CPL Médio" getter={d => d.total.cpl} format={formatCurrency} bg="bg-white/[0.01]" />
-                                        <DataRow label="Total Conversões" getter={d => d.total.conversions} bg="bg-white/[0.01]" />
-                                        <DataRow label="Valor de Conversões" getter={d => d.total.revenue} format={formatCurrency} bg="bg-white/[0.03] font-bold" />
-                                        <DataRow label="Taxa Global" getter={d => d.total.rate} format={formatPercent} bg="bg-white/[0.01]" />
+                                        <DataRow label="Impressões Totais" getter={(d: PeriodData) => d.total.impressions} format={formatNumber} bg="bg-white/[0.01]" />
+                                        <DataRow label="Cliques Totais" getter={(d: PeriodData) => d.total.clicks} format={formatNumber} bg="bg-white/[0.01]" />
+                                        <DataRow label="CTR Geral" getter={(d: PeriodData) => d.total.ctr} format={formatPercent} bg="bg-white/[0.01]" />
+                                        <DataRow label="Total Leads" getter={(d: PeriodData) => d.total.leads} bg="bg-white/[0.03] font-bold" />
+                                        <DataRow label="Inv. Total" getter={(d: PeriodData) => d.total.investment} format={formatCurrency} bg="bg-white/[0.03] font-bold" />
+                                        <DataRow label="CPL Médio" getter={(d: PeriodData) => d.total.cpl} format={formatCurrency} bg="bg-white/[0.01]" />
+                                        <DataRow label="Total Conversões" getter={(d: PeriodData) => d.total.conversions} bg="bg-white/[0.01]" />
+                                        <DataRow label="Valor de Conversões" getter={(d: PeriodData) => d.total.revenue} format={formatCurrency} bg="bg-white/[0.03] font-bold" />
+                                        <DataRow label="Taxa Global" getter={(d: PeriodData) => d.total.rate} format={formatPercent} bg="bg-white/[0.01]" />
                                     </tbody>
                                 </table>
                             </div>

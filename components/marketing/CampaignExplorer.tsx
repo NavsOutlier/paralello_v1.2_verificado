@@ -269,7 +269,8 @@ export const CampaignExplorer: React.FC<CampaignExplorerProps> = ({
     const formatPercent = (val: number) => (val * 100).toFixed(2) + '%';
     const formatNumber = (val: number) => new Intl.NumberFormat('pt-BR').format(Math.round(val));
 
-    const formatMetricVal = (val: number, type: string) => {
+    const formatMetricVal = (val: number | null | undefined, type: string) => {
+        if (val === null || val === undefined || val === 0) return '—';
         if (type === 'currency') return formatCurrency(val);
         if (type === 'percent') return formatPercent(val);
         return formatNumber(val);
@@ -559,7 +560,7 @@ export const CampaignExplorer: React.FC<CampaignExplorerProps> = ({
                                                         </td>
                                                         {periods.map(p => {
                                                             const pd = periodData[item.id]?.[p.key];
-                                                            return <td key={p.key} className="py-3.5 px-4 text-center text-xs font-bold text-slate-300 whitespace-nowrap border-l border-white/5">{pd ? formatCurrency(pd.spend) : '—'}</td>;
+                                                            return <td key={p.key} className="py-3.5 px-4 text-center text-xs font-bold text-slate-300 whitespace-nowrap border-l border-white/5">{pd && pd.spend > 0 ? formatCurrency(pd.spend) : <span className="text-slate-700">—</span>}</td>;
                                                         })}
                                                     </tr>
                                                     {expandedMetrics.has(item.id) && itemMetrics.map(metric => (
@@ -577,7 +578,7 @@ export const CampaignExplorer: React.FC<CampaignExplorerProps> = ({
                                                                 }
                                                                 return (
                                                                     <td key={p.key} className="py-2.5 px-4 text-center text-xs font-medium text-slate-400 whitespace-nowrap border-l border-white/[0.03]">
-                                                                        {val === 0 ? <span className="text-slate-700">—</span> : formatMetricVal(val, metric.type)}
+                                                                        {(val === null || val === undefined || val === 0) ? <span className="text-slate-700">—</span> : formatMetricVal(val, metric.type)}
                                                                     </td>
                                                                 );
                                                             })}

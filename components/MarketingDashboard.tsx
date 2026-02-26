@@ -591,15 +591,15 @@ export const MarketingDashboard: React.FC = () => {
         },
         {
             key: 'last7', label: 'Últimos 7 dias', getDates: () => {
-                const end = new Date();
-                const start = new Date(); start.setDate(start.getDate() - 6);
+                const end = new Date(); end.setDate(end.getDate() - 1);
+                const start = new Date(); start.setDate(start.getDate() - 7);
                 return { start: toLocalDateString(start), end: toLocalDateString(end) };
             }
         },
         {
             key: 'last30', label: 'Últimos 30 dias', getDates: () => {
-                const end = new Date();
-                const start = new Date(); start.setDate(start.getDate() - 29);
+                const end = new Date(); end.setDate(end.getDate() - 1);
+                const start = new Date(); start.setDate(start.getDate() - 30);
                 return { start: toLocalDateString(start), end: toLocalDateString(end) };
             }
         },

@@ -56,11 +56,19 @@ serve(async (req) => {
             throw new Error("Conexão com o Meta não encontrada ou sem token de acesso.")
         }
 
+        // Fetch the organization plan
+        const { data: orgData } = await supabase
+            .from('organizations')
+            .select('plan')
+            .eq('id', organization_id)
+            .single()
+
         const payload = {
             body: {
                 client_id,
                 account_id: ad_account_id,
                 access_token: metaConnection.access_token,
+                plan: orgData?.plan || 'pro', // Default to 'pro' if not found
                 action: 'META_SYNC_TRIGGER'
             }
         }

@@ -61,7 +61,7 @@ serve(async (req) => {
                 client_id,
                 account_id: ad_account_id,
                 access_token: metaConnection.access_token,
-                type: 'META_SYNC_TRIGGER'
+                action: 'META_SYNC_TRIGGER'
             }
         }
 

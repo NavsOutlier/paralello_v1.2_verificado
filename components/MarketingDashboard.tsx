@@ -57,14 +57,16 @@ export const MarketingDashboard: React.FC = () => {
     const [startX, setStartX] = useState(0);
     const [scrollLeft, setScrollLeft] = useState(0);
 
-    // Filters - Default: last 7 days (including today)
+    // Filters - Default: last 7 complete days (ending yesterday)
     const [startDate, setStartDate] = useState(() => {
         const date = new Date();
-        date.setDate(date.getDate() - 6); // 6 days ago + today = 7 days
+        date.setDate(date.getDate() - 7);
         return toLocalDateString(date);
     });
     const [endDate, setEndDate] = useState(() => {
-        return toLocalDateString(new Date()); // Today
+        const date = new Date();
+        date.setDate(date.getDate() - 1);
+        return toLocalDateString(date);
     });
     const [granularity, setGranularity] = useState<Granularity>('day');
 
@@ -1378,6 +1380,31 @@ export const MarketingDashboard: React.FC = () => {
                             <p className="text-slate-400 text-sm">
                                 Estamos finalizando a conexão segura com a Meta. Por favor, aguarde.
                             </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Sync Status Modal */}
+            {isSyncingMeta && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                    <div className="bg-slate-900 border border-cyan-500/20 rounded-2xl p-8 max-w-sm w-full flex flex-col items-center text-center shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <PremiumBackground />
+                        <div className="relative z-10 flex flex-col items-center">
+                            <div className="w-16 h-16 bg-cyan-500/10 rounded-full flex items-center justify-center mb-6">
+                                <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">Sincronizando Campanhas</h3>
+                            <p className="text-slate-400 text-sm mb-6">
+                                Estamos buscando e sincronizando suas campanhas, conjuntos e anúncios do Meta Ads.
+                                Assim que finalizar, os dados aparecerão automaticamente.
+                            </p>
+                            <button
+                                onClick={() => setIsSyncingMeta(false)}
+                                className="px-6 py-2.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 font-semibold rounded-xl border border-cyan-500/30 transition-all"
+                            >
+                                OK, entendi
+                            </button>
                         </div>
                     </div>
                 </div>

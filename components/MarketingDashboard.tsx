@@ -94,6 +94,8 @@ export const MarketingDashboard: React.FC = () => {
     const [isMetaConnecting, setIsMetaConnecting] = useState(false);
     const [newClientName, setNewClientName] = useState('');
     const [isSyncingMeta, setIsSyncingMeta] = useState(false);
+    const [isSyncComplete, setIsSyncComplete] = useState(false);
+    const [syncStartedAt, setSyncStartedAt] = useState<string | null>(null);
     const [adAccounts, setAdAccounts] = useState<any[]>([]);
     const [isAdAccountModalOpen, setIsAdAccountModalOpen] = useState(false);
     const [metaConnectionId, setMetaConnectionId] = useState<string | null>(null);
@@ -102,6 +104,44 @@ export const MarketingDashboard: React.FC = () => {
     const [tintimIntegrationDate, setTintimIntegrationDate] = useState<string | null>(null);
 
 
+    // Polling: detect when n8n sync completes
+    useEffect(() => {
+        if (!isSyncingMeta || !selectedClient) return;
+
+        const interval = setInterval(async () => {
+            try {
+                const { data } = await supabase
+                    .from('client_integrations')
+                    .select('config, updated_at')
+                    .eq('client_id', selectedClient)
+                    .eq('provider', 'meta')
+                    .single();
+
+                if (data?.config?.last_sync_status === 'success') {
+                    // Check if the success happened after we triggered
+                    if (!syncStartedAt || new Date(data.updated_at) > new Date(syncStartedAt)) {
+                        setIsSyncingMeta(false);
+                        setIsSyncComplete(true);
+                        setSyncStartedAt(null);
+                        setRefreshTrigger(prev => prev + 1);
+                    }
+                }
+            } catch (err) {
+                console.error('Polling error:', err);
+            }
+        }, 5000);
+
+        // Stop polling after 2 minutes (timeout)
+        const timeout = setTimeout(() => {
+            setIsSyncingMeta(false);
+            setSyncStartedAt(null);
+        }, 120000);
+
+        return () => {
+            clearInterval(interval);
+            clearTimeout(timeout);
+        };
+    }, [isSyncingMeta, selectedClient, syncStartedAt]);
 
     const handleMetaDisconnect = async () => {
         if (!metaConnectionId) return;
@@ -284,7 +324,7 @@ export const MarketingDashboard: React.FC = () => {
 
             // 1. Show immediate feedback and set loading state
             setIsSyncingMeta(true);
-            showToast(`Conta "${account.name}" vinculada! Iniciando sincronização em segundo plano...`, 'info');
+            setSyncStartedAt(new Date().toISOString());
 
             // 2. Trigger the sync webhook
             const { error: syncError } = await supabase.functions.invoke('trigger-meta-sync', {
@@ -1404,6 +1444,31 @@ export const MarketingDashboard: React.FC = () => {
                                 className="px-6 py-2.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 font-semibold rounded-xl border border-cyan-500/30 transition-all"
                             >
                                 OK, entendi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Sync Complete Modal */}
+            {isSyncComplete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                    <div className="bg-slate-900 border border-emerald-500/20 rounded-2xl p-8 max-w-sm w-full flex flex-col items-center text-center shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <PremiumBackground />
+                        <div className="relative z-10 flex flex-col items-center">
+                            <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6">
+                                <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">Sincronização Concluída!</h3>
+                            <p className="text-slate-400 text-sm mb-6">
+                                Todas as campanhas, conjuntos e anúncios foram sincronizados com sucesso.
+                                Os dados já estão disponíveis no dashboard.
+                            </p>
+                            <button
+                                onClick={() => setIsSyncComplete(false)}
+                                className="px-6 py-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 font-semibold rounded-xl border border-emerald-500/30 transition-all"
+                            >
+                                OK
                             </button>
                         </div>
                     </div>

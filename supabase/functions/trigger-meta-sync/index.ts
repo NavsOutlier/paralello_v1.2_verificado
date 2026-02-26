@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -19,15 +20,15 @@ serve(async (req) => {
             const text = await req.text()
             if (!text) throw new Error("Empty body")
             body = JSON.parse(text)
-        } catch (e) {
+        } catch (e: any) {
             console.error("JSON Parse Error:", e)
             throw new Error(`Invalid JSON body: ${e.message}`)
         }
 
         const { client_id, organization_id, ad_account_id, meta_user_id } = body
 
-        if (!client_id || !organization_id) {
-            throw new Error('Missing required parameters: client_id and organization_id are required')
+        if (!client_id || !organization_id || !ad_account_id) {
+            throw new Error('Missing required parameters: client_id, organization_id, ad_account_id are required')
         }
 
         // Get webhook URL from environment variables WITH NO HARDCODED FALLBACK
@@ -38,28 +39,46 @@ serve(async (req) => {
             throw new Error('Configuração interna do servidor ausente.');
         }
 
+        // Create Supabase Client to fetch the access token
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+        const supabase = createClient(supabaseUrl, supabaseKey)
+
+        // Fetch the active meta connection for this organization
+        const { data: metaConnection, error: dbError } = await supabase
+            .from('meta_connections')
+            .select('access_token')
+            .eq('organization_id', organization_id)
+            .single()
+
+        if (dbError || !metaConnection?.access_token) {
+            console.error("Error fetching meta connection:", dbError)
+            throw new Error("Conexão com o Meta não encontrada ou sem token de acesso.")
+        }
+
+        const payload = {
+            body: {
+                client_id,
+                account_id: ad_account_id,
+                access_token: metaConnection.access_token,
+                type: 'META_SYNC_TRIGGER'
+            }
+        }
+
         console.log(`Triggering direct n8n webhook sync for client ${client_id} at ${webhookUrl}`)
 
-        // Trigger n8n async (we don't wait for it to finish the 15-day sync)
+        // Trigger n8n async
         fetch(webhookUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                client_id,
-                organization_id,
-                ad_account_id,
-                meta_user_id,
-                action: 'initial_sync',
-                timestamp: new Date().toISOString()
-            }),
+            body: JSON.stringify(payload),
         }).catch(err => {
-            // We just log if the fetch request itself fails immediately
             console.error("Error triggering n8n webhook asynchronously:", err)
         })
 
-        // Respond immediately to the frontend so the user isn't blocked
+        // Respond immediately to the frontend
         return new Response(JSON.stringify({
             success: true,
             message: 'Sincronização iniciada em segundo plano'

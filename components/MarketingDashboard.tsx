@@ -199,6 +199,9 @@ export const MarketingDashboard: React.FC = () => {
                             if (syncError) {
                                 console.error('Error syncing meta data:', syncError);
                                 throw new Error(`Erro ao salvar no banco: ${syncError.message}`);
+                            } else if (syncData?.success === false) {
+                                console.error('RPC Error payload:', syncData);
+                                throw new Error(`Erro SQL ao salvar no banco: ${syncData.error || 'Erro desconhecido'}`);
                             } else if (syncData?.connection_id) {
                                 console.log('Meta Connection Synced:', syncData.connection_id);
                                 setMetaConnectionId(syncData.connection_id);

@@ -17,9 +17,12 @@ import { WorkersIADashboard } from './components/workers-ia/WorkersIADashboard';
 import { PremiumBackground } from './components/ui/PremiumBackground';
 import { RestrictedModule } from './components/ui/RestrictedModule';
 import { LeadsDashboard } from './components/leads/LeadsDashboard';
+import { useOrganizationPlan } from './hooks/useOrganizationPlan';
 
 const AppContent: React.FC = () => {
-  const { user, loading, isSuperAdmin, isManager } = useAuth();
+  const { user, loading: authLoading, isSuperAdmin, isManager } = useAuth();
+  const { hasModule, plan, loading: planLoading } = useOrganizationPlan();
+  const loading = authLoading || planLoading;
   const [currentView, setCurrentView] = useState<ViewState | null>(() => {
     const saved = localStorage.getItem('app_current_view');
     return saved ? (saved as ViewState) : null;
@@ -84,8 +87,20 @@ const AppContent: React.FC = () => {
       if (currentView === ViewState.SUPERADMIN && !isSuperAdmin) {
         setCurrentView(ViewState.WORKSPACE);
       }
+
+      // Security: "meta" plan protection
+      if (plan?.id === 'meta' && currentView && !isSuperAdmin && !hasModule(currentView)) {
+        // Try to find first allowed module to redirect
+        const allowedModules = plan.modules || [];
+        if (allowedModules.length > 0) {
+          setCurrentView(allowedModules[0] as ViewState);
+        } else {
+          // Fallback if no modules are defined (shouldn't happen)
+          setCurrentView(ViewState.WORKSPACE);
+        }
+      }
     }
-  }, [loading, user, isManager, isSuperAdmin, currentView]);
+  }, [loading, user, isManager, isSuperAdmin, currentView, plan, hasModule]);
 
   // Persistence
   React.useEffect(() => {

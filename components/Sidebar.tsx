@@ -13,10 +13,15 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) => {
   const { signOut, user, isSuperAdmin, isManager, permissions } = useAuth();
-  const { hasModule } = useOrganizationPlan();
+  const { hasModule, plan } = useOrganizationPlan();
 
   const NavItem = ({ view, icon: Icon, label }: { view: ViewState, icon: any, label: string }) => {
     const isLocked = !isSuperAdmin && !hasModule(view);
+
+    // If on "meta" plan and module is restricted, hide it completely (don't show even with lock)
+    if (plan?.id === 'meta' && isLocked) {
+      return null;
+    }
 
     return (
       <button

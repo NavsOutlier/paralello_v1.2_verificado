@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
             throw new Error('Missing targets array for dispatch action')
         }
 
-        console.log(`[dispatch-cold-leads] ACTION: cold_dispatch -> ${targets.length} leads`)
+        console.log(`[dispatch-cold-leads] ACTION: cold_dispatch -> ${targets.length} leads. Webhook: ${webhookUrl}`)
         const results = []
 
         for (const target of targets) {
@@ -68,10 +68,12 @@ Deno.serve(async (req) => {
                     type: 'cold_dispatch',
                     payload: {
                         ...metadata,
-                        to: target,
+                        to: target, // Ensure target is explicitly set
                         components: metadata.variables || []
                     }
                 }
+
+                console.log(`[dispatch-cold-leads] Sending to ${target}...`)
 
                 const response = await fetch(webhookUrl, {
                     method: 'POST',

@@ -141,6 +141,7 @@ export const ColdDispatchTool: React.FC<ColdDispatchToolProps> = ({ preselectedC
             if (cleanPhone.length >= 10 && !cleanPhone.startsWith('55')) cleanPhone = '55' + cleanPhone;
 
             const actualPayload = {
+                action: 'cold_dispatch',
                 client_id: preselectedClientId,
                 organization_id: organizationId,
                 user_id: user?.id,
@@ -149,6 +150,7 @@ export const ColdDispatchTool: React.FC<ColdDispatchToolProps> = ({ preselectedC
                 phone_number_id: currentSender?.phone_number_id,
                 sender_target: currentSender?.sender_phone || currentSender?.phone_number_id,
                 targets: [cleanPhone],
+                to: cleanPhone, // Add explicit target for n8n just in case
                 language: 'pt_BR',
                 category: currentTemplate?.category || 'marketing',
                 variables: []

@@ -151,7 +151,7 @@ export const ColdDispatchTool: React.FC<ColdDispatchToolProps> = ({ preselectedC
                 targets: [cleanPhone],
                 language: 'pt_BR',
                 category: currentTemplate?.category || 'marketing',
-                variables: {}
+                variables: []
             };
 
             const { data, error } = await supabase.functions.invoke('dispatch-cold-leads', { body: actualPayload });
@@ -261,6 +261,26 @@ export const ColdDispatchTool: React.FC<ColdDispatchToolProps> = ({ preselectedC
                         >
                             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Send className="w-4 h-4" /> Enviar Mensagem Aprovada</>}
                         </button>
+
+                        {/* Feedback UI */}
+                        {responseLog && (
+                            <div className={`mt-6 p-4 rounded-2xl border ${responseLog.error ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'} animate-in fade-in slide-in-from-top-2`}>
+                                <div className="flex items-center gap-3">
+                                    {responseLog.error ? <AlertCircle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+                                    <div className="flex-1">
+                                        <p className="text-[11px] font-black uppercase tracking-widest">
+                                            {responseLog.error ? 'Erro no Disparo' : 'Mensagem Despachada'}
+                                        </p>
+                                        <p className="text-[10px] opacity-80 font-bold mt-0.5">
+                                            {responseLog.error ? responseLog.error : `Sucesso para ${targetPhone}`}
+                                        </p>
+                                    </div>
+                                    <button type="button" onClick={() => setResponseLog(null)} className="p-1 hover:bg-white/10 rounded-lg transition-colors text-slate-400">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </form>
                 </div>
             </div>

@@ -274,7 +274,7 @@ serve(async (req) => {
             billing_value
         };
 
-        return await createOrganizationFromData(supabaseClient, orgDataForDirect, corsHeaders, null);
+        return await createOrganizationFromData(supabaseAdmin, orgDataForDirect, corsHeaders, null);
 
     } catch (error: any) {
         console.error(error);

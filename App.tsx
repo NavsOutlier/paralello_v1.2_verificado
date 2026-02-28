@@ -14,6 +14,7 @@ import { MarketingDashboard } from './components/MarketingDashboard';
 import { MetaCallback } from './components/auth/MetaCallback';
 import { AutomationTab } from './components/automation';
 import { WorkersIADashboard } from './components/workers-ia/WorkersIADashboard';
+import { BlackBIConsole } from './src/components/black-bi/BlackBIConsole';
 import { PremiumBackground } from './components/ui/PremiumBackground';
 import { RestrictedModule } from './components/ui/RestrictedModule';
 import { LeadsDashboard } from './components/leads/LeadsDashboard';
@@ -192,6 +193,11 @@ const AppContent: React.FC = () => {
         {currentView === ViewState.WORKERS_IA && (
           <RestrictedModule moduleId={ViewState.WORKERS_IA} title="Blackback Workers IA">
             <WorkersIADashboard />
+          </RestrictedModule>
+        )}
+        {currentView === ViewState.BLACK_BI && (
+          <RestrictedModule moduleId={ViewState.WORKERS_IA} title="Black BI Studio">
+            <BlackBIConsole />
           </RestrictedModule>
         )}
         {currentView === ViewState.LEADS && (

@@ -29,6 +29,7 @@ interface PlanConfig {
     id: string;
     name: string;
     base_price: number;
+    price_per_user: number;
     price_per_client: number;
     max_users: number;
     trial_days: number;
@@ -59,6 +60,7 @@ export const PlanSettings: React.FC = () => {
         id: '',
         name: '',
         base_price: 0,
+        price_per_user: 0,
         price_per_client: 0,
         max_users: 1,
         trial_days: 7,
@@ -182,7 +184,7 @@ export const PlanSettings: React.FC = () => {
             setNewPlan({
                 id: '',
                 name: '',
-                base_price: 0,
+                price_per_user: 0,
                 price_per_client: 0,
                 max_users: 1,
                 trial_days: 7,
@@ -287,7 +289,7 @@ export const PlanSettings: React.FC = () => {
                                             </span>
                                         </div>
                                         <p className="text-sm text-slate-400 font-medium">
-                                            {formatCurrency(plan.base_price)}/mês
+                                            {plan.price_per_user > 0 ? `${formatCurrency(plan.price_per_user)}/user` : 'Grátis'}
                                             {plan.price_per_client > 0 && ` + ${formatCurrency(plan.price_per_client)}/cliente`}
                                         </p>
                                     </div>
@@ -325,11 +327,11 @@ export const PlanSettings: React.FC = () => {
                                     <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Parâmetros Financeiros & Limites</h4>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Preço Base (R$)</label>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Por Usuário (R$)</label>
                                             <input
                                                 type="number"
-                                                value={plan.base_price}
-                                                onChange={(e) => handlePlanChange(plan.id, 'base_price', Number(e.target.value))}
+                                                value={plan.price_per_user}
+                                                onChange={(e) => handlePlanChange(plan.id, 'price_per_user', Number(e.target.value))}
                                                 className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm font-bold text-white focus:ring-2 focus:ring-indigo-500/30 outline-none"
                                             />
                                         </div>
@@ -464,11 +466,11 @@ export const PlanSettings: React.FC = () => {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Preço Base (R$)</label>
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Por Usuário (R$)</label>
                                     <input
                                         type="number"
-                                        value={newPlan.base_price}
-                                        onChange={e => setNewPlan({ ...newPlan, base_price: Number(e.target.value) })}
+                                        value={newPlan.price_per_user}
+                                        onChange={e => setNewPlan({ ...newPlan, price_per_user: Number(e.target.value) })}
                                         className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/30 outline-none"
                                     />
                                 </div>

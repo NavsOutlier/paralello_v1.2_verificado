@@ -9,6 +9,8 @@ interface BillingMetrics {
     pastDueCount: number;
     suspendedCount: number;
     planDistribution: {
+        tintim: number;
+        meta: number;
         gestor_solo: number;
         agencia: number;
         enterprise: number;
@@ -40,7 +42,7 @@ export const useSuperAdminBilling = (): SuperAdminBillingData & SuperAdminBillin
         trialingCount: 0,
         pastDueCount: 0,
         suspendedCount: 0,
-        planDistribution: { gestor_solo: 0, agencia: 0, enterprise: 0 },
+        planDistribution: { tintim: 0, meta: 0, gestor_solo: 0, agencia: 0, enterprise: 0 },
     });
     const [subscriptions, setSubscriptions] = useState<(Subscription & { organization_name: string; organization_email: string })[]>([]);
     const [overdueInvoices, setOverdueInvoices] = useState<(Invoice & { organization_name: string })[]>([]);
@@ -89,7 +91,7 @@ export const useSuperAdminBilling = (): SuperAdminBillingData & SuperAdminBillin
                 trialingCount: 0,
                 pastDueCount: 0,
                 suspendedCount: 0,
-                planDistribution: { gestor_solo: 0, agencia: 0, enterprise: 0 },
+                planDistribution: { tintim: 0, meta: 0, gestor_solo: 0, agencia: 0, enterprise: 0 },
             };
 
             mappedSubs.forEach((sub: any) => {

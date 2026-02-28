@@ -17,6 +17,7 @@ interface PlanConfig {
     id: string;
     name: string;
     base_price: number;
+    price_per_user: number;
     price_per_client: number;
     max_users: number;
     trial_days: number;
@@ -27,9 +28,9 @@ interface PlanConfig {
 
 // Fallback plans if database not available
 const FALLBACK_PLANS: PlanConfig[] = [
-    { id: 'gestor_solo', name: 'Gestor Solo', base_price: 397, price_per_client: 0, max_users: 1, trial_days: 7, features: [], modules: ['dash', 'workspace', 'kanban'], is_active: true },
-    { id: 'agencia', name: 'Agência', base_price: 97, price_per_client: 7, max_users: 10, trial_days: 7, features: [], modules: ['dash', 'workspace', 'kanban', 'marketing', 'automation'], is_active: true },
-    { id: 'enterprise', name: 'Enterprise', base_price: 297, price_per_client: 5, max_users: 999999, trial_days: 14, features: [], modules: ['dash', 'workspace', 'kanban', 'marketing', 'automation', 'workers_ia', 'manager'], is_active: true },
+    { id: 'gestor_solo', name: 'Gestor Solo', base_price: 0, price_per_user: 39, price_per_client: 29, max_users: 1, trial_days: 7, features: [], modules: ['dash', 'workspace', 'kanban'], is_active: true },
+    { id: 'agencia', name: 'Agência', base_price: 0, price_per_user: 35, price_per_client: 45, max_users: 10, trial_days: 7, features: [], modules: ['dash', 'workspace', 'kanban', 'marketing', 'automation'], is_active: true },
+    { id: 'enterprise', name: 'Enterprise', base_price: 0, price_per_user: 30, price_per_client: 60, max_users: 30, trial_days: 14, features: [], modules: ['dash', 'workspace', 'kanban', 'marketing', 'automation', 'workers_ia', 'manager'], is_active: true },
 ];
 
 export const OrganizationModal: React.FC<OrganizationModalProps> = ({
@@ -60,12 +61,13 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
     const [paymentUrl, setPaymentUrl] = useState('');
 
 
-    // Calcula valor mensal baseado no plano e clientes contratados
+    // Calcula valor mensal: (price_per_user × users) + (price_per_client × clients)
     const calculateTotalValue = () => {
         const selectedPlan = plans.find(p => p.id === plan);
         if (!selectedPlan) return 0;
         const clients = typeof contractedClients === 'number' ? contractedClients : 0;
-        return selectedPlan.base_price + (selectedPlan.price_per_client * clients);
+        const users = typeof maxUsers === 'number' ? maxUsers : 0;
+        return (selectedPlan.price_per_user * users) + (selectedPlan.price_per_client * clients);
     };
 
     // Load plans from database
@@ -424,8 +426,10 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
 
                                                 <div className="space-y-1">
                                                     <p className="text-lg font-black text-white">
-                                                        {formatCurrency(planData.base_price)}
-                                                        <span className="text-xs text-slate-400 font-normal">/mês</span>
+                                                        {planData.price_per_user > 0 || planData.price_per_client > 0
+                                                            ? <>{formatCurrency(planData.price_per_user)}<span className="text-xs text-slate-400 font-normal">/user</span></>
+                                                            : 'Grátis'
+                                                        }
                                                     </p>
                                                     {planData.price_per_client > 0 && (
                                                         <p className="text-xs text-slate-400">
@@ -443,13 +447,28 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                             )}
                         </div>
 
-                        {/* Contrato de Clientes */}
+                        {/* Contrato de Usuários + Clientes */}
                         <div className="p-5 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 rounded-2xl border border-emerald-500/20">
-                            <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-4">Contrato de Clientes</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                            <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-4">Contrato</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                                 <div>
                                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
-                                        Qtd. Clientes Contratados *
+                                        Usuários Contratados *
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        step={1}
+                                        value={maxUsers}
+                                        onChange={(e) => setMaxUsers(e.target.value === '' ? '' : Number(e.target.value))}
+                                        className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all font-bold"
+                                        placeholder="5"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
+                                        Clientes Contratados *
                                     </label>
                                     <input
                                         type="number"
@@ -476,7 +495,9 @@ export const OrganizationModal: React.FC<OrganizationModalProps> = ({
                                         {(() => {
                                             const selectedPlan = plans.find(p => p.id === plan);
                                             if (!selectedPlan) return '';
-                                            return `Base: ${formatCurrency(selectedPlan.base_price)} + ${typeof contractedClients === 'number' ? contractedClients : 0} clientes × ${formatCurrency(selectedPlan.price_per_client)}`;
+                                            const users = typeof maxUsers === 'number' ? maxUsers : 0;
+                                            const clients = typeof contractedClients === 'number' ? contractedClients : 0;
+                                            return `${users} users × ${formatCurrency(selectedPlan.price_per_user)} + ${clients} clientes × ${formatCurrency(selectedPlan.price_per_client)}`;
                                         })()}
                                     </p>
                                 </div>

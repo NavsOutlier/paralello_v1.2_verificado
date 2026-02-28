@@ -84,7 +84,7 @@ export const useBilling = (): BillingData & BillingActions => {
         }
 
         try {
-            // Buscar contagem atual de clientes
+            // Buscar contagem atual de clientes e usuários contratados
             const { count } = await supabase
                 .from('clients')
                 .select('*', { count: 'exact', head: true })
@@ -92,8 +92,15 @@ export const useBilling = (): BillingData & BillingActions => {
                 .eq('status', 'active')
                 .is('deleted_at', null);
 
-            const clientCount = count || 0;
-            const newAmount = calculateMonthlyAmount(newPlan, clientCount);
+            const { data: orgInfo } = await supabase
+                .from('organizations')
+                .select('max_users, contracted_clients')
+                .eq('id', organizationId)
+                .single();
+
+            const clientCount = orgInfo?.contracted_clients || count || 0;
+            const userCount = orgInfo?.max_users || 1;
+            const newAmount = calculateMonthlyAmount(newPlan, clientCount, userCount);
 
             // Atualizar na tabela organizations (fonte única de verdade)
             const { error } = await supabase

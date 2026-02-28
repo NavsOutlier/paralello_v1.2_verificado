@@ -137,7 +137,7 @@ export const SubscriptionPanel: React.FC<SubscriptionPanelProps> = ({ className 
                 )}
 
                 {/* Métricas */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                     <div className="bg-slate-800/30 rounded-xl p-4">
                         <div className="flex items-center gap-2 text-slate-400 text-xs font-medium uppercase tracking-wider mb-2">
                             <CreditCard className="w-4 h-4" />
@@ -150,8 +150,18 @@ export const SubscriptionPanel: React.FC<SubscriptionPanelProps> = ({ className 
 
                     <div className="bg-slate-800/30 rounded-xl p-4">
                         <div className="flex items-center gap-2 text-slate-400 text-xs font-medium uppercase tracking-wider mb-2">
+                            <User className="w-4 h-4" />
+                            Usuários
+                        </div>
+                        <p className="text-2xl font-bold text-white">
+                            {orgData?.max_users || 0}
+                        </p>
+                    </div>
+
+                    <div className="bg-slate-800/30 rounded-xl p-4">
+                        <div className="flex items-center gap-2 text-slate-400 text-xs font-medium uppercase tracking-wider mb-2">
                             <TrendingUp className="w-4 h-4" />
-                            Clientes Ativos
+                            Clientes
                         </div>
                         <p className="text-2xl font-bold text-white">
                             {orgData?.contracted_clients || 0}

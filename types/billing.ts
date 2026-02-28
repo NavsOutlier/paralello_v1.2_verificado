@@ -1,6 +1,6 @@
 // Billing Types - Gerado automaticamente do schema Supabase
 
-export type BillingPlan = 'gestor_solo' | 'agencia' | 'enterprise';
+export type BillingPlan = 'gestor_solo' | 'agencia' | 'enterprise' | 'tintim' | 'meta';
 export type BillingStatus = 'trialing' | 'active' | 'past_due' | 'suspended' | 'canceled';
 export type PaymentStatus = 'pending' | 'confirmed' | 'overdue' | 'refunded';
 
@@ -47,29 +47,41 @@ export interface Invoice {
     updated_at: string | null;
 }
 
-// Preços dos planos (em R$)
+// Preços dos planos (em R$) — fórmula: (per_user × users) + (per_client × clients)
 export const PLAN_PRICES = {
+    tintim: {
+        per_user: 0,
+        per_client: 0,
+        max_users: 1,
+    },
+    meta: {
+        per_user: 0,
+        per_client: 0,
+        max_users: 1,
+    },
     gestor_solo: {
-        base: 39.90,
-        per_client: 10.00,
+        per_user: 39,
+        per_client: 29,
         max_users: 1,
     },
     agencia: {
-        base: 299.00,
-        per_client: 20.00,
+        per_user: 35,
+        per_client: 45,
         max_users: 10,
     },
     enterprise: {
-        base: 1199.00,
-        per_client: 0, // Negociável
-        max_users: Infinity,
+        per_user: 30,
+        per_client: 60,
+        max_users: 30,
     },
 } as const;
 
-// Helper para calcular valor mensal
-export function calculateMonthlyAmount(plan: BillingPlan, clientCount: number): number {
+// Helper para calcular valor mensal: (price_per_user × users) + (price_per_client × clients)
+export function calculateMonthlyAmount(plan: BillingPlan, clientCount: number, userCount?: number): number {
     const prices = PLAN_PRICES[plan];
-    return prices.base + (clientCount * prices.per_client);
+    if (!prices) return 0;
+    const users = userCount ?? prices.max_users;
+    return (prices.per_user * users) + (prices.per_client * clientCount);
 }
 
 // Status labels para UI
@@ -89,6 +101,8 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
 };
 
 export const PLAN_LABELS: Record<BillingPlan, string> = {
+    tintim: 'Tintim',
+    meta: 'Meta',
     gestor_solo: 'Gestor Solo',
     agencia: 'Agência',
     enterprise: 'Enterprise',

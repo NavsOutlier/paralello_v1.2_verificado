@@ -30,6 +30,7 @@ export const HybridManager: React.FC<HybridManagerProps> = ({ clientId }) => {
     const [isEditingTrigger, setIsEditingTrigger] = useState<string | 'new' | null>(null);
     const [triggerName, setTriggerName] = useState('');
     const [selectedSeller, setSelectedSeller] = useState<any>(null);
+    const [icpDefinition, setIcpDefinition] = useState('');
 
     // State for scores of the 10 fixed criteria
     const [criteriaScores, setCriteriaScores] = useState<Record<string, number>>({
@@ -433,6 +434,33 @@ export const HybridManager: React.FC<HybridManagerProps> = ({ clientId }) => {
                             </div>
                             <div className="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-xl">
                                 <ShieldCheck className="w-4 h-4 text-emerald-500" /> Sistema de Critérios Fixos
+                            </div>
+                        </div>
+
+                        {/* ICP Definition Section */}
+                        <div className="bg-slate-900 border border-white/5 rounded-[24px] p-6 shadow-xl mb-4 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-fuchsia-500/5 blur-[50px] rounded-full -mr-16 -mt-16 group-hover:bg-fuchsia-500/10 transition-all duration-700" />
+                            <div className="flex items-start gap-5 relative z-10">
+                                <div className="p-4 bg-fuchsia-500/10 border border-fuchsia-500/20 rounded-2xl shadow-inner">
+                                    <Target className="w-6 h-6 text-fuchsia-400" />
+                                </div>
+                                <div className="flex-1">
+                                    <h4 className="text-sm font-black text-white uppercase tracking-widest leading-none mb-2 flex items-center justify-between">
+                                        Definição do Perfil Ideal de Cliente (ICP)
+                                        <span className="text-[9px] font-black text-fuchsia-400 bg-fuchsia-500/10 px-2.5 py-1 rounded uppercase tracking-widest border border-fuchsia-500/20 flex items-center gap-1">
+                                            <Bot className="w-3 h-3" /> Usado pela IA
+                                        </span>
+                                    </h4>
+                                    <p className="text-xs text-slate-400 font-medium mb-4">
+                                        Descreva quem é o seu cliente perfeito. A IA usará este texto como base primária para comparar as características do lead durante o atendimento e pontuar os critérios automaticamente.
+                                    </p>
+                                    <textarea
+                                        value={icpDefinition}
+                                        onChange={(e) => setIcpDefinition(e.target.value)}
+                                        placeholder="Ex: Clínicas odontológicas com faturamento acima de R$50k/mês, que já investem em tráfego pago mas não têm processo estruturado de recepção..."
+                                        className="w-full h-32 bg-black/40 border border-white/10 rounded-xl px-5 py-4 text-sm text-slate-300 font-medium outline-none focus:border-fuchsia-500 transition-all resize-none placeholder:text-slate-600 focus:ring-1 focus:ring-fuchsia-500/50 shadow-inner"
+                                    />
+                                </div>
                             </div>
                         </div>
 

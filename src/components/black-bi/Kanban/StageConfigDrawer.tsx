@@ -120,11 +120,16 @@ export const StageConfigDrawer: React.FC<StageConfigDrawerProps> = ({ isOpen, on
                                                     <div className="flex-1">
                                                         <div className="flex items-center justify-between">
                                                             <span className="text-xs font-black text-white uppercase tracking-widest">Tentativa {i}</span>
-                                                            <select className="bg-slate-900 border border-white/10 rounded-lg px-3 py-1.5 text-[10px] font-black text-slate-400 outline-none focus:border-cyan-500 uppercase tracking-widest">
-                                                                <option>Após {24 * i} horas</option>
-                                                                <option>Após 1 hora</option>
-                                                                <option>Após 2 horas</option>
-                                                            </select>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">APÓS</span>
+                                                                <input
+                                                                    type="number"
+                                                                    className="w-16 bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-[11px] font-black text-white outline-none focus:border-cyan-500 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                                    defaultValue={i === 1 ? 15 : 60}
+                                                                    min="1"
+                                                                />
+                                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">MINUTOS</span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>

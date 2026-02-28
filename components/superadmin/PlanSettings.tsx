@@ -188,7 +188,8 @@ export const PlanSettings: React.FC = () => {
                 trial_days: 7,
                 features: [],
                 modules: AVAILABLE_MODULES.map(m => m.id),
-                is_active: true
+                is_active: true,
+                data_retention_days: 90
             });
             loadPlans();
         } catch (error: any) {

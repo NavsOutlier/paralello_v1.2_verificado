@@ -4,21 +4,20 @@ import { PlanType, Plan } from '../types';
  * Plan Configurations - Aligned with Billing System
  * 
  * Preços em R$ (BRL)
- * - Gestor Solo: R$397/mês (1 usuário, até 50 clientes)
- * - Agência: R$97/mês + R$7/cliente (até 10 usuários)
- * - Enterprise: R$297/mês + R$5/cliente (usuários ilimitados)
+ * - Gestor Solo: R$39/user + R$29/cliente
+ * - Agência: R$35/user + R$45/cliente
+ * - Enterprise: R$30/user + R$60/cliente
  */
 export const PLANS: Record<PlanType, Plan> = {
     [PlanType.GESTOR_SOLO]: {
         id: PlanType.GESTOR_SOLO,
         name: 'Gestor Solo',
-        price: 397,
-        pricePerClient: 0,
+        price: 39,
+        pricePerClient: 29,
         maxUsers: 1,
-
         features: [
             '1 usuário',
-            'Até 50 clientes',
+            'Clientes ilimitados',
             'WhatsApp integrado',
             'Kanban de tarefas',
             'Templates de checklist',
@@ -28,14 +27,12 @@ export const PLANS: Record<PlanType, Plan> = {
     [PlanType.AGENCIA]: {
         id: PlanType.AGENCIA,
         name: 'Agência',
-        price: 97,
-        pricePerClient: 7,
+        price: 35,
+        pricePerClient: 45,
         maxUsers: 10,
-
         features: [
             'Até 10 usuários',
             'Clientes ilimitados',
-            'R$7/cliente adicional',
             'WhatsApp integrado',
             'Kanban de tarefas',
             'Templates de checklist',
@@ -46,14 +43,12 @@ export const PLANS: Record<PlanType, Plan> = {
     [PlanType.ENTERPRISE]: {
         id: PlanType.ENTERPRISE,
         name: 'Enterprise',
-        price: 297,
-        pricePerClient: 5,
-        maxUsers: Infinity,
-
+        price: 30,
+        pricePerClient: 60,
+        maxUsers: 30,
         features: [
-            'Usuários ilimitados',
+            'Até 30 usuários',
             'Clientes ilimitados',
-            'R$5/cliente adicional',
             'WhatsApp integrado',
             'Kanban de tarefas',
             'Templates de checklist',
@@ -68,8 +63,16 @@ export const PLANS: Record<PlanType, Plan> = {
         name: 'TinTim',
         price: 0,
         pricePerClient: 0,
-        maxUsers: 999999,
+        maxUsers: 1,
         features: ['Integração com TinTim']
+    },
+    [PlanType.META]: {
+        id: PlanType.META,
+        name: 'Meta',
+        price: 0,
+        pricePerClient: 0,
+        maxUsers: 1,
+        features: ['Isca de Marketing']
     }
 };
 
@@ -80,7 +83,8 @@ export const PLAN_LABELS: Record<PlanType, string> = {
     [PlanType.GESTOR_SOLO]: 'Gestor Solo',
     [PlanType.AGENCIA]: 'Agência',
     [PlanType.ENTERPRISE]: 'Enterprise',
-    [PlanType.TINTIM]: 'TinTim'
+    [PlanType.TINTIM]: 'TinTim',
+    [PlanType.META]: 'Meta'
 };
 
 /**
@@ -98,11 +102,12 @@ export function getPlanPrice(planType: PlanType): number {
 }
 
 /**
- * Calculate monthly amount based on plan and client count
+ * Calculate monthly amount based on plan, client count, and user count
  */
-export function calculatePlanAmount(planType: PlanType, clientCount: number): number {
+export function calculatePlanAmount(planType: PlanType, clientCount: number, userCount?: number): number {
     const plan = PLANS[planType];
-    return plan.price + (plan.pricePerClient * clientCount);
+    const users = userCount ?? plan.maxUsers;
+    return (plan.price * users) + (plan.pricePerClient * clientCount);
 }
 
 /**

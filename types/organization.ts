@@ -9,7 +9,8 @@ export enum PlanType {
     GESTOR_SOLO = 'gestor_solo',
     AGENCIA = 'agencia',
     ENTERPRISE = 'enterprise',
-    TINTIM = 'tintim'
+    TINTIM = 'tintim',
+    META = 'meta'
 }
 
 /**
@@ -18,7 +19,7 @@ export enum PlanType {
 export interface Plan {
     id: PlanType;
     name: string;
-    price: number;
+    price: number; // Agora representa o price_per_user
     pricePerClient: number;
     maxUsers: number;
     features: string[];

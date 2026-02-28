@@ -94,8 +94,7 @@ export const SuperAdminDashboard: React.FC = () => {
     const mrr = organizations
         .filter(o => o.status === 'active')
         .reduce((sum, org) => {
-            const plan = PLAN_ARRAY.find(p => p.id === org.plan);
-            return sum + (plan?.price || 0);
+            return sum + (org.billingValue || 0);
         }, 0);
 
     const getPlanCount = (planType: PlanType) => {
@@ -312,10 +311,10 @@ export const SuperAdminDashboard: React.FC = () => {
                         />
                         <MetricsCard
                             title="MRR Total"
-                            value={`$${mrr.toLocaleString()}`}
+                            value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(mrr)}
                             icon={DollarSign}
                             color="bg-indigo-500"
-                            subtitle="Monthly Recurring Revenue"
+                            subtitle="Faturamento Mensal Recorrente"
                         />
                         <MetricsCard
                             title="Membros da Equipe"
@@ -332,7 +331,7 @@ export const SuperAdminDashboard: React.FC = () => {
                                 <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Gestor Solo</h3>
                                 <span className="text-3xl font-black text-white">{getPlanCount(PlanType.GESTOR_SOLO)}</span>
                             </div>
-                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">R$397/mês • {PLANS[PlanType.GESTOR_SOLO].maxUsers} usuário</div>
+                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">R$39/user + R$29/cliente</div>
                         </div>
 
                         <div className="relative overflow-hidden bg-slate-900/60 backdrop-blur-2xl p-8 rounded-[2rem] border border-indigo-500/30 shadow-[0_0_40px_rgba(99,102,241,0.1)] group hover:border-indigo-500/50 transition-all">
@@ -343,7 +342,7 @@ export const SuperAdminDashboard: React.FC = () => {
                                 <h3 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">Agência</h3>
                                 <span className="text-3xl font-black text-white drop-shadow-[0_0_10px_rgba(99,102,241,0.3)]">{getPlanCount(PlanType.AGENCIA)}</span>
                             </div>
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">R$97/mês + R$7/cliente • {PLANS[PlanType.AGENCIA].maxUsers} usuários</div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">R$35/user + R$45/cliente</div>
                         </div>
 
                         <div className="bg-slate-900/40 backdrop-blur-2xl p-8 rounded-[2rem] border border-cyan-500/20 shadow-2xl group hover:border-cyan-500/40 transition-all">
@@ -351,7 +350,7 @@ export const SuperAdminDashboard: React.FC = () => {
                                 <h3 className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.3em]">Protocolo ENTERPRISE</h3>
                                 <span className="text-3xl font-black text-white">{getPlanCount(PlanType.ENTERPRISE)}</span>
                             </div>
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">R$297/mês + R$5/cliente • Ilimitado</div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">R$30/user + R$60/cliente</div>
                         </div>
                     </div>
 

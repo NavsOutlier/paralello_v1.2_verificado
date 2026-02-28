@@ -17,7 +17,9 @@ import {
     Briefcase,
     Users,
     X,
-    Target
+    Target,
+    Clock,
+    Database
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../contexts/ToastContext';
@@ -33,6 +35,7 @@ interface PlanConfig {
     features: string[];
     modules: string[];
     is_active: boolean;
+    data_retention_days: number;
 }
 
 const AVAILABLE_MODULES = [
@@ -61,7 +64,8 @@ export const PlanSettings: React.FC = () => {
         trial_days: 7,
         features: [],
         modules: AVAILABLE_MODULES.map(m => m.id),
-        is_active: true
+        is_active: true,
+        data_retention_days: 90
     });
 
     const { showToast } = useToast();
@@ -205,6 +209,15 @@ export const PlanSettings: React.FC = () => {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
     };
 
+    const formatRetention = (days: number) => {
+        if (days === 0) return 'Ilimitado';
+        if (days < 30) return `${days} dias`;
+        const months = Math.round(days / 30);
+        if (months < 12) return `${months} ${months === 1 ? 'mês' : 'meses'}`;
+        const years = Math.round(days / 365);
+        return `${years} ${years === 1 ? 'ano' : 'anos'}`;
+    };
+
     if (loading) {
         return (
             <div className="space-y-6">
@@ -339,6 +352,46 @@ export const PlanSettings: React.FC = () => {
                                             />
                                         </div>
                                     </div>
+
+                                    {/* Data Retention */}
+                                    <div className="mt-6 p-4 bg-slate-950/30 rounded-2xl border border-white/5">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Database className="w-4 h-4 text-amber-400" />
+                                            <h5 className="text-[10px] font-black text-amber-400 uppercase tracking-[0.3em]">Retenção de Dados</h5>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex-1 space-y-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Dias de Retenção</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="30"
+                                                    value={plan.data_retention_days}
+                                                    placeholder="90"
+                                                    onChange={(e) => handlePlanChange(plan.id, 'data_retention_days', Number(e.target.value))}
+                                                    className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm font-bold text-white focus:ring-2 focus:ring-amber-500/30 outline-none"
+                                                />
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Clock className="w-3.5 h-3.5 text-slate-500" />
+                                                    <span className={`text-sm font-black ${plan.data_retention_days === 0 ? 'text-emerald-400' :
+                                                        plan.data_retention_days <= 90 ? 'text-amber-400' :
+                                                            plan.data_retention_days <= 180 ? 'text-blue-400' :
+                                                                'text-emerald-400'
+                                                        }`}>
+                                                        {formatRetention(plan.data_retention_days)}
+                                                    </span>
+                                                </div>
+                                                <p className="text-[9px] text-slate-500 leading-relaxed">
+                                                    90d = 3 meses · 180d = 6 meses · 365d = 1 ano · 0 = ∞
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <p className="mt-3 text-[10px] text-slate-600 leading-relaxed">
+                                            Mensagens, conversas IA, insights Meta, notificações, reports e leads mais antigos serão removidos automaticamente.
+                                        </p>
+                                    </div>
                                 </div>
 
                                 {/* Modules Selection */}
@@ -426,6 +479,21 @@ export const PlanSettings: React.FC = () => {
                                         onChange={e => setNewPlan({ ...newPlan, max_users: Number(e.target.value) })}
                                         className="w-full px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500/30 outline-none"
                                     />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Retenção de Dados (dias)</label>
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="30"
+                                        value={newPlan.data_retention_days}
+                                        onChange={e => setNewPlan({ ...newPlan, data_retention_days: Number(e.target.value) })}
+                                        className="flex-1 px-4 py-3 bg-slate-950/50 border border-white/10 rounded-xl text-sm font-bold focus:ring-2 focus:ring-amber-500/30 outline-none"
+                                    />
+                                    <span className="text-[10px] text-slate-500">90 = 3mo · 180 = 6mo · 365 = 1a · 0 = ∞</span>
                                 </div>
                             </div>
 

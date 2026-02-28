@@ -1,7 +1,11 @@
 import React from 'react';
 import { TrendingUp, Users, DollarSign, Activity, PieChart, Clock } from 'lucide-react';
 
-export const BiMetricsDashboard: React.FC = () => {
+interface BiMetricsDashboardProps {
+    clientId: string;
+}
+
+export const BiMetricsDashboard: React.FC<BiMetricsDashboardProps> = ({ clientId }) => {
     return (
         <div className="flex flex-col h-full overflow-hidden bg-slate-900/30 rounded-xl border border-white/5 p-6 gap-6">
             <div className="flex items-center justify-between">

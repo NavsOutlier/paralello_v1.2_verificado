@@ -141,7 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 w-full flex flex-col gap-2 px-2 overflow-y-auto custom-scrollbar"
+        className="flex-1 w-full flex flex-col gap-2 px-2 pb-[5px] overflow-y-auto custom-scrollbar"
       >
         {!isSuperAdmin && (
           <>
@@ -190,12 +190,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Scroll Indicator */}
-      <div className={`w-full flex justify-center py-1 mt-2 text-slate-500/50 pointer-events-none transition-opacity duration-300 ${canScrollDown ? 'opacity-100 animate-bounce' : 'opacity-0'}`}>
-        <ChevronDown className="w-4 h-4" />
+      <div className={`w-full relative flex items-center justify-center h-4 mt-1 pointer-events-none`}>
+        {/* Bouncing Chevron (Fades out at bottom) */}
+        <div className={`transition-all duration-300 ${canScrollDown ? 'opacity-100 animate-bounce' : 'opacity-0 scale-75'}`}>
+          <ChevronDown className="w-4 h-4 text-slate-500/70" />
+        </div>
       </div>
 
       {/* Fixed Bottom Area (Always visible, allows overflow) */}
-      <div className="mt-auto pt-4 flex flex-col items-center space-y-4 flex-shrink-0">
+      <div className="w-full mt-auto pt-4 pb-2 flex flex-col items-center space-y-4 flex-shrink-0 bg-slate-900/90 border-t border-white/5 relative">
+        {/* Subtle top glow to reinforce separation */}
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-slate-500/20 to-transparent" />
+
         <NotificationCenterTrigger
           unreadCount={unreadNotificationsCount}
           isOpen={isNotificationsOpen}

@@ -19,6 +19,8 @@ import { PremiumBackground } from './components/ui/PremiumBackground';
 import { RestrictedModule } from './components/ui/RestrictedModule';
 import { LeadsDashboard } from './components/leads/LeadsDashboard';
 import { useOrganizationPlan } from './hooks/useOrganizationPlan';
+import { NotificationCenterPanel } from './components/ui';
+import { useNotifications } from './hooks/useNotifications';
 
 const AppContent: React.FC = () => {
   const { user, loading: authLoading, isSuperAdmin, isManager } = useAuth();
@@ -110,6 +112,8 @@ const AppContent: React.FC = () => {
     }
   }, [currentView]);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const { unreadCount: unreadNotificationsCount } = useNotifications();
 
   // Detect invitation or recovery link
   React.useEffect(() => {
@@ -155,7 +159,23 @@ const AppContent: React.FC = () => {
       <PremiumBackground />
 
       {/* Reusable Sidebar Component */}
-      {currentView && <Sidebar currentView={currentView} onViewChange={setCurrentView} />}
+      {currentView && (
+        <Sidebar
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          isNotificationsOpen={isNotificationsOpen}
+          onToggleNotifications={() => setIsNotificationsOpen(!isNotificationsOpen)}
+          unreadNotificationsCount={unreadNotificationsCount}
+        />
+      )}
+
+      {/* Notification Panel (Push Layout) */}
+      <NotificationCenterPanel
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+        currentView={currentView || undefined}
+        onViewChange={setCurrentView}
+      />
 
       {/* Main Content Area */}
       <main className="flex-1 flex overflow-hidden relative z-10">
@@ -181,7 +201,7 @@ const AppContent: React.FC = () => {
         )}
         {currentView === ViewState.SUPERADMIN && <SuperAdminDashboard />}
         {currentView === ViewState.MARKETING && (
-          <RestrictedModule moduleId={ViewState.MARKETING} title="Metas & Conversão">
+          <RestrictedModule moduleId={ViewState.MARKETING} title="Marketing & Conversão">
             <MarketingDashboard />
           </RestrictedModule>
         )}
@@ -196,7 +216,7 @@ const AppContent: React.FC = () => {
           </RestrictedModule>
         )}
         {currentView === ViewState.BLACK_BI && (
-          <RestrictedModule moduleId={ViewState.WORKERS_IA} title="Black BI Studio">
+          <RestrictedModule moduleId={ViewState.WORKERS_IA} title="Comercial Studio">
             <BlackBIConsole />
           </RestrictedModule>
         )}

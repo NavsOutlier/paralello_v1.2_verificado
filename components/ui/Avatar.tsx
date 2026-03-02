@@ -7,6 +7,7 @@ interface AvatarProps {
     name: string;
     size?: AvatarSize;
     className?: string;
+    rounded?: string;
 }
 
 const sizeClasses: Record<AvatarSize, string> = {
@@ -19,7 +20,8 @@ export const Avatar: React.FC<AvatarProps> = ({
     src,
     name,
     size = 'md',
-    className = ''
+    className = '',
+    rounded = 'rounded-full'
 }) => {
     const initials = name
         .split(' ')
@@ -28,17 +30,19 @@ export const Avatar: React.FC<AvatarProps> = ({
         .toUpperCase()
         .slice(0, 2);
 
+    const baseClasses = `${sizeClasses[size]} ${rounded} object-cover`;
+
     return (
         <div className={`relative inline-block ${className}`}>
             {src ? (
                 <img
                     src={src}
                     alt={name}
-                    className={`${sizeClasses[size]} rounded-full object-cover`}
+                    className={baseClasses}
                 />
             ) : (
                 <div
-                    className={`${sizeClasses[size]} rounded-full bg-indigo-500 text-white flex items-center justify-center font-semibold`}
+                    className={`${baseClasses} bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-semibold shadow-inner`}
                 >
                     {initials}
                 </div>

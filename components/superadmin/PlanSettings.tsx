@@ -43,7 +43,7 @@ const AVAILABLE_MODULES = [
     { id: ViewState.DASHBOARD, label: 'Dash', icon: LayoutDashboard },
     { id: ViewState.WORKSPACE, label: 'Chats', icon: MessageSquare },
     { id: ViewState.KANBAN, label: 'Tarefas', icon: KanbanSquare },
-    { id: ViewState.MARKETING, label: 'Metas', icon: BarChart3 },
+    { id: ViewState.MARKETING, label: 'Marketing', icon: BarChart3 },
     { id: ViewState.AUTOMATION, label: 'Automação', icon: Zap },
     { id: ViewState.WORKERS_IA, label: 'Workers', icon: Briefcase },
     { id: ViewState.MANAGER, label: 'Gestão', icon: Users },

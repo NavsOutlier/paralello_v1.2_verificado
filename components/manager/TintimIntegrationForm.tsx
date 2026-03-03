@@ -31,26 +31,7 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
     const [conversionEventId, setConversionEventId] = useState<number | undefined>(config.conversion_event_id);
     const [isDiscovering, setIsDiscovering] = useState(false);
     const [discoveredEvents, setDiscoveredEvents] = useState<{ id: number; name: string }[]>([]);
-    const [webhookBaseUrl, setWebhookBaseUrl] = useState('');
 
-    useEffect(() => {
-        const fetchGlobalUrls = async () => {
-            try {
-                const { data } = await supabase
-                    .from('system_settings')
-                    .select('key, value');
-
-                if (data) {
-                    const webhook = data.find(s => s.key === 'tintim_webhook_base_url');
-
-                    if (webhook?.value) setWebhookBaseUrl(webhook.value);
-                }
-            } catch (err) {
-                console.error('Error fetching global URLs:', err);
-            }
-        };
-        fetchGlobalUrls();
-    }, []);
 
     useEffect(() => {
         onChange({
@@ -108,7 +89,7 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
         }
     };
 
-    const webhookUrl = webhookBaseUrl || 'https://n8n.seusistema.com/webhook/tintim-events';
+    const webhookUrl = 'https://webhooks.blackback.com.br/webhook/tintim-events';
 
     return (
         <div className="space-y-8">

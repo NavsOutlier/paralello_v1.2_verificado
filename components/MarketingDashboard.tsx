@@ -113,6 +113,7 @@ export const MarketingDashboard: React.FC = () => {
     const [metaIntegrationDate, setMetaIntegrationDate] = useState<string | null>(null);
     const [metaAccountDetails, setMetaAccountDetails] = useState<{ name: string, id: string, userName?: string, userId?: string } | null>(null);
     const [tintimIntegrationDate, setTintimIntegrationDate] = useState<string | null>(null);
+    const lastProcessedSyncRef = React.useRef<string>('');
 
 
     // Polling: detect when n8n sync completes (independent of modal)
@@ -442,15 +443,24 @@ export const MarketingDashboard: React.FC = () => {
                 (payload) => {
                     const newData = payload.new;
                     if (newData.provider === 'meta' && newData.config) {
-                        // Check if the sync status changed in the config JSONB
                         const config = newData.config as any;
-                        if (config.last_sync_status === 'success' && isSyncingMeta) {
-                            setIsSyncingMeta(false);
-                            showToast('Sincronização do Meta Ads concluída com sucesso! Recarregando dados...', 'success');
-                            setRefreshTrigger(prev => prev + 1);
-                        } else if (config.last_sync_status === 'error' && isSyncingMeta) {
-                            setIsSyncingMeta(false);
-                            showToast('Houve um erro durante a sincronização dos dados do Meta Ads.', 'error');
+                        const syncStatus = config.last_sync_status;
+                        const lastSyncAt = config.last_sync_at || newData.updated_at;
+
+                        // Only proceed if this is a NEW sync completion we haven't processed yet
+                        if (lastSyncAt && lastSyncAt !== lastProcessedSyncRef.current) {
+                            if (syncStatus === 'success') {
+                                lastProcessedSyncRef.current = lastSyncAt;
+                                setIsSyncingMeta(false);
+
+                                showToast('Sincronização do Meta Ads concluída com sucesso! Recarregando dados...', 'success');
+                                setRefreshTrigger(prev => prev + 1);
+                            } else if (syncStatus === 'error') {
+                                lastProcessedSyncRef.current = lastSyncAt;
+                                setIsSyncingMeta(false);
+
+                                showToast('Houve um erro durante a sincronização dos dados do Meta Ads.', 'error');
+                            }
                         }
                     }
                 }
@@ -460,7 +470,7 @@ export const MarketingDashboard: React.FC = () => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [selectedClient, isSyncingMeta, showToast]);
+    }, [selectedClient, showToast]);
 
     const isIntegrated = tintimConfig.isActive;
 
@@ -1271,6 +1281,7 @@ export const MarketingDashboard: React.FC = () => {
                     startDate={startDate}
                     endDate={endDate}
                     granularity={granularity}
+                    refreshTrigger={refreshTrigger}
                 />
             ) : (
                 /* ========= GERAL VIEW ========= */

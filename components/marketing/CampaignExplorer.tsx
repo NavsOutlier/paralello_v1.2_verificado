@@ -25,6 +25,7 @@ interface CampaignExplorerProps {
     startDate: string;
     endDate: string;
     granularity: Granularity;
+    refreshTrigger?: number;
 }
 
 const LEVEL_CONFIG: Record<DrillLevel, { label: string; icon: React.ElementType; entityType: EntityType }> = {
@@ -52,6 +53,7 @@ export const CampaignExplorer: React.FC<CampaignExplorerProps> = ({
     startDate,
     endDate,
     granularity,
+    refreshTrigger,
 }) => {
     // ========== Navigation State ==========
     const [level, setLevel] = useState<DrillLevel>('campaigns');
@@ -95,6 +97,7 @@ export const CampaignExplorer: React.FC<CampaignExplorerProps> = ({
         level,
         parentCampaignIds: level !== 'campaigns' ? parentCampaignIds : undefined,
         parentAdsetIds: level === 'ads' ? parentAdsetIds : undefined,
+        refreshTrigger,
     });
 
     // ========== Batch Metric Config Loading ==========

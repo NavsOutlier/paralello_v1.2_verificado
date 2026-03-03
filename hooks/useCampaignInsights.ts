@@ -15,6 +15,7 @@ interface UseCampaignInsightsParams {
     parentAdsetId?: string;    // Mantido para compatibilidade
     parentCampaignIds?: string[]; // Novo suporte a array
     parentAdsetIds?: string[];    // Novo suporte a array
+    refreshTrigger?: number;      // Gatilho externo para recarregar dados
 }
 
 interface UseCampaignInsightsResult {
@@ -246,6 +247,7 @@ export function useCampaignInsights({
     parentAdsetId,
     parentCampaignIds,
     parentAdsetIds,
+    refreshTrigger: externalRefreshTrigger,
 }: UseCampaignInsightsParams): UseCampaignInsightsResult {
     const [rawData, setRawData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
@@ -325,7 +327,7 @@ export function useCampaignInsights({
         };
 
         fetchData();
-    }, [organizationId, clientId, startDate, endDate, level, effectiveCampaignIds, effectiveAdsetIds, refreshTrigger]);
+    }, [organizationId, clientId, startDate, endDate, level, effectiveCampaignIds, effectiveAdsetIds, refreshTrigger, externalRefreshTrigger]);
 
     // Data Transformation: Since Supabase Views already do the heavy lifting (SUM, GROUP BY Date if needed),
     // we only need to group them by Entity ID because the dashboard expects aggregated totals *over the date range*,

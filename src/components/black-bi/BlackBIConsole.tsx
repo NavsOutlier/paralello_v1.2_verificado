@@ -19,7 +19,7 @@ import { StageManagementModal } from './Kanban/StageManagementModal';
 import { ClientSidebar } from './ClientSidebar';
 import { CommercialMetricsTable } from './Analytics/CommercialMetricsTable';
 
-type BITab = 'funnel' | 'leads' | 'analytics' | 'reports' | 'hybrid';
+type BITab = 'funnel' | 'leads' | 'reports' | 'hybrid';
 
 interface Client {
     id: string;
@@ -37,8 +37,7 @@ export const BlackBIConsole: React.FC = () => {
     const tabs = [
         { id: 'funnel' as const, label: 'Funil Kanban', icon: LayoutDashboard },
         { id: 'leads' as const, label: 'Gestão de Leads', icon: Users },
-        { id: 'analytics' as const, label: 'Inteligência de Metas', icon: BarChart3 },
-        { id: 'reports' as const, label: 'Relatórios Granulares', icon: ActivitySquare },
+        { id: 'reports' as const, label: 'Relatórios & Metas', icon: ActivitySquare },
         { id: 'hybrid' as const, label: 'Configurações', icon: Cpu },
     ];
 
@@ -141,7 +140,6 @@ export const BlackBIConsole: React.FC = () => {
                                     </div>
                                 </div>
                             )}
-                            {activeTab === 'analytics' && <div className="p-8 h-full overflow-y-auto"><BiMetricsDashboard clientId={selectedClient.id} /></div>}
                             {activeTab === 'reports' && <div className="p-8 h-full overflow-y-auto"><CommercialMetricsTable clientId={selectedClient.id} /></div>}
                             {activeTab === 'hybrid' && <div className="p-8 h-full overflow-y-auto"><HybridManager clientId={selectedClient.id} /></div>}
                         </div>

@@ -6,7 +6,8 @@ import {
     Settings,
     Cpu,
     ChevronRight,
-    Sparkles
+    Sparkles,
+    ActivitySquare
 } from 'lucide-react';
 import { BlBiStage, MOCK_STAGES, BlBiLead } from './types';
 import { FunnelBoard } from './Kanban/FunnelBoard';
@@ -16,8 +17,9 @@ import { HybridManager } from './Settings/HybridManager';
 import { StageConfigDrawer } from './Kanban/StageConfigDrawer';
 import { StageManagementModal } from './Kanban/StageManagementModal';
 import { ClientSidebar } from './ClientSidebar';
+import { CommercialMetricsTable } from './Analytics/CommercialMetricsTable';
 
-type BITab = 'funnel' | 'leads' | 'analytics' | 'hybrid';
+type BITab = 'funnel' | 'leads' | 'analytics' | 'reports' | 'hybrid';
 
 interface Client {
     id: string;
@@ -35,7 +37,8 @@ export const BlackBIConsole: React.FC = () => {
     const tabs = [
         { id: 'funnel' as const, label: 'Funil Kanban', icon: LayoutDashboard },
         { id: 'leads' as const, label: 'Gestão de Leads', icon: Users },
-        { id: 'analytics' as const, label: 'Métricas Avançadas', icon: BarChart3 },
+        { id: 'analytics' as const, label: 'Inteligência de Metas', icon: BarChart3 },
+        { id: 'reports' as const, label: 'Relatórios Granulares', icon: ActivitySquare },
         { id: 'hybrid' as const, label: 'Configurações', icon: Cpu },
     ];
 
@@ -138,8 +141,9 @@ export const BlackBIConsole: React.FC = () => {
                                     </div>
                                 </div>
                             )}
-                            {activeTab === 'analytics' && <div className="p-8 h-full"><BiMetricsDashboard clientId={selectedClient.id} /></div>}
-                            {activeTab === 'hybrid' && <div className="p-8 h-full"><HybridManager clientId={selectedClient.id} /></div>}
+                            {activeTab === 'analytics' && <div className="p-8 h-full overflow-y-auto"><BiMetricsDashboard clientId={selectedClient.id} /></div>}
+                            {activeTab === 'reports' && <div className="p-8 h-full overflow-y-auto"><CommercialMetricsTable clientId={selectedClient.id} /></div>}
+                            {activeTab === 'hybrid' && <div className="p-8 h-full overflow-y-auto"><HybridManager clientId={selectedClient.id} /></div>}
                         </div>
                     ) : (
                         <div className="h-full w-full flex flex-col items-center justify-center p-8 space-y-6">

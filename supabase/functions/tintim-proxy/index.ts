@@ -11,22 +11,26 @@ serve(async (req) => {
     }
 
     try {
-        const { url, customer_code, security_token, method = 'GET' } = await req.json()
+        const body = await req.json()
+        const { customer_code, security_token, method = 'GET' } = body
 
-        if (!url) {
-            return new Response(JSON.stringify({ error: 'URL is required' }), {
+        // Prioritize URL from environment secret for better security
+        const envUrl = Deno.env.get('TINTIM_DISCOVERY_URL')
+        const requestUrl = body.url || envUrl
+
+        if (!requestUrl) {
+            return new Response(JSON.stringify({ error: 'URL is required (not found in body or environment)' }), {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                 status: 400,
             })
         }
 
         // Proxy request to the target URL
-        // We append the parameters to the URL for discovery
-        const targetUrl = new URL(url)
+        const targetUrl = new URL(requestUrl)
         if (customer_code) targetUrl.searchParams.set('customer_code', customer_code)
         if (security_token) targetUrl.searchParams.set('security_token', security_token)
 
-        console.log(`Proxying ${method} request to: ${targetUrl.toString()}`)
+        console.log(`Proxying ${method} request to: ${targetUrl.hostname}...`)
 
         const response = await fetch(targetUrl.toString(), {
             method: method,
@@ -36,7 +40,20 @@ serve(async (req) => {
             },
         })
 
-        const data = await response.json()
+        const responseText = await response.text()
+        let data
+        try {
+            data = JSON.parse(responseText)
+        } catch (e) {
+            console.error('Failed to parse response as JSON:', responseText.substring(0, 500))
+            return new Response(JSON.stringify({
+                error: 'Target returned invalid JSON',
+                details: responseText.substring(0, 200)
+            }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 502,
+            })
+        }
 
         return new Response(JSON.stringify(data), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },

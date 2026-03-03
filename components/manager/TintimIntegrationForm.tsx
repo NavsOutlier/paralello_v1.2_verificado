@@ -32,7 +32,6 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
     const [isDiscovering, setIsDiscovering] = useState(false);
     const [discoveredEvents, setDiscoveredEvents] = useState<{ id: number; name: string }[]>([]);
     const [webhookBaseUrl, setWebhookBaseUrl] = useState('');
-    const [discoveryUrl, setDiscoveryUrl] = useState('');
 
     useEffect(() => {
         const fetchGlobalUrls = async () => {
@@ -43,10 +42,8 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
 
                 if (data) {
                     const webhook = data.find(s => s.key === 'tintim_webhook_base_url');
-                    const discovery = data.find(s => s.key === 'tintim_discovery_url');
 
                     if (webhook?.value) setWebhookBaseUrl(webhook.value);
-                    if (discovery?.value) setDiscoveryUrl(discovery.value);
                 }
             } catch (err) {
                 console.error('Error fetching global URLs:', err);
@@ -68,14 +65,13 @@ export const TintimIntegrationForm: React.FC<TintimIntegrationFormProps> = ({
         if (!customerCode || !securityToken) return;
         setIsDiscovering(true);
         try {
-            const baseUrl = discoveryUrl || `https://api.tintim.app/v1/conversions`;
-
+            // We no longer pass the URL from the frontend for security.
+            // The Edge Function will use the TINTIM_DISCOVERY_URL secret.
             const { data, error } = await supabase.functions.invoke('tintim-proxy', {
                 body: {
-                    url: baseUrl,
                     customer_code: customerCode,
                     security_token: securityToken,
-                    method: discoveryUrl ? 'POST' : 'GET'
+                    // The proxy handles the default method and URL from secrets
                 }
             });
 

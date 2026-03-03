@@ -95,8 +95,8 @@ export const MarketingDashboard: React.FC = () => {
 
     // Tintim Integration State
     const [tintimConfig, setTintimConfig] = useState<TintimConfig>({
-        isActive: false, apiKey: '', funnelId: '', stageId: '',
-        customFields: { utm_source: '', utm_medium: '', utm_campaign: '', utm_content: '', utm_term: '' }
+        is_active: false, api_key: '', funnel_id: '', stage_id: '',
+        custom_fields: { utm_source: '', utm_medium: '', utm_campaign: '', utm_content: '', utm_term: '' }
     });
 
     // Meta OAuth Integration
@@ -177,8 +177,8 @@ export const MarketingDashboard: React.FC = () => {
             const { error } = await supabase.from('tintim_config').delete().eq('client_id', selectedClient);
             if (error) throw error;
             setTintimConfig({
-                isActive: false, apiKey: '', funnelId: '', stageId: '',
-                customFields: { utm_source: '', utm_medium: '', utm_campaign: '', utm_content: '', utm_term: '' }
+                is_active: false, api_key: '', funnel_id: '', stage_id: '',
+                custom_fields: { utm_source: '', utm_medium: '', utm_campaign: '', utm_content: '', utm_term: '' }
             });
             setTintimIntegrationDate(null);
             showToast('Integração Tintim removida.', 'success');
@@ -472,7 +472,7 @@ export const MarketingDashboard: React.FC = () => {
         };
     }, [selectedClient, showToast]);
 
-    const isIntegrated = tintimConfig.isActive;
+    const isIntegrated = tintimConfig.is_active;
 
     // Load Data (Mock + Integration)
     useEffect(() => {
@@ -612,9 +612,21 @@ export const MarketingDashboard: React.FC = () => {
 
     const handleSaveTintimConfig = async () => {
         if (!selectedClient) return;
-        const payload = { client_id: selectedClient, ...tintimConfig, updated_at: new Date().toISOString() };
+        const payload = {
+            client_id: selectedClient,
+            ...tintimConfig,
+            is_active: true, // Ensure it's active when saved
+            updated_at: new Date().toISOString()
+        };
         const { error } = await supabase.from('tintim_config').upsert(payload, { onConflict: 'client_id' });
-        if (!error) setIsTintimModalOpen(false);
+        if (!error) {
+            setIsTintimModalOpen(false);
+            showToast('Configuração Tintim consolidada com sucesso!', 'success');
+            setRefreshTrigger(prev => prev + 1);
+        } else {
+            console.error('Save Tintim error:', error);
+            showToast('Erro ao salvar configuração: ' + error.message, 'error');
+        }
     };
 
     const handleSaveCell = async (dateKey: string, channel: string, metric: string, value: string) => {

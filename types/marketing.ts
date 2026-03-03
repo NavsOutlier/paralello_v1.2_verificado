@@ -46,8 +46,13 @@ export interface MarketingConversion {
 
 // For backwards compatibility, keep TintimConfig interface
 export interface TintimConfig {
+    is_active?: boolean;
+    api_key?: string;
+    funnel_id?: string;
+    stage_id?: string;
     customer_code?: string;
     security_token?: string;
     conversion_event?: string;
     conversion_event_id?: number;
+    custom_fields?: Record<string, any>;
 }

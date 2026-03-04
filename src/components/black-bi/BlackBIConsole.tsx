@@ -103,7 +103,7 @@ export const BlackBIConsole: React.FC = () => {
                 {
                     client_id: selectedClient.id,
                     organization_id: organizationId,
-                    name: 'Interessados',
+                    name: 'Contato Direto WhatsApp',
                     color: 'text-emerald-400',
                     bg: 'bg-emerald-500/10',
                     border: 'border-emerald-500/20',
@@ -116,12 +116,12 @@ export const BlackBIConsole: React.FC = () => {
                 {
                     client_id: selectedClient.id,
                     organization_id: organizationId,
-                    name: 'Transbordo Humano',
-                    color: 'text-orange-400',
-                    bg: 'bg-orange-500/10',
-                    border: 'border-orange-500/20',
-                    ai_enabled: false,
-                    followup_enabled: false,
+                    name: 'Novo Contato Forms',
+                    color: 'text-indigo-400',
+                    bg: 'bg-indigo-500/10',
+                    border: 'border-indigo-500/20',
+                    ai_enabled: true,
+                    followup_enabled: true,
                     position: 1,
                     is_fixed: true,
                     is_protected: true
@@ -129,7 +129,7 @@ export const BlackBIConsole: React.FC = () => {
                 {
                     client_id: selectedClient.id,
                     organization_id: organizationId,
-                    name: 'Qualificados',
+                    name: 'Conversão',
                     color: 'text-cyan-400',
                     bg: 'bg-cyan-500/10',
                     border: 'border-cyan-500/20',
@@ -137,7 +137,20 @@ export const BlackBIConsole: React.FC = () => {
                     followup_enabled: true,
                     position: 2,
                     is_fixed: true,
-                    is_protected: false
+                    is_protected: true
+                },
+                {
+                    client_id: selectedClient.id,
+                    organization_id: organizationId,
+                    name: 'Perdidos',
+                    color: 'text-rose-400',
+                    bg: 'bg-rose-500/10',
+                    border: 'border-rose-500/20',
+                    ai_enabled: false,
+                    followup_enabled: false,
+                    position: 3,
+                    is_fixed: true,
+                    is_protected: true
                 }
             ];
 

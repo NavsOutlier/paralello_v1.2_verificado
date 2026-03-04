@@ -57,14 +57,14 @@ export const StageConfigDrawer: React.FC<StageConfigDrawerProps> = ({ isOpen, on
             const { data: stepsData } = await supabase
                 .from('followup_configs')
                 .select('*')
-                .eq('funnel_stage_id', stageId)
-                .order('delay_minutes');
+                .eq('stage_id', stageId)
+                .order('interval_minutes');
 
             if (stepsData) {
                 setFollowupSteps(stepsData.map(s => ({
                     id: s.id,
-                    delay_minutes: s.delay_minutes,
-                    message_content: s.message_content,
+                    delay_minutes: s.interval_minutes,
+                    message_content: s.message_template,
                     is_active: s.is_active
                 })) as any);
             }
@@ -91,16 +91,16 @@ export const StageConfigDrawer: React.FC<StageConfigDrawerProps> = ({ isOpen, on
             // Delete existing and re-insert for simplicity (or update if ID exists)
             // But we already have a table for it. Let's do a basic sync.
             // For now, let's just delete and re-insert to avoid complex diffing
-            await supabase.from('followup_configs').delete().eq('funnel_stage_id', stageId);
+            await supabase.from('followup_configs').delete().eq('stage_id', stageId);
 
             if (followupSteps.length > 0) {
                 await supabase.from('followup_configs').insert(
                     followupSteps.map(step => ({
-                        funnel_stage_id: stageId,
+                        stage_id: stageId,
                         organization_id: (supabase as any).organizationId, // Fallback if available
                         client_id: clientId,
-                        delay_minutes: step.delay_minutes,
-                        message_content: step.message_content,
+                        interval_minutes: step.delay_minutes,
+                        message_template: step.message_content,
                         is_active: true
                     }))
                 );

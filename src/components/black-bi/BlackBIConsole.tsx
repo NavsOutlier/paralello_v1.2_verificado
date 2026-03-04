@@ -97,11 +97,11 @@ export const BlackBIConsole: React.FC = () => {
             // Count leads for these stages
             const { data: leadsData } = await supabase
                 .from('leads')
-                .select('funnel_stage_id')
+                .select('funnel_stage')
                 .eq('client_id', selectedClient.id);
 
             const counts = (leadsData || []).reduce((acc: any, lead: any) => {
-                const stageId = lead.funnel_stage_id || 'new_lead';
+                const stageId = lead.funnel_stage || 'new_lead';
                 acc[stageId] = (acc[stageId] || 0) + 1;
                 return acc;
             }, {});

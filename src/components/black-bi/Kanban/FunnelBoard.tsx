@@ -39,8 +39,8 @@ export const FunnelBoard: React.FC<FunnelBoardProps> = ({
                 id: l.id,
                 name: l.name,
                 phone: l.phone,
-                status: l.funnel_stage_id || 'new_lead',
-                funnel_stage_id: l.funnel_stage_id,
+                status: l.funnel_stage || 'new_lead',
+                funnel_stage_id: l.funnel_stage,
                 created_at: l.created_at,
                 sentiment: l.ai_sentiment as any,
                 score: l.lead_score,
@@ -74,7 +74,7 @@ export const FunnelBoard: React.FC<FunnelBoardProps> = ({
         // Persist change to database
         await supabase
             .from('leads')
-            .update({ funnel_stage_id: stageId })
+            .update({ funnel_stage: stageId })
             .eq('id', leadId);
     };
 

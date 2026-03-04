@@ -81,6 +81,19 @@ export const BlackBIConsole: React.FC = () => {
             .order('position');
 
         if (stagesData && stagesData.length > 0) {
+            // Check if these are the OLD default stages that need upgrading
+            const oldNames = ['Interessados', 'Transbordo Humano', 'Qualificados'];
+            const currentNames = stagesData.map(s => s.name);
+            const isOldFunnel = stagesData.length === 3 && stagesData.every(s => oldNames.includes(s.name));
+
+            if (isOldFunnel) {
+                console.log("Detectado funil antigo. Atualizando para os 4 estágios novos...");
+                await supabase.from('funnel_stages').delete().eq('client_id', selectedClient.id);
+                // Recursivamente chama para cair no bloco 'else' e criar os novos
+                fetchStages();
+                return;
+            }
+
             // Count leads for these stages
             const { data: leadsData } = await supabase
                 .from('leads')
@@ -98,7 +111,14 @@ export const BlackBIConsole: React.FC = () => {
                 leadCount: counts[s.id] || 0
             })) as any);
         } else {
-            // Inicializar com as 3 etapas fixas
+            // Se não houver estágios OU o id for inválido (prevenção), cria o padrão
+            if (!organizationId) {
+                console.warn("Sem organizationId para criar estágios.");
+                setStages([]);
+                return;
+            }
+
+            // Inicializar com as 4 etapas fixas
             const defaultStages = [
                 {
                     client_id: selectedClient.id,

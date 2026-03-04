@@ -98,7 +98,71 @@ export const BlackBIConsole: React.FC = () => {
                 leadCount: counts[s.id] || 0
             })) as any);
         } else {
-            setStages([]);
+            // Inicializar com as 3 etapas fixas
+            const defaultStages = [
+                {
+                    client_id: selectedClient.id,
+                    organization_id: organizationId,
+                    name: 'Interessados',
+                    color: 'text-emerald-400',
+                    bg: 'bg-emerald-500/10',
+                    border: 'border-emerald-500/20',
+                    ai_enabled: true,
+                    followup_enabled: true,
+                    position: 0,
+                    is_fixed: true,
+                    is_protected: true
+                },
+                {
+                    client_id: selectedClient.id,
+                    organization_id: organizationId,
+                    name: 'Transbordo Humano',
+                    color: 'text-orange-400',
+                    bg: 'bg-orange-500/10',
+                    border: 'border-orange-500/20',
+                    ai_enabled: false,
+                    followup_enabled: false,
+                    position: 1,
+                    is_fixed: true,
+                    is_protected: true
+                },
+                {
+                    client_id: selectedClient.id,
+                    organization_id: organizationId,
+                    name: 'Qualificados',
+                    color: 'text-cyan-400',
+                    bg: 'bg-cyan-500/10',
+                    border: 'border-cyan-500/20',
+                    ai_enabled: false,
+                    followup_enabled: true,
+                    position: 2,
+                    is_fixed: true,
+                    is_protected: false
+                }
+            ];
+
+            const { error } = await supabase
+                .from('funnel_stages')
+                .insert(defaultStages);
+
+            if (!error) {
+                // Re-fetch para obter os IDs reais do banco de dados
+                const { data: newStages } = await supabase
+                    .from('funnel_stages')
+                    .select('*')
+                    .eq('client_id', selectedClient.id)
+                    .order('position');
+
+                if (newStages) {
+                    setStages(newStages.map(s => ({
+                        ...s,
+                        leadCount: 0
+                    })) as any);
+                }
+            } else {
+                console.error("Erro ao criar estágios padrão:", error);
+                setStages([]);
+            }
         }
     };
 

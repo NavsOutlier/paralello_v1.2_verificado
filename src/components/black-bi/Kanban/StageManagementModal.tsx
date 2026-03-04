@@ -119,10 +119,10 @@ export const StageManagementModal: React.FC<StageManagementModalProps> = ({
                         {stages.map((stage, index) => (
                             <div
                                 key={stage.id}
-                                draggable={!stage.isFixed}
-                                onDragStart={() => !stage.isFixed && handleDragStart(index)}
+                                draggable={!stage.is_fixed}
+                                onDragStart={() => !stage.is_fixed && handleDragStart(index)}
                                 onDragOver={(e) => {
-                                    if (stage.isFixed) return;
+                                    if (stage.is_fixed) return;
                                     handleDragOver(e, index);
                                 }}
                                 onDragEnd={handleDragEnd}
@@ -130,11 +130,11 @@ export const StageManagementModal: React.FC<StageManagementModalProps> = ({
                                     flex-1 min-w-[120px] max-w-[200px] h-[360px] flex flex-col bg-slate-800/20 border-2 rounded-[28px] transition-all duration-300 group relative
                                     ${draggedIndex === index ? 'opacity-40 scale-95 border-cyan-500/50' : 'border-white/5 hover:border-white/10'}
                                     ${stage.border.replace('border-', 'hover:border-')}
-                                    ${stage.isFixed ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}
+                                    ${stage.is_fixed ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}
                                 `}
                             >
                                 {/* Drag Handle or Fixed Label */}
-                                {stage.isFixed ? (
+                                {stage.is_fixed ? (
                                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-slate-900 border border-cyan-500/30 rounded-full z-20 whitespace-nowrap shadow-[0_0_15px_rgba(6,182,212,0.1)]">
                                         <span className="text-[8px] font-black text-cyan-400 uppercase tracking-widest italic">Etapa Fixa</span>
                                     </div>
@@ -163,7 +163,7 @@ export const StageManagementModal: React.FC<StageManagementModalProps> = ({
                                         ) : (
                                             <div className="flex items-center gap-1 group/title min-w-0 w-full justify-center">
                                                 <span className="text-[10px] lg:text-xs font-black text-white uppercase tracking-wider italic truncate px-0.5">{stage.name}</span>
-                                                {!(stage.isFixed || stage.isProtectedName) && (
+                                                {!(stage.is_fixed || stage.is_protected) && (
                                                     <button onClick={() => startEditing(stage)} className="opacity-0 group-hover/title:opacity-100 transition-opacity p-0.5 hover:text-cyan-400 flex-shrink-0">
                                                         <Edit2 className="w-2.5 h-2.5" />
                                                     </button>
@@ -197,18 +197,18 @@ export const StageManagementModal: React.FC<StageManagementModalProps> = ({
                                     {/* Actions */}
                                     <div className="mt-auto pt-3 flex justify-between items-center border-t border-white/5">
                                         <div className="flex items-center gap-1 min-w-0">
-                                            {(stage.isFixed || stage.isProtectedName) && (
+                                            {(stage.is_fixed || stage.is_protected) && (
                                                 <div className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-900 border border-white/5 rounded-md truncate">
                                                     <Save className="w-2 h-2 text-slate-600 flex-shrink-0" />
                                                     <span className="text-[7px] font-bold text-slate-600 uppercase tracking-tight truncate">Fix</span>
                                                 </div>
                                             )}
-                                            {!stage.isFixed && !stage.isProtectedName && (
+                                            {!stage.is_fixed && !stage.is_protected && (
                                                 <span className="text-[8px] font-black text-slate-700 uppercase tracking-tighter truncate opacity-40">v1.0</span>
                                             )}
                                         </div>
 
-                                        {!(stage.isFixed || stage.isProtectedName) && (
+                                        {!(stage.is_fixed || stage.is_protected) && (
                                             <button
                                                 onClick={() => handleRemove(stage.id)}
                                                 className="p-1 text-slate-600 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all flex-shrink-0"

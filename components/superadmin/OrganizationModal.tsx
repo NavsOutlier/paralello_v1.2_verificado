@@ -30,7 +30,7 @@ interface PlanConfig {
 const FALLBACK_PLANS: PlanConfig[] = [
     { id: 'gestor_solo', name: 'Gestor Solo', base_price: 0, price_per_user: 39, price_per_client: 29, max_users: 1, trial_days: 7, features: [], modules: ['dash', 'workspace', 'kanban'], is_active: true },
     { id: 'agencia', name: 'Agência', base_price: 0, price_per_user: 35, price_per_client: 45, max_users: 10, trial_days: 7, features: [], modules: ['dash', 'workspace', 'kanban', 'marketing', 'automation'], is_active: true },
-    { id: 'enterprise', name: 'Enterprise', base_price: 0, price_per_user: 30, price_per_client: 60, max_users: 30, trial_days: 14, features: [], modules: ['dash', 'workspace', 'kanban', 'marketing', 'automation', 'workers_ia', 'manager'], is_active: true },
+    { id: 'enterprise', name: 'Enterprise', base_price: 0, price_per_user: 30, price_per_client: 60, max_users: 30, trial_days: 14, features: [], modules: ['dash', 'workspace', 'kanban', 'marketing', 'automation', 'black_bi', 'manager'], is_active: true },
 ];
 
 export const OrganizationModal: React.FC<OrganizationModalProps> = ({

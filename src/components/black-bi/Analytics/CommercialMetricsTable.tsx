@@ -94,31 +94,48 @@ export const CommercialMetricsTable: React.FC<CommercialMetricsTableProps> = ({ 
     const fetchMetrics = async () => {
         setLoading(true);
         try {
+            const { data: dbMetrics, error } = await supabase
+                .from('daily_metrics')
+                .select('*')
+                .eq('client_id', clientId)
+                .gte('date', startDate)
+                .lte('date', endDate);
+
+            if (error) throw error;
+
+            const metricsMap = (dbMetrics || []).reduce((acc: any, m: any) => {
+                acc[m.date] = m;
+                return acc;
+            }, {});
+
             const days = eachDayOfInterval({
                 start: parseISO(startDate),
                 end: parseISO(endDate)
             });
 
             const aggregated: any[] = days.map(day => {
+                const dateStr = toLocalDateString(day);
+                const m = metricsMap[dateStr] || {};
+
                 return {
                     date: day,
                     // VOLUME DE ATENDIMENTO
-                    active_conversations: Math.floor(Math.random() * 50) + 10,
-                    messages_exchanged: Math.floor(Math.random() * 500) + 100,
-                    sla_breaches: Math.floor(Math.random() * 5),
-                    tokens_processed: Math.floor(Math.random() * 50000) + 10000,
+                    active_conversations: m.active_conversations || 0,
+                    messages_exchanged: m.messages_exchanged || 0,
+                    sla_breaches: m.sla_breaches || 0,
+                    tokens_processed: m.tokens_processed || 0,
 
                     // PERFORMANCE FINANCEIRA
-                    total_cost: Math.random() * 200 + 50,
-                    cost_per_lead: Math.random() * 10 + 2,
-                    cost_per_appointment: Math.random() * 50 + 20,
+                    total_cost: m.total_cost || 0,
+                    cost_per_lead: m.cost_per_lead || 0,
+                    cost_per_appointment: m.cost_per_appointment || 0,
 
                     // FUNIL DE VENDAS
-                    leads_processed: Math.floor(Math.random() * 30) + 5,
-                    interested: Math.floor(Math.random() * 20) + 5,
-                    qualified: Math.floor(Math.random() * 15) + 3,
-                    appointments: Math.floor(Math.random() * 10) + 2,
-                    conversion_rate: Math.random() * 15 + 5
+                    leads_processed: m.leads_processed || 0,
+                    interested: m.interested || 0,
+                    qualified: m.qualified || 0,
+                    appointments: m.appointments || 0,
+                    conversion_rate: m.conversion_rate || 0
                 };
             });
 
@@ -375,8 +392,8 @@ export const CommercialMetricsTable: React.FC<CommercialMetricsTableProps> = ({ 
                                     key={g}
                                     onClick={() => setGranularity(g)}
                                     className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${granularity === g
-                                            ? 'bg-slate-700 text-white border border-white/10'
-                                            : 'text-slate-500 hover:text-slate-300'
+                                        ? 'bg-slate-700 text-white border border-white/10'
+                                        : 'text-slate-500 hover:text-slate-300'
                                         }`}
                                 >
                                     {g === 'day' ? 'Dia' : g === 'week' ? 'Sem' : 'Mês'}
@@ -404,8 +421,8 @@ export const CommercialMetricsTable: React.FC<CommercialMetricsTableProps> = ({ 
                                             key={preset.key}
                                             onClick={() => handlePresetChange(preset.key)}
                                             className={`w-full text-left px-5 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all ${selectedPreset === preset.key
-                                                    ? 'bg-cyan-500/10 text-cyan-400 border-l-2 border-cyan-500'
-                                                    : 'text-slate-400 hover:bg-white/5 border-l-2 border-transparent'
+                                                ? 'bg-cyan-500/10 text-cyan-400 border-l-2 border-cyan-500'
+                                                : 'text-slate-400 hover:bg-white/5 border-l-2 border-transparent'
                                                 }`}
                                         >
                                             {preset.label}

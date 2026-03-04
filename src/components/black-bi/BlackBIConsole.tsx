@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../../lib/supabase';
+import { useAuth } from '../../../contexts/AuthContext';
 import {
     LayoutDashboard,
     Users,
@@ -7,7 +9,8 @@ import {
     Cpu,
     ChevronRight,
     Sparkles,
-    ActivitySquare
+    ActivitySquare,
+    Send
 } from 'lucide-react';
 import { BlBiStage, MOCK_STAGES, BlBiLead } from './types';
 import { FunnelBoard } from './Kanban/FunnelBoard';
@@ -18,8 +21,10 @@ import { StageConfigDrawer } from './Kanban/StageConfigDrawer';
 import { StageManagementModal } from './Kanban/StageManagementModal';
 import { ClientSidebar } from './ClientSidebar';
 import { CommercialMetricsTable } from './Analytics/CommercialMetricsTable';
+import { ColdDispatchTool } from '../../../components/leads/ColdDispatchTool';
+import { LeadsConfig } from '../../../components/leads/LeadsConfig';
 
-type BITab = 'funnel' | 'leads' | 'reports' | 'hybrid';
+type BITab = 'funnel' | 'leads' | 'reports' | 'dispatch' | 'hybrid';
 
 interface Client {
     id: string;
@@ -27,6 +32,7 @@ interface Client {
 }
 
 export const BlackBIConsole: React.FC = () => {
+    const { organizationId } = useAuth();
     const [activeTab, setActiveTab] = useState<BITab>('funnel');
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [stages, setStages] = useState<BlBiStage[]>(MOCK_STAGES);
@@ -34,12 +40,98 @@ export const BlackBIConsole: React.FC = () => {
     const [selectedLead, setSelectedLead] = useState<BlBiLead | null>(null);
     const [showStageManager, setShowStageManager] = useState(false);
 
+    useEffect(() => {
+        if (!selectedClient) return;
+        fetchStages();
+    }, [selectedClient, activeTab]);
+
+    const fetchStages = async () => {
+        if (!selectedClient) return;
+
+        // Fetch stages
+        const { data: stagesData } = await supabase
+            .from('funnel_stages')
+            .select('*')
+            .eq('client_id', selectedClient.id)
+            .order('position');
+
+        if (stagesData && stagesData.length > 0) {
+            // Count leads for these stages
+            const { data: leadsData } = await supabase
+                .from('leads')
+                .select('funnel_stage_id')
+                .eq('client_id', selectedClient.id);
+
+            const counts = (leadsData || []).reduce((acc: any, lead: any) => {
+                const stageId = lead.funnel_stage_id || 'new_lead';
+                acc[stageId] = (acc[stageId] || 0) + 1;
+                return acc;
+            }, {});
+
+            setStages(stagesData.map(s => ({
+                ...s,
+                leadCount: counts[s.id] || 0
+            })) as any);
+        } else {
+            setStages(MOCK_STAGES);
+        }
+    };
+
+    const handleUpdateStages = async (newStages: BlBiStage[]) => {
+        if (!selectedClient || !organizationId) return;
+
+        // Apply optimistic update
+        setStages(newStages);
+
+        // 1. Identify deleted stages
+        const currentStageIds = stages.filter(s => !s.id.startsWith('stage_')).map(s => s.id);
+        const newStageIds = newStages.map(s => s.id);
+        const deletedIds = currentStageIds.filter(id => !newStageIds.includes(id));
+
+        if (deletedIds.length > 0) {
+            await supabase.from('funnel_stages').delete().in('id', deletedIds);
+        }
+
+        // 2. Upsert/Update remaining stages
+        for (let i = 0; i < newStages.length; i++) {
+            const stage = newStages[i];
+            const isNew = stage.id.startsWith('stage_');
+
+            const dataToSave = {
+                client_id: selectedClient.id,
+                organization_id: organizationId,
+                name: stage.name,
+                color: stage.color,
+                bg: stage.bg,
+                border: stage.border,
+                ai_enabled: stage.ai_enabled,
+                followup_enabled: stage.followup_enabled,
+                position: i,
+                is_fixed: stage.is_fixed || false,
+                is_protected: stage.is_protected || false,
+                sla_threshold_minutes: stage.sla_threshold_minutes || 0,
+                stage_score: stage.stage_score || 0
+            };
+
+            if (isNew) {
+                await supabase.from('funnel_stages').insert(dataToSave);
+            } else {
+                await supabase.from('funnel_stages').update(dataToSave).eq('id', stage.id);
+            }
+        }
+
+        // Final re-fetch to get real UUIDs for new stages
+        fetchStages();
+    };
+
     const tabs = [
         { id: 'funnel' as const, label: 'Funil Kanban', icon: LayoutDashboard },
-        { id: 'leads' as const, label: 'Gestão de Leads', icon: Users },
+        { id: 'dispatch' as const, label: 'Disparos', icon: Send },
         { id: 'reports' as const, label: 'Relatórios & Metas', icon: ActivitySquare },
-        { id: 'hybrid' as const, label: 'Configurações', icon: Cpu },
+        { id: 'hybrid' as const, label: 'CRM Config', icon: Cpu },
     ];
+
+    const [dispatchSubTab, setDispatchSubTab] = useState<'tool' | 'config'>('tool');
 
     return (
         <div className="h-full w-full flex bg-slate-950 font-sans text-slate-200 overflow-hidden">
@@ -122,25 +214,43 @@ export const BlackBIConsole: React.FC = () => {
                             {activeTab === 'funnel' && (
                                 <FunnelBoard
                                     stages={stages}
-                                    onUpdateStages={setStages}
+                                    onUpdateStages={handleUpdateStages}
                                     onOpenLeadAudit={setSelectedLead}
                                     onOpenStageConfig={setSelectedStage}
                                     onOpenLeadConfig={setSelectedLead}
                                     clientId={selectedClient.id}
                                 />
                             )}
-                            {activeTab === 'leads' && (
-                                <div className="p-8 h-full">
-                                    <div className="flex flex-col items-center justify-center h-full text-center space-y-4 bg-slate-900/40 rounded-3xl border border-white/5">
-                                        <Users className="w-12 h-12 text-slate-700" />
-                                        <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Dashboard de Leads - Em Breve</h3>
-                                        <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest max-w-[240px]">
-                                            Integrando o controle granular de leads por cliente.
-                                        </p>
+                            {activeTab === 'reports' && <div className="p-8 h-full overflow-y-auto"><CommercialMetricsTable clientId={selectedClient.id} /></div>}
+                            {activeTab === 'dispatch' && (
+                                <div className="p-8 h-full overflow-y-auto">
+                                    <div className="max-w-4xl mx-auto mb-10 flex justify-center">
+                                        <div className="inline-flex p-1 bg-slate-900/60 rounded-2xl border border-white/5 shadow-inner">
+                                            <button
+                                                onClick={() => setDispatchSubTab('tool')}
+                                                className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${dispatchSubTab === 'tool' ? 'bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                                            >
+                                                Painel de Envio
+                                            </button>
+                                            <button
+                                                onClick={() => setDispatchSubTab('config')}
+                                                className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${dispatchSubTab === 'config' ? 'bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                                            >
+                                                Canais & Templates
+                                            </button>
+                                        </div>
                                     </div>
+
+                                    {dispatchSubTab === 'tool' ? (
+                                        <ColdDispatchTool
+                                            key={`dispatch-${selectedClient.id}`}
+                                            preselectedClientId={selectedClient.id}
+                                        />
+                                    ) : (
+                                        <LeadsConfig selectedClientId={selectedClient.id} />
+                                    )}
                                 </div>
                             )}
-                            {activeTab === 'reports' && <div className="p-8 h-full overflow-y-auto"><CommercialMetricsTable clientId={selectedClient.id} /></div>}
                             {activeTab === 'hybrid' && <div className="p-8 h-full overflow-y-auto"><HybridManager clientId={selectedClient.id} /></div>}
                         </div>
                     ) : (
@@ -172,7 +282,7 @@ export const BlackBIConsole: React.FC = () => {
                 isOpen={showStageManager}
                 onClose={() => setShowStageManager(false)}
                 stages={stages}
-                onUpdateStages={setStages}
+                onUpdateStages={handleUpdateStages}
             />
 
             {selectedLead && (

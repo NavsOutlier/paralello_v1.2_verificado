@@ -123,7 +123,7 @@ export async function deleteOrganization(id: string): Promise<void> {
 
         // 2. Fetch Agents for this organization (vector store cleanup)
         const { data: agents } = await supabase
-            .from('workers_ia_agents')
+            .from('ai_agents')
             .select('id, name')
             .eq('organization_id', id);
 

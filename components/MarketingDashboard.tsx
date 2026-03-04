@@ -551,8 +551,8 @@ export const MarketingDashboard: React.FC = () => {
                 .lte('date', endDate);
             setManualRows(mnRows || []);
 
-            // 3. Load Real-time Leads (from n8n webhook table)
-            const { data: leads } = await supabase.from('marketing_leads').select('*')
+            // 3. Load Real-time Leads (from central leads table)
+            const { data: leads } = await supabase.from('leads').select('*')
                 .eq('client_id', selectedClient)
                 .gte('created_at', startDate + 'T00:00:00')
                 .lte('created_at', endDate + 'T23:59:59');
@@ -560,22 +560,24 @@ export const MarketingDashboard: React.FC = () => {
             const formattedLeads = (leads || []).map(l => ({
                 ...l,
                 date: toLocalDateString(new Date(l.created_at)),
-                channel: (l.utm_source || 'direct').toLowerCase().includes('facebook') || (l.utm_source || '').toLowerCase().includes('instagram') ? 'meta' :
-                    (l.utm_source || '').toLowerCase().includes('google') ? 'google' : 'direct'
+                channel: (l.source || 'direct').toLowerCase().includes('facebook') || (l.source || '').toLowerCase().includes('instagram') ? 'meta' :
+                    (l.source || '').toLowerCase().includes('google') ? 'google' : 'direct'
             }));
             setLeadsData(formattedLeads);
 
-            // 4. Load Real-time Conversions (from CRM webhook table - e.g. "Deal Won")
-            const { data: convs } = await supabase.from('marketing_conversions').select('*')
+            // 4. Load Real-time Conversions (from central leads table - status = converted)
+            const { data: convs } = await supabase.from('leads').select('*')
                 .eq('client_id', selectedClient)
-                .gte('created_at', startDate + 'T00:00:00')
-                .lte('created_at', endDate + 'T23:59:59');
+                .eq('status', 'converted')
+                .not('converted_at', 'is', null)
+                .gte('converted_at', startDate + 'T00:00:00')
+                .lte('converted_at', endDate + 'T23:59:59');
 
             const formattedConvs = (convs || []).map(c => ({
                 ...c,
-                date: toLocalDateString(new Date(c.created_at)),
-                revenue: parseFloat(c.deal_value || '0'),
-                channel: 'meta' // Simplified attribution logic for demo
+                date: toLocalDateString(new Date(c.converted_at)),
+                revenue: parseFloat(c.conversion_value || '0'),
+                channel: (c.source || 'meta').toLowerCase()
             }));
             setConversionsData(formattedConvs);
 

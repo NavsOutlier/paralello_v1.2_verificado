@@ -38,15 +38,17 @@ export const ManualLeadModal: React.FC<ManualLeadModalProps> = ({ isOpen, onClos
                 return;
             }
 
-            // Insert into marketing_leads
-            const { error } = await supabase.from('marketing_leads').insert({
+            // Insert into central leads table
+            const { error } = await supabase.from('leads').insert({
                 organization_id: organizationId,
                 client_id: clientId,
                 name: name || 'Lead Manual',
                 phone: cleanPhone,
                 source: source,
-                first_interaction_at: new Date(date).toISOString(), // Use selected date
-                created_at: new Date().toISOString() // Created now
+                entry_type: 'manual',
+                status: 'active',
+                first_contact_at: new Date(date).toISOString(),
+                created_at: new Date().toISOString()
             });
 
             if (error) throw error;

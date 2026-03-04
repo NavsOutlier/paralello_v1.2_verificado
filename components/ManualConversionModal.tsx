@@ -45,19 +45,21 @@ export const ManualConversionModal: React.FC<ManualConversionModalProps> = ({ is
                 return;
             }
 
-            // Insert into marketing_conversions
-            const { error } = await supabase.from('marketing_conversions').insert({
+            // Upsert into central leads table (mark as converted)
+            const { error } = await supabase.from('leads').upsert({
                 organization_id: organizationId,
                 client_id: clientId,
                 name: name || 'Venda Manual',
                 phone: cleanPhone,
-                source: 'manual', // Dashboard will try to match this phone to a lead to attribute real source
+                source: 'manual',
+                entry_type: 'manual',
+                status: 'converted',
                 converted_at: new Date(convertedAt).toISOString(),
                 first_contact_at: new Date(firstContactAt).toISOString(),
-                revenue: cleanRevenue,
+                conversion_value: cleanRevenue,
                 provider: 'manual',
-                created_at: new Date().toISOString()
-            });
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'client_id,phone' });
 
             if (error) throw error;
 

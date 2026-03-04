@@ -16,10 +16,8 @@ export enum ViewState {
     UPDATE_PASSWORD = 'update_password',
     MARKETING = 'marketing',
     CRM = 'crm',
-    LEADS = 'leads',
     AGENTS = 'agents',
     AUTOMATION = 'automation',
-    WORKERS_IA = 'workers_ia',
     BLACK_BI = 'black_bi',
     SETTINGS = 'settings'
 }

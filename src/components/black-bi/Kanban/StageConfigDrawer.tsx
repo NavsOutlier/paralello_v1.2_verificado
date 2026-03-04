@@ -1,18 +1,131 @@
-import React, { useState } from 'react';
-import { X, Network, MessageSquare, Target, Bot, Zap, Sparkles, Save, ChevronRight, Layout, Filter, RotateCcw, Settings, Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../../../lib/supabase';
+import { X, Network, MessageSquare, Target, Bot, Zap, Sparkles, Save, ChevronRight, Layout, Filter, RotateCcw, Settings, Plus, Loader2, Trash2 } from 'lucide-react';
 
 interface StageConfigDrawerProps {
     isOpen: boolean;
     onClose: () => void;
     stageId: string;
+    clientId: string;
+}
+
+interface FollowupStep {
+    id?: string;
+    delay_minutes: number;
+    message_content: string;
+    is_active: boolean;
 }
 
 type ConfigTab = 'followup' | 'score';
 
-export const StageConfigDrawer: React.FC<StageConfigDrawerProps> = ({ isOpen, onClose, stageId }) => {
+export const StageConfigDrawer: React.FC<StageConfigDrawerProps> = ({ isOpen, onClose, stageId, clientId }) => {
     const [activeTab, setActiveTab] = useState<ConfigTab>('followup');
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+
+    // Form State
+    const [slaMinutes, setSlaMinutes] = useState(15);
+    const [stageScore, setStageScore] = useState(0);
+    const [aiFollowupEnabled, setAiFollowupEnabled] = useState(true);
+    const [followupSteps, setFollowupSteps] = useState<FollowupStep[]>([]);
 
     if (!isOpen) return null;
+
+    useEffect(() => {
+        if (isOpen && stageId) {
+            fetchConfig();
+        }
+    }, [isOpen, stageId]);
+
+    const fetchConfig = async () => {
+        setLoading(true);
+        try {
+            // 1. Fetch stage base config
+            const { data: stageData } = await supabase
+                .from('funnel_stages')
+                .select('*')
+                .eq('id', stageId)
+                .single();
+
+            if (stageData) {
+                setSlaMinutes(stageData.sla_threshold_minutes || 0);
+                setStageScore(stageData.stage_score || 0);
+                setAiFollowupEnabled(stageData.followup_enabled || false);
+            }
+
+            // 2. Fetch followup steps
+            const { data: stepsData } = await supabase
+                .from('followup_configs')
+                .select('*')
+                .eq('funnel_stage_id', stageId)
+                .order('delay_minutes');
+
+            if (stepsData) {
+                setFollowupSteps(stepsData.map(s => ({
+                    id: s.id,
+                    delay_minutes: s.delay_minutes,
+                    message_content: s.message_content,
+                    is_active: s.is_active
+                })) as any);
+            }
+        } catch (error) {
+            console.error('Error fetching stage config:', error);
+        }
+        setLoading(false);
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            // 1. Save stage base config
+            await supabase
+                .from('funnel_stages')
+                .update({
+                    sla_threshold_minutes: slaMinutes,
+                    stage_score: stageScore,
+                    followup_enabled: aiFollowupEnabled
+                })
+                .eq('id', stageId);
+
+            // 2. Save followup steps
+            // Delete existing and re-insert for simplicity (or update if ID exists)
+            // But we already have a table for it. Let's do a basic sync.
+            // For now, let's just delete and re-insert to avoid complex diffing
+            await supabase.from('followup_configs').delete().eq('funnel_stage_id', stageId);
+
+            if (followupSteps.length > 0) {
+                await supabase.from('followup_configs').insert(
+                    followupSteps.map(step => ({
+                        funnel_stage_id: stageId,
+                        organization_id: (supabase as any).organizationId, // Fallback if available
+                        client_id: clientId,
+                        delay_minutes: step.delay_minutes,
+                        message_content: step.message_content,
+                        is_active: true
+                    }))
+                );
+            }
+
+            onClose();
+        } catch (error) {
+            console.error('Error saving stage config:', error);
+        }
+        setSaving(false);
+    };
+
+    const addStep = () => {
+        setFollowupSteps([...followupSteps, { delay_minutes: 60, message_content: '', is_active: true }]);
+    };
+
+    const removeStep = (index: number) => {
+        setFollowupSteps(followupSteps.filter((_, i) => i !== index));
+    };
+
+    const updateStep = (index: number, field: keyof FollowupStep, value: any) => {
+        const newSteps = [...followupSteps];
+        newSteps[index] = { ...newSteps[index], [field]: value };
+        setFollowupSteps(newSteps);
+    };
 
     const tabs: { id: ConfigTab, label: string, icon: any, color: string }[] = [
         { id: 'followup', label: 'Follow-up IA', icon: MessageSquare, color: 'text-cyan-400' },
@@ -97,7 +210,12 @@ export const StageConfigDrawer: React.FC<StageConfigDrawerProps> = ({ isOpen, on
                                         </div>
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" className="sr-only peer" defaultChecked />
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only peer"
+                                            checked={aiFollowupEnabled}
+                                            onChange={(e) => setAiFollowupEnabled(e.target.checked)}
+                                        />
                                         <div className="w-14 h-7 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-cyan-500 shadow-xl"></div>
                                     </label>
                                 </div>
@@ -105,30 +223,42 @@ export const StageConfigDrawer: React.FC<StageConfigDrawerProps> = ({ isOpen, on
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between">
                                         <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Fluxo de Disparos</h4>
-                                        <button className="text-[10px] font-black text-cyan-500 uppercase tracking-widest flex items-center gap-1.5 hover:text-cyan-400 transition-colors">
+                                        <button
+                                            onClick={addStep}
+                                            className="text-[10px] font-black text-cyan-500 uppercase tracking-widest flex items-center gap-1.5 hover:text-cyan-400 transition-colors"
+                                        >
                                             <Plus className="w-3 h-3" /> Adicionar Tentativa
                                         </button>
                                     </div>
 
                                     <div className="space-y-4">
-                                        {[1, 2].map((i) => (
+                                        {followupSteps.map((step, i) => (
                                             <div key={i} className="group relative bg-slate-800/20 border border-white/5 rounded-3xl p-6 hover:border-cyan-500/30 transition-all">
                                                 <div className="flex items-center gap-4 mb-4">
                                                     <div className="w-8 h-8 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center text-[10px] font-black text-white">
-                                                        {i}
+                                                        {i + 1}
                                                     </div>
                                                     <div className="flex-1">
                                                         <div className="flex items-center justify-between">
-                                                            <span className="text-xs font-black text-white uppercase tracking-widest">Tentativa {i}</span>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">APÓS</span>
-                                                                <input
-                                                                    type="number"
-                                                                    className="w-16 bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-[11px] font-black text-white outline-none focus:border-cyan-500 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                                                    defaultValue={i === 1 ? 15 : 60}
-                                                                    min="1"
-                                                                />
-                                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">MINUTOS</span>
+                                                            <span className="text-xs font-black text-white uppercase tracking-widest">Tentativa {i + 1}</span>
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">APÓS</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        className="w-16 bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-[11px] font-black text-white outline-none focus:border-cyan-500 text-center"
+                                                                        value={step.delay_minutes}
+                                                                        onChange={(e) => updateStep(i, 'delay_minutes', parseInt(e.target.value))}
+                                                                        min="1"
+                                                                    />
+                                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">MINUTOS</span>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => removeStep(i)}
+                                                                    className="p-1 text-slate-600 hover:text-rose-500 transition-colors"
+                                                                >
+                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -136,7 +266,8 @@ export const StageConfigDrawer: React.FC<StageConfigDrawerProps> = ({ isOpen, on
                                                 <textarea
                                                     className="w-full h-24 bg-slate-950/50 border border-white/5 rounded-2xl p-4 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-500/50 transition-all resize-none"
                                                     placeholder="Digite a mensagem que a IA deve enviar..."
-                                                    defaultValue={i === 1 ? "Olá {{name}}, vi que não conseguimos avançar ontem. Tem alguma dúvida que eu possa ajudar?" : ""}
+                                                    value={step.message_content}
+                                                    onChange={(e) => updateStep(i, 'message_content', e.target.value)}
                                                 />
                                             </div>
                                         ))}
@@ -165,7 +296,8 @@ export const StageConfigDrawer: React.FC<StageConfigDrawerProps> = ({ isOpen, on
                                             <input
                                                 type="number"
                                                 className="w-full bg-slate-950 border border-white/10 rounded-2xl px-5 py-4 text-center text-lg font-black text-emerald-400 outline-none focus:border-emerald-500 shadow-inner"
-                                                defaultValue={15}
+                                                value={slaMinutes}
+                                                onChange={(e) => setSlaMinutes(parseInt(e.target.value))}
                                             />
                                             <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-slate-900 px-2 text-[8px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap border border-white/5 rounded">MINUTOS</div>
                                         </div>
@@ -189,7 +321,8 @@ export const StageConfigDrawer: React.FC<StageConfigDrawerProps> = ({ isOpen, on
                                             <input
                                                 type="number"
                                                 className="w-full bg-slate-950 border border-white/10 rounded-2xl px-5 py-4 text-center text-lg font-black text-emerald-400 outline-none focus:border-emerald-500 shadow-inner"
-                                                defaultValue={30}
+                                                value={stageScore}
+                                                onChange={(e) => setStageScore(parseInt(e.target.value))}
                                             />
                                             <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-slate-900 px-2 text-[8px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap border border-white/5 rounded">PONTOS</div>
                                         </div>
@@ -215,10 +348,11 @@ export const StageConfigDrawer: React.FC<StageConfigDrawerProps> = ({ isOpen, on
                             Descartar
                         </button>
                         <button
-                            onClick={onClose}
-                            className="bg-white text-black px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] flex items-center gap-2"
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="bg-white text-black px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] flex items-center gap-2 disabled:opacity-50"
                         >
-                            <Save className="w-4 h-4" />
+                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                             Aplicar Estratégia
                         </button>
                     </div>

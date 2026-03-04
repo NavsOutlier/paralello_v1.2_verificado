@@ -14,10 +14,9 @@ import {
     KanbanSquare,
     BarChart3,
     Zap,
-    Briefcase,
+    ActivitySquare,
     Users,
     X,
-    Target,
     Clock,
     Database
 } from 'lucide-react';
@@ -45,9 +44,8 @@ const AVAILABLE_MODULES = [
     { id: ViewState.KANBAN, label: 'Tarefas', icon: KanbanSquare },
     { id: ViewState.MARKETING, label: 'Marketing', icon: BarChart3 },
     { id: ViewState.AUTOMATION, label: 'Automação', icon: Zap },
-    { id: ViewState.WORKERS_IA, label: 'Workers', icon: Briefcase },
+    { id: ViewState.BLACK_BI, label: 'Comercial', icon: ActivitySquare },
     { id: ViewState.MANAGER, label: 'Gestão', icon: Users },
-    { id: ViewState.LEADS, label: 'Leads', icon: Target },
 ];
 
 export const PlanSettings: React.FC = () => {

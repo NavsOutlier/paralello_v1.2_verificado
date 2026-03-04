@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../../../lib/supabase';
 import { BlBiLead, BlBiStage, MOCK_LEADS } from '../types';
 import { LeadCard } from './LeadCard';
 import { Settings, Plus, Bot, RotateCcw } from 'lucide-react';
@@ -22,6 +23,33 @@ export const FunnelBoard: React.FC<FunnelBoardProps> = ({
 }) => {
     const [leads, setLeads] = useState<BlBiLead[]>(MOCK_LEADS);
 
+    useEffect(() => {
+        if (!clientId) return;
+        fetchLeads();
+    }, [clientId]);
+
+    const fetchLeads = async () => {
+        const { data } = await supabase
+            .from('leads')
+            .select('*')
+            .eq('client_id', clientId);
+
+        if (data) {
+            setLeads(data.map(l => ({
+                id: l.id,
+                name: l.name,
+                phone: l.phone,
+                status: l.funnel_stage_id || 'new_lead',
+                funnel_stage_id: l.funnel_stage_id,
+                created_at: l.created_at,
+                sentiment: l.ai_sentiment as any,
+                score: l.lead_score,
+                last_message_preview: l.last_message_content,
+                unreplied_since: l.waiting_since
+            })) as any);
+        }
+    };
+
     const handleDragStart = (e: React.DragEvent, leadId: string) => {
         e.dataTransfer.setData('leadId', leadId);
     };
@@ -30,25 +58,43 @@ export const FunnelBoard: React.FC<FunnelBoardProps> = ({
         e.preventDefault();
     };
 
-    const handleDrop = (e: React.DragEvent, stageId: string) => {
+    const handleDrop = async (e: React.DragEvent, stageId: string) => {
         e.preventDefault();
         const leadId = e.dataTransfer.getData('leadId');
 
-        // Update lead status
+        // Update local state first (optimistic)
         setLeads(currentLeads =>
             currentLeads.map(lead =>
                 lead.id === leadId
-                    ? { ...lead, status: stageId as BlBiLead['status'] }
+                    ? { ...lead, status: stageId as any, funnel_stage_id: stageId }
                     : lead
             )
         );
+
+        // Persist change to database
+        await supabase
+            .from('leads')
+            .update({ funnel_stage_id: stageId })
+            .eq('id', leadId);
     };
 
-    const toggleStageSetting = (stageId: string, setting: 'ai_enabled' | 'followup_enabled') => {
+    const toggleStageSetting = async (stageId: string, setting: 'ai_enabled' | 'followup_enabled') => {
+        const currentStage = stages.find(s => s.id === stageId);
+        if (!currentStage) return;
+
+        const newValue = !currentStage[setting];
+
+        // Update parent state (optimistic)
         const newStages = stages.map(s =>
-            s.id === stageId ? { ...s, [setting]: !s[setting] } : s
+            s.id === stageId ? { ...s, [setting]: newValue } : s
         );
         onUpdateStages(newStages);
+
+        // Persist to database
+        await supabase
+            .from('funnel_stages')
+            .update({ [setting]: newValue })
+            .eq('id', stageId);
     };
 
     return (

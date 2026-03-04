@@ -126,22 +126,23 @@ serve(async (req) => {
 
                 // Leads
                 const { count: leadsCount } = await supabase
-                    .from('marketing_leads')
+                    .from('leads')
                     .select('*', { count: 'exact', head: true })
                     .eq('client_id', report.client_id)
-                    .gte('first_interaction_at', startStr)
-                    .lte('first_interaction_at', endStr + 'T23:59:59')
+                    .gte('created_at', startStr)
+                    .lte('created_at', endStr + 'T23:59:59')
 
                 // Conversions & Revenue
                 const { data: conversions } = await supabase
-                    .from('marketing_conversions')
-                    .select('revenue')
+                    .from('leads')
+                    .select('conversion_value')
                     .eq('client_id', report.client_id)
+                    .eq('status', 'converted')
                     .gte('converted_at', startStr)
                     .lte('converted_at', endStr + 'T23:59:59')
 
                 const conversionsCount = conversions?.length || 0
-                const revenue = conversions?.reduce((sum, c) => sum + (c.revenue || 0), 0) || 0
+                const revenue = conversions?.reduce((sum, c) => sum + (c.conversion_value || 0), 0) || 0
 
                 // Manual Data (Investment, Clicks, Impressions)
                 const { data: manualData } = await supabase

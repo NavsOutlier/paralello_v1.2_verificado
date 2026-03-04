@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, MessageSquare, KanbanSquare, Users, LogOut, Shield, BarChart3, Zap, Briefcase, Target, ActivitySquare, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, KanbanSquare, Users, LogOut, Shield, BarChart3, Zap, ActivitySquare, ChevronDown } from 'lucide-react';
 import { ViewState } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrganizationPlan } from '../hooks/useOrganizationPlan';
@@ -124,8 +124,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     );
   };
 
-  const isInternalGroup = [ViewState.DASHBOARD, ViewState.WORKSPACE, ViewState.KANBAN, ViewState.AUTOMATION, ViewState.MARKETING].includes(currentView);
-  const isExternalGroup = [ViewState.WORKERS_IA, ViewState.BLACK_BI, ViewState.LEADS].includes(currentView);
+  const isInternalGroup = [ViewState.DASHBOARD, ViewState.WORKSPACE, ViewState.KANBAN, ViewState.AUTOMATION].includes(currentView);
+  const isExternalGroup = [ViewState.BLACK_BI, ViewState.MARKETING].includes(currentView);
   const isManagerView = currentView === ViewState.MANAGER;
 
   return (
@@ -156,7 +156,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <NavItem view={ViewState.WORKSPACE} icon={MessageSquare} label="Chat" theme="internal" />
               <NavItem view={ViewState.KANBAN} icon={KanbanSquare} label="Tarefas" theme="internal" />
               <NavItem view={ViewState.AUTOMATION} icon={Zap} label="Automações" theme="internal" />
-              <NavItem view={ViewState.MARKETING} icon={BarChart3} label="Marketing" theme="internal" />
             </div>
 
             {/* GRUPO EXTERNO (Clientes) */}
@@ -164,9 +163,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               ? 'bg-emerald-900/20 border-emerald-500/40 ring-2 ring-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.2)]'
               : 'bg-emerald-900/10 border-emerald-500/10'
               }`}>
-              <NavItem view={ViewState.WORKERS_IA} icon={Briefcase} label="Workers" theme="external" />
+              <NavItem view={ViewState.MARKETING} icon={BarChart3} label="Marketing" theme="external" />
               <NavItem view={ViewState.BLACK_BI} icon={ActivitySquare} label="Comercial" theme="external" />
-              <NavItem view={ViewState.LEADS} icon={Target} label="Leads" theme="external" />
             </div>
 
             {/* GESTÃO - Diferenciado Neon */}

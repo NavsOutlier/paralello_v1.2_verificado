@@ -1,33 +1,52 @@
 export interface BlBiLead {
     id: string;
+    client_id?: string;
+    organization_id?: string;
     name: string;
     phone: string;
-    status: 'new_lead' | 'interested' | 'qualified' | 'scheduled' | 'lost' | 'disqualified';
+    email?: string;
+    status: string; // Map to funeral_stage_id or general status
+    funnel_stage_id?: string;
     created_at: string;
+    updated_at?: string;
     last_interaction?: string;
-    assigned_to?: string; // Human or 'AI'
+    assigned_to?: string;
+    assigned_agent_id?: string;
     campaign_source?: string;
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
     score?: number;
+    lead_score?: number;
     tags?: string[];
     sentiment?: 'neutral' | 'satisfied' | 'unsatisfied' | 'very_unsatisfied';
+    ai_sentiment?: string;
     sla_status?: string;
     last_message_preview?: string;
-    unreplied_since?: string; // ISO format for wait time calculation
+    last_message_content?: string;
+    unreplied_since?: string;
+    waiting_since?: string;
+    meta_data?: Record<string, any>;
+    entry_type?: 'manual' | 'bot' | 'imported';
 }
 
 export interface BlBiStage {
     id: string;
+    client_id?: string;
+    organization_id?: string;
     name: string;
-    leadCount: number;
+    leadCount?: number;
     ai_enabled: boolean;
     followup_enabled: boolean;
     color: string;
     bg: string;
     border: string;
-    isFixed?: boolean;           // Cannot move or rename
-    isProtectedName?: boolean;  // Cannot rename, but can move
+    is_fixed?: boolean;
+    is_protected?: boolean;
+    position?: number;
     sla_threshold_minutes?: number;
     stage_score?: number;
+    description?: string;
 }
 
 export const MOCK_STAGES: BlBiStage[] = [
@@ -40,7 +59,7 @@ export const MOCK_STAGES: BlBiStage[] = [
         color: 'text-amber-400',
         bg: 'bg-amber-500/10',
         border: 'border-amber-500/20',
-        isFixed: true,
+        is_fixed: true,
         sla_threshold_minutes: 10,
         stage_score: 5
     },
@@ -53,7 +72,7 @@ export const MOCK_STAGES: BlBiStage[] = [
         color: 'text-emerald-400',
         bg: 'bg-emerald-500/10',
         border: 'border-emerald-500/20',
-        isFixed: true,
+        is_fixed: true,
         sla_threshold_minutes: 5,
         stage_score: 10
     },
@@ -66,7 +85,7 @@ export const MOCK_STAGES: BlBiStage[] = [
         color: 'text-cyan-400',
         bg: 'bg-cyan-500/10',
         border: 'border-cyan-500/20',
-        isProtectedName: true,
+        is_protected: true,
         sla_threshold_minutes: 60,
         stage_score: 100
     },

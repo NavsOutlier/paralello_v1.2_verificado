@@ -19,10 +19,10 @@ import { BiMetricsDashboard } from './Analytics/BiMetricsDashboard';
 import { HybridManager } from './Settings/HybridManager';
 import { StageConfigDrawer } from './Kanban/StageConfigDrawer';
 import { StageManagementModal } from './Kanban/StageManagementModal';
-import { ClientSidebar } from './ClientSidebar';
 import { CommercialMetricsTable } from './Analytics/CommercialMetricsTable';
 import { ColdDispatchTool } from '../../../components/leads/ColdDispatchTool';
 import { LeadsConfig } from '../../../components/leads/LeadsConfig';
+import { ChevronDown, Search } from 'lucide-react';
 
 type BITab = 'funnel' | 'leads' | 'reports' | 'dispatch' | 'hybrid';
 
@@ -35,10 +35,35 @@ export const BlackBIConsole: React.FC = () => {
     const { organizationId } = useAuth();
     const [activeTab, setActiveTab] = useState<BITab>('funnel');
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+    const [clients, setClients] = useState<Client[]>([]);
+    const [showClientDropdown, setShowClientDropdown] = useState(false);
+    const [loadingClients, setLoadingClients] = useState(true);
+    const [clientSearchTerm, setClientSearchTerm] = useState('');
+
     const [stages, setStages] = useState<BlBiStage[]>(MOCK_STAGES);
     const [selectedStage, setSelectedStage] = useState<string | null>(null);
     const [selectedLead, setSelectedLead] = useState<BlBiLead | null>(null);
     const [showStageManager, setShowStageManager] = useState(false);
+
+    useEffect(() => {
+        const fetchClients = async () => {
+            if (!organizationId) return;
+            setLoadingClients(true);
+            const { data } = await supabase
+                .from('clients')
+                .select('id, name')
+                .eq('organization_id', organizationId)
+                .order('name');
+            if (data) {
+                setClients(data);
+                if (data.length > 0 && !selectedClient) {
+                    setSelectedClient(data[0]);
+                }
+            }
+            setLoadingClients(false);
+        };
+        fetchClients();
+    }, [organizationId]);
 
     useEffect(() => {
         if (!selectedClient) return;
@@ -135,16 +160,11 @@ export const BlackBIConsole: React.FC = () => {
 
     return (
         <div className="h-full w-full flex bg-slate-950 font-sans text-slate-200 overflow-hidden">
-            {/* Client Selection Sidebar */}
-            <ClientSidebar
-                selectedClientId={selectedClient?.id || null}
-                onSelectClient={setSelectedClient}
-            />
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0 h-full relative z-10 font-sans">
                 {/* Dashboard Header */}
-                <div className="px-8 py-6 border-b border-white/5 bg-slate-900/50 backdrop-blur-md flex items-center justify-between shrink-0">
+                <div className="px-8 py-6 border-b border-white/5 bg-slate-900/50 backdrop-blur-md flex items-center justify-between shrink-0 relative z-[60]">
                     <div className="flex items-center gap-5">
                         <div className="relative group">
                             <div className="p-3.5 bg-gradient-to-br from-cyan-500 to-fuchsia-600 rounded-[22px] shadow-2xl shadow-cyan-500/20 group-hover:scale-105 transition-transform duration-500">
@@ -160,14 +180,62 @@ export const BlackBIConsole: React.FC = () => {
                                 <div className="px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
                                     <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Protocolo v1.2</span>
                                 </div>
-                            </div>
-                            <div className="flex items-center gap-2 mt-1.5">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] flex items-center gap-1.5">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                    {selectedClient ? `Cliente: ${selectedClient.name}` : 'Módulo Especialista'}
-                                    <ChevronRight className="w-3 h-3 text-slate-700" />
-                                    {tabs.find(t => t.id === activeTab)?.label}
-                                </span>
+
+                                <div className="w-px h-6 bg-white/10 mx-2" />
+
+                                {/* Client Selector Button (Top) */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setShowClientDropdown(!showClientDropdown)}
+                                        className="flex items-center gap-3 px-5 py-2.5 bg-slate-900 border border-white/5 rounded-[18px] hover:bg-slate-800 transition-all text-xs text-white font-bold uppercase tracking-wider group relative"
+                                    >
+                                        <div className="p-1.5 bg-cyan-500/20 rounded-lg group-hover:bg-cyan-500/30 transition-colors">
+                                            <Users className="w-3.5 h-3.5 text-cyan-400" />
+                                        </div>
+                                        <span className="max-w-[180px] truncate">
+                                            {selectedClient?.name || (loadingClients ? 'Carregando...' : 'Selecione um Cliente')}
+                                        </span>
+                                        <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform duration-300 ${showClientDropdown ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    {showClientDropdown && (
+                                        <>
+                                            <div className="fixed inset-0 z-[90]" onClick={() => setShowClientDropdown(false)} />
+                                            <div className="absolute top-full left-0 mt-3 w-72 bg-slate-900/95 backdrop-blur-3xl rounded-[24px] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.9)] border border-white/10 py-3 z-[100] animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+                                                <div className="px-4 pb-3 pt-1 border-b border-white/5 mb-2">
+                                                    <div className="relative">
+                                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Buscar..."
+                                                            value={clientSearchTerm}
+                                                            onChange={e => setClientSearchTerm(e.target.value)}
+                                                            className="w-full pl-9 pr-4 py-2 bg-black/40 border border-white/5 rounded-xl text-[10px] text-white font-bold uppercase tracking-widest placeholder:text-slate-700 focus:outline-none focus:border-cyan-500/40"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                                                    {clients.filter(c => c.name.toLowerCase().includes(clientSearchTerm.toLowerCase())).length === 0 ? (
+                                                        <div className="px-6 py-4 text-[10px] text-slate-600 font-bold uppercase tracking-widest text-center">Nenhum cliente encontrado</div>
+                                                    ) : (
+                                                        clients.filter(c => c.name.toLowerCase().includes(clientSearchTerm.toLowerCase())).map(client => (
+                                                            <button
+                                                                key={client.id}
+                                                                onClick={() => { setSelectedClient(client); setShowClientDropdown(false); }}
+                                                                className={`w-full text-left px-6 py-3.5 text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all flex items-center justify-between group/item ${selectedClient?.id === client.id ? 'text-cyan-400 bg-cyan-500/5' : 'text-slate-400'}`}
+                                                            >
+                                                                <span>{client.name}</span>
+                                                                {selectedClient?.id === client.id && (
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
+                                                                )}
+                                                            </button>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -262,7 +330,7 @@ export const BlackBIConsole: React.FC = () => {
                             <div className="text-center space-y-2">
                                 <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">Selecione um <span className="text-cyan-400">Cliente</span></h3>
                                 <p className="text-xs text-slate-500 font-bold uppercase tracking-widest max-w-xs leading-relaxed">
-                                    Escolha uma empresa na barra lateral para carregar os dados do funil e métricas avançadas.
+                                    Escolha uma empresa no seletor do topo para carregar os dados do funil e métricas avançadas.
                                 </p>
                             </div>
                         </div>

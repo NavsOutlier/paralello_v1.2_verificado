@@ -29,13 +29,13 @@ export const StageConfigDrawer: React.FC<StageConfigDrawerProps> = ({ isOpen, on
     const [aiFollowupEnabled, setAiFollowupEnabled] = useState(true);
     const [followupSteps, setFollowupSteps] = useState<FollowupStep[]>([]);
 
-    if (!isOpen) return null;
-
     useEffect(() => {
         if (isOpen && stageId) {
             fetchConfig();
         }
     }, [isOpen, stageId]);
+
+    if (!isOpen) return null;
 
     const fetchConfig = async () => {
         setLoading(true);

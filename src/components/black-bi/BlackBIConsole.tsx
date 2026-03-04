@@ -98,7 +98,7 @@ export const BlackBIConsole: React.FC = () => {
                 leadCount: counts[s.id] || 0
             })) as any);
         } else {
-            setStages(MOCK_STAGES);
+            setStages([]);
         }
     };
 
@@ -164,7 +164,7 @@ export const BlackBIConsole: React.FC = () => {
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0 h-full relative z-10 font-sans">
                 {/* Dashboard Header */}
-                <div className="px-8 py-6 border-b border-white/5 bg-slate-900/50 backdrop-blur-md flex items-center justify-between shrink-0 relative z-[60]">
+                <div className="px-8 py-6 border-b border-white/5 bg-slate-900/50 backdrop-blur-md flex items-center justify-between shrink-0 relative z-[100]">
                     <div className="flex items-center gap-5">
                         <div className="relative group">
                             <div className="p-3.5 bg-gradient-to-br from-cyan-500 to-fuchsia-600 rounded-[22px] shadow-2xl shadow-cyan-500/20 group-hover:scale-105 transition-transform duration-500">
@@ -200,8 +200,8 @@ export const BlackBIConsole: React.FC = () => {
 
                                     {showClientDropdown && (
                                         <>
-                                            <div className="fixed inset-0 z-[90]" onClick={() => setShowClientDropdown(false)} />
-                                            <div className="absolute top-full left-0 mt-3 w-72 bg-slate-900/95 backdrop-blur-3xl rounded-[24px] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.9)] border border-white/10 py-3 z-[100] animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+                                            <div className="fixed inset-0 z-[110]" onClick={() => setShowClientDropdown(false)} />
+                                            <div className="absolute top-full left-0 mt-3 w-72 bg-slate-900/95 backdrop-blur-3xl rounded-[24px] shadow-[0_30px_60px_-12px_rgba(0,0,0,0.9)] border border-white/10 py-3 z-[120] animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
                                                 <div className="px-4 pb-3 pt-1 border-b border-white/5 mb-2">
                                                     <div className="relative">
                                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />

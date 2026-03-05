@@ -73,28 +73,79 @@ export const BlackBIConsole: React.FC = () => {
     const fetchStages = async () => {
         if (!selectedClient) return;
 
-        // Fetch stages
-        const { data: stagesData } = await supabase
+        // Fetch stages (DB uses: label, stage_key, is_system, is_fixed)
+        const { data: stagesData, error: fetchError } = await supabase
             .from('funnel_stages')
             .select('*')
             .eq('client_id', selectedClient.id)
             .order('position');
 
-        if (stagesData && stagesData.length > 0) {
-            // Check if these are the OLD default stages that need upgrading
-            const oldNames = ['Interessados', 'Transbordo Humano', 'Qualificados'];
-            const currentNames = stagesData.map(s => s.name);
-            const isOldFunnel = stagesData.length === 3 && stagesData.every(s => oldNames.includes(s.name));
+        if (fetchError) {
+            console.error("Erro ao buscar estágios:", fetchError);
+            setStages([]);
+            return;
+        }
+
+        // Cleanup: remove broken stages (null labels from old buggy inserts)
+        const brokenStages = (stagesData || []).filter(s => !s.label);
+        if (brokenStages.length > 0) {
+            console.log(`Removendo ${brokenStages.length} estágios quebrados (sem label)...`);
+            await supabase.from('funnel_stages').delete().in('id', brokenStages.map(s => s.id));
+        }
+
+        // Filter to only valid stages
+        const validStages = (stagesData || []).filter(s => !!s.label);
+
+        if (validStages.length > 0) {
+            // Check if these are OLD default stages that need upgrading
+            const oldLabels = ['Interessados', 'Transbordo Humano', 'Qualificados'];
+            const isOldFunnel = validStages.length === 3 && validStages.every(s => oldLabels.includes(s.label));
 
             if (isOldFunnel) {
                 console.log("Detectado funil antigo. Atualizando para os 4 estágios novos...");
                 await supabase.from('funnel_stages').delete().eq('client_id', selectedClient.id);
-                // Recursivamente chama para cair no bloco 'else' e criar os novos
                 fetchStages();
                 return;
             }
 
-            // Count leads for these stages
+            // ── Upgrade existing stages to match desired config ──
+            let needsRefetch = false;
+
+            for (const stage of validStages) {
+                const label = stage.label.toLowerCase();
+                let desired: { position: number; is_fixed: boolean; stage_key: string } | null = null;
+
+                if (label.includes('forms')) {
+                    desired = { position: 0, is_fixed: true, stage_key: 'contato_forms' };
+                } else if (label.includes('whatsapp')) {
+                    desired = { position: 1, is_fixed: true, stage_key: 'contato_whatsapp' };
+                } else if (label.includes('conversão') || label.includes('conversao')) {
+                    desired = { position: 2, is_fixed: false, stage_key: 'conversao' };
+                } else if (label.includes('perdido')) {
+                    desired = { position: 3, is_fixed: false, stage_key: 'perdidos' };
+                }
+
+                if (!desired) continue;
+
+                const updates: any = {};
+                if (stage.position !== desired.position) updates.position = desired.position;
+                if (stage.is_fixed !== desired.is_fixed) updates.is_fixed = desired.is_fixed;
+                if (stage.stage_key !== desired.stage_key) updates.stage_key = desired.stage_key;
+
+                if (Object.keys(updates).length > 0) {
+                    console.log(`[Migração] Atualizando estágio "${stage.label}":`, updates);
+                    await supabase.from('funnel_stages').update(updates).eq('id', stage.id);
+                    needsRefetch = true;
+                }
+            }
+
+            if (needsRefetch) {
+                console.log("[Migração] Configurações alteradas, reiniciando busca...");
+                await fetchStages();
+                return;
+            }
+
+            // Count leads per stage
             const { data: leadsData } = await supabase
                 .from('leads')
                 .select('funnel_stage')
@@ -106,71 +157,78 @@ export const BlackBIConsole: React.FC = () => {
                 return acc;
             }, {});
 
-            setStages(stagesData.map(s => ({
+            // Map DB columns -> frontend interface (label -> name, is_system -> is_protected)
+            setStages(validStages.map(s => ({
                 ...s,
+                name: s.label,
+                is_protected: s.is_system,
                 leadCount: counts[s.id] || 0
             })) as any);
         } else {
-            // Se não houver estágios OU o id for inválido (prevenção), cria o padrão
+            // No valid stages — create the 4 fixed defaults
             if (!organizationId) {
                 console.warn("Sem organizationId para criar estágios.");
                 setStages([]);
                 return;
             }
 
-            // Inicializar com as 4 etapas fixas
+            // Inicializar com as 4 etapas fixas (usando colunas reais do DB)
             const defaultStages = [
                 {
                     client_id: selectedClient.id,
                     organization_id: organizationId,
-                    name: 'Contato Direto WhatsApp',
-                    color: 'text-emerald-400',
-                    bg: 'bg-emerald-500/10',
-                    border: 'border-emerald-500/20',
-                    ai_enabled: true,
-                    followup_enabled: true,
-                    position: 0,
-                    is_fixed: true,
-                    is_protected: true
-                },
-                {
-                    client_id: selectedClient.id,
-                    organization_id: organizationId,
-                    name: 'Novo Contato Forms',
+                    stage_key: 'contato_forms',
+                    label: 'Novo Contato Forms',
                     color: 'text-indigo-400',
                     bg: 'bg-indigo-500/10',
                     border: 'border-indigo-500/20',
                     ai_enabled: true,
                     followup_enabled: true,
-                    position: 1,
+                    position: 0,
                     is_fixed: true,
-                    is_protected: true
+                    is_system: true
                 },
                 {
                     client_id: selectedClient.id,
                     organization_id: organizationId,
-                    name: 'Conversão',
+                    stage_key: 'contato_whatsapp',
+                    label: 'Contato Direto WhatsApp',
+                    color: 'text-emerald-400',
+                    bg: 'bg-emerald-500/10',
+                    border: 'border-emerald-500/20',
+                    ai_enabled: true,
+                    followup_enabled: true,
+                    position: 1,
+                    is_fixed: true,
+                    is_system: true
+                },
+                {
+                    client_id: selectedClient.id,
+                    organization_id: organizationId,
+                    stage_key: 'conversao',
+                    label: 'Conversão',
                     color: 'text-cyan-400',
                     bg: 'bg-cyan-500/10',
                     border: 'border-cyan-500/20',
                     ai_enabled: false,
                     followup_enabled: true,
                     position: 2,
-                    is_fixed: true,
-                    is_protected: true
+                    is_fixed: false,
+                    is_system: true
                 },
                 {
                     client_id: selectedClient.id,
                     organization_id: organizationId,
-                    name: 'Perdidos',
+                    stage_key: 'perdidos',
+                    label: 'Perdidos',
                     color: 'text-rose-400',
                     bg: 'bg-rose-500/10',
                     border: 'border-rose-500/20',
                     ai_enabled: false,
                     followup_enabled: false,
                     position: 3,
-                    is_fixed: true,
-                    is_protected: true
+                    is_fixed: false,
+                    is_system: true
                 }
             ];
 
@@ -179,7 +237,6 @@ export const BlackBIConsole: React.FC = () => {
                 .insert(defaultStages);
 
             if (!error) {
-                // Re-fetch para obter os IDs reais do banco de dados
                 const { data: newStages } = await supabase
                     .from('funnel_stages')
                     .select('*')
@@ -189,6 +246,8 @@ export const BlackBIConsole: React.FC = () => {
                 if (newStages) {
                     setStages(newStages.map(s => ({
                         ...s,
+                        name: s.label,
+                        is_protected: s.is_system,
                         leadCount: 0
                     })) as any);
                 }
@@ -222,7 +281,8 @@ export const BlackBIConsole: React.FC = () => {
             const dataToSave = {
                 client_id: selectedClient.id,
                 organization_id: organizationId,
-                name: stage.name,
+                stage_key: stage.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''),
+                label: stage.name,
                 color: stage.color,
                 bg: stage.bg,
                 border: stage.border,
@@ -230,7 +290,7 @@ export const BlackBIConsole: React.FC = () => {
                 followup_enabled: stage.followup_enabled,
                 position: i,
                 is_fixed: stage.is_fixed || false,
-                is_protected: stage.is_protected || false,
+                is_system: stage.is_protected || false,
                 sla_threshold_minutes: stage.sla_threshold_minutes || 0,
                 stage_score: stage.stage_score || 0
             };
@@ -360,15 +420,6 @@ export const BlackBIConsole: React.FC = () => {
                                 );
                             })}
                         </div>
-
-                        <div className="h-10 w-px bg-white/5 mx-2" />
-
-                        <button
-                            onClick={() => setShowStageManager(true)}
-                            className="p-3 bg-slate-900 border border-white/5 rounded-2xl text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-all shadow-xl group"
-                        >
-                            <Settings className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
-                        </button>
                     </div>
                 </div>
 
@@ -383,6 +434,7 @@ export const BlackBIConsole: React.FC = () => {
                                     onOpenLeadAudit={setSelectedLead}
                                     onOpenStageConfig={setSelectedStage}
                                     onOpenLeadConfig={setSelectedLead}
+                                    onOpenStageManager={() => setShowStageManager(true)}
                                     clientId={selectedClient.id}
                                 />
                             )}

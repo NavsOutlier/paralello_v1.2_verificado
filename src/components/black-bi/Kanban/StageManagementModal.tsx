@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, GripVertical, Plus, Trash2, Edit2, Save, Palette } from 'lucide-react';
 import { BlBiStage } from '../types';
 
@@ -30,6 +30,11 @@ export const StageManagementModal: React.FC<StageManagementModalProps> = ({
     const [editingStageId, setEditingStageId] = useState<string | null>(null);
     const [editName, setEditName] = useState('');
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+    // Sync with parent stages whenever they change
+    useEffect(() => {
+        setStages(initialStages);
+    }, [initialStages]);
 
     if (!isOpen) return null;
 
@@ -197,18 +202,22 @@ export const StageManagementModal: React.FC<StageManagementModalProps> = ({
                                     {/* Actions */}
                                     <div className="mt-auto pt-3 flex justify-between items-center border-t border-white/5">
                                         <div className="flex items-center gap-1 min-w-0">
-                                            {(stage.is_fixed || stage.is_protected) && (
+                                            {stage.is_fixed ? (
                                                 <div className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-900 border border-white/5 rounded-md truncate">
                                                     <Save className="w-2 h-2 text-slate-600 flex-shrink-0" />
-                                                    <span className="text-[7px] font-bold text-slate-600 uppercase tracking-tight truncate">Fix</span>
+                                                    <span className="text-[7px] font-bold text-slate-600 uppercase tracking-tight truncate">Fixo</span>
                                                 </div>
-                                            )}
-                                            {!stage.is_fixed && !stage.is_protected && (
+                                            ) : stage.is_protected ? (
+                                                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-900 border border-white/5 rounded-md truncate">
+                                                    <Save className="w-2 h-2 text-slate-600 flex-shrink-0" />
+                                                    <span className="text-[7px] font-bold text-slate-600 uppercase tracking-tight truncate">Nome</span>
+                                                </div>
+                                            ) : (
                                                 <span className="text-[8px] font-black text-slate-700 uppercase tracking-tighter truncate opacity-40">v1.0</span>
                                             )}
                                         </div>
 
-                                        {!(stage.is_fixed || stage.is_protected) && (
+                                        {!stage.is_fixed && (
                                             <button
                                                 onClick={() => handleRemove(stage.id)}
                                                 className="p-1 text-slate-600 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all flex-shrink-0"
@@ -222,7 +231,7 @@ export const StageManagementModal: React.FC<StageManagementModalProps> = ({
                             </div>
                         ))}
 
-                        {/* Add New Stage Card - Compacto & Centralizado */}
+                        {/* Add New Stage Card */}
                         <button
                             onClick={handleAdd}
                             className="flex-[0.5] min-w-[100px] max-w-[150px] h-[360px] border-2 border-dashed border-white/5 rounded-[28px] text-slate-600 hover:border-cyan-500/40 hover:text-cyan-400 hover:bg-cyan-500/5 transition-all flex flex-col items-center justify-center gap-3 group"

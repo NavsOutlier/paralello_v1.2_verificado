@@ -10,6 +10,7 @@ interface FunnelBoardProps {
     onOpenLeadAudit: (lead: BlBiLead) => void;
     onOpenStageConfig: (stageId: string) => void;
     onOpenLeadConfig: (lead: BlBiLead) => void;
+    onOpenStageManager: () => void;
     clientId: string;
 }
 
@@ -19,6 +20,7 @@ export const FunnelBoard: React.FC<FunnelBoardProps> = ({
     onOpenLeadAudit,
     onOpenStageConfig,
     onOpenLeadConfig,
+    onOpenStageManager,
     clientId
 }) => {
     const [leads, setLeads] = useState<BlBiLead[]>(MOCK_LEADS);
@@ -110,6 +112,13 @@ export const FunnelBoard: React.FC<FunnelBoardProps> = ({
                         {leads.length} Leads Identificados
                     </div>
                 </div>
+                <button
+                    onClick={onOpenStageManager}
+                    className="p-2.5 bg-slate-900 border border-white/5 rounded-2xl text-slate-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-all shadow-xl group"
+                    title="Gerenciar Etapas"
+                >
+                    <Settings className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
+                </button>
             </div>
 
             {/* Scrolling Columns Area */}

@@ -18,4 +18,4 @@ async function checkLengths() {
     console.log("meta_ad_accounts sample:", actData);
 }
 
-checkLengths();
+checkLengths(); 1
